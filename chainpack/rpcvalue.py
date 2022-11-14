@@ -1,6 +1,7 @@
 from enum import Enum
 import datetime
 
+
 class RpcValue:
 	class Type(Enum):
 		Undefined = 0
@@ -79,5 +80,7 @@ class RpcValue:
 	def is_valid(self):
 		return self.type != RpcValue.Type.Undefined
 
-
-
+	def to_str(self):
+		if self.type == RpcValue.Type.String:
+			return self.value.decode("utf-8")
+		return ""

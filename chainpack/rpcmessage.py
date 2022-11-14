@@ -22,6 +22,7 @@ class RpcMessage:
 	TagRequestId = 8
 	TagShvPath = 9
 	TagMethod = 10
+	TagCallerIds = 11
 
 	KeyParams = 1
 	KeyResult = 2
@@ -39,6 +40,14 @@ class RpcMessage:
 	def is_signal(self):
 		return not self.request_id() and self.method()
 
+	def make_response(self):
+		if not self.is_request():
+			raise ValueError("Response can be created from request only.")
+		resp = RpcMessage()
+		resp.set_request_id(self.request_id())
+		resp.set_caller_ids(self.caller_ids())
+		return resp
+
 	def request_id(self):
 		return self.rpcValue.meta.get(RpcMessage.TagRequestId) if self.is_valid() else None
 
@@ -53,6 +62,15 @@ class RpcMessage:
 			self.rpcValue.meta.pop(RpcMessage.TagShvPath, None)
 		else:
 			self.rpcValue.meta[RpcMessage.TagShvPath] = val
+
+	def caller_ids(self):
+		return self.rpcValue.meta.get(RpcMessage.TagCallerIds) if self.is_valid() else None
+
+	def set_caller_ids(self, val):
+		if val is None:
+			self.rpcValue.meta.pop(RpcMessage.TagCallerIds, None)
+		else:
+			self.rpcValue.meta[RpcMessage.TagCallerIds] = val
 
 	def method(self):
 		return self.rpcValue.meta.get(RpcMessage.TagMethod) if self.is_valid() else None

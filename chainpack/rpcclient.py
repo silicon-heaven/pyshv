@@ -2,10 +2,10 @@ import logging
 import asyncio
 from enum import Enum
 
-from .cpcontext import UnpackContext
-from .cpon import Cpon, CponReader, CponWriter
-from .chainpack import ChainPackReader, ChainPackWriter, ChainPack
-from .rpcmessage import RpcMessage
+from . cpcontext import UnpackContext
+from . cpon import Cpon, CponReader, CponWriter
+from . chainpack import ChainPackReader, ChainPackWriter, ChainPack
+from . rpcmessage import RpcMessage
 
 _logger = logging.getLogger("RpcClient")
 
@@ -16,7 +16,6 @@ def get_next_rpc_request_id():
 
 
 class RpcClient:
-
 	class MethodCallError(Exception):
 		def __init__(self, error):
 			self.error = error
@@ -43,7 +42,7 @@ class RpcClient:
 		self.reader = None
 		self.writer = None
 
-	async def connect(self, host, port=3755, user=None, password=None, login_type: LoginType = LoginType.Sha1):
+	async def connect(self, host, port=3755, user=None, password=None, login_type: LoginType = LoginType.Sha1, device_id=None, mount_point=None):
 		_logger.debug("connecting to: {}:{}".format(host, port))
 		self.state = RpcClient.State.Connecting
 		self.reader, self.writer = await asyncio.open_connection(host, port)
@@ -60,11 +59,16 @@ class RpcClient:
 			},
 			"options": {
 				# "device": {
+				# 	"deviceId": "dev-id"
 				# 	"mountPoint": "test/agent1"
 				# },
 				"idleWatchDogTimeOut": 0
 			}
 		}
+		if device_id is not None:
+			params["options"]["device"] = {"deviceId": device_id}
+		elif mount_point is not None:
+			params["options"]["device"] = {"mountPoint": mount_point}
 		_logger.debug("LOGGING IN")
 		await self.call_shv_method(None, "login", params)
 		await self.read_rpc_message()
@@ -81,6 +85,9 @@ class RpcClient:
 		msg.set_params(params)
 		msg.set_request_id(req_id)
 
+		await self.send_rpc_message(msg)
+
+	async def send_rpc_message(self, msg):
 		data = msg.to_chainpack()
 		_logger.debug("<== SND: {}".format(msg.to_string()))
 
@@ -124,5 +131,3 @@ class RpcClient:
 				return msg
 			data = await self.reader.read(1024)
 			self.readData += data
-
-
