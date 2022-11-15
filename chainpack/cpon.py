@@ -98,6 +98,22 @@ class CponReader:
 				val_type = RpcValue.Type.DateTime
 			else:
 				raise TypeError('Invalid DateTime prefix.')
+		elif b == ord('b'):
+			self.ctx.get_byte()
+			b = self.ctx.peek_byte()
+			if b == ord('"'):
+				value = self._read_blob()
+				val_type = RpcValue.Type.Blob
+			else:
+				raise TypeError('Invalid Blob prefix.')
+		elif b == ord('x'):
+			self.ctx.get_byte()
+			b = self.ctx.peek_byte()
+			if b == ord('"'):
+				value = self._read_hexblob()
+				val_type = RpcValue.Type.Blob
+			else:
+				raise TypeError('Invalid HexBlob prefix.')
 		elif b == ord('t'):
 			self.ctx.get_bytes(b'true')
 			value = True
@@ -118,7 +134,7 @@ class CponReader:
 	@classmethod
 	def unpack(cls, cpon):
 		if isinstance(cpon, str):
-			rd = CponReader(UnpackContext(cpon.encode('utf8')))
+			rd = CponReader(UnpackContext(cpon.encode()))
 		elif isinstance(cpon, (bytes, bytearray)):
 			rd = CponReader(UnpackContext(cpon))
 		else:
@@ -194,6 +210,59 @@ class CponReader:
 		epoch_msec = int(d.timestamp() * 1000)
 		return RpcValue.DateTime(epoch_msec + msec, utc_offset)
 
+	def _hexdigit_to_int(b):
+		if ord('0') <= b <= ord('9'):
+			val = b - 48
+		elif ord('a') <= b <= ord('f'):
+			val = b - ord('a') + 10
+		elif ord('A') <= b <= ord('F'):
+			val = b - ord('A') + 10
+		else:
+			raise ValueError('Invalid HEX digit: ' + b)
+		return val
+
+	def _read_blob(self):
+		pctx = PackContext()
+		self.ctx.get_byte()  # eat '"'
+		while True:
+			b = self.ctx.get_byte()
+			if b == ord('\\'):
+				b = self.ctx.get_byte()
+				if b == ord('\\'):
+					pctx.put_byte(ord('\\'))
+				elif b == ord('"'):
+					pctx.put_byte(ord('"'))
+				elif b == ord('n'):
+					pctx.put_byte(ord('\n'))
+				elif b == ord('r'):
+					pctx.put_byte(ord('\r'))
+				elif b == ord('t'):
+					pctx.put_byte(ord('\t'))
+				else:
+					hi = b
+					lo = self.ctx.get_byte()
+					pctx.put_byte(16 * CponReader._hexdigit_to_int(hi) + CponReader._hexdigit_to_int(lo))
+			else:
+				if b == ord('"'):
+					# end of string
+					break
+				else:
+					pctx.put_byte(b)
+		return pctx.data_bytes()
+
+	def _read_hexblob(self):
+		pctx = PackContext()
+		self.ctx.get_byte()  # eat '"'
+		while True:
+			b = self.ctx.get_byte()
+			if b == ord('"'):
+				# end of string
+				break
+			hi = b
+			lo = self.ctx.get_byte()
+			pctx.put_byte(16 * CponReader._hexdigit_to_int(hi) + CponReader._hexdigit_to_int(lo))
+		return pctx.data_bytes()
+
 	def _read_cstring(self):
 		pctx = PackContext()
 		self.ctx.get_byte()  # eat '"'
@@ -225,7 +294,7 @@ class CponReader:
 					break
 				else:
 					pctx.put_byte(b)
-		return pctx.data_bytes()
+		return pctx.data_bytes().decode()
 
 	def _read_list(self):
 		lst = []
@@ -251,7 +320,7 @@ class CponReader:
 				break
 			key = self.read()
 			if key.type == RpcValue.Type.String:
-				key = key.value.decode()
+				key = key.value
 			elif key.type == RpcValue.Type.UInt:
 				key = key.value
 			elif key.type == RpcValue.Type.Int:
@@ -391,6 +460,8 @@ class CponWriter:
 			self.ctx.write_utf8_string('null')
 		elif rpc_val.type == RpcValue.Type.Bool:
 			self._write_bool(rpc_val.value)
+		elif rpc_val.type == RpcValue.Type.Blob:
+			self._write_blob(rpc_val.value)
 		elif rpc_val.type == RpcValue.Type.String:
 			self._write_cstring(rpc_val.value)
 		elif rpc_val.type == RpcValue.Type.UInt:
@@ -430,8 +501,38 @@ class CponWriter:
 			s = self.options.indent * self._nest_level
 			self.ctx.write_bytes(s)
 
+	def _nibble_to_hexdigit(b):
+		if b >= 0:
+			if b < 10:
+				return b + ord('0')
+			elif b < 16:
+				return b - 10 + ord('a')
+		raise ValueError('Invalid nibble value: ' + b)
+
+	def _write_blob(self, data):
+		self.ctx.write_utf8_string('b"')
+		for b in data:
+			if b == ord('\\'):
+				self.ctx.write_utf8_string('\\\\')
+			elif b == ord('\t'):
+				self.ctx.write_utf8_string('\\t')
+			elif b == ord('\r'):
+				self.ctx.write_utf8_string('\\r')
+			elif b == ord('\n'):
+				self.ctx.write_utf8_string('\\n')
+			elif b == ord('"'):
+				self.ctx.write_utf8_string('\\\"')
+			elif b >= 0x7f:
+				self.ctx.write_utf8_string('\\')
+				self.ctx.put_byte(CponWriter._nibble_to_hexdigit(b // 16))
+				self.ctx.put_byte(CponWriter._nibble_to_hexdigit(b % 16))
+			else:
+				self.ctx.put_byte(b)
+		self.ctx.put_byte(ord('"'))
+
 	def _write_cstring(self, cstr):
 		self.ctx.put_byte(ord('"'))
+		cstr = cstr.encode()
 		for b in cstr:
 			if b == 0:
 				self.ctx.write_utf8_string('\\0')

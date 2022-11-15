@@ -16,7 +16,8 @@ class ChainPack:
 	CP_Int = 130
 	CP_Double = 131
 	CP_Bool = 132
-	CP_String = 134
+	CP_Blob = 133
+	CP_String = 134 # utf8 encoded string
 	CP_List = 136
 	CP_Map = 137
 	CP_IMap = 138
@@ -119,12 +120,20 @@ class ChainPackReader:
 				rpc_val.value = self._read_list()
 				rpc_val.type = RpcValue.Type.List
 
-			elif packing_schema == ChainPack.CP_String:
+			elif packing_schema == ChainPack.CP_Blob:
 				str_len = self.read_uint_data()
 				arr = bytearray(str_len)
 				for i in range(str_len):
 					arr[i] = self.ctx.get_byte()
 				rpc_val.value = bytes(arr)
+				rpc_val.type = RpcValue.Type.Blob
+
+			elif packing_schema == ChainPack.CP_String:
+				str_len = self.read_uint_data()
+				arr = bytearray(str_len)
+				for i in range(str_len):
+					arr[i] = self.ctx.get_byte()
+				rpc_val.value = bytes(arr).decode()
 				rpc_val.type = RpcValue.Type.String
 
 			elif packing_schema == ChainPack.CP_CString:
@@ -225,7 +234,7 @@ class ChainPackReader:
 			#	raise TypeError("Malformed map, invalid key")
 			val = self.read()
 			if key.type == RpcValue.Type.String:
-				mmap[key.value.decode()] = val
+				mmap[key.value] = val
 			else:
 				mmap[int(key.value)] = val
 		return mmap
@@ -239,10 +248,15 @@ class ChainPackWriter:
 			rpc_val = RpcValue(rpc_val)
 		if isinstance(rpc_val.meta, dict):
 			self.write_meta(rpc_val.meta)
+		if rpc_val.type == RpcValue.Type.Undefined:
+			# better to write null than create invalid chain-pack
+			self.ctx.put_byte(ChainPack.CP_Null)
 		if rpc_val.type == RpcValue.Type.Null:
 			self.ctx.put_byte(ChainPack.CP_Null)
 		elif rpc_val.type == RpcValue.Type.Bool:
 			self.ctx.put_byte(ChainPack.CP_TRUE if rpc_val.value else ChainPack.CP_FALSE)
+		elif rpc_val.type == RpcValue.Type.Blob:
+			self.write_blob(rpc_val.value)
 		elif rpc_val.type == RpcValue.Type.String:
 			self.write_string(rpc_val.value)
 		elif rpc_val.type == RpcValue.Type.UInt:
@@ -262,8 +276,7 @@ class ChainPackWriter:
 		elif rpc_val.type == RpcValue.Type.DateTime:
 			self.write_datetime(rpc_val.value)
 		else:
-			# better to write null than create invalid chain-pack
-			self.ctx.put_byte(ChainPack.CP_Null)
+			raise ValueError("Cannot pack invalid RpcValue type.")
 
 	def data_bytes(self):
 		return self.ctx.data_bytes()
@@ -408,11 +421,18 @@ class ChainPackWriter:
 		self.ctx.put_byte(ChainPack.CP_MetaMap)
 		self.write_map_data(mmap)
 
+	def write_blob(self, data):
+		if not isinstance(data, (bytes, bytearray)):
+			raise TypeError("Unsupported type: " + type(data))
+		self.ctx.put_byte(ChainPack.CP_Blob)
+		self.write_uint_data(len(data))
+		for b in data:
+			self.ctx.put_byte(b)
+
 	def write_string(self, sstr):
-		if isinstance(sstr, str):
-			sstr = sstr.encode()
-		if not isinstance(sstr, (bytes, bytearray)):
+		if not isinstance(sstr, str):
 			raise TypeError("Unsupported type: " + type(sstr))
+		sstr = sstr.encode()
 		self.ctx.put_byte(ChainPack.CP_String)
 		self.write_uint_data(len(sstr))
 		for b in sstr:

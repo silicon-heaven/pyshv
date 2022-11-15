@@ -11,12 +11,12 @@ class RpcValue:
 		UInt = 4
 		Double = 5
 		Decimal = 6
-		String = 7
-		DateTime = 8
-		List = 9
-		Map = 10
-		IMap = 11
-		# Meta = 12,
+		Blob = 7
+		String = 8
+		DateTime = 9
+		List = 10
+		Map = 11
+		IMap = 12
 
 	class DateTime:
 		def __init__(self, msec, utc_offset):
@@ -38,9 +38,9 @@ class RpcValue:
 				self.type = RpcValue.Type.Bool
 			elif isinstance(value, str):
 				self.type = RpcValue.Type.String
-				self.value = self.value.encode()
+				self.value = self.value
 			elif isinstance(value, (bytes, bytearray)):
-				self.type = RpcValue.Type.String
+				self.type = RpcValue.Type.Blob
 			elif isinstance(value, datetime.datetime):
 				self.type = RpcValue.Type.DateTime
 				self.value = RpcValue.DateTime(int(value.timestamp() * 1000), -(int(value.utcoffset()) if value.utcoffset() else 0))
@@ -82,5 +82,7 @@ class RpcValue:
 
 	def to_str(self):
 		if self.type == RpcValue.Type.String:
+			return self.value
+		if self.type == RpcValue.Type.Blob:
 			return self.value.decode("utf-8")
 		return ""
