@@ -10,7 +10,7 @@ def errprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-help_msg = '''cp2cp.py - ChainPack to Cpon and vice versa converter
+help_msg = """cp2cp.py - ChainPack to Cpon and vice versa converter
 
 USAGE:
 -i "indent_string"
@@ -19,7 +19,7 @@ USAGE:
  input stream is Cpon (ChainPack otherwise)
 --oc
  write output in ChainPack (Cpon otherwise)
-'''
+"""
 
 
 def help_exit(exit_code=os.EX_OK):
@@ -41,7 +41,7 @@ def cp2cp():
         def __init__(self, msg):
             self.message = msg
 
-    def get_arg(error_msg=''):
+    def get_arg(error_msg=""):
         nonlocal args
         if len(args):
             ret = args[0]
@@ -57,27 +57,27 @@ def cp2cp():
             arg = get_arg()
             if arg is None:
                 break
-            if arg[:2] == '--':
+            if arg[:2] == "--":
                 arg = arg[2:]
-                if arg == 'ip':
+                if arg == "ip":
                     o_cpon_input = True
-                elif arg == 'oc':
+                elif arg == "oc":
                     o_chainpack_output = True
-                elif arg == 'help':
+                elif arg == "help":
                     help_exit()
                 else:
-                    raise InvalidCLIArg('--' + arg)
-            elif arg[:1] == '-':
+                    raise InvalidCLIArg("--" + arg)
+            elif arg[:1] == "-":
                 arg = arg[1:]
-                if arg == 'i':
+                if arg == "i":
                     o_indent = get_arg("Indent string")
                     o_indent = o_indent.replace("\\t", "\t")
                     o_indent = o_indent.replace("\\r", "\r")
                     o_indent = o_indent.replace("\\n", "\n")
-                elif arg == 'h':
+                elif arg == "h":
                     help_exit()
                 else:
-                    raise InvalidCLIArg('-' + arg)
+                    raise InvalidCLIArg("-" + arg)
             else:
                 if o_file_name:
                     raise InvalidCLIArg("input file name set already")

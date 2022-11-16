@@ -1,5 +1,4 @@
 class UnpackContext:
-
     class BufferUnderflow(Exception):
         pass
 
@@ -38,7 +37,7 @@ class PackContext:
         if self.length >= len(self.data):
             new_len = len(self.data) + PackContext.CHUNK_LEN
             new_data = bytearray(new_len)
-            new_data[0:self.length] = self.data[0:self.length]
+            new_data[0 : self.length] = self.data[0 : self.length]
             self.data = new_data
         self.data[self.length] = b
         self.length += 1
@@ -51,4 +50,4 @@ class PackContext:
         self.write_bytes(text.encode())
 
     def data_bytes(self) -> bytes:
-        return bytes(self.data[0: self.length])
+        return bytes(self.data[0 : self.length])

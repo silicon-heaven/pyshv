@@ -1,14 +1,17 @@
 import logging
 
-from chainpack.cpon import CponReader, CponWriter
 from chainpack.chainpack import ChainPackReader, ChainPackWriter
+from chainpack.cpon import CponReader, CponWriter
 
-logging.basicConfig(level=logging.INFO, format='%(levelname)s[%(module)s:%(lineno)d] %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(levelname)s[%(module)s:%(lineno)d] %(message)s"
+)
 _logger = logging.getLogger("tests")
 
+
 class Test:
-    def checkEq(self, e1, e2, msg=''):
-        #console.log((e1 === e2)? "OK": "ERROR", ":", e1, "vs.", e2)
+    def checkEq(self, e1, e2, msg=""):
+        # console.log((e1 === e2)? "OK": "ERROR", ":", e1, "vs.", e2)
         if isinstance(e1, str):
             e1 = e1.encode()
         if isinstance(e2, str):
@@ -18,7 +21,9 @@ class Test:
         if msg:
             raise RuntimeError(msg)
         else:
-            raise RuntimeError("test check error: " + e1.decode() + " == " + e2.decode())
+            raise RuntimeError(
+                "test check error: " + e1.decode() + " == " + e2.decode()
+            )
 
     def testConversions(self):
         for lst in [
@@ -52,31 +57,34 @@ class Test:
             ["[[]]", None],
             ['{"foo":"bar"}', None],
             ["i{1:2}", None],
-            ["i{\n\t1: \"bar\",\n\t345u : \"foo\",\n}", "i{1:\"bar\",345:\"foo\"}"],
-            ["[1u,{\"a\":1},2.30]", None],
+            ['i{\n\t1: "bar",\n\t345u : "foo",\n}', 'i{1:"bar",345:"foo"}'],
+            ['[1u,{"a":1},2.30]', None],
             ["<1:2>3", None],
             ["[1,<7:8>9]", None],
             ["<>1", None],
-            ["<8:3u>i{2:[[\".broker\",<1:2>true]]}", None],
+            ['<8:3u>i{2:[[".broker",<1:2>true]]}', None],
             ['<"foo":"bar",1:2>i{1:<7:8>9}', '<1:2,"foo":"bar">i{1:<7:8>9}'],
-            ["<1:2,\"foo\":<5:6>\"bar\">[1u,{\"a\":1},2.30]", None],
+            ['<1:2,"foo":<5:6>"bar">[1u,{"a":1},2.30]', None],
             ["i{1:2 // comment to end of line\n}", "i{1:2}"],
             ["<1:2>[3,<4:5>6]", None],
-            ["<4:\"svete\">i{2:<4:\"svete\">[0,1]}", None],
+            ['<4:"svete">i{2:<4:"svete">[0,1]}', None],
             ['d"2019-05-03T11:30:00-0700"', 'd"2019-05-03T11:30:00-07"'],
             ['b"ab\\cd\\t\\r\\n"', None],
             ['x"abcd"', 'b"\\ab\\cd"'],
             ['d"2018-02-02T00:00:00Z"', None],
             ['d"2027-05-03T11:30:12.345+01"', None],
-            ['/*comment 1*/{ /*comment 2*/\n'
-             + '\t\"foo\"/*comment \"3\"*/: \"bar\", //comment to end of line\n'
-             + '\t\"baz\" : 1,\n'
-             + '/*\n'
-             + '\tmultiline comment\n'
-             + '\t\"baz\" : 1,\n'
-             + '\t\"baz\" : 1, // single inside multi\n'
-             + '*/\n'
-             + '}', '{"baz":1,"foo":"bar"}'],
+            [
+                "/*comment 1*/{ /*comment 2*/\n"
+                + '\t"foo"/*comment "3"*/: "bar", //comment to end of line\n'
+                + '\t"baz" : 1,\n'
+                + "/*\n"
+                + "\tmultiline comment\n"
+                + '\t"baz" : 1,\n'
+                + '\t"baz" : 1, // single inside multi\n'
+                + "*/\n"
+                + "}",
+                '{"baz":1,"foo":"bar"}',
+            ],
         ]:
             cpon1 = lst[0]
             cpon2 = lst[1] if lst[1] else cpon1
@@ -103,6 +111,7 @@ class Test:
         self.checkEq(v2.value.epochMsec, v3.value.epochMsec)
         self.checkEq(v3.value.epochMsec, v4.value.epochMsec)
         self.checkEq(v4.value.epochMsec, v1.value.epochMsec)
+
 
 if __name__ == "__main__":
     t = Test()

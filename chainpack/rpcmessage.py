@@ -1,6 +1,6 @@
-from .rpcvalue import RpcValue
-from .cpon import CponWriter
 from .chainpack import ChainPackWriter
+from .cpon import CponWriter
+from .rpcvalue import RpcValue
 
 
 class RpcMessage:
@@ -49,13 +49,17 @@ class RpcMessage:
         return resp
 
     def request_id(self):
-        return self.rpcValue.meta.get(RpcMessage.TagRequestId) if self.is_valid() else None
+        return (
+            self.rpcValue.meta.get(RpcMessage.TagRequestId) if self.is_valid() else None
+        )
 
     def set_request_id(self, rqid):
         self.rpcValue.meta[RpcMessage.TagRequestId] = rqid
 
     def shv_path(self):
-        return self.rpcValue.meta.get(RpcMessage.TagShvPath) if self.is_valid() else None
+        return (
+            self.rpcValue.meta.get(RpcMessage.TagShvPath) if self.is_valid() else None
+        )
 
     def set_shv_path(self, val):
         if val is None:
@@ -64,7 +68,9 @@ class RpcMessage:
             self.rpcValue.meta[RpcMessage.TagShvPath] = val
 
     def caller_ids(self):
-        return self.rpcValue.meta.get(RpcMessage.TagCallerIds) if self.is_valid() else None
+        return (
+            self.rpcValue.meta.get(RpcMessage.TagCallerIds) if self.is_valid() else None
+        )
 
     def set_caller_ids(self, val):
         if val is None:
@@ -82,7 +88,9 @@ class RpcMessage:
             self.rpcValue.meta[RpcMessage.TagMethod] = val
 
     def params(self):
-        return self.rpcValue.value.get(RpcMessage.KeyParams) if self.is_valid() else None
+        return (
+            self.rpcValue.value.get(RpcMessage.KeyParams) if self.is_valid() else None
+        )
 
     def set_params(self, params):
         if params is None:
@@ -91,7 +99,9 @@ class RpcMessage:
             self.rpcValue.value[RpcMessage.KeyParams] = params
 
     def result(self):
-        return self.rpcValue.value.get(RpcMessage.KeyResult) if self.is_valid() else None
+        return (
+            self.rpcValue.value.get(RpcMessage.KeyResult) if self.is_valid() else None
+        )
 
     def set_result(self, result):
         if result is None:
@@ -109,10 +119,10 @@ class RpcMessage:
             self.rpcValue.value[RpcMessage.KeyError] = err
 
     def to_string(self):
-        return CponWriter.pack(self.rpcValue).decode() if self.is_valid() else ''
+        return CponWriter.pack(self.rpcValue).decode() if self.is_valid() else ""
 
     def to_cpon(self):
-        return CponWriter.pack(self.rpcValue) if self.is_valid() else b''
+        return CponWriter.pack(self.rpcValue) if self.is_valid() else b""
 
     def to_chainpack(self):
-        return ChainPackWriter.pack(self.rpcValue) if self.is_valid() else b''
+        return ChainPackWriter.pack(self.rpcValue) if self.is_valid() else b""

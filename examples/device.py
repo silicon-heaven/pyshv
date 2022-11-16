@@ -1,9 +1,12 @@
-import logging
 import asyncio
+import logging
+
 from libshv.chainpack.rpcclient import RpcClient
 from libshv.chainpack.rpcmessage import RpcMessage
 
-logging.basicConfig(level=logging.DEBUG, format='%(levelname)s[%(module)s:%(lineno)d] %(message)s')
+logging.basicConfig(
+    level=logging.DEBUG, format="%(levelname)s[%(module)s:%(lineno)d] %(message)s"
+)
 
 FLAG_SIGNAL = 1
 FLAG_GETTER = 2
@@ -13,7 +16,13 @@ FLAG_SETTER = 4
 async def client_loop():
     client = RpcClient()
     print("connecting to broker")
-    await client.connect(host='localhost', password='test', user='test', login_type=RpcClient.LoginType.Plain, mount_point="test/device")
+    await client.connect(
+        host="localhost",
+        password="test",
+        user="test",
+        login_type=RpcClient.LoginType.Plain,
+        mount_point="test/device",
+    )
 
     tracks = {}
     for i in range(1, 9):
@@ -27,38 +36,52 @@ async def client_loop():
             if len(path_str) == 0:
                 path = []
             else:
-                path = path_str.split('/')
+                path = path_str.split("/")
             method = msg.method().to_str()
             resp = msg.make_response()
             if len(path) == 0:
-                if method == 'dir':
-                    resp.set_result([
-                        {"accessGrant": "bws", "flags": 0, "name": "dir"},
-                        {"accessGrant": "bws", "flags": 0, "name": "ls"},
-                    ])
-                elif method == 'ls':
+                if method == "dir":
+                    resp.set_result(
+                        [
+                            {"accessGrant": "bws", "flags": 0, "name": "dir"},
+                            {"accessGrant": "bws", "flags": 0, "name": "ls"},
+                        ]
+                    )
+                elif method == "ls":
                     resp.set_result(["track"])
             elif path[0] == "track":
                 path = path[1:]
                 if len(path) == 0:
-                    if method == 'dir':
-                        resp.set_result([
-                            {"accessGrant": "bws", "flags": 0, "name": "dir"},
-                            {"accessGrant": "bws", "flags": 0, "name": "ls"},
-                        ])
-                    elif method == 'ls':
+                    if method == "dir":
+                        resp.set_result(
+                            [
+                                {"accessGrant": "bws", "flags": 0, "name": "dir"},
+                                {"accessGrant": "bws", "flags": 0, "name": "ls"},
+                            ]
+                        )
+                    elif method == "ls":
                         resp.set_result([t for t in tracks.keys()])
                 elif len(path) == 1:
                     track = path[0]
-                    if method == 'dir':
-                        resp.set_result([
-                            {"accessGrant": "bws", "flags": 0, "name": "dir"},
-                            {"accessGrant": "rd", "flags": FLAG_GETTER, "name": "get"},
-                            {"accessGrant": "wr", "flags": FLAG_SETTER, "name": "set"},
-                        ])
-                    elif method == 'get':
+                    if method == "dir":
+                        resp.set_result(
+                            [
+                                {"accessGrant": "bws", "flags": 0, "name": "dir"},
+                                {
+                                    "accessGrant": "rd",
+                                    "flags": FLAG_GETTER,
+                                    "name": "get",
+                                },
+                                {
+                                    "accessGrant": "wr",
+                                    "flags": FLAG_SETTER,
+                                    "name": "set",
+                                },
+                            ]
+                        )
+                    elif method == "get":
                         resp.set_result(tracks[track])
-                    elif method == 'set':
+                    elif method == "set":
                         old_val = tracks[track]
                         new_val = msg.params()
                         tracks[track] = new_val

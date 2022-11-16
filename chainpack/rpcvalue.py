@@ -1,5 +1,5 @@
-from enum import Enum
 import datetime
+from enum import Enum
 
 
 class RpcValue:
@@ -43,7 +43,10 @@ class RpcValue:
                 self.type = RpcValue.Type.Blob
             elif isinstance(value, datetime.datetime):
                 self.type = RpcValue.Type.DateTime
-                self.value = RpcValue.DateTime(int(value.timestamp() * 1000), -(int(value.utcoffset()) if value.utcoffset() else 0))
+                self.value = RpcValue.DateTime(
+                    int(value.timestamp() * 1000),
+                    -(int(value.utcoffset()) if value.utcoffset() else 0),
+                )
             elif isinstance(value, int):
                 self.type = RpcValue.Type.Int
             elif isinstance(value, float):

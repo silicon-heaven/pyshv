@@ -1,8 +1,8 @@
 import struct
 import sys
 
+from .cpcontext import PackContext, UnpackContext
 from .rpcvalue import RpcValue
-from .cpcontext import UnpackContext, PackContext
 
 
 class ChainPack:
@@ -17,7 +17,7 @@ class ChainPack:
     CP_Double = 131
     CP_Bool = 132
     CP_Blob = 133
-    CP_String = 134 # utf8 encoded string
+    CP_String = 134  # utf8 encoded string
     CP_List = 136
     CP_Map = 137
     CP_IMap = 138
@@ -36,7 +36,7 @@ class ChainPack:
 
     @staticmethod
     def is_little_endian():
-        return sys.byteorder == 'little'
+        return sys.byteorder == "little"
 
 
 class ChainPackReader:
@@ -141,17 +141,17 @@ class ChainPackReader:
                 pctx = PackContext()
                 while True:
                     b = self.ctx.get_byte()
-                    if b == ord('\\'):
+                    if b == ord("\\"):
                         b = self.ctx.get_byte()
-                        if b == ord('\\'):
+                        if b == ord("\\"):
                             pctx.put_byte(ord("\\"))
-                        elif b == ord('0'):
+                        elif b == ord("0"):
                             pctx.put_byte(0)
                         else:
                             pctx.put_byte(b)
                     else:
                         if b == 0:
-                            break # end of string
+                            break  # end of string
                         else:
                             pctx.put_byte(b)
                 rpc_val.value = pctx.data_bytes()
@@ -165,7 +165,7 @@ class ChainPackReader:
         if isinstance(chainpack, (bytes, bytearray)):
             rd = ChainPackReader(UnpackContext(chainpack))
         else:
-            raise TypeError('Unsupported type: ' + type(chainpack))
+            raise TypeError("Unsupported type: " + type(chainpack))
         return rd.read()
 
     def _read_uint_dataHelper(self):
@@ -176,20 +176,20 @@ class ChainPackReader:
             bytes_to_read_cnt = 0
             num = head & 127
             bitlen = 7
-        elif (head &  64) == 0:
+        elif (head & 64) == 0:
             bytes_to_read_cnt = 1
             num = head & 63
             bitlen = 6 + 8
-        elif (head &  32) == 0:
+        elif (head & 32) == 0:
             bytes_to_read_cnt = 2
             num = head & 31
-            bitlen = 5 + 2*8
-        elif (head &  16) == 0:
+            bitlen = 5 + 2 * 8
+        elif (head & 16) == 0:
             bytes_to_read_cnt = 3
             num = head & 15
-            bitlen = 4 + 3*8
+            bitlen = 4 + 3 * 8
         else:
-            bytes_to_read_cnt = (head & 0xf) + 4
+            bytes_to_read_cnt = (head & 0xF) + 4
             bitlen = bytes_to_read_cnt * 8
 
         for i in range(bytes_to_read_cnt):
@@ -230,7 +230,7 @@ class ChainPackReader:
                 self.ctx.get_byte()
                 break
             key = self.read()
-            #if !key)
+            # if !key)
             #    raise TypeError("Malformed map, invalid key")
             val = self.read()
             if key.type == RpcValue.Type.String:
@@ -238,6 +238,7 @@ class ChainPackReader:
             else:
                 mmap[int(key.value)] = val
         return mmap
+
 
 class ChainPackWriter:
     def __init__(self):
@@ -254,7 +255,9 @@ class ChainPackWriter:
         if rpc_val.type == RpcValue.Type.Null:
             self.ctx.put_byte(ChainPack.CP_Null)
         elif rpc_val.type == RpcValue.Type.Bool:
-            self.ctx.put_byte(ChainPack.CP_TRUE if rpc_val.value else ChainPack.CP_FALSE)
+            self.ctx.put_byte(
+                ChainPack.CP_TRUE if rpc_val.value else ChainPack.CP_FALSE
+            )
         elif rpc_val.type == RpcValue.Type.Blob:
             self.write_blob(rpc_val.value)
         elif rpc_val.type == RpcValue.Type.String:
@@ -287,8 +290,8 @@ class ChainPackWriter:
         wr.write(rpc_val)
         return wr.ctx.data_bytes()
 
-# // see https://en.wikipedia.org/wiki/Find_first_set#CLZ
-    sig_table_4bit =  [0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4]
+    # // see https://en.wikipedia.org/wiki/Find_first_set#CLZ
+    sig_table_4bit = [0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4]
 
     @staticmethod
     def _significant_bits_part_length(n):
@@ -308,18 +311,18 @@ class ChainPackWriter:
         len += ChainPackWriter.sig_table_4bit[n]
         return len
 
-#  0 ...  7 bits  1  byte  |0|s|x|x|x|x|x|x|<-- LSB
-#  8 ... 14 bits  2  bytes |1|0|s|x|x|x|x|x| |x|x|x|x|x|x|x|x|<-- LSB
-# 15 ... 21 bits  3  bytes |1|1|0|s|x|x|x|x| |x|x|x|x|x|x|x|x| |x|x|x|x|x|x|x|x|<-- LSB
-# 22 ... 28 bits  4  bytes |1|1|1|0|s|x|x|x| |x|x|x|x|x|x|x|x| |x|x|x|x|x|x|x|x| |x|x|x|x|x|x|x|x|<-- LSB
-# 29+       bits  5+ bytes |1|1|1|1|n|n|n|n| |s|x|x|x|x|x|x|x| |x|x|x|x|x|x|x|x| |x|x|x|x|x|x|x|x| ... <-- LSB
-#                                         n ==  0 ->  4 bytes number (32 bit number)
-#                                         n ==  1 ->  5 bytes number
-#                                         n == 14 -> 18 bytes number
-#                                         n == 15 -> for future (number of bytes will be specified in next byte)
+    #  0 ...  7 bits  1  byte  |0|s|x|x|x|x|x|x|<-- LSB
+    #  8 ... 14 bits  2  bytes |1|0|s|x|x|x|x|x| |x|x|x|x|x|x|x|x|<-- LSB
+    # 15 ... 21 bits  3  bytes |1|1|0|s|x|x|x|x| |x|x|x|x|x|x|x|x| |x|x|x|x|x|x|x|x|<-- LSB
+    # 22 ... 28 bits  4  bytes |1|1|1|0|s|x|x|x| |x|x|x|x|x|x|x|x| |x|x|x|x|x|x|x|x| |x|x|x|x|x|x|x|x|<-- LSB
+    # 29+       bits  5+ bytes |1|1|1|1|n|n|n|n| |s|x|x|x|x|x|x|x| |x|x|x|x|x|x|x|x| |x|x|x|x|x|x|x|x| ... <-- LSB
+    #                                         n ==  0 ->  4 bytes number (32 bit number)
+    #                                         n ==  1 ->  5 bytes number
+    #                                         n == 14 -> 18 bytes number
+    #                                         n == 15 -> for future (number of bytes will be specified in next byte)
 
-# return max bit length >= bit_len, which can be encoded by same number of bytes
-# number of bytes needed to encode bit_len
+    # return max bit length >= bit_len, which can be encoded by same number of bytes
+    # number of bytes needed to encode bit_len
     @classmethod
     def _bytes_needed(cls, bit_len):
         if bit_len <= 28:
@@ -330,7 +333,7 @@ class ChainPackWriter:
 
     @classmethod
     def _expand_bit_len(cls, bit_len):
-        byte_cnt =     cls._bytes_needed(bit_len)
+        byte_cnt = cls._bytes_needed(bit_len)
         if bit_len <= 28:
             ret = byte_cnt * (8 - 1) - 1
         else:
@@ -340,18 +343,18 @@ class ChainPackWriter:
     def _write_uint_data_helper(self, num, bit_len):
         byte_cnt = self._bytes_needed(bit_len)
         data = bytearray(byte_cnt)
-        for i in range(byte_cnt-1, -1, -1):
+        for i in range(byte_cnt - 1, -1, -1):
             r = num & 255
             data[i] = r
             num = num >> 8
 
         if bit_len <= 28:
-            mask = 0xf0 << (4 - byte_cnt)
+            mask = 0xF0 << (4 - byte_cnt)
             data[0] = data[0] & ~mask
-            mask = (mask << 1) & 0xff
+            mask = (mask << 1) & 0xFF
             data[0] = data[0] | mask
         else:
-            data[0] = 0xf0 | (byte_cnt - 5)
+            data[0] = 0xF0 | (byte_cnt - 5)
 
         for i in range(0, byte_cnt):
             r = data[i]
@@ -363,10 +366,10 @@ class ChainPackWriter:
 
     def write_int_data(self, snum):
         num = -snum if snum < 0 else snum
-        neg = (snum < 0)
+        neg = snum < 0
 
         bitlen = self._significant_bits_part_length(num)
-        bitlen += 1 # add sign bit
+        bitlen += 1  # add sign bit
         if neg:
             sign_pos = self._expand_bit_len(bitlen)
             sign_bit_mask = 1 << sign_pos
@@ -392,7 +395,7 @@ class ChainPackWriter:
         self.write_int_data(val.mantisa)
         self.write_int_data(val.exponent)
 
-    def write_double(self, val:float):
+    def write_double(self, val: float):
         self.ctx.put_byte(ChainPack.CP_Double)
         data = struct.pack("<d", val)  # little endian
         self.ctx.write_bytes(data)
@@ -447,7 +450,7 @@ class ChainPackWriter:
             raise TypeError("Invalid UTC offset value: " + offset)
         # if offset < 0:
         #     offset = 128 + offset
-        offset &= 0x7f
+        offset &= 0x7F
         ms = msecs % 1000
         if ms == 0:
             msecs //= 1000
@@ -460,4 +463,3 @@ class ChainPackWriter:
         if ms == 0:
             msecs |= 2
         self.write_int_data(msecs)
-

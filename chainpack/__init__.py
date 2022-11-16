@@ -1,4 +1,12 @@
-from . import chainpack, clientconnection, cpcontext, cpon, rpcclient, rpcmessage, rpcvalue
+from . import (
+    chainpack,
+    clientconnection,
+    cpcontext,
+    cpon,
+    rpcclient,
+    rpcmessage,
+    rpcvalue,
+)
 from .rpcclient import RpcClient
 from .rpcmessage import RpcMessage
 

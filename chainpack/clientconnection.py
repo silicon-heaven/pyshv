@@ -1,10 +1,9 @@
 import asyncio
+from datetime import datetime
 
-from chainpack.rpcclient import RpcClient
-from chainpack.rpcclient import get_next_rpc_request_id
+from chainpack.rpcclient import RpcClient, get_next_rpc_request_id
 from chainpack.rpcmessage import RpcMessage
 from chainpack.rpcvalue import RpcValue
-from datetime import datetime
 
 
 class ClientConnection:
@@ -19,8 +18,14 @@ class ClientConnection:
         # request_id -> RpcMessage
         self.response_messages = {}
 
-    async def connect(self, host, port=3755, user=None, password=None,
-                      login_type: RpcClient.LoginType = RpcClient.LoginType.Sha1):
+    async def connect(
+        self,
+        host,
+        port=3755,
+        user=None,
+        password=None,
+        login_type: RpcClient.LoginType = RpcClient.LoginType.Sha1,
+    ):
         if not self.connected:
             await self.rpcClient.connect(host, port, user, password, login_type)
             self.connected = True
@@ -38,7 +43,9 @@ class ClientConnection:
             req_id = get_next_rpc_request_id()
             response_event = asyncio.Event()
             self.response_events[req_id] = response_event
-            await self.rpcClient.call_shv_method_with_id(req_id, shv_path, method, params)
+            await self.rpcClient.call_shv_method_with_id(
+                req_id, shv_path, method, params
+            )
             await response_event.wait()
             return self.response_messages.pop(req_id)
         else:
@@ -50,23 +57,24 @@ class ClientConnection:
         # print(f"Setting signal handler for path: {shv_path}")
 
     async def subscribe_path(self, shv_path):
-        resp = await self.call_shv_method_blocking('.broker/app', 'subscribe', shv_path)
+        resp = await self.call_shv_method_blocking(".broker/app", "subscribe", shv_path)
         if not resp.result().value:
             self.signal_handlers.pop(shv_path)
             print(f"Subscription for {shv_path} failed: {resp.error()}")
 
     async def get_snapshot_and_update(self, shv_home: str):
-        params = {"recordCountLimit": 10000,
-                  "withPathsDict": True,
-                  "withSnapshot": True,
-                  "withTypeInfo": False,
-                  "since": datetime.now()
-                  }
+        params = {
+            "recordCountLimit": 10000,
+            "withPathsDict": True,
+            "withSnapshot": True,
+            "withTypeInfo": False,
+            "since": datetime.now(),
+        }
         resp = await self.call_shv_method_blocking(shv_home, "getLog", params)
         result: RpcValue = resp.result()
         if result:
             result_metadata: dict = result.meta
-            paths_dict: dict = result_metadata.get('pathsDict').value
+            paths_dict: dict = result_metadata.get("pathsDict").value
 
             # for idx, path in paths_dict.items():
             #     print(f'idx: {idx} dict path: {path.value}')
@@ -100,22 +108,25 @@ class ClientConnection:
             elif msg.is_signal():
                 method = msg.method().value
                 path = msg.shv_path().value
-                if method == b'chng':
-                    prefix_handler = find_value_for_longest_prefix(path, self.signal_handlers)
+                if method == b"chng":
+                    prefix_handler = find_value_for_longest_prefix(
+                        path, self.signal_handlers
+                    )
                     if prefix_handler is not None:
                         prefix, handler = prefix_handler
                         # print(f"Calling chng signal handler for path {path}, prefix {prefix}")
-                        asyncio.get_event_loop().call_soon(handler, path, msg.params().value)
+                        asyncio.get_event_loop().call_soon(
+                            handler, path, msg.params().value
+                        )
                 # else:
                 #     print(f"Unhandled signal, path: {path}, method: {method}")
 
 
 def find_value_for_longest_prefix(key: bytes, dictionary: dict):
-    split_key = key.split(b'/')
+    split_key = key.split(b"/")
     while len(split_key) > 0:
         if key in dictionary:
             return key, dictionary.get(key)
         split_key.pop()
-        key = b'/'.join(split_key)
+        key = b"/".join(split_key)
     return None
-

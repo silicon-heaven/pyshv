@@ -1,17 +1,25 @@
-import logging
 import asyncio
+import logging
 
 from chainpack.rpcclient import RpcClient
 
-logging.basicConfig(level=logging.DEBUG, format='%(levelname)s[%(module)s:%(lineno)d] %(message)s')
+logging.basicConfig(
+    level=logging.DEBUG, format="%(levelname)s[%(module)s:%(lineno)d] %(message)s"
+)
+
 
 async def test():
     client = RpcClient()
     print("connecting to broker")
-    await client.connect(host='localhost', password='test', user='test', login_type=RpcClient.LoginType.Plain)
+    await client.connect(
+        host="localhost",
+        password="test",
+        user="test",
+        login_type=RpcClient.LoginType.Plain,
+    )
     print("connected OK")
     print("calling shv method 'echo'")
-    await client.call_shv_method('.broker/app', 'echo', 42)
+    await client.call_shv_method(".broker/app", "echo", 42)
     resp = await client.read_rpc_message()
     print("response received:", resp.to_string())
 

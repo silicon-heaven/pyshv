@@ -1,11 +1,11 @@
-import logging
 import asyncio
+import logging
 from enum import Enum
 
-from . cpcontext import UnpackContext
-from . cpon import Cpon, CponReader, CponWriter
-from . chainpack import ChainPackReader, ChainPackWriter, ChainPack
-from . rpcmessage import RpcMessage
+from .chainpack import ChainPack, ChainPackReader, ChainPackWriter
+from .cpcontext import UnpackContext
+from .cpon import Cpon, CponReader, CponWriter
+from .rpcmessage import RpcMessage
 
 _logger = logging.getLogger("RpcClient")
 
@@ -42,7 +42,16 @@ class RpcClient:
         self.reader = None
         self.writer = None
 
-    async def connect(self, host, port=3755, user=None, password=None, login_type: LoginType = LoginType.Sha1, device_id=None, mount_point=None):
+    async def connect(
+        self,
+        host,
+        port=3755,
+        user=None,
+        password=None,
+        login_type: LoginType = LoginType.Sha1,
+        device_id=None,
+        mount_point=None,
+    ):
         _logger.debug("connecting to: {}:{}".format(host, port))
         self.state = RpcClient.State.Connecting
         self.reader, self.writer = await asyncio.open_connection(host, port)
@@ -52,18 +61,14 @@ class RpcClient:
         await self.read_rpc_message()
 
         params = {
-            "login": {
-                "password": password,
-                "type": login_type.value,
-                "user": user
-            },
+            "login": {"password": password, "type": login_type.value, "user": user},
             "options": {
                 # "device": {
                 #     "deviceId": "dev-id"
                 #     "mountPoint": "test/agent1"
                 # },
                 "idleWatchDogTimeOut": 0
-            }
+            },
         }
         if device_id is not None:
             params["options"]["device"] = {"deviceId": device_id}
@@ -76,7 +81,9 @@ class RpcClient:
         self.state = RpcClient.State.LoggedIn
 
     async def call_shv_method(self, shv_path, method, params=None):
-        await self.call_shv_method_with_id(get_next_rpc_request_id(), shv_path, method, params)
+        await self.call_shv_method_with_id(
+            get_next_rpc_request_id(), shv_path, method, params
+        )
 
     async def call_shv_method_with_id(self, req_id, shv_path, method, params=None):
         msg = RpcMessage()
