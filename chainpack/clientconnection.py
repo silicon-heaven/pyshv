@@ -2,7 +2,6 @@ import asyncio
 from datetime import datetime
 
 from chainpack.rpcclient import RpcClient, get_next_rpc_request_id
-from chainpack.rpcmessage import RpcMessage
 from chainpack.rpcvalue import RpcValue
 
 
@@ -52,7 +51,6 @@ class ClientConnection:
             raise Exception("Client not connected")
 
     def set_value_change_handler(self, shv_path: str, handler):
-        shv_path = shv_path.encode()
         self.signal_handlers[shv_path] = handler
         # print(f"Setting signal handler for path: {shv_path}")
 
@@ -87,7 +85,7 @@ class ClientConnection:
                 # print(f'idx: {idx}, path: {path}, val: {value}')
                 self.update_value_for_path(path, value)
 
-    def update_value_for_path(self, path: bytes, value):
+    def update_value_for_path(self, path: str, value):
         prefix_handler = find_value_for_longest_prefix(path, self.signal_handlers)
         if prefix_handler is not None:
             prefix, handler = prefix_handler
@@ -108,7 +106,7 @@ class ClientConnection:
             elif msg.is_signal():
                 method = msg.method().value
                 path = msg.shv_path().value
-                if method == b"chng":
+                if method == "chng":
                     prefix_handler = find_value_for_longest_prefix(
                         path, self.signal_handlers
                     )
@@ -122,11 +120,11 @@ class ClientConnection:
                 #     print(f"Unhandled signal, path: {path}, method: {method}")
 
 
-def find_value_for_longest_prefix(key: bytes, dictionary: dict):
-    split_key = key.split(b"/")
+def find_value_for_longest_prefix(key: str, dictionary: dict):
+    split_key = key.split("/")
     while len(split_key) > 0:
         if key in dictionary:
             return key, dictionary.get(key)
         split_key.pop()
-        key = b"/".join(split_key)
+        key = "/".join(split_key)
     return None
