@@ -1,0 +1,100 @@
+= Forking
+
+Before you start to develop your project you have to tweak the the template to
+suit your needs. This is minimal checklist you want to follow to update the code
+to your needs.
+
+
+== 0. Git project preparation
+
+The first step is to prepare empty git project. You want to create the empty
+directory, place bare-bone readme and add that to the new git repository. The
+following code should give you the idea of what you should do:
+
+[,sh]
+----
+mkdir newproj
+cd newproj
+cat >README.md <<EOF
+# New project
+
+This project is the new project. Make sure to describe here your project before
+commiting as well as changing the name of the project on the first line.
+EOF
+git init
+git commit --gpg-sign --message 'Initial commit' README.md
+git checkout --branch dev
+----
+
+You can of course skip the project initialization step if you are updating an
+existing project.
+
+The next step is to merge the the template to your new project.
+
+[,sh]
+----
+git remote add template http://jessie.elektroline.cz/emb/template/python.git
+git fetch template
+git merge --allow-unrelated-historie template/master
+----
+
+You have to resolve merge conflict in the `README.md` file to complete the
+merge.
+
+The following steps are going to be about modifying the files introduced by
+merge and as last step we squash all changes to the merge commit so our history
+starts nice and clean.
+
+
+== 1. Rename the project
+
+The first step is for sure the project rename. The the template uses
+`template-python` name in various locations and this should be name of your
+project instead. You can use `grep -Rn template-python` to locate all
+occurrences of `template-python`. To rename all relevant code it should be:
+
+[,sh]
+----
+set -i 's/template-python/newproj/g' setup.py flake.nix
+----
+
+Note that the suggestion here might not be all so you should verify all usages
+of `template-python` string in the project on your own.
+
+
+== 2. Replicate and rename package
+
+It is highly preferred to always use Python module over just plain Python
+script. The module should be named with project name, unless there is important
+reason why that should not be the case. The allowed replacement is `-` with `_`.
+
+Make sure that you also update the name of the module, descriptions and
+everything related to that in the `setup.py` file.
+
+It is also allowed that there is no `setup.py` in case there is no reason to
+ever install module. In such case you should remove `setup.py` file, but you
+should always replace it with `requirements.txt` file that contains all
+dependencies.
+
+
+== 3. Cleanup
+
+Remove any template specific files. These are files such as this documentation.
+
+[,sh]
+----
+rm -rf docs
+----
+
+Do not forget to write your own documentation!
+
+
+== 5. Commit all changes as part of merge commit
+
+The last step is to stage all changes you made and modify merge commit created at
+the beginning. This can be done by:
+
+[sh]
+----
+git commit --amend -C HEAD .
+----

@@ -1,0 +1,114 @@
+stages:
+  - test
+  - lint
+  - style
+  - release
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+
+variables:
+  GIT_DEPTH: 0
+  GIT_SUBMODULE_STRATEGY: recursive
+  GIT_SUBMODULE_UPDATE_FLAGS: --jobs 2
+
+.nix:
+  tags:
+    - nix
+
+## Test stage ##################################################################
+tests:
+  stage: test
+  extends: .nix
+  script:
+    - nix develop -c pytest -v --junitxml=report.xml --cov=. --cov-report xml:coverage.xml --cov-report html:coverage --cov-report term
+  artifacts:
+    reports:
+      junit: report.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    paths:
+      - 'coverage/'
+  coverage: '/^TOTAL.*\s+([^\s]+)%$/'
+
+nix-build:
+  stage: test
+  extends: .nix
+  script:
+    - nix build
+
+nix-check:
+  stage: test
+  extends: .nix
+  script:
+    - nix flake check
+
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+
+## Linters #####################################################################
+.lint:
+  stage: lint
+  extends: .nix
+  needs: []
+
+pylint:
+  extends: .lint
+  script:
+    - nix develop -c pylint --output-format=colorized .
+
+mypy:
+  extends: .lint
+  script:
+    - mkdir .mypy-cache
+    - nix develop -c mypy --cache-dir .mypy-cache --ignore-missing-imports --install-types --non-interactive .
+
+## Style stage #################################################################
+.style:
+  stage: style
+  extends: .nix
+  needs: []
+  allow_failure: true
+
+black:
+  extends: .style
+  script:
+    - nix develop -c black --diff --check .
+
+isort:
+  extends: .style
+  script:
+    - nix develop -c isort --diff --check .
+
+pydocstyle:
+  extends: .style
+  script:
+    - nix develop -c pydocstyle --match='(?!tests/)*.py' .
+
+## Release creation ############################################################
+.release:
+  stage: release
+  rules:
+    - if: '$CI_COMMIT_TAG'
+  needs:
+    - job: tests
+      artifacts: false
+
+release:
+  extends: .release
+  image: "registry.nic.cz/turris/python-template/baseimg:release"
+  before_script:
+    - "apk update"
+    - "apk add bash curl jq py3-pip"
+    - "pip install yq"
+  script:
+    - "bash .release.sh"
+
+pypi:
+  extends: [.nix, .release]
+  script:
+    - nix develop -c ./setup.py sdist bdist
+    - TWINE_PASSWORD=$CI_JOB_TOKEN TWINE_USERNAME=gitlab-ci-token nix develop -c twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/*

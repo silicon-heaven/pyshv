@@ -1,0 +1,27 @@
+[project]
+name = "template-python"
+version = "0.0.0"
+description = "Project Template Python"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = []
+
+[project.scripts]
+foo = "foo.__main__:main"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.isort]
+profile = 'black'
+
+[tool.pylint.format]
+recursive = "y"
+ignore = "tests"
+# C0104: prevent usage of module name in documentation (seems unreasonable)
+# W1514: requires encoding to be set for open but default is to use system's
+# encoding which is way more reasonable than introducing some assumptions.
+disable = "C0104,W1514"
+# https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html
+max-line-length = "88"
