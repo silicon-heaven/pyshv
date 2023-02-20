@@ -44,7 +44,7 @@
     in
       {
         overlays.default = final: prev: {
-          python3 = prev.python.override pyOverlay;
+          python3 = prev.python3.override pyOverlay;
           python3Packages = prev.python3.pkgs;
         };
       }
