@@ -88,6 +88,11 @@ pydocstyle:
   script:
     - nix develop -c pydocstyle --match='(?!tests/)*.py' .
 
+editorconfig-checker:
+  extends: .style
+  script:
+    - nix develop -c editorconfig-checker -disable-max-line-length
+
 gitlint:
   extends: .style
   script:

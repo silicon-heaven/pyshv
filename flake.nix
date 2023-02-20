@@ -62,6 +62,7 @@
           default = pkgs.mkShell {
             packages = with pkgs; [
               devPython
+              editorconfig-checker
               gitlint
             ];
           };
