@@ -21,10 +21,11 @@ cat >README.md <<EOF
 This project is the new project. Make sure to describe here your project before
 commiting as well as changing the name of the project on the first line.
 EOF
-git init
+git init --initial-branch=master
 git commit --gpg-sign --message 'Initial commit' README.md
-git checkout --branch dev
 ----
+
+Now push `master` branch to the remote repository.
 
 You can of course skip the project initialization step if you are updating an
 existing project.
@@ -33,6 +34,7 @@ The next step is to merge the the template to your new project.
 
 [,sh]
 ----
+git checkout --branch dev
 git remote add template http://jessie.elektroline.cz/emb/template/python.git
 git fetch template
 git merge --allow-unrelated-historie template/master
