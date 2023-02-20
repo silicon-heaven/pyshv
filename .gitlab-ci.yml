@@ -88,6 +88,12 @@ pydocstyle:
   script:
     - nix develop -c pydocstyle --match='(?!tests/)*.py' .
 
+gitlint:
+  extends: .style
+  script:
+    - git fetch
+    - nix develop -c gitlint --commits origin/master..$CI_COMMIT_SHA
+
 ## Release creation ############################################################
 .release:
   stage: release

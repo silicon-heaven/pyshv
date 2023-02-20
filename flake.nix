@@ -14,15 +14,14 @@
         ];
       requires-dev = p:
         with p; [
-          pytest
-          pytest-cov
           black
           isort
+          mypy
           pydocstyle
           pylint
-          mypy
+          pytest
+          pytest-cov
           twine
-          pip
         ];
 
       pypkgs-template-python = {
@@ -60,7 +59,12 @@
         legacyPackages = pkgs.extend self.overlays.default;
 
         devShells = filterPackages system {
-          default = devPython.env;
+          default = pkgs.mkShell {
+            packages = with pkgs; [
+              devPython
+              gitlint
+            ];
+          };
         };
 
         checks.default = pkgsSelf.template-python;
