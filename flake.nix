@@ -9,27 +9,19 @@
     with builtins;
     with flake-utils.lib;
     with nixpkgs.lib; let
-      requires = p:
-        with p; [
-        ];
+      pyproject = trivial.importTOML ./pyproject.toml;
+      attrList = attr: list: attrValues (getAttrs list attr);
+
+      requires = p: attrList p pyproject.project.dependencies;
       requires-dev = p:
-        with p; [
-          black
-          isort
-          mypy
-          pydocstyle
-          pylint
-          pytest
-          pytest-cov
-          twine
-        ];
+        with p;
+          attrList p pyproject.project.optional-dependencies.test
+          ++ [twine];
 
       pypkgs-template-python = {
         buildPythonPackage,
         pytestCheckHook,
-      }: let
-        pyproject = trivial.importTOML ./pyproject.toml;
-      in
+      }:
         buildPythonPackage {
           pname = pyproject.project.name;
           inherit (pyproject.project) version;
