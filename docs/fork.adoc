@@ -34,7 +34,7 @@ The next step is to merge the the template to your new project.
 
 [,sh]
 ----
-git checkout --branch dev
+git checkout -b dev
 git remote add template http://jessie.elektroline.cz/emb/template/python.git
 git fetch template
 git merge --allow-unrelated-historie template/master
@@ -57,7 +57,7 @@ occurrences of `template-python`. To rename all relevant code it should be:
 
 [,sh]
 ----
-set -i 's/template-python/newproj/g' setup.py flake.nix
+sed -i 's/template-python/newproj/g' setup.py flake.nix
 ----
 
 Note that the suggestion here might not be all so you should verify all usages
