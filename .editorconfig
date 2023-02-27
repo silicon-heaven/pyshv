@@ -1,0 +1,31 @@
+# EditorConfig: https://EditorConfig.org
+root = true
+
+[*]
+encoding = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.py]
+indent_style = space
+tab_width = 4
+ident_size = 4
+max_line_length = 80
+
+[*.toml]
+indent_style = space
+tab_width = 2
+ident_size = 2
+
+[.gitlab-ci.yml]
+indent_style  = space
+indent_size = 2
+
+[*.nix]
+indent_style = space
+indent_size = 2
+
+[*.{diff,patch}]
+# Avoid to trim trailing whitespace
+trim_trailing_whitespace = false
