@@ -1,2 +1,44 @@
+[project]
+name = "libshv-py"
+version = "0.1.0"
+description = "Pure Python SHV implementation"
+authors = [
+  { name="Elektroline a.s." },
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+requires-python = ">=3.6"
+dependencies = []
+
+[project.urls]
+"Homepage" = "https://github.com/silicon-heaven/libshv-py"
+"Bug Tracker" = "https://github.com/silicon-heaven/libshv-py/issues"
+
+[project.optional-dependencies]
+test = [
+  "black",
+  "isort",
+  "mypy",
+  "pydocstyle",
+  "pylint",
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
 [tool.isort]
 profile = 'black'
+
+[tool.pylint.format]
+recursive = "y"
+ignore = "tests"
+# C0104: prevent usage of module name in documentation (seems unreasonable)
+# W1514: requires encoding to be set for open but default is to use system's
+# encoding which is way more reasonable than introducing some assumptions.
+disable = "C0104,W1514"
+# https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html
+max-line-length = "88"
