@@ -26,6 +26,7 @@
           pname = pyproject.project.name;
           inherit (pyproject.project) version;
           src = ./.;
+          nativeCheckInputs = [pytestCheckHook];
         };
 
       pyOverlay = pyself: pysuper: {

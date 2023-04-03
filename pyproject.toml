@@ -24,6 +24,8 @@ test = [
   "mypy",
   "pydocstyle",
   "pylint",
+  "pytest",
+  "pytest-cov",
 ]
 
 [build-system]
