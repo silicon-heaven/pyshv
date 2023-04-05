@@ -30,13 +30,13 @@
         };
 
       pyOverlay = pyself: pysuper: {
-        libshv-py = pypkg-libshv-py;
+        libshv-py = pyself.callPackage pypkg-libshv-py {};
       };
     in
       {
         overlays.default = final: prev: {
-          python3 = prev.python3.override pyOverlay;
-          python3Packages = prev.python3.pkgs;
+          python3 = prev.python3.override {packageOverrides = pyOverlay;};
+          python3Packages = final.python3.pkgs;
         };
       }
       // eachDefaultSystem (system: let
