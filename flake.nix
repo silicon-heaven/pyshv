@@ -21,22 +21,24 @@
       pypkgs-template-python = {
         buildPythonPackage,
         pytestCheckHook,
+        pythonPackages,
       }:
         buildPythonPackage {
           pname = pyproject.project.name;
           inherit (pyproject.project) version;
           src = ./.;
+          propagatedBuildInputs = requires pythonPackages;
           nativeCheckInputs = [pytestCheckHook];
         };
 
       pyOverlay = pyself: pysuper: {
-        template-python = pypkgs-template-python;
+        template-python = pyself.callPackage pypkgs-template-python {};
       };
     in
       {
         overlays.default = final: prev: {
-          python3 = prev.python3.override pyOverlay;
-          python3Packages = prev.python3.pkgs;
+          python3 = prev.python3.override {packageOverrides = pyOverlay;};
+          python3Packages = final.python3.pkgs;
         };
       }
       // eachDefaultSystem (system: let
