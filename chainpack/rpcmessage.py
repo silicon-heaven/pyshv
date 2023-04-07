@@ -11,13 +11,11 @@ class RpcMessage:
             self.rpcValue = rpc_val
         else:
             raise TypeError("RpcMessage cannot be constructed with: " + type(rpc_val))
-
-        if self.rpcValue:
-            if not self.rpcValue.meta:
-                self.rpcValue.meta = {}
-            if not self.rpcValue.value:
-                self.rpcValue.value = {}
-            self.rpcValue.type = RpcValue.Type.IMap
+        self.rpcValue.set(
+            self.rpcValue.value if self.rpcValue.value else {},
+            self.rpcValue.meta if self.rpcValue.meta else {},
+            RpcValue.Type.IMap,
+        )
 
     TagRequestId = 8
     TagShvPath = 9

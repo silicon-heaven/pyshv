@@ -46,51 +46,52 @@ class ChainPackReader:
         self.ctx = unpack_context
 
     def read(self):
-        rpc_val = RpcValue()
         packing_schema = self.ctx.get_byte()
 
         if packing_schema == ChainPack.CP_MetaMap:
-            rpc_val.meta = self._read_map()
+            meta = self._read_map()
             packing_schema = self.ctx.get_byte()
+        else:
+            meta = None
 
         if packing_schema < 128:
             if packing_schema & 64:
                 # tiny Int
-                rpc_val.type = RpcValue.Type.Int
-                rpc_val.value = packing_schema & 63
+                value_type = RpcValue.Type.Int
+                value = packing_schema & 63
             else:
                 # tiny UInt
-                rpc_val.type = RpcValue.Type.UInt
-                rpc_val.value = packing_schema & 63
+                value_type = RpcValue.Type.UInt
+                value = packing_schema & 63
         else:
             if packing_schema == ChainPack.CP_Null:
-                rpc_val.type = RpcValue.Type.Null
-                rpc_val.value = None
+                value_type = RpcValue.Type.Null
+                value = None
             elif packing_schema == ChainPack.CP_TRUE:
-                rpc_val.type = RpcValue.Type.Bool
-                rpc_val.value = True
+                value_type = RpcValue.Type.Bool
+                value = True
 
             elif packing_schema == ChainPack.CP_FALSE:
-                rpc_val.type = RpcValue.Type.Bool
-                rpc_val.value = False
+                value_type = RpcValue.Type.Bool
+                value = False
 
             elif packing_schema == ChainPack.CP_Int:
-                rpc_val.value = self._read_int_data()
-                rpc_val.type = RpcValue.Type.Int
+                value_type = RpcValue.Type.Int
+                value = self._read_int_data()
             elif packing_schema == ChainPack.CP_UInt:
-                rpc_val.value = self.read_uint_data()
-                rpc_val.type = RpcValue.Type.UInt
+                value_type = RpcValue.Type.UInt
+                value = self.read_uint_data()
             elif packing_schema == ChainPack.CP_Double:
                 data = bytearray(8)
                 for i in range(8):
                     data[i] = self.ctx.get_byte()
-                rpc_val.value = struct.unpack("<d", data)  # little endian
-                rpc_val.type = RpcValue.Type.Double
+                value_type = RpcValue.Type.Double
+                value = struct.unpack("<d", data)  # little endian
             elif packing_schema == ChainPack.CP_Decimal:
                 mant = self._read_int_data()
                 exp = self._read_int_data()
-                rpc_val.value = RpcValue.Decimal(mant, exp)
-                rpc_val.type = RpcValue.Type.Decimal
+                value_type = RpcValue.Type.Decimal
+                value = RpcValue.Decimal(mant, exp)
             elif packing_schema == ChainPack.CP_DateTime:
                 d = self.read_uint_data()
                 offset = 0
@@ -105,36 +106,36 @@ class ChainPackReader:
                 if has_not_msec:
                     d *= 1000
                 d += ChainPack.SHV_EPOCH_MSEC
-                rpc_val.value = RpcValue.DateTime(d, offset * 15)
-                rpc_val.type = RpcValue.Type.DateTime
+                value_type = RpcValue.Type.DateTime
+                value = RpcValue.DateTime(d, offset * 15)
 
             elif packing_schema == ChainPack.CP_Map:
-                rpc_val.value = self._read_map()
-                rpc_val.type = RpcValue.Type.Map
+                value_type = RpcValue.Type.Map
+                value = self._read_map()
 
             elif packing_schema == ChainPack.CP_IMap:
-                rpc_val.value = self._read_map()
-                rpc_val.type = RpcValue.Type.IMap
+                value_type = RpcValue.Type.IMap
+                value = self._read_map()
 
             elif packing_schema == ChainPack.CP_List:
-                rpc_val.value = self._read_list()
-                rpc_val.type = RpcValue.Type.List
+                value_type = RpcValue.Type.List
+                value = self._read_list()
 
             elif packing_schema == ChainPack.CP_Blob:
                 str_len = self.read_uint_data()
                 arr = bytearray(str_len)
                 for i in range(str_len):
                     arr[i] = self.ctx.get_byte()
-                rpc_val.value = bytes(arr)
-                rpc_val.type = RpcValue.Type.Blob
+                value_type = RpcValue.Type.Blob
+                value = bytes(arr)
 
             elif packing_schema == ChainPack.CP_String:
                 str_len = self.read_uint_data()
                 arr = bytearray(str_len)
                 for i in range(str_len):
                     arr[i] = self.ctx.get_byte()
-                rpc_val.value = bytes(arr).decode()
-                rpc_val.type = RpcValue.Type.String
+                value_type = RpcValue.Type.String
+                value = bytes(arr).decode()
 
             elif packing_schema == ChainPack.CP_CString:
                 # variation of CponReader.readCString()
@@ -154,11 +155,11 @@ class ChainPackReader:
                             break  # end of string
                         else:
                             pctx.put_byte(b)
-                rpc_val.value = pctx.data_bytes()
-                rpc_val.type = RpcValue.Type.String
+                value_type = RpcValue.Type.String
+                value = pctx.data_bytes()
             else:
                 raise TypeError("ChainPack - Invalid type info: " + packing_schema)
-        return rpc_val
+        return RpcValue(value, meta, value_type)
 
     @classmethod
     def unpack(cls, chainpack):
