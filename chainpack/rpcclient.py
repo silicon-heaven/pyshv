@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import typing
 from enum import Enum
 
 from .chainpack import ChainPack, ChainPackReader, ChainPackWriter
@@ -107,7 +108,6 @@ class RpcClient:
         self.writer.write(proto)
 
         self.writer.write(data)
-
         await self.writer.drain()
 
     def _get_rpc_msg(self):
@@ -128,8 +128,16 @@ class RpcClient:
         self.readData = self.readData[packet_len:]
         return RpcMessage(rpc_val)
 
-    async def read_rpc_message(self, throw_error=True):
-        while True:
+    async def read_rpc_message(
+        self, throw_error: bool = True
+    ) -> typing.Optional[RpcMessage]:
+        """Read next received RPC message.
+
+        :param throw_error: If MethodCallError should be raised or not.
+        :returns: Next RPC message is returned or `None` in case of EOF.
+        :raises RpcClient.MethodCallError: When mesasge is error.
+        """
+        while not self.reader.at_eof():
             msg = self._get_rpc_msg()
             if msg:
                 _logger.debug("==> REC: {}".format(msg.to_string()))
@@ -138,3 +146,4 @@ class RpcClient:
                 return msg
             data = await self.reader.read(1024)
             self.readData += data
+        return None
