@@ -294,22 +294,22 @@ class ChainPackWriter:
     sig_table_4bit = [0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4]
 
     @staticmethod
-    def _significant_bits_part_length(n):
-        len = 0
-        if n & 0xFFFFFFFF00000000:
-            len += 32
-            n >>= 32
-        if n & 0xFFFF0000:
-            len += 16
-            n >>= 16
-        if n & 0xFF00:
-            len += 8
-            n >>= 8
-        if n & 0xF0:
-            len += 4
-            n >>= 4
-        len += ChainPackWriter.sig_table_4bit[n]
-        return len
+    def _significant_bits_part_length(num):
+        length = 0
+        if num & 0xFFFFFFFF00000000:
+            length += 32
+            num >>= 32
+        if num & 0xFFFF0000:
+            length += 16
+            num >>= 16
+        if num & 0xFF00:
+            length += 8
+            num >>= 8
+        if num & 0xF0:
+            length += 4
+            num >>= 4
+        length += ChainPackWriter.sig_table_4bit[num]
+        return max(length, 1)
 
     #  0 ...  7 bits  1  byte  |0|s|x|x|x|x|x|x|<-- LSB
     #  8 ... 14 bits  2  bytes |1|0|s|x|x|x|x|x| |x|x|x|x|x|x|x|x|<-- LSB

@@ -25,6 +25,7 @@ from chainpack.cpon import CponReader, CponWriter
         "223.",
         "2.30",
         '"foo"',
+        '""',
         "[]",
         "[1]",
         "[1,2,3]",
