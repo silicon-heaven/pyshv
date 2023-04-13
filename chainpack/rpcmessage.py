@@ -1,3 +1,6 @@
+from __future__ import annotations
+import enum
+
 from .chainpack import ChainPackWriter
 from .cpon import CponWriter
 from .rpcvalue import RpcValue
@@ -17,14 +20,32 @@ class RpcMessage:
             RpcValue.Type.IMap,
         )
 
-    TagRequestId = 8
-    TagShvPath = 9
-    TagMethod = 10
-    TagCallerIds = 11
+    class Tag(enum.Enum):
+        REQUEST_ID = 8
+        SHVPATH = 9
+        METHOD = 10
+        CALLER_IDS = 11
 
-    KeyParams = 1
-    KeyResult = 2
-    KeyError = 3
+    class Key(enum.Enum):
+        PARAMS = 1
+        RESULT = 2
+        ERROR = 3
+        ERROR_CODE = 1
+        ERROR_MESSAGE = 2
+
+    class ErrorCode(enum.Enum):
+        NO_ERROR = 0
+        INVALID_REQ = 1
+        INVALID_REQUEST = 2
+        METHOD_NOT_FOUND = 3
+        INVALID_PARAMS = 4
+        INTERNAL_ERR = 5
+        PARSE_ERR = 6
+        METHOD_CALL_TIMEOUT = 7
+        METHOD_CALL_CANCELLED = 8
+        METHOD_CALL_EXCEPTION = 9
+        UNKNOWN = 10
+        USER_CODE = 32
 
     def is_valid(self):
         return True if isinstance(self.rpcValue, RpcValue) else False
@@ -47,74 +68,75 @@ class RpcMessage:
         return resp
 
     def request_id(self):
-        return (
-            self.rpcValue.meta.get(RpcMessage.TagRequestId) if self.is_valid() else None
-        )
+        return self.rpcValue.meta.get(self.Tag.REQUEST_ID) if self.is_valid() else None
 
     def set_request_id(self, rqid):
-        self.rpcValue.meta[RpcMessage.TagRequestId] = rqid
+        self.rpcValue.meta[self.Tag.REQUEST_ID] = rqid
 
     def shv_path(self):
-        return (
-            self.rpcValue.meta.get(RpcMessage.TagShvPath) if self.is_valid() else None
-        )
+        return self.rpcValue.meta.get(self.Tag.SHVPATH) if self.is_valid() else None
 
     def set_shv_path(self, val):
         if val is None:
-            self.rpcValue.meta.pop(RpcMessage.TagShvPath, None)
+            self.rpcValue.meta.pop(self.Tag.SHVPATH, None)
         else:
-            self.rpcValue.meta[RpcMessage.TagShvPath] = val
+            self.rpcValue.meta[self.Tag.SHVPATH] = val
 
     def caller_ids(self):
-        return (
-            self.rpcValue.meta.get(RpcMessage.TagCallerIds) if self.is_valid() else None
-        )
+        return self.rpcValue.meta.get(self.Tag.CALLER_IDS) if self.is_valid() else None
 
     def set_caller_ids(self, val):
         if val is None:
-            self.rpcValue.meta.pop(RpcMessage.TagCallerIds, None)
+            self.rpcValue.meta.pop(self.Tag.CALLER_IDS, None)
         else:
-            self.rpcValue.meta[RpcMessage.TagCallerIds] = val
+            self.rpcValue.meta[self.Tag.CALLER_IDS] = val
 
     def method(self):
-        return self.rpcValue.meta.get(RpcMessage.TagMethod) if self.is_valid() else None
+        return self.rpcValue.meta.get(self.Tag.METHOD) if self.is_valid() else None
 
     def set_method(self, val):
         if val is None:
-            self.rpcValue.meta.pop(RpcMessage.TagMethod, None)
+            self.rpcValue.meta.pop(self.Tag.METHOD, None)
         else:
-            self.rpcValue.meta[RpcMessage.TagMethod] = val
+            self.rpcValue.meta[self.Tag.METHOD] = val
 
     def params(self):
-        return (
-            self.rpcValue.value.get(RpcMessage.KeyParams) if self.is_valid() else None
-        )
+        return self.rpcValue.value.get(self.Key.PARAMS) if self.is_valid() else None
 
     def set_params(self, params):
         if params is None:
-            self.rpcValue.value.pop(RpcMessage.KeyParams, None)
+            self.rpcValue.value.pop(self.Key.PARAMS, None)
         else:
-            self.rpcValue.value[RpcMessage.KeyParams] = params
+            self.rpcValue.value[self.Key.PARAMS] = params
 
     def result(self):
-        return (
-            self.rpcValue.value.get(RpcMessage.KeyResult) if self.is_valid() else None
-        )
+        return self.rpcValue.value.get(self.Key.RESULT) if self.is_valid() else None
 
     def set_result(self, result):
         if result is None:
-            self.rpcValue.value.pop(RpcMessage.KeyResult, None)
+            self.rpcValue.value.pop(self.Key.RESULT, None)
         else:
-            self.rpcValue.value[RpcMessage.KeyResult] = result
+            self.rpcValue.value[self.Key.RESULT] = result
 
     def error(self):
-        return self.rpcValue.value.get(RpcMessage.KeyError) if self.is_valid() else None
+        return self.rpcValue.value.get(self.Key.ERROR) if self.is_valid() else None
 
     def set_error(self, err):
         if err is None:
-            self.rpcValue.value.pop(RpcMessage.KeyError, None)
+            self.rpcValue.value.pop(self.Key.ERROR, None)
         else:
-            self.rpcValue.value[RpcMessage.KeyError] = err
+            self.rpcValue.value[self.Key.ERROR] = err
+
+    def shverror(self) -> tuple[RpcMessage.ErrorCode, str]:
+        res = self.error()
+        if res is not None and res.type == RpcValue.Type.Map:
+            return res.value.get(self.Key.ERROR_CODE), res.value.get(
+                self.Key.ERROR_MESSAGE
+            )
+        return self.ErrorCode.UNKNOWN, res
+
+    def set_shverror(self, code: RpcMessage.ErrorCode, msg: str = ""):
+        self.set_error({self.Key.ERROR_CODE: code, self.Key.ERROR_MESSAGE: msg})
 
     def to_string(self):
         return CponWriter.pack(self.rpcValue).decode() if self.is_valid() else ""
