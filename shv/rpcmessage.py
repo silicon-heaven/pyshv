@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import enum
 
 from .chainpack import ChainPackWriter
@@ -48,7 +49,7 @@ class RpcMessage:
         USER_CODE = 32
 
     def is_valid(self):
-        return True if isinstance(self.rpcValue, RpcValue) else False
+        return bool(isinstance(self.rpcValue, RpcValue))
 
     def is_request(self):
         return self.request_id() and self.method()

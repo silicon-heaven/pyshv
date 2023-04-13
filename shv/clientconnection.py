@@ -132,7 +132,7 @@ class ClientConnection:
         result: RpcValue = resp.result()
         if result:
             result_metadata: dict = result.meta
-            paths_dict: dict = result_metadata.get("pathsDict").value
+            paths_dict: dict = result_metadata.get("pathsDict", {}).value
             result_data: list = result.value
             for list_item in result_data:
                 idx = list_item.value[1].value

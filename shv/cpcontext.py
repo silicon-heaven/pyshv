@@ -26,7 +26,6 @@ class UnpackContext:
 
 
 class PackContext:
-
     CHUNK_LEN = 1024
 
     def __init__(self):

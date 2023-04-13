@@ -202,4 +202,5 @@ class RpcValue:
         if self._type in (self.Type.Map, self.Type.IMap):
             assert isinstance(self._value, dict)
             return {key: val.to_pyrepr() for key, val in self._value.items()}
+        assert not isinstance(self._value, (self.Decimal, self.DateTime, list, dict))
         return self._value

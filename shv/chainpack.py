@@ -153,8 +153,7 @@ class ChainPackReader:
                     else:
                         if b == 0:
                             break  # end of string
-                        else:
-                            pctx.put_byte(b)
+                        pctx.put_byte(b)
                 value_type = RpcValue.Type.String
                 value = pctx.data_bytes()
             else:
@@ -193,13 +192,13 @@ class ChainPackReader:
             bytes_to_read_cnt = (head & 0xF) + 4
             bitlen = bytes_to_read_cnt * 8
 
-        for i in range(bytes_to_read_cnt):
+        for _ in range(bytes_to_read_cnt):
             r = self.ctx.get_byte()
             num = (num << 8) + r
         return num, bitlen
 
     def read_uint_data(self):
-        num, bitlen = self._read_uint_dataHelper()
+        num, _ = self._read_uint_dataHelper()
         return num
 
     def _read_int_data(self):
@@ -403,8 +402,8 @@ class ChainPackWriter:
 
     def write_list(self, lst):
         self.ctx.put_byte(ChainPack.CP_List)
-        for i in range(0, len(lst)):
-            self.write(lst[i])
+        for val in lst:
+            self.write(val)
         self.ctx.put_byte(ChainPack.CP_TERM)
 
     def write_map_data(self, mmap):
@@ -447,7 +446,7 @@ class ChainPackWriter:
 
         msecs = dt.epochMsec - ChainPack.SHV_EPOCH_MSEC
         offset = dt.utcOffsetMin // 15
-        if not (-63 <= offset <= 63):
+        if not -63 <= offset <= 63:
             raise TypeError("Invalid UTC offset value: " + offset)
         # if offset < 0:
         #     offset = 128 + offset

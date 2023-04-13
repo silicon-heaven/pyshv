@@ -94,12 +94,15 @@ def test_convert(cpon, res):
     assert cpn2 == res
 
 
-@pytest.mark.parametrize("date", (
-    'd"2017-05-03T18:30:00Z"',
-    'd"2017-05-03T22:30:00+04"',
-    'd"2017-05-03T11:30:00-0700"',
-    'd"2017-05-03T15:00:00-0330"',
-))
+@pytest.mark.parametrize(
+    "date",
+    (
+        'd"2017-05-03T18:30:00Z"',
+        'd"2017-05-03T22:30:00+04"',
+        'd"2017-05-03T11:30:00-0700"',
+        'd"2017-05-03T15:00:00-0330"',
+    ),
+)
 def test_datetime(date):
     val = CponReader.unpack(date)
     assert val.value.epochMsec == 1493836200000

@@ -5,12 +5,10 @@ from .rpcvalue import RpcValue
 
 
 class Cpon:
-
     ProtocolType = 2
 
 
 class CponReader:
-
     SPACE = ord(" ")
     SLASH = ord("/")
     STAR = ord("*")
@@ -192,7 +190,7 @@ class CponReader:
             ix1 = self.ctx.index
             val = self._read_int()
             n = self.ctx.index - ix1
-            if not (n == 2 or n == 4):
+            if n not in (2, 4):
                 raise TypeError("Malformed TS offset in DateTime.")
             if n == 2:
                 utc_offset = 60 * val
@@ -204,7 +202,6 @@ class CponReader:
         b = self.ctx.get_byte()
         if b != ord('"'):
             raise TypeError('DateTime literal should be terminated by ".')
-        # d = datetime.datetime(year, month, day, hour, min, sec, msec, datetime.timezone.utc)
         d = datetime.datetime(
             year,
             month,
@@ -218,6 +215,7 @@ class CponReader:
         epoch_msec = int(d.timestamp() * 1000)
         return RpcValue.DateTime(epoch_msec + msec, utc_offset)
 
+    @staticmethod
     def _hexdigit_to_int(b):
         if ord("0") <= b <= ord("9"):
             val = b - 48
@@ -255,10 +253,8 @@ class CponReader:
                     )
             else:
                 if b == ord('"'):
-                    # end of string
-                    break
-                else:
-                    pctx.put_byte(b)
+                    break  # end of string
+                pctx.put_byte(b)
         return pctx.data_bytes()
 
     def _read_hexblob(self):
@@ -303,10 +299,8 @@ class CponReader:
                     pctx.put_byte(b)
             else:
                 if b == ord('"'):
-                    # end of string
-                    break
-                else:
-                    pctx.put_byte(b)
+                    break  # end of string
+                pctx.put_byte(b)
         return pctx.data_bytes().decode()
 
     def _read_list(self):
@@ -436,8 +430,7 @@ class CponReader:
                 break
             break
         if is_decimal:
-            for i in range(dec_cnt):
-                mantisa *= 10
+            mantisa *= pow(10, dec_cnt)
             mantisa += decimals
             val_type = RpcValue.Type.Decimal
             value = RpcValue.Decimal(
@@ -515,11 +508,12 @@ class CponWriter:
             s = self.options.indent * self._nest_level
             self.ctx.write_bytes(s)
 
+    @staticmethod
     def _nibble_to_hexdigit(b):
         if b >= 0:
             if b < 10:
                 return b + ord("0")
-            elif b < 16:
+            if b < 16:
                 return b - 10 + ord("a")
         raise ValueError("Invalid nibble value: " + b)
 
@@ -614,7 +608,7 @@ class CponWriter:
     def _is_oneline_map(mmap):
         if len(mmap) > 10:
             return False
-        for k, v in mmap.items():
+        for v in mmap.values():
             if isinstance(v, RpcValue):
                 if v.type in (
                     RpcValue.Type.Map,
@@ -673,11 +667,11 @@ class CponWriter:
         self._nest_level += 1
         is_oneliner = CponWriter._is_online_list(lst)
         self.ctx.put_byte(ord("["))
-        for i in range(len(lst)):
+        for i, value in enumerate(lst):
             if i > 0:
                 self.ctx.put_byte(ord(","))
             self._indent_item(is_oneliner, i)
-            self.write(lst[i])
+            self.write(value)
         self._nest_level -= 1
         self._indent_item(is_oneliner, 0)
         self.ctx.put_byte(ord("]"))
@@ -710,12 +704,10 @@ class CponWriter:
         elif 0 < dec_places <= 3:
             extra_0_cnt = dec_places - n
             str0 = "0."
-            for i in range(extra_0_cnt):
-                str0 += "0"
+            str0 += "0" * extra_0_cnt
             mstr = str0 + mstr
         elif dec_places < 0 and n + exponent <= 9:
-            for i in range(exponent):
-                mstr += "0"
+            mstr += "0" * exponent
             mstr += "."
         elif dec_places == 0:
             mstr += "."

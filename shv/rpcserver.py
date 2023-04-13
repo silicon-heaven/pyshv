@@ -3,8 +3,8 @@ import asyncio
 import logging
 import typing
 
-from .rpcprotocol import RpcProtocol
 from .rpcclient import RpcClient
+from .rpcprotocol import RpcProtocol
 
 logger = logging.getLogger(__name__)
 

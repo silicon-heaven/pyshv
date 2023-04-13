@@ -45,12 +45,15 @@ build-backend = "setuptools.build_meta"
 [tool.isort]
 profile = 'black'
 
-[tool.pylint.format]
+[tool.pylint.main]
 recursive = "y"
-ignore = "tests"
+ignore = ["tests", "docs"]
+fail-under = 9
+[tool.pylint.format]
+# C0103,C0116,C0115,C0114: We have pydocstyle for this.
 # C0104: prevent usage of module name in documentation (seems unreasonable)
 # W1514: requires encoding to be set for open but default is to use system's
 # encoding which is way more reasonable than introducing some assumptions.
-disable = "C0104,W1514"
+disable = "C0104,W1514,C0103,C0116,C0115,C0114"
 # https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html
-max-line-length = "88"
+max-line-length = 88

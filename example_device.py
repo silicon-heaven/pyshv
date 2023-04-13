@@ -23,9 +23,7 @@ async def client_loop():
         login_type=RpcClient.LoginType.PLAIN,
     )
 
-    tracks = {}
-    for i in range(1, 9):
-        tracks[str(i)] = [n for n in range(i)]
+    tracks = {str(i): list(range(i)) for i in range(1, 9)}
 
     while True:
         msg = await client.read_rpc_message()
@@ -59,7 +57,7 @@ async def client_loop():
                             ]
                         )
                     elif method == "ls":
-                        resp.set_result([t for t in tracks.keys()])
+                        resp.set_result([tracks.keys()])
                 elif len(path) == 1:
                     track = path[0]
                     if method == "dir":

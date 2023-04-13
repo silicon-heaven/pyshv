@@ -43,14 +43,13 @@ def cp2cp():
 
     def get_arg(error_msg=""):
         nonlocal args
-        if len(args):
+        if args:
             ret = args[0]
             args = args[1:]
             return ret
-        elif error_msg:
+        if error_msg:
             raise InvalidCLIArg("Missing value for CLI option: " + error_msg)
-        else:
-            return None
+        return None
 
     try:
         while True:
@@ -89,7 +88,8 @@ def cp2cp():
         help_exit(os.EX_DATAERR)
 
     if o_file_name:
-        data = open(o_file_name, "rb").read()
+        with open(o_file_name, "rb") as file:
+            data = file.read()
     else:
         data = sys.stdin.buffer.read()
     # errprint(type(data))

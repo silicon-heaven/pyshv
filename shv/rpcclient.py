@@ -184,7 +184,7 @@ class RpcClient:
         :param msg: Message to be sent
         """
         data = msg.to_chainpack()
-        logger.debug("<== SND: {}".format(msg.to_string()))
+        logger.debug("<== SND: %s", msg.to_string())
 
         writter = ChainPackWriter()
         writter.write_uint_data(len(data) + 1)
@@ -223,7 +223,7 @@ class RpcClient:
         while not self.reader.at_eof():
             msg = self._get_rpc_msg()
             if msg:
-                logger.debug("==> REC: {}".format(msg.to_string()))
+                logger.debug("==> REC: %s", msg.to_string())
                 if throw_error and msg.error():
                     raise RpcClient.MethodCallError(msg.error())
                 return msg
