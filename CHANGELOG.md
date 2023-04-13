@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The original implementation
 - Methods `shverror` and `set_shverror` to `RpcMessage` with an appropriate SHV
   error format
+- `RpcServer` that listens for new client connections
 
 ### Changed
 - `RpcValue` now explicitly converts Python representation to its internal one
