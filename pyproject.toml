@@ -19,6 +19,11 @@ dependencies = []
 "Github" = "https://github.com/silicon-heaven/libshv-py"
 
 [project.optional-dependencies]
+docs = [
+  "sphinx",
+  "sphinx_rtd_theme",
+  "myst-parser",
+]
 test = [
   "black",
   "isort",

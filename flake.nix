@@ -15,7 +15,8 @@
       requires = p: attrList p pyproject.project.dependencies;
       requires-dev = p:
         with p;
-          attrList p pyproject.project.optional-dependencies.test
+          attrList p pyproject.project.optional-dependencies.docs
+          ++ attrList p pyproject.project.optional-dependencies.test
           ++ [twine];
 
       pypkg-pyshv = {

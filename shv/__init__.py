@@ -1,27 +1,20 @@
-from . import (
-    chainpack,
-    clientconnection,
-    cpcontext,
-    cpon,
-    rpcclient,
-    rpcmessage,
-    rpcvalue,
-)
+"""Python implementation of Silicon Heaven."""
+from . import chainpack, cpcontext, cpon
+from .clientconnection import ClientConnection
 from .rpcclient import RpcClient
-from .rpcserver import RpcServer
 from .rpcmessage import RpcMessage
 from .rpcprotocol import RpcProtocol
+from .rpcserver import RpcServer
+from .rpcvalue import RpcValue
 
 __all__ = [
     "chainpack",
-    "clientconnection",
     "cpcontext",
     "cpon",
-    "rpcclient",
-    "rpcmessage",
-    "rpcvalue",
     "RpcClient",
     "RpcServer",
-    "RpcMessage",
     "RpcProtocol",
+    "RpcMessage",
+    "RpcValue",
+    "ClientConnection",
 ]

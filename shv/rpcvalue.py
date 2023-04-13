@@ -70,7 +70,7 @@ class RpcValue:
         return self._value
 
     @value.setter
-    def set_value(self, value: typing.Any):
+    def value(self, value: typing.Any):
         self.set(value)
 
     @property
