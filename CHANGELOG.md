@@ -6,15 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- The original implementation
+- The original implementation under name `libshv-py`
 - Methods `shverror` and `set_shverror` to `RpcMessage` with an appropriate SHV
   error format
 - `RpcServer` that listens for new client connections
 
 ### Changed
+- Top-level package `chainpack` renamed to `shv`
 - `RpcValue` now explicitly converts Python representation to its internal one
   and also back
 - Tags and Keys in `RpcMessage` are now in Enum instead of being constants
+- `RpcClient`'s method `connect` is now class method that creates new instance
+- `RpcClient` now has to he initialized with writter and reader
+- `RpcClient.LoginType` are now capitalized to match Python paradigm
+- `RpcClient.State` is removed
 
 ### Fixed
 - Terminate loop of `RpcClient` on EOF

@@ -1,7 +1,8 @@
+#!/usr/bin/env python3
 import asyncio
 import logging
 
-from chainpack.rpcclient import RpcClient
+from shv import RpcClient
 
 logging.basicConfig(
     level=logging.DEBUG, format="%(levelname)s[%(module)s:%(lineno)d] %(message)s"
@@ -9,13 +10,12 @@ logging.basicConfig(
 
 
 async def test():
-    client = RpcClient()
     print("connecting to broker")
-    await client.connect(
+    client = await RpcClient.connect(
         host="localhost",
         password="test",
         user="test",
-        login_type=RpcClient.LoginType.Plain,
+        login_type=RpcClient.LoginType.PLAIN,
     )
     print("connected OK")
     print("calling shv method 'echo'")

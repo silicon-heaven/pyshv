@@ -1,8 +1,8 @@
+#!/usr/bin/env python3
 import asyncio
 import logging
 
-from libshv.chainpack.rpcclient import RpcClient
-from libshv.chainpack.rpcmessage import RpcMessage
+from shv import RpcClient, RpcMessage
 
 logging.basicConfig(
     level=logging.DEBUG, format="%(levelname)s[%(module)s:%(lineno)d] %(message)s"
@@ -14,14 +14,13 @@ FLAG_SETTER = 4
 
 
 async def client_loop():
-    client = RpcClient()
     print("connecting to broker")
-    await client.connect(
+    client = await RpcClient.connect_device(
+        mount_point="test/device",
         host="localhost",
         password="test",
         user="test",
-        login_type=RpcClient.LoginType.Plain,
-        mount_point="test/device",
+        login_type=RpcClient.LoginType.PLAIN,
     )
 
     tracks = {}

@@ -1,5 +1,6 @@
 """RPC connection, that includes client and specific server connection."""
 from __future__ import annotations
+
 import asyncio
 import enum
 import logging
@@ -38,6 +39,7 @@ class RpcClient:
 
     class LoginType(enum.Enum):
         """Enum specifying which login type should be used."""
+
         PLAIN = "PLAIN"
         """Plain login format should be used."""
         SHA1 = "SHA1"
@@ -111,14 +113,14 @@ class RpcClient:
     @classmethod
     async def connect_device(
         cls,
-        device_id: int,
-        mount_point: str,
         host: str | None,
         port: int = 3755,
         protocol: RpcProtocol = RpcProtocol.TCP,
         user: str | None = None,
         password: str | None = None,
         login_type: LoginType = LoginType.SHA1,
+        device_id: int | None = None,
+        mount_point: str | None = None,
     ) -> RpcClient:
         """Connect and login to the SHV RPC server when being device.
 
@@ -131,7 +133,7 @@ class RpcClient:
         :param device_id: Identifier of this device
         :param mount_point: Path the device should be mounted to
         """
-        return cls.connect(
+        return await cls.connect(
             host,
             port,
             protocol,
@@ -140,8 +142,8 @@ class RpcClient:
             login_type,
             {
                 "device": {
-                    "deviceId": device_id,
-                    "mountPoint": mount_point,
+                    **({"deviceId": device_id} if device_id is not None else {}),
+                    **({"mountPoint": mount_point} if mount_point is not None else {}),
                 },
             },
         )

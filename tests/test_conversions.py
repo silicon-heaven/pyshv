@@ -1,8 +1,8 @@
 """Check that conversions are performed correctly."""
 import pytest
 
-from chainpack.chainpack import ChainPackReader, ChainPackWriter
-from chainpack.cpon import CponReader, CponWriter
+from shv.chainpack import ChainPackReader, ChainPackWriter
+from shv.cpon import CponReader, CponWriter
 
 
 @pytest.mark.parametrize(

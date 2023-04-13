@@ -1,9 +1,9 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import os
 import sys
 
-from chainpack.chainpack import ChainPackReader, ChainPackWriter
-from chainpack.cpon import CponReader, CponWriter
+from shv.chainpack import ChainPackReader, ChainPackWriter
+from shv.cpon import CponReader, CponWriter
 
 
 def errprint(*args, **kwargs):

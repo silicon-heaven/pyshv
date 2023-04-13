@@ -1,5 +1,5 @@
 [project]
-name = "libshv-py"
+name = "pyshv"
 version = "0.1.0"
 description = "Pure Python SHV implementation"
 authors = [
@@ -10,12 +10,13 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
 ]
-requires-python = ">=3.6"
+requires-python = ">=3.10"
 dependencies = []
 
 [project.urls]
-"Homepage" = "https://github.com/silicon-heaven/libshv-py"
-"Bug Tracker" = "https://github.com/silicon-heaven/libshv-py/issues"
+"Homepage" = "https://gitlab.com/elektroline-predator/pyshv"
+"Bug Tracker" = "https://gitlab.com/elektroline-predator/pyshv/-/issues"
+"Github" = "https://github.com/silicon-heaven/libshv-py"
 
 [project.optional-dependencies]
 test = [
@@ -32,6 +33,7 @@ test = [
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
 [tool.setuptools.package-data]
 "*" = ["py.typed"]
 

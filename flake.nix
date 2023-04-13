@@ -18,19 +18,24 @@
           attrList p pyproject.project.optional-dependencies.test
           ++ [twine];
 
-      pypkg-libshv-py = {
+      pypkg-pyshv = {
         buildPythonPackage,
+        pipBuildHook,
+        setuptools,
         pytestCheckHook,
       }:
         buildPythonPackage {
           pname = pyproject.project.name;
           inherit (pyproject.project) version;
           src = ./.;
+          nativeBuildInputs = [pipBuildHook setuptools];
           nativeCheckInputs = [pytestCheckHook];
+          dontUseSetuptoolsBuild = true;
+          doCheck = false;
         };
 
       pyOverlay = pyself: pysuper: {
-        libshv-py = pyself.callPackage pypkg-libshv-py {};
+        pyshv = pyself.callPackage pypkg-pyshv {};
       };
     in
       {
@@ -45,8 +50,8 @@
         devPython = pkgs.python3.withPackages (p: (requires p) ++ (requires-dev p));
       in {
         packages = {
-          libshv-py = pkgs.python3Packages.callPackage pypkg-libshv-py {};
-          default = pkgsSelf.libshv-py;
+          pyshv = pkgs.python3Packages.callPackage pypkg-pyshv {};
+          default = pkgsSelf.pyshv;
         };
         legacyPackages = pkgs.extend self.overlays.default;
 
@@ -60,7 +65,7 @@
           };
         };
 
-        checks.default = pkgsSelf.libshv-py;
+        checks.default = pkgsSelf.pyshv;
 
         formatter = pkgs.alejandra;
       });
