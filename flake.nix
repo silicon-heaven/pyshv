@@ -17,7 +17,7 @@
         with p;
           attrList p pyproject.project.optional-dependencies.docs
           ++ attrList p pyproject.project.optional-dependencies.test
-          ++ [twine];
+          ++ [build twine];
 
       pypkg-pyshv = {
         buildPythonPackage,

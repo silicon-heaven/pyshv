@@ -130,10 +130,10 @@ release:
   script:
     - "bash .release.sh"
 
-pypi:
+gitlab-pypi:
   extends: [.nix, .deploy]
   script:
-    - nix develop -c ./setup.py sdist bdist
+    - nix develop -c python3 -m build
     - TWINE_PASSWORD=$CI_JOB_TOKEN TWINE_USERNAME=gitlab-ci-token nix develop -c twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/*
 
 pages:
