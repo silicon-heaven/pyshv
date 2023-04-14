@@ -1,5 +1,6 @@
 """RPC server that waits for clients connection."""
 import asyncio
+import collections.abc
 import logging
 import typing
 
@@ -20,7 +21,7 @@ class RpcServer:
 
     def __init__(
         self,
-        callback: typing.Callable[[RpcClient], None],
+        callback: typing.Callable[[RpcClient], None | collections.abc.Awaitable[None]],
         host: str | None = None,
         port: int = 3755,
         protocol: RpcProtocol = RpcProtocol.TCP,
@@ -58,5 +59,7 @@ class RpcServer:
         peername = writer.get_extra_info("peername")
         logger.info("New client connected: %s", str(peername))
         client = RpcClient(reader, writer)
-        self.callback(client)
+        res = self.callback(client)
+        if isinstance(res, collections.abc.Awaitable):
+            await res
         logger.info("Client disconnected: %s", str(peername))
