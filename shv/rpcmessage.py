@@ -21,31 +21,30 @@ class RpcMessage:
             RpcValue.Type.IMap,
         )
 
-    class Tag(enum.Enum):
+    class Tag(enum.IntEnum):
         REQUEST_ID = 8
         SHVPATH = 9
         METHOD = 10
         CALLER_IDS = 11
 
-    class Key(enum.Enum):
+    class Key(enum.IntEnum):
         PARAMS = 1
         RESULT = 2
         ERROR = 3
         ERROR_CODE = 1
         ERROR_MESSAGE = 2
 
-    class ErrorCode(enum.Enum):
+    class ErrorCode(enum.IntEnum):
         NO_ERROR = 0
-        INVALID_REQ = 1
-        INVALID_REQUEST = 2
-        METHOD_NOT_FOUND = 3
-        INVALID_PARAMS = 4
-        INTERNAL_ERR = 5
-        PARSE_ERR = 6
-        METHOD_CALL_TIMEOUT = 7
-        METHOD_CALL_CANCELLED = 8
-        METHOD_CALL_EXCEPTION = 9
-        UNKNOWN = 10
+        INVALID_REQUEST = 1
+        METHOD_NOT_FOUND = 2
+        INVALID_PARAMS = 3
+        INTERNAL_ERR = 4
+        PARSE_ERR = 5
+        METHOD_CALL_TIMEOUT = 6
+        METHOD_CALL_CANCELLED = 7
+        METHOD_CALL_EXCEPTION = 8
+        UNKNOWN = 9
         USER_CODE = 32
 
     def is_valid(self):
