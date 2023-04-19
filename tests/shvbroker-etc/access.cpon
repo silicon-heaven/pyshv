@@ -1,0 +1,21 @@
+{
+	"admin":[
+		{"method":"", "pathPattern":"**", "role":"su"}
+	],
+	"client":[
+		{"method":"", "pathPattern":"**", "role":"bws"}
+	],
+	"echo":[
+		{"method":"echo", "pathPattern":".broker/app", "role":"wr"}
+	],
+	"ping":[
+		{"method":"ping", "pathPattern":".broker/app", "role":"rd"}
+	],
+	"subscribe":[
+		{"method":"subscribe", "pathPattern":".broker/app", "role":"rd"},
+		{"method":"unsubscribe", "pathPattern":".broker/app", "role":"rd"}
+	],
+	"tester":[
+		{"method":"", "pathPattern":"test/**", "role":"wr"}
+	]
+}

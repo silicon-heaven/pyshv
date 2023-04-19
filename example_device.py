@@ -13,11 +13,12 @@ FLAG_GETTER = 2
 FLAG_SETTER = 4
 
 
-async def client_loop():
+async def client_loop(port=3755):
     print("connecting to broker")
     client = await RpcClient.connect_device(
         mount_point="test/device",
         host="localhost",
+        port=port,
         password="test",
         user="test",
         login_type=RpcClient.LoginType.PLAIN,
@@ -57,7 +58,7 @@ async def client_loop():
                             ]
                         )
                     elif method == "ls":
-                        resp.set_result([tracks.keys()])
+                        resp.set_result(list(tracks.keys()))
                 elif len(path) == 1:
                     track = path[0]
                     if method == "dir":

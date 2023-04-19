@@ -9,10 +9,11 @@ logging.basicConfig(
 )
 
 
-async def test():
+async def test(port=3755):
     print("connecting to broker")
     client = await RpcClient.connect(
         host="localhost",
+        port=port,
         password="test",
         user="test",
         login_type=RpcClient.LoginType.PLAIN,

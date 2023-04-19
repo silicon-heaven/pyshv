@@ -1,10 +1,15 @@
 {
   description = "Flake for Pure Python SHV implementation";
 
+  inputs = {
+    shvapp.url = "git+https://github.com/silicon-heaven/shvapp.git?submodules=1";
+  };
+
   outputs = {
     self,
     flake-utils,
     nixpkgs,
+    shvapp,
   }:
     with builtins;
     with flake-utils.lib;
@@ -13,60 +18,68 @@
       attrList = attr: list: attrValues (getAttrs list attr);
 
       requires = p: attrList p pyproject.project.dependencies;
+      requires-test = p: attrList p pyproject.project.optional-dependencies.test;
       requires-dev = p:
-        with p;
           attrList p pyproject.project.optional-dependencies.docs
-          ++ attrList p pyproject.project.optional-dependencies.test
-          ++ [build twine];
+          ++ attrList p pyproject.project.optional-dependencies.lint
+          ++ [p.build p.twine];
 
       pypkg-pyshv = {
         buildPythonPackage,
         pipBuildHook,
         setuptools,
         pytestCheckHook,
+        pythonPackages,
+        shvapp,
       }:
         buildPythonPackage {
           pname = pyproject.project.name;
           inherit (pyproject.project) version;
           src = ./.;
           nativeBuildInputs = [pipBuildHook setuptools];
-          nativeCheckInputs = [pytestCheckHook];
+          nativeCheckInputs = [pytestCheckHook shvapp] ++ requires-test pythonPackages;
           dontUseSetuptoolsBuild = true;
-          doCheck = false;
         };
-
-      pyOverlay = pyself: pysuper: {
-        pyshv = pyself.callPackage pypkg-pyshv {};
-      };
     in
       {
-        overlays.default = final: prev: {
-          python3 = prev.python3.override {packageOverrides = pyOverlay;};
-          python3Packages = final.python3.pkgs;
+        overlays = {
+          pyshv = final: prev: {
+            python3 = prev.python3.override {
+              packageOverrides = pyfinal: pyprev: {
+                pyshv = pyfinal.callPackage pypkg-pyshv {};
+              };
+            };
+            python3Packages = final.python3.pkgs;
+          };
+          default = composeExtensions shvapp.overlays.default self.overlays.pyshv;
         };
       }
       // eachDefaultSystem (system: let
-        pkgs = nixpkgs.legacyPackages.${system};
-        pkgsSelf = self.packages.${system};
-        devPython = pkgs.python3.withPackages (p: (requires p) ++ (requires-dev p));
+        pkgs = nixpkgs.legacyPackages.${system}.extend self.overlays.default;
       in {
         packages = {
-          pyshv = pkgs.python3Packages.callPackage pypkg-pyshv {};
-          default = pkgsSelf.pyshv;
+          inherit (pkgs.python3Packages) pyshv;
+          default = self.packages.${system}.pyshv;
         };
-        legacyPackages = pkgs.extend self.overlays.default;
+        legacyPackages = pkgs;
 
         devShells = filterPackages system {
           default = pkgs.mkShell {
             packages = with pkgs; [
-              devPython
               editorconfig-checker
               gitlint
+              pkgs.shvapp
+              (python3.withPackages (p:
+                foldl (prev: f: prev ++ f p) [] [
+                  requires
+                  requires-dev
+                  requires-test
+                ]))
             ];
           };
         };
 
-        checks.default = pkgsSelf.pyshv;
+        checks.default = self.packages.${system}.default;
 
         formatter = pkgs.alejandra;
       });

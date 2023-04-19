@@ -67,7 +67,7 @@ class RpcClient:
         user: str | None = None,
         password: str | None = None,
         login_type: LoginType = LoginType.SHA1,
-        login_options: dict[str, typing.Any] = {"idleWatchDogTimeOut": 0},
+        login_options: dict[str, typing.Any] = {"idleWatchDogTimeOut": 36000},
     ) -> RpcClient:
         """Connect and login to the SHV RPC server.
 
@@ -230,3 +230,8 @@ class RpcClient:
             data = await self.reader.read(1024)
             self.read_data += data
         return None
+
+    async def disconnect(self):
+        """Close the connection."""
+        self.writer.close()
+        await self.writer.wait_closed()

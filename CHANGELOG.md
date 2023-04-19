@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Methods `shverror` and `set_shverror` to `RpcMessage` with an appropriate SHV
   error format
 - `RpcServer` that listens for new client connections
+- `RpcClient.disconnect` method to disconnect the connection
 
 ### Changed
 - Top-level package `chainpack` renamed to `shv`

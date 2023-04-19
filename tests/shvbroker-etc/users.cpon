@@ -1,0 +1,10 @@
+{
+	"admin":{
+		"password":{"format":"PLAIN", "password":"admin!123"},
+		"roles":["admin", "ping"]
+	},
+	"test":{
+		"password":{"format":"PLAIN", "password":"test"},
+		"roles":["tester", "ping", "echo"]
+	}
+}
