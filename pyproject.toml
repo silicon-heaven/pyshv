@@ -2,6 +2,7 @@
 name = "pyshv"
 version = "0.1.0"
 description = "Pure Python SHV implementation"
+readme = "README.rst"
 authors = [
   { name="Elektroline a.s." },
 ]
