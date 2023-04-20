@@ -16,8 +16,6 @@ Installation
 
 The installation can be done with package manager `pip`.
 
-    pip install .
-
 
 Running tests
 -------------
