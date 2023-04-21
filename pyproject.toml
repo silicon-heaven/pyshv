@@ -2,19 +2,36 @@
 name = "template-python"
 version = "0.0.0"
 description = "Project Template Python"
-readme = "README.md"
-requires-python = ">=3.8"
+readme = "README.rst"
+authors = [
+  { name="Elektroline a.s." },
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+]
+requires-python = ">=3.10"
 dependencies = []
 
+[project.urls]
+repository = "http://jessie.elektroline.cz/emb/template/python"
+
 [project.optional-dependencies]
+docs = [
+  "sphinx",
+  "sphinx_rtd_theme",
+  "myst-parser",
+]
 test = [
+  "pytest",
+  "pytest-cov",
+]
+lint = [
   "black",
   "isort",
   "mypy",
   "pydocstyle",
   "pylint",
-  "pytest",
-  "pytest-cov",
 ]
 
 [project.scripts]
@@ -24,15 +41,27 @@ foo = "foo.__main__:main"
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+exclude = ["docs"]
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
 [tool.isort]
 profile = 'black'
 
-[tool.pylint.format]
+[tool.pylint.main]
 recursive = "y"
-ignore = "tests"
-# C0104: prevent usage of module name in documentation (seems unreasonable)
-# W1514: requires encoding to be set for open but default is to use system's
-# encoding which is way more reasonable than introducing some assumptions.
-disable = "C0104,W1514"
+ignore = ["tests", "docs"]
+fail-under = 9
+[tool.pylint.format]
+disable = [
+  # Prevent usage of module name in documentation (seems unreasonable)
+  "C0104",
+  # Requires encoding to be set for open but default is to use system's
+  # encoding which is way more reasonable than introducing some assumptions.
+  "W1514",
+  # We have pydocstyle for the following ones
+  "C0103", "C0114", "C0115", "C0116",
+]
 # https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html
-max-line-length = "88"
+max-line-length = 88

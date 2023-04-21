@@ -2,7 +2,7 @@
 set -eu
 
 version="${CI_COMMIT_TAG#v}"
-if grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$' <<<"$version"; then
+if ! grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$' <<<"$version"; then
 	echo "Tag has to be valid version number such as v1.0.0!" >&2
 	exit 1
 fi

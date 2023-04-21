@@ -13,56 +13,79 @@
       attrList = attr: list: attrValues (getAttrs list attr);
 
       requires = p: attrList p pyproject.project.dependencies;
+      requires-docs = p: attrList p pyproject.project.optional-dependencies.docs;
+      requires-test = p: attrList p pyproject.project.optional-dependencies.test;
       requires-dev = p:
-        with p;
-          attrList p pyproject.project.optional-dependencies.test
-          ++ [twine];
+        attrList p pyproject.project.optional-dependencies.lint
+        ++ [p.build p.twine];
 
       pypkgs-template-python = {
         buildPythonPackage,
+        pipBuildHook,
+        setuptools,
         pytestCheckHook,
         pythonPackages,
+        sphinxHook,
       }:
         buildPythonPackage {
           pname = pyproject.project.name;
           inherit (pyproject.project) version;
-          src = ./.;
+          format = "pyproject";
+          src = builtins.path {
+            path = ./.;
+            filter = path: type: ! hasSuffix ".nix" path;
+          };
+          outputs = ["out" "doc"];
           propagatedBuildInputs = requires pythonPackages;
-          nativeCheckInputs = [pytestCheckHook];
+          nativeBuildInputs = [sphinxHook] ++ requires-docs pythonPackages;
+          nativeCheckInputs = [pytestCheckHook] ++ requires-test pythonPackages;
         };
-
-      pyOverlay = pyself: pysuper: {
-        template-python = pyself.callPackage pypkgs-template-python {};
-      };
     in
       {
-        overlays.default = final: prev: {
-          python3 = prev.python3.override {packageOverrides = pyOverlay;};
-          python3Packages = final.python3.pkgs;
+        overlays = {
+          template-python = final: prev: {
+            python3 = prev.python3.override (oldAttrs: let
+              prevOverride = oldAttrs.packageOverrides or (_: _: {});
+            in {
+              packageOverrides = composeExtensions prevOverride (
+                pyself: pysuper: {
+                  template-python = pyself.callPackage pypkgs-template-python {};
+                }
+              );
+            });
+            python3Packages = final.python3.pkgs;
+          };
+          default = composeManyExtensions [
+            self.overlays.template-python
+          ];
         };
       }
       // eachDefaultSystem (system: let
-        pkgs = nixpkgs.legacyPackages.${system};
-        pkgsSelf = self.packages.${system};
-        devPython = pkgs.python3.withPackages (p: (requires p) ++ (requires-dev p));
+        pkgs = nixpkgs.legacyPackages.${system}.extend self.overlays.default;
       in {
-        packages = {
-          template-python = pkgs.python3Packages.callPackage pypkgs-template-python {};
-          default = pkgsSelf.template-python;
+        packages = rec {
+          inherit (pkgs.python3Packages) template-python;
+          default = template-python;
         };
         legacyPackages = pkgs.extend self.overlays.default;
 
         devShells = filterPackages system {
           default = pkgs.mkShell {
             packages = with pkgs; [
-              devPython
               editorconfig-checker
               gitlint
+              (python3.withPackages (p:
+                foldl (prev: f: prev ++ f p) [] [
+                  requires
+                  requires-docs
+                  requires-test
+                  requires-dev
+                ]))
             ];
           };
         };
 
-        checks.default = pkgsSelf.template-python;
+        checks.default = self.packages.${system}.default;
 
         formatter = pkgs.alejandra;
       });
