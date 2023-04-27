@@ -17,28 +17,30 @@
       pyproject = trivial.importTOML ./pyproject.toml;
       attrList = attr: list: attrValues (getAttrs list attr);
 
-      requires = p: attrList p pyproject.project.dependencies;
+      requires-docs = p: attrList p pyproject.project.optional-dependencies.docs;
       requires-test = p: attrList p pyproject.project.optional-dependencies.test;
       requires-dev = p:
-          attrList p pyproject.project.optional-dependencies.docs
-          ++ attrList p pyproject.project.optional-dependencies.lint
-          ++ [p.build p.twine];
+        attrList p pyproject.project.optional-dependencies.lint
+        ++ [p.build p.twine];
 
       pypkg-pyshv = {
         buildPythonPackage,
-        pipBuildHook,
-        setuptools,
-        pytestCheckHook,
         pythonPackages,
+        sphinxHook,
+        pytestCheckHook,
         shvapp,
       }:
         buildPythonPackage {
           pname = pyproject.project.name;
           inherit (pyproject.project) version;
-          src = ./.;
-          nativeBuildInputs = [pipBuildHook setuptools];
+          format = "pyproject";
+          src = builtins.path {
+            path = ./.;
+            filter = path: type: ! hasSuffix ".nix" path;
+          };
+          outputs = ["out" "doc"];
+          nativeBuildInputs = [sphinxHook] ++ requires-docs pythonPackages;
           nativeCheckInputs = [pytestCheckHook shvapp] ++ requires-test pythonPackages;
-          dontUseSetuptoolsBuild = true;
         };
     in
       {
@@ -51,7 +53,10 @@
             };
             python3Packages = final.python3.pkgs;
           };
-          default = composeExtensions shvapp.overlays.default self.overlays.pyshv;
+          default = composeManyExtensions [
+            shvapp.overlays.default
+            self.overlays.pyshv
+          ];
         };
       }
       // eachDefaultSystem (system: let
@@ -71,9 +76,9 @@
               pkgs.shvapp
               (python3.withPackages (p:
                 foldl (prev: f: prev ++ f p) [] [
-                  requires
-                  requires-dev
+                  requires-docs
                   requires-test
+                  requires-dev
                 ]))
             ];
           };
