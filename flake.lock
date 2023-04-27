@@ -75,20 +75,19 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1682431822,
-        "narHash": "sha256-P/6wwCxRwup1nDgNfmCuq1V98xfP0TmTnsAYnoq8lrM=",
-        "ref": "websockets",
-        "rev": "1f8af03afcaec13420da14b9bb39427f4db84a7b",
-        "revCount": 2032,
+        "lastModified": 1682590530,
+        "narHash": "sha256-Agpswh52I3qOZeaAmw3V/Kzw1zb6yyQ5mqaZOBzCE5k=",
+        "ref": "refs/heads/master",
+        "rev": "fefca3fc2ef80ae8486ba892edf79fbc5ce4d7e8",
+        "revCount": 2063,
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/cynerd/shvapp.git"
+        "url": "https://github.com/silicon-heaven/shvapp.git"
       },
       "original": {
-        "ref": "websockets",
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/cynerd/shvapp.git"
+        "url": "https://github.com/silicon-heaven/shvapp.git"
       }
     },
     "systems": {

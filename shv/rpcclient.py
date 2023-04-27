@@ -30,13 +30,6 @@ class RpcClient:
     :param writer: Writer for the connection to the SHV RPC server.
     """
 
-    class MethodCallError(Exception):
-        def __init__(self, error):
-            self.error = error
-
-        def __str__(self):
-            return CponWriter.pack(self.error).decode()
-
     class LoginType(enum.Enum):
         """Enum specifying which login type should be used."""
 
@@ -216,16 +209,16 @@ class RpcClient:
     ) -> typing.Optional[RpcMessage]:
         """Read next received RPC message or wait for next to be received.
 
-        :param throw_error: If MethodCallError should be raised or not.
+        :param throw_error: If RpcError should be raised or not.
         :returns: Next RPC message is returned or `None` in case of EOF.
-        :raises RpcClient.MethodCallError: When mesasge is error.
+        :raises RpcError: When mesasge is error and `throw_error` is `True`.
         """
         while not self.reader.at_eof():
             msg = self._get_rpc_msg()
             if msg:
                 logger.debug("==> REC: %s", msg.to_string())
-                if throw_error and msg.error():
-                    raise RpcClient.MethodCallError(msg.error())
+                if throw_error and msg.is_error():
+                    raise msg.rpc_error()
                 return msg
             data = await self.reader.read(1024)
             self.read_data += data

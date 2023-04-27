@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import enum
 
+from .rpcerrors import RpcError, RpcErrorCode
 from .chainpack import ChainPackWriter
 from .cpon import CponWriter
 from .rpcvalue import RpcValue
 
 
 class RpcMessage:
+    """Single SHV RPC message representation."""
+
     def __init__(self, rpc_val=None):
         if rpc_val is None:
             self.rpcValue = RpcValue()
@@ -34,29 +37,28 @@ class RpcMessage:
         ERROR_CODE = 1
         ERROR_MESSAGE = 2
 
-    class ErrorCode(enum.IntEnum):
-        NO_ERROR = 0
-        INVALID_REQUEST = 1
-        METHOD_NOT_FOUND = 2
-        INVALID_PARAMS = 3
-        INTERNAL_ERR = 4
-        PARSE_ERR = 5
-        METHOD_CALL_TIMEOUT = 6
-        METHOD_CALL_CANCELLED = 7
-        METHOD_CALL_EXCEPTION = 8
-        UNKNOWN = 9
-        USER_CODE = 32
-
     def is_valid(self):
+        """Check if message is valid RPC message."""
         return bool(isinstance(self.rpcValue, RpcValue))
 
     def is_request(self):
+        """Check if message is request."""
         return self.request_id() and self.method()
 
     def is_response(self):
+        """Check if message is a response."""
         return self.request_id() and not self.method()
 
+    def is_error(self):
+        """Check if message is an error response."""
+        return (
+            self.is_response()
+            and self.error() is not None
+            and self.shverror()[0] != RpcErrorCode.NO_ERROR
+        )
+
     def is_signal(self):
+        """Check if message is a signal."""
         return not self.request_id() and self.method()
 
     def make_response(self):
@@ -127,22 +129,36 @@ class RpcMessage:
         else:
             self.rpcValue.value[self.Key.ERROR] = err
 
-    def shverror(self) -> tuple[RpcMessage.ErrorCode, str]:
+    def shverror(self) -> tuple[RpcErrorCode, str]:
         res = self.error()
         if res is not None and res.type == RpcValue.Type.Map:
             return res.value.get(self.Key.ERROR_CODE), res.value.get(
                 self.Key.ERROR_MESSAGE
             )
-        return self.ErrorCode.UNKNOWN, res
+        return RpcErrorCode.UNKNOWN, res
 
-    def set_shverror(self, code: RpcMessage.ErrorCode, msg: str = ""):
+    def set_shverror(self, code: RpcErrorCode, msg: str = ""):
         self.set_error({self.Key.ERROR_CODE: code, self.Key.ERROR_MESSAGE: msg})
 
-    def to_string(self):
-        return CponWriter.pack(self.rpcValue).decode() if self.is_valid() else ""
+    def rpc_error(self) -> RpcError | None:
+        """Get SHV RPC error as RpcError."""
+        if not self.is_error():
+            return None
+        code, msg = self.shverror()
+        return RpcError(msg, code)
 
-    def to_cpon(self):
+    def set_rpc_error(self, error: RpcError) -> None:
+        """Set given SHV RPC error to this message."""
+        self.set_shverror(error.error_code, error.message)
+
+    def to_string(self) -> str:
+        """Convert message to CPON and return it as string."""
+        return self.to_cpon().decode()
+
+    def to_cpon(self) -> bytes:
+        """Convert message to Cpon."""
         return CponWriter.pack(self.rpcValue) if self.is_valid() else b""
 
-    def to_chainpack(self):
+    def to_chainpack(self) -> bytes:
+        """Convert message to Chainpack."""
         return ChainPackWriter.pack(self.rpcValue) if self.is_valid() else b""

@@ -95,7 +95,7 @@ async def test_set(device, client):
 
 async def test_invalid_request(device, client):
     await client.call_shv_method("test/device/track/4", "nosuchmethod")
-    with pytest.raises(shv.rpcclient.RpcClient.MethodCallError):
+    with pytest.raises(shv.RpcError):
         await client.read_rpc_message()
 
 
