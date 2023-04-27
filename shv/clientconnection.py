@@ -174,7 +174,9 @@ class ClientConnection:
     def _get_signal_handler(self, shv_path: str) -> None | typing.Callable:
         """Get the handler for the longest path match."""
         split_key = shv_path.split("/")
-        paths = ("/".join(split_key[:i]) for i in range(len(split_key)))
+        paths = (
+            "/".join(split_key[: len(split_key) - i]) for i in range(len(split_key))
+        )
         return next(
             (
                 self._signal_handlers[path]
