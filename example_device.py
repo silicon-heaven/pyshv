@@ -15,12 +15,14 @@ FLAG_SETTER = 4
 
 async def client_loop(port=3755):
     print("connecting to broker")
-    client = await RpcClient.connect_device(
-        mount_point="test/device",
+    client = await RpcClient.connect(
         host="localhost",
         port=port,
-        password="test",
+    )
+    await client.login_device(
+        mount_point="test/device",
         user="test",
+        password="test",
         login_type=RpcClient.LoginType.PLAIN,
     )
 

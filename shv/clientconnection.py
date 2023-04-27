@@ -45,9 +45,8 @@ class ClientConnection:
         """
         if self._receiver_task is not None:
             raise RuntimeError("Can't connect, client already connected")
-        self.rpc_client = await RpcClient.connect(
-            host, port, user=user, password=password, login_type=login_type
-        )
+        self.rpc_client = await RpcClient.connect(host, port)
+        await self.rpc_client.login(user=user, password=password, login_type=login_type)
         self._receiver_task = asyncio.create_task(self._receiver_loop())
 
     async def disconnect(self) -> None:

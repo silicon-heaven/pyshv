@@ -54,9 +54,8 @@ def fixture_shvbroker(port, sslport):
 
 @pytest.fixture(name="client")
 async def fixture_client(shvbroker, port):
-    client = await RpcClient.connect(
-        host="localhost",
-        port=port,
+    client = await RpcClient.connect(host="localhost", port=port)
+    await client.login(
         user="admin",
         password="admin!123",
         login_type=RpcClient.LoginType.PLAIN,

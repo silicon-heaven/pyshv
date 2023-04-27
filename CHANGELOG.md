@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RpcClient.read_rpc_message` now raises `RpcError` instead of
   `RpcClient.MethodCallError`
 
+### Removed
+- `RpcClient.LoginType.NONE` as login needs to be always performed even when any
+  authentication is accepted to actually pass options
+
 
 ## [0.1.1] - 2023-05-22
 ### Fixed

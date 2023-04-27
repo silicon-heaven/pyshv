@@ -1,6 +1,7 @@
 """Python implementation of Silicon Heaven."""
 from . import chainpack, cpcontext, cpon
 from .clientconnection import ClientConnection
+from .rpcclient import RpcClient
 from .rpcerrors import (
     RpcError,
     RpcErrorCode,
@@ -13,7 +14,6 @@ from .rpcerrors import (
     RpcMethodNotFoundError,
     RpcParseError,
 )
-from .rpcclient import RpcClient
 from .rpcmessage import RpcMessage
 from .rpcprotocol import RpcProtocol
 from .rpcserver import RpcServer

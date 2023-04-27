@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import enum
 
-from .rpcerrors import RpcError, RpcErrorCode
 from .chainpack import ChainPackWriter
 from .cpon import CponWriter
+from .rpcerrors import RpcError, RpcErrorCode
 from .rpcvalue import RpcValue
 
 

@@ -1,8 +1,8 @@
 """Implementation of Rpc RPC specific errors."""
 from __future__ import annotations
 
-import typing
 import enum
+import typing
 
 
 class RpcErrorCode(enum.IntEnum):

@@ -11,6 +11,7 @@ from .cpcontext import UnpackContext
 from .cpon import Cpon, CponReader, CponWriter
 from .rpcmessage import RpcMessage
 from .rpcprotocol import RpcProtocol
+from .rpcvalue import RpcValue
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +38,6 @@ class RpcClient:
         """Plain login format should be used."""
         SHA1 = "SHA1"
         """Use hash algorithm SHA1 (preferred and common default)."""
-        NONE = None
-        """No login type thus perform no login."""
 
     lastRequestId = 0
 
@@ -50,6 +49,7 @@ class RpcClient:
         self.read_data = bytearray(0)
         self.reader = reader
         self.writer = writer
+        self._client_id: int | None = None
 
     @classmethod
     async def connect(
@@ -57,21 +57,12 @@ class RpcClient:
         host: str | None,
         port: int = 3755,
         protocol: RpcProtocol = RpcProtocol.TCP,
-        user: str | None = None,
-        password: str | None = None,
-        login_type: LoginType = LoginType.SHA1,
-        login_options: dict[str, typing.Any] = {"idleWatchDogTimeOut": 36000},
     ) -> RpcClient:
-        """Connect and login to the SHV RPC server.
+        """Connect to the SHV RPC server.
 
         :param host: IP/Hostname (TCP) or socket path (LOCKAL_SOCKET)
         :param port: Port (TCP) to connect to
         :param protocol: Protocol used to connect to the server
-        :param user: User name used to login
-        :param password: Password used to login
-        :param login_type: Type of the login to be used
-        :param login_options: Options sent with login
-        :returns: Connected and logged in SHV RPC client handle
         """
         if host is None:
             if protocol == RpcProtocol.TCP:
@@ -87,49 +78,72 @@ class RpcClient:
             reader, writer = await asyncio.open_unix_connection(host)
         client = cls(reader, writer)
         logger.debug("%s CONNECTED", str(protocol))
+        return client
 
-        if login_type is cls.LoginType.NONE:
-            return client
+    def client_id(self) -> int | None:
+        """Provides current client ID.
 
-        await client.call_shv_method(None, "hello")
-        await client.read_rpc_message()
+        :returns: client ID or None in case login wasn't performed yet.
+        """
+        return self._client_id
+
+    async def login(
+        self,
+        user: str | None = None,
+        password: str | None = None,
+        login_type: LoginType = LoginType.SHA1,
+        login_options: dict[str, typing.Any] | None = {"idleWatchDogTimeOut": 36000},
+    ) -> None:
+        """Perform login to the broker.
+
+        :param user: User name used to login
+        :param password: Password used to login
+        :param login_type: Type of the login to be used
+        :param login_options: Options sent with login
+        :returns: Connected and logged in SHV RPC client handle
+        :raises RpcError: when Rpc message with error is read.
+        """
+        assert self._client_id is None
+        # Note: The implementation here expects that broker won't sent any other
+        # messages until login is actually performed. That is what happens but
+        # it is not defined in any SHV design document as it seems.
+        await self.call_shv_method(None, "hello")
+        await self.read_rpc_message()
         params = {
             "login": {"password": password, "type": login_type.value, "user": user},
             "options": login_options,
         }
         logger.debug("LOGGING IN")
-        await client.call_shv_method(None, "login", params)
-        await client.read_rpc_message()
+        await self.call_shv_method(None, "login", params)
+        resp = await self.read_rpc_message()
+        if resp is None:
+            return
+        result = resp.result()
+        if (
+            result.type == RpcValue.Type.Map
+            and "clientId" in result.value
+            and result.value["clientId"].type == RpcValue.Type.Int
+        ):
+            self._client_id = result.value["clientId"].value
         logger.debug("LOGGED IN")
-        return client
 
-    @classmethod
-    async def connect_device(
-        cls,
-        host: str | None,
-        port: int = 3755,
-        protocol: RpcProtocol = RpcProtocol.TCP,
+    async def login_device(
+        self,
         user: str | None = None,
         password: str | None = None,
         login_type: LoginType = LoginType.SHA1,
         device_id: int | None = None,
         mount_point: str | None = None,
-    ) -> RpcClient:
-        """Connect and login to the SHV RPC server when being device.
+    ) -> None:
+        """Perform login to the broker as a device.
 
-        This is variant of `connect` class method that should be used when
-        connecting a new device to the broker.
-
-        The parameters are the same as in case of `connect` with exception of
+        The parameters are the same as in case of `login` with exception of
         the documented ones.
 
         :param device_id: Identifier of this device
         :param mount_point: Path the device should be mounted to
         """
-        return await cls.connect(
-            host,
-            port,
-            protocol,
+        await self.login(
             user,
             password,
             login_type,
