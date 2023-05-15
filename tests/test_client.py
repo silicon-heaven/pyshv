@@ -13,4 +13,4 @@ async def test_broker_echo(client):
 async def test_broker_ls(client):
     await client.call_shv_method("", "ls")
     resp = await client.read_rpc_message()
-    assert resp.result().to_pyrepr() == [".broker"]
+    assert resp.result() == [".broker"]

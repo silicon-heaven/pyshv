@@ -3,10 +3,11 @@ import asyncio
 import datetime
 import logging
 import typing
+import collections.abc
 
 from .rpcclient import RpcClient, get_next_rpc_request_id
 from .rpcmessage import RpcMessage
-from .rpcvalue import RpcValue
+from .value import SHVType, shvmeta
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,8 @@ class ClientConnection:
             raise RuntimeError("Can't connect, client already connected")
         self.rpc_client = await RpcClient.connect(host, port)
         await self.rpc_client.login(user=user, password=password, login_type=login_type)
-        self._receiver_task = asyncio.create_task(self._receiver_loop())
+        self.rpc_client.callback = self._handle_msg
+        self._receiver_task = asyncio.create_task(self.rpc_client.read_loop())
 
     async def disconnect(self) -> None:
         """Disconnect an existing connection.
@@ -106,7 +108,7 @@ class ClientConnection:
         :raises RuntimeError: when subscribe fails for any reason
         """
         resp = await self.call_shv_method_blocking(".broker/app", "subscribe", shv_path)
-        if not resp.result().value:
+        if not resp.result():
             # TODO this is weird pattern. Just add handler as part of the
             # subscribe and allow changing handler trough this method
             self._signal_handlers.pop(shv_path)
@@ -128,17 +130,22 @@ class ClientConnection:
             "since": datetime.datetime.now(),
         }
         resp = await self.call_shv_method_blocking(shv_home, "getLog", params)
-        result: RpcValue = resp.result()
+        result: SHVType = resp.result()
         if result:
-            result_metadata: dict = result.meta
-            paths_dict: dict = result_metadata.get("pathsDict", {}).value
-            result_data: list = result.value
-            for list_item in result_data:
-                idx = list_item.value[1].value
-                value = list_item.value[2].value
-                path = paths_dict[idx].value
-                # print(f'idx: {idx}, path: {path}, val: {value}')
-                self.update_value_for_path(path, value)
+            paths_dict = shvmeta(result).get("pathsDict", None)
+            if isinstance(paths_dict, collections.abc.Sequence):
+                for list_item in paths_dict:
+                    if not isinstance(list_item, collections.abc.Sequence):
+                        continue
+                    idx = list_item[1]
+                    if not isinstance(idx, int):
+                        continue
+                    value = list_item[2]
+                    path = paths_dict[idx]
+                    if not isinstance(path, str):
+                        continue
+                    # print(f'idx: {idx}, path: {path}, val: {value}')
+                    self.update_value_for_path(path, value)
 
     def update_value_for_path(self, path: str, value: typing.Any) -> None:
         """Call value change handler for the given path with the given value.
@@ -150,25 +157,21 @@ class ClientConnection:
         if handler is not None:
             handler(path, value)
 
-    async def _receiver_loop(self):
-        """Implement loop for the receiver task."""
-        while True:
-            msg = await self.rpc_client.read_rpc_message()
-            if msg.is_response():
-                req_id = msg.request_id().value
-                if req_id in self._response_events:
-                    self._response_messages[req_id] = msg
-                    event = self._response_events.pop(req_id)
-                    event.set()
-            elif msg.is_signal():
-                method = msg.method().value
-                path = msg.shv_path().value
-                if method == "chng":
-                    handler = self._get_signal_handler(path)
-                    if handler is not None:
-                        asyncio.get_event_loop().call_soon(
-                            handler, path, msg.params().value
-                        )
+    async def _handle_msg(self, msg):
+        """Handle received message."""
+        if msg.is_response():
+            req_id = msg.request_id()
+            if req_id in self._response_events:
+                self._response_messages[req_id] = msg
+                event = self._response_events.pop(req_id)
+                event.set()
+        elif msg.is_signal():
+            method = msg.method()
+            path = msg.shv_path()
+            if method == "chng":
+                handler = self._get_signal_handler(path)
+                if handler is not None:
+                    asyncio.get_event_loop().call_soon(handler, path, msg.params())
 
     def _get_signal_handler(self, shv_path: str) -> None | typing.Callable:
         """Get the handler for the longest path match."""

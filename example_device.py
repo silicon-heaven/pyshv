@@ -32,12 +32,12 @@ async def client_loop(port=3755):
         msg = await client.read_rpc_message()
         if msg.is_request():
             print("RPC request received:", msg.to_string())
-            path_str = msg.shv_path().to_str()
+            path_str = msg.shv_path()
             if len(path_str) == 0:
                 path = []
             else:
                 path = path_str.split("/")
-            method = msg.method().to_str()
+            method = msg.method()
             resp = msg.make_response()
             if len(path) == 0:
                 if method == "dir":

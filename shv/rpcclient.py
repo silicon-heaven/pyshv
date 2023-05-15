@@ -3,15 +3,14 @@ from __future__ import annotations
 
 import asyncio
 import enum
+import io
 import logging
 import typing
 
 from .chainpack import ChainPack, ChainPackReader, ChainPackWriter
-from .cpcontext import UnpackContext
-from .cpon import Cpon, CponReader, CponWriter
+from .cpon import Cpon, CponReader
 from .rpcmessage import RpcMessage
 from .rpcprotocol import RpcProtocol
-from .rpcvalue import RpcValue
 
 logger = logging.getLogger(__name__)
 
@@ -39,16 +38,19 @@ class RpcClient:
         SHA1 = "SHA1"
         """Use hash algorithm SHA1 (preferred and common default)."""
 
-    lastRequestId = 0
+    lastRequestId: typing.ClassVar[int] = 0
 
     def __init__(
         self,
         reader: asyncio.StreamReader,
         writer: asyncio.StreamWriter,
     ):
-        self.read_data = bytearray(0)
         self.reader = reader
         self.writer = writer
+        self.callback: typing.Callable[
+            [RpcMessage], typing.Awaitable | None
+        ] | None = None
+        self._read_data = bytearray(0)
         self._client_id: int | None = None
 
     @classmethod
@@ -96,6 +98,9 @@ class RpcClient:
     ) -> None:
         """Perform login to the broker.
 
+        The login need to be performed only once right after the connection is
+        established.
+
         :param user: User name used to login
         :param password: Password used to login
         :param login_type: Type of the login to be used
@@ -119,12 +124,9 @@ class RpcClient:
         if resp is None:
             return
         result = resp.result()
-        if (
-            result.type == RpcValue.Type.Map
-            and "clientId" in result.value
-            and result.value["clientId"].type == RpcValue.Type.Int
-        ):
-            self._client_id = result.value["clientId"].value
+        cid = result.get("clientId", None) if isinstance(result, dict) else None
+        if isinstance(cid, int):
+            self._client_id = cid
         logger.debug("LOGGED IN")
 
     async def login_device(
@@ -190,32 +192,31 @@ class RpcClient:
 
         :param msg: Message to be sent
         """
-        data = msg.to_chainpack()
         logger.debug("<== SND: %s", msg.to_string())
 
-        writter = ChainPackWriter()
-        writter.write_uint_data(len(data) + 1)
-        self.writer.write(writter.ctx.data_bytes())
+        data = msg.to_chainpack()
+        writer = ChainPackWriter(self.writer)
+        writer.write_uint_data(len(data) + 1)
         self.writer.write(ChainPack.ProtocolType.to_bytes(1, "big"))
         self.writer.write(data)
         await self.writer.drain()
 
     def _get_rpc_msg(self):
-        if len(self.read_data) < 6:
+        if len(self._read_data) < 6:
             return None
         try:
-            rd = ChainPackReader(self.read_data)
+            rd = ChainPackReader(io.BytesIO(self._read_data))
             size = rd.read_uint_data()
-            packet_len = size + rd.ctx.index
-        except UnpackContext.BufferUnderflow:
+            packet_len = size + rd.bytes_cnt
+        except EOFError:
             return None
-        if packet_len > len(self.read_data):
+        if packet_len > len(self._read_data):
             return None
-        proto = rd.ctx.get_byte()
+        proto = rd.stream_read_byte()
         if proto == Cpon.ProtocolType:
-            rd = CponReader(rd.ctx)
+            rd = CponReader(rd)
         rpc_val = rd.read()
-        self.read_data = self.read_data[packet_len:]
+        self._read_data = self._read_data[packet_len:]
         return RpcMessage(rpc_val)
 
     async def read_rpc_message(
@@ -235,8 +236,32 @@ class RpcClient:
                     raise msg.rpc_error()
                 return msg
             data = await self.reader.read(1024)
-            self.read_data += data
+            self._read_data += data
         return None
+
+    async def read_loop(self) -> None:
+        """Loop that periodically calls `read_rpc_message`.
+
+        The received messages are passed to `_rpc_message`.
+        """
+        while not self.writer.is_closing():
+            msg = await self.read_rpc_message(throw_error=False)
+            if msg is None:
+                return
+            await self._rpc_message(msg)
+
+    async def _rpc_message(self, msg: RpcMessage) -> None:
+        """Handle method that is called for every message from `read_loop`.
+
+        Overload this method to handle messages received in `read_loop`.
+
+        :param msg: Received message.
+        """
+        if self.callback is not None:
+            if asyncio.iscoroutinefunction(self.callback):
+                asyncio.create_task(self.callback(msg))
+            else:
+                self.callback(msg)
 
     async def disconnect(self):
         """Close the connection."""

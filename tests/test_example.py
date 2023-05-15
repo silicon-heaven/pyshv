@@ -32,7 +32,7 @@ async def fixture_device(event_loop, shvbroker, port):
 async def test_ls(device, client, path, result):
     await client.call_shv_method(path, "ls")
     resp = await client.read_rpc_message()
-    assert resp.result().to_pyrepr() == result
+    assert resp.result() == result
 
 
 @pytest.mark.parametrize(
@@ -73,24 +73,24 @@ async def test_ls(device, client, path, result):
 async def test_dir(device, client, path, result):
     await client.call_shv_method(path, "dir")
     resp = await client.read_rpc_message()
-    assert resp.result().to_pyrepr() == result
+    assert resp.result() == result
 
 
 async def test_get(device, client):
     await client.call_shv_method("test/device/track/4", "get")
     resp = await client.read_rpc_message()
-    assert resp.result().to_pyrepr() == [0, 1, 2, 3]
+    assert resp.result() == [0, 1, 2, 3]
 
 
 async def test_set(device, client):
     tracks = [3, 2, 1, 0]
     await client.call_shv_method("test/device/track/4", "set", tracks)
     resp = await client.read_rpc_message()
-    assert resp.result().to_pyrepr() is True
+    assert resp.result() is True
 
     await client.call_shv_method("test/device/track/4", "get")
     resp = await client.read_rpc_message()
-    assert resp.result().to_pyrepr() == tracks
+    assert resp.result() == tracks
 
 
 async def test_invalid_request(device, client):

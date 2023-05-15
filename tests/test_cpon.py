@@ -1,0 +1,141 @@
+"""Check that we can serialize and deserialize Cpon."""
+import datetime
+import decimal
+
+import dateutil.tz
+import pytest
+
+from shv import SHVMeta, SHVUInt, shvmeta_eq
+from shv import CponReader, CponWriter
+
+DATA: list = [
+    ("null", None),
+    (b"null", None),
+    ("true", True),
+    ("false", False),
+    ("0", 0),
+    ("-1", -1),
+    ("-2", -2),
+    ("7", 7),
+    ("42", 42),
+    ("1u", SHVUInt(1)),
+    (f"{2**31 - 1}u", SHVUInt(2**31 - 1)),
+    (f"{2**32 - 1}u", SHVUInt(2**32 - 1)),
+    (str(2**31 - 1), 2**31 - 1),
+    (str(2**32 - 1), 2**32 - 1),
+    (str(2**53 - 1), 2**53 - 1),
+    (str(1 - 2**53), 1 - 2**53),
+    ("223.0", 223.0),
+    ("2.3", decimal.Decimal((0, (2, 3), -1))),
+    ('""', ""),
+    ('"foo"', "foo"),
+    ("[]", []),
+    ("[1]", [1]),
+    ("[1,2,3]", [1, 2, 3]),
+    ("[[]]", [[]]),
+    ('{"foo":"bar"}', {"foo": "bar"}),
+    ("i{1:2}", {1: 2}),
+    ('[1u,{"a":1},2.3]', [SHVUInt(1), {"a": 1}, decimal.Decimal("2.3")]),
+    ("<1:2>3", SHVMeta.new(3, {1: 2})),
+    ("[1,<7:8>9]", [1, SHVMeta.new(9, {7: 8})]),
+    (
+        '<8:3u>i{2:[[".broker",<1:2>true]]}',
+        SHVMeta.new({2: [[".broker", SHVMeta.new(True, {1: 2})]]}, {8: SHVUInt(3)}),
+    ),
+    (
+        '<1:2,"foo":<5:6>"bar">[1u,{"a":1},2.3]',
+        SHVMeta.new(
+            [SHVUInt(1), {"a": 1}, decimal.Decimal("2.3")],
+            {1: 2, "foo": SHVMeta.new("bar", {5: 6})},
+        ),
+    ),
+    ("<1:2>[3,<4:5>6]", SHVMeta.new([3, SHVMeta.new(6, {4: 5})], {1: 2})),
+    (
+        '<4:"svete">i{2:<4:"svete">[0,1]}',
+        SHVMeta.new({2: SHVMeta.new([0, 1], {4: "svete"})}, {4: "svete"}),
+    ),
+    ('b"ab\\cd\\t\\r\\n"', b"ab\xcd\t\r\n"),
+    (
+        'd"2018-02-02T00:00:00Z"',
+        datetime.datetime(2018, 2, 2, tzinfo=dateutil.tz.tzutc()),
+    ),
+    (
+        'd"2027-05-03T11:30:12.345+01"',
+        datetime.datetime(
+            2027, 5, 3, 11, 30, 12, 345000, tzinfo=dateutil.tz.tzoffset(None, 3600)
+        ),
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "cpon,data",
+    DATA
+    + [
+        ("0x42", 0x42),
+        ("223.", 223.0),
+        ("2.30", decimal.Decimal("2.3")),
+        ("[1, 2, 3]", [1, 2, 3]),
+        ("<>1", 1),
+        # TODO
+        #'d"2017-05-03T18:30:00Z"',
+        #'d"2017-05-03T22:30:00+04"',
+        #'d"2017-05-03T11:30:00-0700"',
+        #'d"2017-05-03T15:00:00-0330"',
+    ],
+)
+def test_reader(cpon, data):
+    assert shvmeta_eq(CponReader.unpack(cpon), data)
+
+
+def test_reader_uint():
+    assert isinstance(CponReader.unpack("1u"), SHVUInt)
+
+
+@pytest.mark.parametrize(
+    "cpon,data",
+    DATA
+    + [
+        ("1", SHVMeta.new(1, {})),
+    ],
+)
+def test_writer(cpon, data):
+    res = CponWriter.pack(data)
+    if isinstance(cpon, str):
+        res = res.decode("utf-8")
+    assert shvmeta_eq(res, cpon)
+
+
+@pytest.mark.parametrize(
+    "cpon,res",
+    (
+        ("0xab", b"171"),
+        ("-0xCD", b"-205"),
+        ("0x1a2b3c4d", b"439041101"),
+        # TODO
+        #("12.3e-10", b"123e-11"),
+        #("-0.00012", b"-12e-5"),
+        ("-1234567890.", b"-1234567890.0"),
+        ("[1,]", b"[1]"),
+        ('i{\n\t1: "bar",\n\t345u : "foo",\n}', b'i{1:"bar",345:"foo"}'),
+        ('<"foo":"bar",1:2>i{1:<7:8>9}', b'<1:2,"foo":"bar">i{1:<7:8>9}'),
+        ("i{1:2 // comment to end of line\n}", b"i{1:2}"),
+        ('d"2019-05-03T11:30:00-0700"', b'd"2019-05-03T11:30:00-07"'),
+        ('x"abcd"', b'b"\\ab\\cd"'),
+        (
+            "/*comment 1*/{ /*comment 2*/\n"
+            + '\t"foo"/*comment "3"*/: "bar", //comment to end of line\n'
+            + '\t"baz" : 1,\n'
+            + "/*\n"
+            + "\tmultiline comment\n"
+            + '\t"baz" : 1,\n'
+            + '\t"baz" : 1, // single inside multi\n'
+            + "*/\n"
+            + "}",
+            b'{"baz":1,"foo":"bar"}',
+        ),
+    ),
+)
+def test_style(cpon, res):
+    data = CponReader.unpack(cpon)
+    assert CponWriter.pack(data) == res

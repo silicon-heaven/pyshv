@@ -7,15 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - `RpcError` that represents SHV RPC errors
+- `SHVMeta` and variation on SHV types based on it with companion functions to
+  mange these custom extended types
 
 ### Changed
 - `RpcMessage.ErrorCode` moved and renamed to `RpcErrorCode`
 - `RpcClient.read_rpc_message` now raises `RpcError` instead of
   `RpcClient.MethodCallError`
+-  `ChainPackWriter`, `ChainPackReader`, `CponWriter` and `CponReader` now
+   require `io.BytesIO` instead of `UnpackContext` and `PackContext`
+- `RpcMessage` has now attribute `value` instead of `rpcValue` (this is
+  intentional break to force users to review their code due to the type change)
 
 ### Removed
 - `RpcClient.LoginType.NONE` as login needs to be always performed even when any
   authentication is accepted to actually pass options
+- `RpcValue` and instead native types or `SHVMeta` based types are used
+- `cpcontext` and `ctx` attributes of `ChainPackWriter`, `ChainPackReader`,
+  `CponWriter` and `CponReader`
 
 
 ## [0.1.1] - 2023-05-22

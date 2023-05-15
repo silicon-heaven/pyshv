@@ -42,7 +42,7 @@ async def test_call_shv_method_blocking(
 ):
     """Check that we can call various methods using blocking call."""
     msg = await client_connection.call_shv_method_blocking(path, method, params)
-    assert msg.result().to_pyrepr() == result
+    assert msg.result() == result
 
 
 @pytest.mark.parametrize(

@@ -17,6 +17,7 @@
       pyproject = trivial.importTOML ./pyproject.toml;
       attrList = attr: list: attrValues (getAttrs list attr);
 
+      requires = p: attrList p pyproject.project.dependencies;
       requires-docs = p: attrList p pyproject.project.optional-dependencies.docs;
       requires-test = p: attrList p pyproject.project.optional-dependencies.test;
       requires-dev = p:
@@ -39,6 +40,7 @@
             filter = path: type: ! hasSuffix ".nix" path;
           };
           outputs = ["out" "doc"];
+          propagatedBuildInputs = requires pythonPackages;
           nativeBuildInputs = [sphinxHook] ++ requires-docs pythonPackages;
           nativeCheckInputs = [pytestCheckHook shvapp] ++ requires-test pythonPackages;
         };
@@ -76,6 +78,7 @@
               pkgs.shvapp
               (python3.withPackages (p:
                 foldl (prev: f: prev ++ f p) [] [
+                  requires
                   requires-docs
                   requires-test
                   requires-dev
