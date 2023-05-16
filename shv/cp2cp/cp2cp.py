@@ -1,9 +1,11 @@
 """The implementation of conversion."""
 import enum
+import io
 import pathlib
 import typing
 
 from ..chainpack import ChainPackReader, ChainPackWriter
+from ..commonpack import CommonReader, CommonWriter
 from ..cpon import CponReader, CponWriter
 
 
@@ -35,30 +37,44 @@ def convert(
         `outf == CPFormat.CPON`.
     :returns: Bytes in case `odata` was `None` otherwise `None`.
     """
-    idata: bytes
+    if isinstance(inp, str):
+        inp = inp.encode("utf-8")
+
+    istream: io.IOBase
     if isinstance(inp, bytes):
-        idata = inp
-    elif isinstance(inp, str):
-        idata = inp.encode("utf-8")
+        istream = io.BytesIO(inp)
     elif isinstance(inp, pathlib.Path):
-        with inp.open("rb") as f:
-            idata = f.read()
+        istream = inp.open("rb")
+    elif isinstance(inp, io.TextIOBase):
+        istream = inp.buffer
     else:
-        idata = inp.read()
-        if isinstance(idata, str):
-            idata = idata.encode("utf-8")
-    rd: CponReader | ChainPackReader = (
-        CponReader(idata) if inf.CPON else ChainPackReader(idata)
-    )
-    wr: CponWriter | ChainPackWriter = (
-        CponWriter(cpon_options) if outf.CPON else ChainPackWriter()
-    )
-    wr.write(rd.read())
+        assert isinstance(inp, io.RawIOBase)
+        istream = inp
+
+    ostream: io.IOBase
     if outp is None:
-        return wr.data_bytes()
-    if isinstance(outp, pathlib.Path):
-        with outp.open("wb") as f:
-            f.write(wr.data_bytes())
+        ostream = io.BytesIO()
+    elif isinstance(outp, pathlib.Path):
+        ostream = outp.open("wb")
+    elif isinstance(outp, io.TextIOBase):
+        ostream = outp.buffer
     else:
-        outp.write(wr.data_bytes())
+        assert isinstance(outp, io.RawIOBase)
+        ostream = outp
+
+    rd: CommonReader = (
+        CponReader(istream) if inf is CPFormat.CPON else ChainPackReader(istream)
+    )
+    wr: CommonWriter = (
+        CponWriter(ostream, cpon_options)
+        if outf is CPFormat.CPON
+        else ChainPackWriter(ostream)
+    )
+
+    wr.write(rd.read())
+
+    if isinstance(ostream, io.BytesIO):
+        return ostream.getvalue()
+    if isinstance(outp, pathlib.Path):
+        ostream.close()
     return None

@@ -117,11 +117,17 @@ class CommonReader(abc.ABC):
 
     @abc.abstractmethod
     def read(self) -> SHVType:
-        """Read next SHV value."""
+        """Read next SHV value.
+
+        :raises EOFError: in case EOF is encountered.
+        """
 
     @abc.abstractmethod
     def read_meta(self) -> SHVMetaType | None:
-        """Read next meta value without reading the value."""
+        """Read next meta value without reading the value.
+
+        :raises EOFError: in case EOF is encountered.
+        """
 
     @classmethod
     def unpack(cls, data: bytes | str) -> SHVType:

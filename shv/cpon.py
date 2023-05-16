@@ -279,7 +279,7 @@ class CponReader(commonpack.CommonReader):
                     exp = True
                 elif lb == ord("u"):
                     tp = SHVUInt
-                    bval.pop() # remove "u" from bytes
+                    bval.pop()  # remove "u" from bytes
                     break
                 elif lb is None:
                     break
@@ -291,6 +291,7 @@ class CponReader(commonpack.CommonReader):
             return tp(bval, 0)
         if tp == decimal.Decimal:
             return tp(bval.decode("ascii"))
+        assert False  # should be unreachable
 
 
 class CponWriter(commonpack.CommonWriter):
