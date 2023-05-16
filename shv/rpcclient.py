@@ -15,11 +15,6 @@ from .rpcprotocol import RpcProtocol
 logger = logging.getLogger(__name__)
 
 
-def get_next_rpc_request_id():
-    RpcClient.lastRequestId += 1
-    return RpcClient.lastRequestId
-
-
 class RpcClient:
     """RPC connection to some SHV peer.
 
@@ -39,6 +34,17 @@ class RpcClient:
         """Use hash algorithm SHA1 (preferred and common default)."""
 
     lastRequestId: typing.ClassVar[int] = 0
+    """Counter of request IDs to ensure that every request has unique ID."""
+
+    @classmethod
+    def next_request_id(cls) -> int:
+        """Provides you with unique request identifier.
+
+        The identifier won't repeat for this application as it is just simple
+        counter that should never wrap.
+        """
+        cls.lastRequestId += 1
+        return cls.lastRequestId
 
     def __init__(
         self,
@@ -165,7 +171,7 @@ class RpcClient:
         :param params: Parameters passed to the method
         :returns: assigned request ID you can use to identify the response
         """
-        rid = get_next_rpc_request_id()
+        rid = self.next_request_id()
         await self.call_shv_method_with_id(rid, shv_path, method, params)
         return rid
 

@@ -5,7 +5,7 @@ import logging
 import typing
 import collections.abc
 
-from .rpcclient import RpcClient, get_next_rpc_request_id
+from .rpcclient import RpcClient
 from .rpcmessage import RpcMessage
 from .value import SHVType, shvmeta
 
@@ -76,7 +76,7 @@ class ClientConnection:
         """
         if self.rpc_client is None or self._receiver_task is None:
             raise RuntimeError("Client not connected")
-        req_id = get_next_rpc_request_id()
+        req_id = RpcClient.next_request_id()
         response_event = asyncio.Event()
         self._response_events[req_id] = response_event
         await self.rpc_client.call_shv_method_with_id(req_id, shv_path, method, params)
