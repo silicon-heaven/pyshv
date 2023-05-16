@@ -4,14 +4,14 @@ import asyncio
 import pytest
 
 import example_client
-import example_device
+from example_device import example_device
 import shv
 
 
 @pytest.fixture(name="device")
 async def fixture_device(event_loop, shvbroker, port):
     """Run example device and provide socket to access it."""
-    task = event_loop.create_task(example_device.client_loop(port=port))
+    task = event_loop.create_task(example_device(port=port))
     yield task
     task.cancel()
     try:

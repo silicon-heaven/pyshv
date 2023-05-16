@@ -157,7 +157,7 @@ class ClientConnection:
         if handler is not None:
             handler(path, value)
 
-    async def _handle_msg(self, msg):
+    async def _handle_msg(self, _: RpcClient, msg: RpcMessage) -> None:
         """Handle received message."""
         if msg.is_response():
             req_id = msg.request_id()
@@ -167,7 +167,7 @@ class ClientConnection:
                 event.set()
         elif msg.is_signal():
             method = msg.method()
-            path = msg.shv_path()
+            path = msg.shv_path() or ""
             if method == "chng":
                 handler = self._get_signal_handler(path)
                 if handler is not None:

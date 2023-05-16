@@ -48,7 +48,7 @@ class RpcClient:
         self.reader = reader
         self.writer = writer
         self.callback: typing.Callable[
-            [RpcMessage], typing.Awaitable | None
+            [RpcClient, RpcMessage], typing.Awaitable | None
         ] | None = None
         self._read_data = bytearray(0)
         self._client_id: int | None = None
@@ -259,9 +259,9 @@ class RpcClient:
         """
         if self.callback is not None:
             if asyncio.iscoroutinefunction(self.callback):
-                asyncio.create_task(self.callback(msg))
+                asyncio.create_task(self.callback(self, msg))
             else:
-                self.callback(msg)
+                self.callback(self, msg)
 
     async def disconnect(self):
         """Close the connection."""
