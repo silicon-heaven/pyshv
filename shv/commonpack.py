@@ -177,7 +177,7 @@ class CommonWriter(abc.ABC):
         elif is_shvmap(value):
             self.write_map(value)  # type: ignore
         else:
-            self.write_null()  # Write at least something
+            raise ValueError(f"Invalid value for SHV: {repr(value)}")
 
     @abc.abstractmethod
     def write_meta(self, meta: dict) -> None:
