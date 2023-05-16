@@ -3,6 +3,7 @@ import collections.abc
 import datetime
 import decimal
 import io
+import typing
 
 import dateutil.parser
 
@@ -66,7 +67,7 @@ class CponReader(commonpack.CommonReader):
         self._skip_white_insignificant()
         b = self._peek_byte()
         if ord("0") <= b <= ord("9") or b == ord("+") or b == ord("-"):
-            value = self._read_number()
+            value = self._new_read_number()
         elif b == ord('"'):
             value = self._read_cstring()
         elif b == ord("["):
@@ -237,24 +238,23 @@ class CponReader(commonpack.CommonReader):
             res[key] = val
         return res
 
-    def _read_int(self) -> int:
+    def _new_read_number(self) -> int | SHVUInt | decimal.Decimal:
         bval = bytearray()
-        b = self._peek_byte()
 
-        def accept(possib: bytes) -> bool:
-            nonlocal b
-            if b not in possib:
-                return False
-            bval.append(self._read_byte())
+        def accept(possib: bytes) -> int | None:
             b = self._peek_byte()
-            return True
+            if b not in possib:
+                return None
+            bval.append(self._read_byte())
+            return b
 
+        tp: typing.Type = int
         parsed = False
         nonempty = False
         accept(b"-+")
-        if accept(b"0"):
-            if accept(b"x"):
-                while accept(b"0123456789AaBbCcDdEeFf"):
+        if accept(b"0") is not None:
+            if accept(b"x") is not None:
+                while accept(b"0123456789AaBbCcDdEeFf") is not None:
                     nonempty = True
                 parsed = True
             elif accept(b"b"):
@@ -262,63 +262,35 @@ class CponReader(commonpack.CommonReader):
                     nonempty = True
                 parsed = True
         if not parsed:
-            while accept(b"0123456789"):
+            exp = False
+            while True:
+                lb = accept(
+                    b"0123456789.ueE"
+                    if tp == int
+                    else b"0123456789"
+                    if exp
+                    else b"0123456789eE"
+                )
+                if lb == ord("."):
+                    tp = decimal.Decimal
+                elif lb in (ord("e"), ord("E")):
+                    tp = decimal.Decimal
+                    accept(b"-+")
+                    exp = True
+                elif lb == ord("u"):
+                    tp = SHVUInt
+                    bval.pop() # remove "u" from bytes
+                    break
+                elif lb is None:
+                    break
                 nonempty = True
         if not nonempty:
             bval.append(ord("0"))
 
-        return int(bval, 0)
-
-    def _read_number(self):
-        # mantisa = 0
-        exponent = 0
-        decimals = 0
-        dec_cnt = 0
-        is_decimal = False
-        is_uint = False
-        is_neg = False
-
-        b = self._peek_byte()
-        if b == ord("+"):
-            is_neg = False
-        elif b == ord("-"):
-            is_neg = True
-            self._peek_drop()
-
-        mantisa = self._read_int()
-        b = self._peek_byte()
-        while b > 0:
-            if b == ord("u"):
-                is_uint = 1
-                self._peek_drop()
-                break
-            if b == ord("."):
-                is_decimal = 1
-                self._peek_drop()
-                self.bytes_cnt = 0
-                decimals = self._read_int()
-                dec_cnt = self.bytes_cnt
-                b = self._peek_byte()
-                if b < 0:
-                    break
-            if b == ord("e") or b == ord("E"):
-                is_decimal = 1
-                self._peek_byte()
-                self.bytes_cnt = 0
-                exponent = self._read_int()
-                if self.bytes_cnt == 0:
-                    raise TypeError("Malformed number exponential part.")
-                break
-            break
-        if is_decimal:
-            value = decimal.Decimal(
-                f"{-mantisa if is_neg else mantisa}.{decimals}e{-exponent}"
-            )
-        elif is_uint:
-            value = SHVUInt(mantisa)
-        else:
-            value = -mantisa if is_neg else mantisa
-        return value
+        if tp in (int, SHVUInt):
+            return tp(bval, 0)
+        if tp == decimal.Decimal:
+            return tp(bval.decode("ascii"))
 
 
 class CponWriter(commonpack.CommonWriter):
@@ -410,7 +382,10 @@ class CponWriter(commonpack.CommonWriter):
         self._writestr(str(value))
 
     def write_decimal(self, value: decimal.Decimal) -> None:
-        self._writestr(str(value))
+        sval = str(value)
+        if not any(c in ".eE" for c in sval):
+            sval = sval + ".0"
+        self._writestr(sval)
 
     def write_datetime(self, value: datetime.datetime) -> None:
         # TODO possibly just use datetime iso format
