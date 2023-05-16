@@ -7,14 +7,7 @@ import enum
 from .chainpack import ChainPackWriter
 from .cpon import CponWriter
 from .rpcerrors import RpcError, RpcErrorCode
-from .value import (
-    SHVDict,
-    SHVMeta,
-    SHVType,
-    is_shvimap,
-    is_shvmap,
-    shvmeta,
-)
+from .value import SHVDict, SHVMeta, SHVType, is_shvimap, is_shvmap, shvmeta
 
 
 class RpcMessage:

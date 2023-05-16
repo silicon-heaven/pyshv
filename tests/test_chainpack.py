@@ -26,9 +26,9 @@ DATA: list = [
     (b"\x82\xf1\x00\xff\xff\xff\xff", 2**32 - 1),
     (b"\x82\xf3\x1f\xff\xff\xff\xff\xff\xff", 2**53 - 1),
     (b"\x82\xf3\x9f\xff\xff\xff\xff\xff\xff", 1 - 2**53),
-    (b'\x83\x00\x00\x00\x00\x00\xe0k@', 223.0),
+    (b"\x83\x00\x00\x00\x00\x00\xe0k@", 223.0),
     (b"\x8c\x17A", decimal.Decimal((0, (2, 3), -1))),
-    (b'\x86\x00', ""),
+    (b"\x86\x00", ""),
     (b"\x86\x03foo", "foo"),
     (b"\x88\xff", []),
     (b"\x88A\xff", [1]),
@@ -63,16 +63,16 @@ DATA: list = [
     ),
     (b"\x85\x06ab\xcd\t\r\n", b"ab\xcd\t\r\n"),
     # TODO test datetime but cp2cp seems to fail to perform conversion
-    #(
+    # (
     #    b'\x8d\x02',
     #    datetime.datetime(2018, 2, 2, tzinfo=dateutil.tz.tzutc()),
-    #),
-    #(
+    # ),
+    # (
     #    b"\x8d\xf3\x00\x87\xe2\x89(\xf2\x11",
     #    datetime.datetime(
     #        2027, 5, 3, 11, 30, 12, 345000, tzinfo=dateutil.tz.tzoffset(None, 3600)
     #    ),
-    #),
+    # ),
 ]
 
 
@@ -85,14 +85,15 @@ def test_reader(chainpack, data):
 
 
 def test_reader_uint():
-    assert isinstance(ChainPackReader.unpack(b'\x01'), SHVUInt)
+    assert isinstance(ChainPackReader.unpack(b"\x01"), SHVUInt)
 
 
 @pytest.mark.parametrize(
-        "chainpack,data",
-        DATA + [
-            (b'A', SHVMeta.new(1)),
-        ]
+    "chainpack,data",
+    DATA
+    + [
+        (b"A", SHVMeta.new(1)),
+    ],
 )
 def test_writer(chainpack, data):
     res = ChainPackWriter.pack(data)

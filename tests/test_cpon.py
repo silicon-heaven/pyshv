@@ -5,8 +5,7 @@ import decimal
 import dateutil.tz
 import pytest
 
-from shv import SHVMeta, SHVUInt, shvmeta_eq
-from shv import CponReader, CponWriter
+from shv import CponReader, CponWriter, SHVMeta, SHVUInt, shvmeta_eq
 
 DATA: list = [
     ("null", None),
@@ -77,11 +76,28 @@ DATA: list = [
         ("2.30", decimal.Decimal("2.3")),
         ("[1, 2, 3]", [1, 2, 3]),
         ("<>1", 1),
-        # TODO
-        #'d"2017-05-03T18:30:00Z"',
-        #'d"2017-05-03T22:30:00+04"',
-        #'d"2017-05-03T11:30:00-0700"',
-        #'d"2017-05-03T15:00:00-0330"',
+        (
+            'd"2017-05-03T18:30:00Z"',
+            datetime.datetime(2017, 5, 3, 18, 30, tzinfo=dateutil.tz.tzutc()),
+        ),
+        (
+            'd"2017-05-03T22:30:00+04"',
+            datetime.datetime(
+                2017, 5, 3, 22, 30, tzinfo=dateutil.tz.tzoffset(None, 14400)
+            ),
+        ),
+        (
+            'd"2017-05-03T11:30:00-0700"',
+            datetime.datetime(
+                2017, 5, 3, 11, 30, tzinfo=dateutil.tz.tzoffset(None, -25200)
+            ),
+        ),
+        (
+            'd"2017-05-03T15:00:00-0330"',
+            datetime.datetime(
+                2017, 5, 3, 15, tzinfo=dateutil.tz.tzoffset(None, -12600)
+            ),
+        ),
     ],
 )
 def test_reader(cpon, data):

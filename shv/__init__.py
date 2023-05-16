@@ -1,8 +1,8 @@
 """Python implementation of Silicon Heaven."""
 from . import chainpack, cpon
-from .cpon import CponReader, CponWriter
 from .chainpack import ChainPackReader, ChainPackWriter
 from .clientconnection import ClientConnection
+from .cpon import CponReader, CponWriter
 from .rpcclient import RpcClient
 from .rpcerrors import (
     RpcError,

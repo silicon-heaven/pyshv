@@ -1,14 +1,13 @@
 """Chainpack data format reader and writer."""
-import struct
-import sys
-import decimal
 import collections.abc
 import datetime
+import decimal
 import math
+import struct
+import sys
 
 from . import commonpack
-
-from .value import SHVType, SHVMetaType, SHVUInt, SHVMeta
+from .value import SHVMeta, SHVMetaType, SHVType, SHVUInt
 
 
 class ChainPack:

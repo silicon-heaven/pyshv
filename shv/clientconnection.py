@@ -1,9 +1,9 @@
 """RPC Client connection to some SHV broker."""
 import asyncio
+import collections.abc
 import datetime
 import logging
 import typing
-import collections.abc
 
 from .rpcclient import RpcClient
 from .rpcmessage import RpcMessage

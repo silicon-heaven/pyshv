@@ -103,7 +103,9 @@ def shvmeta_eq(v1: typing.Any, v2: typing.Any) -> bool:
         and isinstance(v2, collections.abc.Sequence)
         and not (isinstance(v1, str | bytes) or isinstance(v2, str | bytes))
     ):
-        return len(v1) == len(v2) and all(shvmeta_eq(v1[i], v2[i]) for i in range(len(v1)))
+        return len(v1) == len(v2) and all(
+            shvmeta_eq(v1[i], v2[i]) for i in range(len(v1))
+        )
     if isinstance(v1, collections.abc.Mapping) and isinstance(
         v2, collections.abc.Mapping
     ):

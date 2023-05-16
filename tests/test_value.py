@@ -5,36 +5,35 @@ import decimal
 import pytest
 
 from shv import (
-    shvmeta_eq,
     SHVBool,
     SHVBytes,
     SHVDatetime,
     SHVDecimal,
+    SHVDict,
     SHVFloat,
     SHVInt,
-    SHVUInt,
     SHVList,
-    SHVDict,
     SHVMeta,
     SHVNull,
     SHVStr,
+    SHVUInt,
     is_shvbool,
     is_shvnull,
+    shvmeta_eq,
 )
 
-
 CLASSES: list = [
-        (SHVNull, []),
-        (SHVBool, [True]),
-        (SHVInt, []),
-        (SHVUInt, []),
-        (SHVFloat, []),
-        (SHVBytes, []),
-        (SHVStr, []),
-        (SHVDatetime, [2020, 1, 2, 3]),
-        (SHVDecimal, []),
-        (SHVList, []),
-        (SHVDict, []),
+    (SHVNull, []),
+    (SHVBool, [True]),
+    (SHVInt, []),
+    (SHVUInt, []),
+    (SHVFloat, []),
+    (SHVBytes, []),
+    (SHVStr, []),
+    (SHVDatetime, [2020, 1, 2, 3]),
+    (SHVDecimal, []),
+    (SHVList, []),
+    (SHVDict, []),
 ]
 
 
@@ -109,7 +108,7 @@ def test_noteq(cls, value1, value2):
 def test_hash(cls, value1, value2):
     """Our objects should not modify hash and thus it has to be the same."""
     if cls in (SHVList, SHVDict):
-        return # Unhashable types
+        return  # Unhashable types
     assert hash(cls(value1)) == hash(value1)
     assert hash(cls(value2)) == hash(value2)
 
@@ -185,17 +184,18 @@ def test_meta_eq(cls, args):
     assert shvmeta_eq(obj1, obj2)
 
 
-@pytest.mark.parametrize("obj1,obj2", (
-    (SHVInt(42), 42),
-    (SHVNull(), None),
-    (SHVNull(), SHVNull()),
-))
+@pytest.mark.parametrize(
+    "obj1,obj2",
+    (
+        (SHVInt(42), 42),
+        (SHVNull(), None),
+        (SHVNull(), SHVNull()),
+    ),
+)
 def test_meta_eq_eq(obj1, obj2):
     assert shvmeta_eq(obj1, obj2)
 
 
-@pytest.mark.parametrize("obj1,obj2", (
-    (SHVInt(42), SHVUInt(42)),
-))
+@pytest.mark.parametrize("obj1,obj2", ((SHVInt(42), SHVUInt(42)),))
 def test_meta_eq_ne(obj1, obj2):
     assert not shvmeta_eq(obj1, obj2)

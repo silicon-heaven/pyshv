@@ -4,8 +4,8 @@ import asyncio
 import pytest
 
 import example_client
-from example_device import example_device
 import shv
+from example_device import example_device
 
 
 @pytest.fixture(name="device")
