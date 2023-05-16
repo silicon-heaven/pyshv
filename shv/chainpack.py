@@ -39,10 +39,6 @@ class ChainPack:
     SHV_EPOCH_MSEC = 1517529600000
     # ChainPack.INVALID_MIN_OFFSET_FROM_UTC = (-64 * 15)
 
-    @staticmethod
-    def is_little_endian():
-        return sys.byteorder == "little"
-
 
 class ChainPackReader(commonpack.CommonReader):
     """Read data in ChainPack format."""

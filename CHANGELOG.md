@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RpcValue` and instead native types or `SHVMeta` based types are used
 - `cpcontext` and `ctx` attributes of `ChainPackWriter`, `ChainPackReader`,
   `CponWriter` and `CponReader`
+- `ChainPack.is_little_endian` as it can be easilly done directly
 
 
 ## [0.1.1] - 2023-05-22
