@@ -22,7 +22,11 @@ from .value import (
 class CommonReader(abc.ABC):
     """Common reader base."""
 
-    def __init__(self, stream: typing.Union[io.IOBase, "CommonReader"]):
+    def __init__(
+        self, stream: typing.Union[bytes, bytearray, io.IOBase, "CommonReader"]
+    ):
+        if isinstance(stream, (bytes, bytearray)):
+            stream = io.BytesIO(stream)
         if isinstance(stream, CommonReader):
             orig = stream
             stream = stream.stream
