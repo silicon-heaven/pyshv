@@ -38,6 +38,16 @@ class ChainPack:
     SHV_EPOCH_SEC = 1517529600
     # ChainPack.INVALID_MIN_OFFSET_FROM_UTC = (-64 * 15)
 
+    @classmethod
+    def unpack(cls, data: bytes | str) -> SHVType:
+        """Unpack single value from given data."""
+        return ChainPackReader.unpack(data)
+
+    @classmethod
+    def pack(cls, value: SHVType) -> bytes:
+        """Pack given value and return bytes."""
+        return ChainPackWriter.pack(value)
+
 
 class ChainPackReader(commonpack.CommonReader):
     """Read data in ChainPack format."""

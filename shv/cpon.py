@@ -16,6 +16,16 @@ class Cpon:
 
     ProtocolType = 2
 
+    @classmethod
+    def unpack(cls, data: bytes | str) -> SHVType:
+        """Unpack single value from given data."""
+        return CponReader.unpack(data)
+
+    @classmethod
+    def pack(cls, value: SHVType) -> bytes:
+        """Pack given value and return bytes."""
+        return CponWriter.pack(value)
+
 
 class CponReader(commonpack.CommonReader):
     """Read data in Cpon format."""
