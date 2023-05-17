@@ -62,25 +62,28 @@ DATA: list = [
         SHVMeta.new({2: SHVMeta.new([0, 1], {4: "svete"})}, {4: "svete"}),
     ),
     (b"\x85\x06ab\xcd\t\r\n", b"ab\xcd\t\r\n"),
-    # TODO test datetime but cp2cp seems to fail to perform conversion
-    # (
-    #    b'\x8d\x02',
-    #    datetime.datetime(2018, 2, 2, tzinfo=dateutil.tz.tzutc()),
-    # ),
-    # (
-    #    b"\x8d\xf3\x00\x87\xe2\x89(\xf2\x11",
-    #    datetime.datetime(
-    #        2027, 5, 3, 11, 30, 12, 345000, tzinfo=dateutil.tz.tzoffset(None, 3600)
-    #    ),
-    # ),
+    (
+        b"\x8d\x04",
+        datetime.datetime(2018, 2, 2, 0, 0, 0, 1000, tzinfo=dateutil.tz.tzutc()),
+    ),
+    (
+        b"\x8d\x82\x11",
+        datetime.datetime(
+            2018, 2, 2, 1, 0, 0, 1000, tzinfo=dateutil.tz.tzoffset(None, 3600)
+        ),
+    ),
 ]
 
 
-@pytest.mark.parametrize("chainpack,data", DATA)
+@pytest.mark.parametrize(
+    "chainpack,data",
+    DATA
+    + [
+        (b"\x8efoo\x00", "foo"),
+    ],
+)
 def test_reader(chainpack, data):
     obj = ChainPackReader.unpack(chainpack)
-    print(obj)
-    print(type(obj))
     assert shvmeta_eq(obj, data)
 
 
@@ -97,6 +100,10 @@ def test_reader_uint():
 )
 def test_writer(chainpack, data):
     res = ChainPackWriter.pack(data)
-    print(data)
-    print(res)
-    assert shvmeta_eq(res, chainpack)
+    assert res == chainpack
+
+
+def test_writer_cstring():
+    obj = ChainPackWriter()
+    obj.write_cstring("foo")
+    assert obj.stream.getvalue() == b"\x8efoo\x00"

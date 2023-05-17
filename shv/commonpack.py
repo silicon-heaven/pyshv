@@ -38,7 +38,7 @@ class CommonReader(abc.ABC):
             self.peek_bytes = orig.peek_bytes
             self.bytes_cnt = orig.bytes_cnt
 
-    def stream_read(self, size: int) -> bytes:
+    def _read(self, size: int) -> bytes:
         """Read bytes from the stream.
 
         Compared to regular read this reads always given number of bytes.
@@ -48,20 +48,16 @@ class CommonReader(abc.ABC):
         :raises EOFError: in case EOF is encountered.
         """
         assert size > 0
-        res = self.peek_bytes
-        self.peek_bytes = bytes()
+        res = bytes()
         while len(res) < size:
-            read = self.stream.read(size - len(res))
+            read = self.read_raw(size - len(res))
             if len(read) == 0:
                 raise EOFError("End of message or file encountered.")
             res += read
         self.bytes_cnt += size
         return res
 
-    def _read(self, size: int) -> bytes:
-        return self.stream_read(size)
-
-    def stream_read_byte(self) -> int:
+    def _read_byte(self) -> int:
         """Read a single byte and return it as int.
 
         :returns: Read byte. This also returns `0` when EOF is encountered. Make
@@ -69,14 +65,11 @@ class CommonReader(abc.ABC):
         to be received please use `_read` instead.
         """
         try:
-            return self.stream_read(1)[0]
+            return self._read(1)[0]
         except EOFError:
             return 0
 
-    def _read_byte(self) -> int:
-        return self.stream_read_byte()
-
-    def stream_peek_byte(self) -> int:
+    def _peek_byte(self) -> int:
         """Peek a single byte and return it as int.
 
         Peeked byte is actually read from the stream and is stored to
@@ -87,22 +80,16 @@ class CommonReader(abc.ABC):
         """
         if len(self.peek_bytes) == 0:
             try:
-                self.peek_bytes = self.stream_read(1)
+                self.peek_bytes = self._read(1)
                 self.bytes_cnt -= len(self.peek_bytes)
             except EOFError:
                 return 0
         return self.peek_bytes[0]
 
-    def _peek_byte(self) -> int:
-        return self.stream_peek_byte()
-
-    def stream_peek_drop(self) -> None:
+    def _peek_drop(self) -> None:
         """Drop peeked data."""
         self.bytes_cnt += len(self.peek_bytes)
         self.peek_bytes = bytes()
-
-    def _peek_drop(self) -> None:
-        self.stream_peek_drop()
 
     def _read_check(self, data: bytes) -> None:
         """Read bytes and check that it is what we expected.
@@ -111,9 +98,17 @@ class CommonReader(abc.ABC):
         :raises ValueError: when unexpected byte was received.
         :raises EOFError: in case EOF is encountered.
         """
-        b = self.stream_read(len(data))
+        b = self._read(len(data))
         if data != b:
             raise ValueError(f"Expected {repr(data)} but got {repr(b)}")
+
+    def read_raw(self, size: int) -> bytes:
+        """Read raw bytes from the stream."""
+        res = self.peek_bytes[:size]
+        self.peek_bytes = self.peek_bytes[size:]
+        if len(res) < size:
+            res = res + self.stream.read(size - len(res))
+        return res
 
     @abc.abstractmethod
     def read(self) -> SHVType:

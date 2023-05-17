@@ -218,8 +218,8 @@ class RpcClient:
             return None
         if packet_len > len(self._read_data):
             return None
-        proto = rd.stream_read_byte()
-        if proto == Cpon.ProtocolType:
+        proto = rd.read_raw(1)
+        if len(proto) == 1 and proto[0] == Cpon.ProtocolType:
             rd = CponReader(rd)
         rpc_val = rd.read()
         self._read_data = self._read_data[packet_len:]

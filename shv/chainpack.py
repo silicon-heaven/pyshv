@@ -35,7 +35,7 @@ class ChainPack:
 
     # UTC msec since 2.2. 2018
     # Fri Feb 02 2018 00:00:00 == 1517529600 EPOCH
-    SHV_EPOCH_MSEC = 1517529600000
+    SHV_EPOCH_SEC = 1517529600
     # ChainPack.INVALID_MIN_OFFSET_FROM_UTC = (-64 * 15)
 
 
@@ -73,7 +73,7 @@ class ChainPackReader(commonpack.CommonReader):
         elif packing_schema == ChainPack.CP_Decimal:
             value = self._read_decimal()
         elif packing_schema == ChainPack.CP_DateTime:
-            value = self._read_decimal()
+            value = self._read_datetime()
         elif packing_schema == ChainPack.CP_Map:
             value = self._read_map()
         elif packing_schema == ChainPack.CP_IMap:
@@ -152,12 +152,12 @@ class ChainPackReader(commonpack.CommonReader):
         d >>= 2
         if has_tz_offset:
             offset = d & 0x7F
-            if offset & 0b01000000:
-                offset = offset - 128  # sign extension
+            if offset >= 128:
+                offset -= 128  # sign extension
             d >>= 7
         if not has_not_msec:
             d /= 1000
-        d += ChainPack.SHV_EPOCH_MSEC
+        d += ChainPack.SHV_EPOCH_SEC
         tzone = datetime.timezone(datetime.timedelta(minutes=offset * 15))
         return datetime.datetime.fromtimestamp(d, tzone)
 
@@ -377,23 +377,20 @@ class ChainPackWriter(commonpack.CommonWriter):
 
     def write_datetime(self, value: datetime.datetime) -> None:
         self._write(ChainPack.CP_DateTime)
-        msecs = int(value.timestamp() * 1000)
+        res = int(value.timestamp() * 1000) - (ChainPack.SHV_EPOCH_SEC * 1000)
         tzdelta = value.utcoffset()
-        tzoff = int(tzdelta.total_seconds() // 15) if tzdelta is not None else 0
+        tzoff = int(tzdelta.total_seconds() // 60 // 15) if tzdelta is not None else 0
         if not -63 <= tzoff <= 63:
             raise TypeError(f"Invalid UTC offset value: {tzoff}")
-        # if offset < 0:
-        #     offset = 128 + offset
-        tzoff &= 0x7F
-        ms = msecs % 1000
-        if ms == 0:
-            msecs //= 1000
+        ms = res % 1000 == 0
+        if ms:
+            res //= 1000
         if tzoff != 0:
-            msecs <<= 7
-            msecs |= tzoff
-        msecs <<= 2
+            res <<= 7
+            res |= tzoff & 0x7F
+        res <<= 2
         if tzoff != 0:
-            msecs |= 1
-        if ms == 0:
-            msecs |= 2
-        self.write_int_data(msecs)
+            res |= 1
+        if ms:
+            res |= 2
+        self.write_int_data(res)
