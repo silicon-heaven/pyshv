@@ -4,7 +4,7 @@ import asyncio
 import pytest
 
 import example_client
-import shv
+from shv import shvmeta_eq, RpcMethodNotFoundError
 from example_device import example_device
 
 
@@ -30,9 +30,8 @@ async def fixture_device(event_loop, shvbroker, port):
     ),
 )
 async def test_ls(device, client, path, result):
-    await client.call_shv_method(path, "ls")
-    resp = await client.read_rpc_message()
-    assert resp.result() == result
+    res = await client.call(path, "ls")
+    assert shvmeta_eq(res, result)
 
 
 @pytest.mark.parametrize(
@@ -71,32 +70,27 @@ async def test_ls(device, client, path, result):
     ),
 )
 async def test_dir(device, client, path, result):
-    await client.call_shv_method(path, "dir")
-    resp = await client.read_rpc_message()
-    assert resp.result() == result
+    res = await client.call(path, "dir")
+    assert shvmeta_eq(res, result)
 
 
 async def test_get(device, client):
-    await client.call_shv_method("test/device/track/4", "get")
-    resp = await client.read_rpc_message()
-    assert resp.result() == [0, 1, 2, 3]
+    res = await client.call("test/device/track/4", "get")
+    assert res == [0, 1, 2, 3]
 
 
 async def test_set(device, client):
     tracks = [3, 2, 1, 0]
-    await client.call_shv_method("test/device/track/4", "set", tracks)
-    resp = await client.read_rpc_message()
-    assert resp.result() is True
+    res = await client.call("test/device/track/4", "set", tracks)
+    assert res is True
 
-    await client.call_shv_method("test/device/track/4", "get")
-    resp = await client.read_rpc_message()
-    assert resp.result() == tracks
+    res = await client.call("test/device/track/4", "get")
+    assert shvmeta_eq(res, tracks)
 
 
 async def test_invalid_request(device, client):
-    await client.call_shv_method("test/device/track/4", "nosuchmethod")
-    with pytest.raises(shv.RpcError):
-        await client.read_rpc_message()
+    with pytest.raises(RpcMethodNotFoundError):
+        await client.call("test/device/track/4", "nosuchmethod")
 
 
 async def test_example_client(shvbroker, port):

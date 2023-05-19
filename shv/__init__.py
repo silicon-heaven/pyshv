@@ -1,7 +1,6 @@
 """Python implementation of Silicon Heaven."""
 from . import chainpack, cpon
 from .chainpack import ChainPackReader, ChainPackWriter
-from .clientconnection import ClientConnection
 from .cpon import CponReader, CponWriter
 from .rpcclient import RpcClient
 from .rpcerrors import (
@@ -19,6 +18,7 @@ from .rpcerrors import (
 from .rpcmessage import RpcMessage
 from .rpcprotocol import RpcProtocol
 from .rpcserver import RpcServer
+from .simpleclient import SimpleClient, ValueClient
 from .value import (
     SHVBool,
     SHVBytes,
@@ -70,8 +70,9 @@ __all__ = [
     "RpcMethodCallTimeoutError",
     "RpcMethodNotFoundError",
     "RpcParseError",
-    # clientconnection
-    "ClientConnection",
+    # simpleclient
+    "SimpleClient",
+    "ValueClient",
     # value
     "SHVMeta",
     "shvmeta",

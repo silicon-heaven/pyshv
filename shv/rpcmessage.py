@@ -67,7 +67,6 @@ class RpcMessage:
             raise ValueError("Response can be created from request only.")
         resp = RpcMessage()
         resp.set_request_id(self.request_id())
-        print(self.caller_ids())
         resp.set_caller_ids(self.caller_ids())
         return resp
 
@@ -161,7 +160,7 @@ class RpcMessage:
     def shverror(self) -> tuple[RpcErrorCode, str]:
         """SHV method call error in standard SHV format."""
         res = self.error()
-        if is_shvmap(res):
+        if is_shvimap(res):
             assert isinstance(res, dict)
             rcode = res.get(self.ErrorKey.CODE)
             code: RpcErrorCode = RpcErrorCode.UNKNOWN

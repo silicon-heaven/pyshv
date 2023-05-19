@@ -2,7 +2,7 @@
 import asyncio
 import logging
 
-from shv import RpcClient
+from shv import SimpleClient
 
 logging.basicConfig(
     level=logging.DEBUG, format="%(levelname)s[%(module)s:%(lineno)d] %(message)s"
@@ -10,20 +10,16 @@ logging.basicConfig(
 
 
 async def test(port=3755):
-    print("connecting to broker")
-    client = await RpcClient.connect(host="localhost", port=port)
-    print("connected OK")
-    await client.login(
-        password="test",
+    client = await SimpleClient.connect(
+        host="localhost",
+        port=port,
         user="test",
-        login_type=RpcClient.LoginType.PLAIN,
+        password="test",
+        login_type=SimpleClient.LoginType.PLAIN,
     )
-    print("calling shv method 'echo'")
-    await client.call_shv_method(".broker/app", "echo", 42)
-    resp = await client.read_rpc_message()
-    print("response received:", resp.to_string())
+    res = await client.call(".broker/app", "echo", 42)
+    print(f"response received: {repr(res)}")
 
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(test())
+    asyncio.run(test())

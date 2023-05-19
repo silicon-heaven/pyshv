@@ -101,7 +101,7 @@ def shvmeta_eq(v1: typing.Any, v2: typing.Any) -> bool:
     if (
         isinstance(v1, collections.abc.Sequence)
         and isinstance(v2, collections.abc.Sequence)
-        and not (isinstance(v1, str | bytes) or isinstance(v2, str | bytes))
+        and not (isinstance(v1, (str, bytes)) or isinstance(v2, (str, bytes)))
     ):
         return len(v1) == len(v2) and all(
             shvmeta_eq(v1[i], v2[i]) for i in range(len(v1))
@@ -113,7 +113,6 @@ def shvmeta_eq(v1: typing.Any, v2: typing.Any) -> bool:
             k in v1 and k in v2 and shvmeta_eq(v1[k], v2[k])
             for k in set(itertools.chain(v1.keys(), v2.keys()))
         )
-    # TODO handle uint vs int
     return v1 == v2
 
 

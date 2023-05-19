@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import asyncio
-import enum
 import io
 import logging
 import typing
@@ -25,14 +24,6 @@ class RpcClient:
     :param writer: Writer for the connection to the SHV RPC server.
     """
 
-    class LoginType(enum.Enum):
-        """Enum specifying which login type should be used."""
-
-        PLAIN = "PLAIN"
-        """Plain login format should be used."""
-        SHA1 = "SHA1"
-        """Use hash algorithm SHA1 (preferred and common default)."""
-
     lastRequestId: typing.ClassVar[int] = 0
     """Counter of request IDs to ensure that every request has unique ID."""
 
@@ -53,11 +44,7 @@ class RpcClient:
     ):
         self.reader = reader
         self.writer = writer
-        self.callback: typing.Callable[
-            [RpcClient, RpcMessage], typing.Awaitable | None
-        ] | None = None
         self._read_data = bytearray(0)
-        self._client_id: int | None = None
 
     @classmethod
     async def connect(
@@ -87,81 +74,6 @@ class RpcClient:
         client = cls(reader, writer)
         logger.debug("%s CONNECTED", str(protocol))
         return client
-
-    def client_id(self) -> int | None:
-        """Provides current client ID.
-
-        :returns: client ID or None in case login wasn't performed yet.
-        """
-        return self._client_id
-
-    async def login(
-        self,
-        user: str | None = None,
-        password: str | None = None,
-        login_type: LoginType = LoginType.SHA1,
-        login_options: dict[str, typing.Any] | None = {"idleWatchDogTimeOut": 36000},
-    ) -> None:
-        """Perform login to the broker.
-
-        The login need to be performed only once right after the connection is
-        established.
-
-        :param user: User name used to login
-        :param password: Password used to login
-        :param login_type: Type of the login to be used
-        :param login_options: Options sent with login
-        :returns: Connected and logged in SHV RPC client handle
-        :raises RpcError: when Rpc message with error is read.
-        """
-        assert self._client_id is None
-        # Note: The implementation here expects that broker won't sent any other
-        # messages until login is actually performed. That is what happens but
-        # it is not defined in any SHV design document as it seems.
-        await self.call_shv_method(None, "hello")
-        await self.read_rpc_message()
-        params = {
-            "login": {"password": password, "type": login_type.value, "user": user},
-            "options": login_options,
-        }
-        logger.debug("LOGGING IN")
-        await self.call_shv_method(None, "login", params)
-        resp = await self.read_rpc_message()
-        if resp is None:
-            return
-        result = resp.result()
-        cid = result.get("clientId", None) if isinstance(result, dict) else None
-        if isinstance(cid, int):
-            self._client_id = cid
-        logger.debug("LOGGED IN")
-
-    async def login_device(
-        self,
-        user: str | None = None,
-        password: str | None = None,
-        login_type: LoginType = LoginType.SHA1,
-        device_id: int | None = None,
-        mount_point: str | None = None,
-    ) -> None:
-        """Perform login to the broker as a device.
-
-        The parameters are the same as in case of `login` with exception of
-        the documented ones.
-
-        :param device_id: Identifier of this device
-        :param mount_point: Path the device should be mounted to
-        """
-        await self.login(
-            user,
-            password,
-            login_type,
-            {
-                "device": {
-                    **({"deviceId": device_id} if device_id is not None else {}),
-                    **({"mountPoint": mount_point} if mount_point is not None else {}),
-                },
-            },
-        )
 
     async def call_shv_method(self, shv_path, method, params=None) -> int:
         """Call the given SHV method on given path.
@@ -244,30 +156,6 @@ class RpcClient:
             data = await self.reader.read(1024)
             self._read_data += data
         return None
-
-    async def read_loop(self) -> None:
-        """Loop that periodically calls `read_rpc_message`.
-
-        The received messages are passed to `_rpc_message`.
-        """
-        while not self.writer.is_closing():
-            msg = await self.read_rpc_message(throw_error=False)
-            if msg is None:
-                return
-            await self._rpc_message(msg)
-
-    async def _rpc_message(self, msg: RpcMessage) -> None:
-        """Handle method that is called for every message from `read_loop`.
-
-        Overload this method to handle messages received in `read_loop`.
-
-        :param msg: Received message.
-        """
-        if self.callback is not None:
-            if asyncio.iscoroutinefunction(self.callback):
-                asyncio.create_task(self.callback(self, msg))
-            else:
-                self.callback(self, msg)
 
     async def disconnect(self):
         """Close the connection."""

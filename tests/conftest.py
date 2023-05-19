@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from shv import RpcClient
+from shv import SimpleClient
 
 
 @pytest.fixture(name="port", scope="module")
@@ -54,11 +54,12 @@ def fixture_shvbroker(port, sslport):
 
 @pytest.fixture(name="client")
 async def fixture_client(shvbroker, port):
-    client = await RpcClient.connect(host="localhost", port=port)
-    await client.login(
+    client = await SimpleClient.connect(
+        host="localhost",
+        port=port,
         user="admin",
         password="admin!123",
-        login_type=RpcClient.LoginType.PLAIN,
+        login_type=SimpleClient.LoginType.PLAIN,
     )
     yield client
     await client.disconnect()

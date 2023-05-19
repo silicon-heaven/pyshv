@@ -6,9 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- `SimpleClient` that provides simple API to connect to the broker and perform
+  calls as well as to handle requests and signals
 - `RpcError` that represents SHV RPC errors
 - `SHVMeta` and variation on SHV types based on it with companion functions to
-  mange these custom extended types
+  manage these custom extended types
 
 ### Changed
 - `RpcMessage.ErrorCode` moved and renamed to `RpcErrorCode`
@@ -21,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `rpcclient.get_next_rpc_request_id` was moved to `RpcClient.next_request_id`
 
 ### Removed
+- `ClinetConnection`, please use `SimpleClient` or `ValueClient` instead
 - `RpcClient.LoginType.NONE` as login needs to be always performed even when any
   authentication is accepted to actually pass options
 - `RpcValue` and instead native types or `SHVMeta` based types are used
