@@ -4,8 +4,8 @@ import asyncio
 import pytest
 
 import example_client
-from shv import shvmeta_eq, RpcMethodNotFoundError
 from example_device import example_device
+from shv import RpcMethodNotFoundError, shvmeta_eq
 
 
 @pytest.fixture(name="device")
@@ -40,37 +40,42 @@ async def test_ls(device, client, path, result):
         (
             "test/device",
             [
-                {"accessGrant": "bws", "flags": 0, "name": "dir"},
-                {"accessGrant": "bws", "flags": 0, "name": "ls"},
+                {"accessGrant": "bws", "flags": 0, "signature": 3, "name": "dir"},
+                {"accessGrant": "bws", "flags": 0, "signature": 3, "name": "ls"},
             ],
         ),
         (
             "test/device/track",
             [
-                {"accessGrant": "bws", "flags": 0, "name": "dir"},
-                {"accessGrant": "bws", "flags": 0, "name": "ls"},
+                {"accessGrant": "bws", "flags": 0, "signature": 3, "name": "dir"},
+                {"accessGrant": "bws", "flags": 0, "signature": 3, "name": "ls"},
             ],
         ),
         (
             "test/device/track/1",
             [
-                {"accessGrant": "bws", "flags": 0, "name": "dir"},
+                {"accessGrant": "bws", "flags": 0, "signature": 3, "name": "dir"},
+                {"accessGrant": "bws", "flags": 0, "signature": 3, "name": "ls"},
                 {
                     "accessGrant": "rd",
                     "flags": 2,
+                    "signature": 2,
                     "name": "get",
+                    "description": "Get current track",
                 },
                 {
                     "accessGrant": "wr",
                     "flags": 4,
+                    "signature": 1,
                     "name": "set",
+                    "description": "Set track",
                 },
             ],
         ),
     ),
 )
 async def test_dir(device, client, path, result):
-    res = await client.call(path, "dir")
+    res = await client.call(path, "dir", ("", 127))
     assert shvmeta_eq(res, result)
 
 

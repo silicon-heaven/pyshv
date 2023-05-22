@@ -175,7 +175,7 @@ class CommonWriter(abc.ABC):
             self.write_string(value)
         elif isinstance(value, datetime.datetime):
             self.write_datetime(value)
-        elif isinstance(value, list):
+        elif isinstance(value, collections.abc.Sequence):
             self.write_list(value)
         elif is_shvimap(value):
             self.write_imap(value)  # type: ignore
@@ -225,7 +225,7 @@ class CommonWriter(abc.ABC):
         """Write decimal number to the stream."""
 
     @abc.abstractmethod
-    def write_list(self, value: collections.abc.Collection[SHVType]) -> None:
+    def write_list(self, value: collections.abc.Sequence[SHVType]) -> None:
         """Write list of other types to the stream."""
 
     @abc.abstractmethod

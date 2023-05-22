@@ -18,7 +18,7 @@ from .rpcerrors import (
 from .rpcmessage import RpcMessage
 from .rpcprotocol import RpcProtocol
 from .rpcserver import RpcServer
-from .simpleclient import SimpleClient, ValueClient
+from .simpleclient import DeviceClient, SimpleClient, ValueClient
 from .value import (
     SHVBool,
     SHVBytes,
@@ -73,6 +73,7 @@ __all__ = [
     # simpleclient
     "SimpleClient",
     "ValueClient",
+    "DeviceClient",
     # value
     "SHVMeta",
     "shvmeta",

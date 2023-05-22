@@ -4,10 +4,6 @@ import logging
 
 from shv import SimpleClient
 
-logging.basicConfig(
-    level=logging.DEBUG, format="%(levelname)s[%(module)s:%(lineno)d] %(message)s"
-)
-
 
 async def test(port=3755):
     client = await SimpleClient.connect(
@@ -22,4 +18,7 @@ async def test(port=3755):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.DEBUG, format="%(levelname)s[%(module)s:%(lineno)d] %(message)s"
+    )
     asyncio.run(test())
