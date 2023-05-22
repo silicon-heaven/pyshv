@@ -44,6 +44,24 @@
           nativeBuildInputs = [sphinxHook] ++ requires-docs pythonPackages;
           nativeCheckInputs = [pytestCheckHook shvapp] ++ requires-test pythonPackages;
         };
+
+      pypkg-multiversion = {
+        buildPythonPackage,
+        fetchFromGitHub,
+        sphinx,
+      }:
+        buildPythonPackage {
+          pname = "sphinx-multiversion";
+          version = "0.2.4";
+          src = fetchFromGitHub {
+            owner = "Holzhaus";
+            repo = "sphinx-multiversion";
+            rev = "v0.2.4";
+            hash = "sha256-ZFEELAeZ/m1pap1DmS4PogL3eZ3VuhTdmwDOg5rKOPA=";
+          };
+          propagatedBuildInputs = [sphinx];
+          doCheck = false;
+        };
     in
       {
         overlays = {
@@ -51,6 +69,7 @@
             python3 = prev.python3.override {
               packageOverrides = pyfinal: pyprev: {
                 pyshv = pyfinal.callPackage pypkg-pyshv {};
+                sphinx-multiversion = pyfinal.callPackage pypkg-multiversion {};
               };
             };
             python3Packages = final.python3.pkgs;
@@ -77,7 +96,9 @@
               gitlint
               pkgs.shvapp
               (python3.withPackages (p:
-                foldl (prev: f: prev ++ f p) [] [
+                [
+                  p.sphinx-autobuild
+                ] ++ foldl (prev: f: prev ++ f p) [] [
                   requires
                   requires-docs
                   requires-test

@@ -25,6 +25,7 @@ dependencies = [
 docs = [
   "sphinx",
   "sphinx_rtd_theme",
+  "sphinx-multiversion",
   "myst-parser",
 ]
 test = [

@@ -42,6 +42,9 @@ async def test_ls(device, client, path, result):
             [
                 {"accessGrant": "bws", "flags": 0, "signature": 3, "name": "dir"},
                 {"accessGrant": "bws", "flags": 0, "signature": 3, "name": "ls"},
+                {"accessGrant": "rd", "flags": 2, "name": "appName", "signature": 2},
+                {"accessGrant": "rd", "flags": 2, "name": "appVersion", "signature": 2},
+                {"accessGrant": "wr", "flags": 0, "name": "echo", "signature": 3},
             ],
         ),
         (

@@ -1,11 +1,12 @@
-API refenrece
+API reference
 =============
 
 .. toctree::
    :maxdepth: 4
 
+   simpleclient
+   rpcmessage
+   value
+   rpccom
    cpon
    chainpack
-   cpcontext
-   rpccom
-   rpcmessage

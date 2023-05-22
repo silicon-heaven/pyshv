@@ -30,12 +30,17 @@ class SHVMeta(abc.ABC):
     SHVMeta provides you with meta attribute that you can use to store and
     access meta attributes. Thanks to it being both parent of SHVMeta as well as
     original type you can use isinstance to detect type. For example to check if
-    type is `int` you can use `isinstance(foo, int)`.
+    type is `int` you can use ``isinstance(foo, int)``.
 
-    Warning: `None` and bool can't have meta assigned to the them just by simple
-    inheritance and thus we define our custom types. Make sure that you always
-    expect that you can get instance of `SHVNull` instead of `None` and
-    `SHVBool` instead of `True` and `False`.
+    .. warning::
+        ``None`` and bool can't have meta assigned to the them just by simple
+        inheritance and thus we define our custom types. Make sure that you
+        always expect that you can get instance of :class:`SHVNull` instead of
+        ``None`` and :class:`SHVBool` instead of ``True`` and ``False``.
+    .. note::
+        Meta is not intentionally included in the plain comparison to ensure
+        that standard hashable types are still hashable while meta is
+        modifiable. You can use :func:`shvmeta_eq` to compare with meta.
     """
 
     @property
@@ -93,7 +98,7 @@ def shvmeta(value: SHVType) -> SHVMetaType:
 
 
 def shvmeta_eq(v1: typing.Any, v2: typing.Any) -> bool:
-    """Perform comparison including the SHVMeta not just plain values."""
+    """Perform comparison including the :class:`SHVMeta` not just plain values."""
     if shvmeta(v1) != shvmeta(v2):
         return False
     if isinstance(v1, SHVUInt) != isinstance(v2, SHVUInt):
@@ -117,7 +122,7 @@ def shvmeta_eq(v1: typing.Any, v2: typing.Any) -> bool:
 
 
 class SHVNull(SHVMeta):
-    """Null (None) with SHVMeta."""
+    """Null (None) with :class:`SHVMeta`."""
 
     def __bool__(self) -> bool:
         return False
@@ -130,12 +135,12 @@ class SHVNull(SHVMeta):
 
 
 def is_shvnull(value: typing.Any) -> bool:
-    """Validate type of the value as either `None` or `SHVNull`."""
+    """Validate type of the value as either ``None`` or :class:`SHVNull`."""
     return value is None or isinstance(value, SHVNull)
 
 
 class SHVBool(SHVMeta):
-    """Boolean with SHVMeta."""
+    """Boolean with :class:`SHVMeta`."""
 
     def __init__(self, value: bool):
         self._value = value
@@ -151,60 +156,60 @@ class SHVBool(SHVMeta):
 
 
 def is_shvbool(value: typing.Any) -> bool:
-    """Validate type of value as either `bool` or `SHVBool`."""
+    """Validate type of value as either :class:`bool` or :class:`SHVBool`."""
     return isinstance(value, bool | SHVBool)
 
 
 class SHVInt(int, SHVMeta):
-    """Integer with SHVMeta."""
+    """Integer with class:`SHVMeta`."""
 
 
 class SHVUInt(int, SHVMeta):
-    """Unsigned integer with SHVMeta.
+    """Unsigned integer with :class:`SHVMeta`.
 
-    There is no unsigned type in Python and thus compared to `SHVInt` (that can
-    be interchanged with `int`) you have to always use this class to represent
-    unsigned integer.
+    There is no unsigned type in Python and thus compared to :class:`SHVInt`
+    (that can be interchanged with `int`) you have to always use this class to
+    represent unsigned integer.
     """
 
 
 class SHVFloat(float, SHVMeta):
-    """Float with SHVMeta."""
+    """Float with :class:`SHVMeta`."""
 
 
 class SHVDecimal(decimal.Decimal, SHVMeta):
-    """Decimal with SHVMeta."""
+    """Decimal with :class:`SHVMeta`."""
 
 
 class SHVBytes(bytes, SHVMeta):
-    """Bytes with SHVMeta."""
+    """Bytes with :class:`SHVMeta`."""
 
 
 class SHVStr(str, SHVMeta):
-    """String with SHVMeta."""
+    """String with :class:`SHVMeta`."""
 
 
 class SHVDatetime(datetime.datetime, SHVMeta):
-    """Date and time with SHVMeta."""
+    """Date and time with :class:`SHVMeta`."""
 
 
 class SHVList(list[SHVType], SHVMeta):
-    """List of SHVMeta values."""
+    """List of :class:`SHVMeta` values."""
 
 
 class SHVDict(dict[str | int, SHVType], SHVMeta):
-    """Dictionary with SHVMeta."""
+    """Dictionary with :class:`SHVMeta`."""
 
 
 def is_shvmap(value: typing.Any) -> bool:
-    """Check if given value can be shv map."""
+    """Check if given value can be SHV Map."""
     return isinstance(value, collections.abc.Mapping) and all(
         isinstance(k, str) for k in value.keys()
     )
 
 
 def is_shvimap(value: typing.Any) -> bool:
-    """Check if given value can be shv imap."""
+    """Check if given value can be SHV IMap."""
     return isinstance(value, collections.abc.Mapping) and all(
         isinstance(k, int) for k in value.keys()
     )

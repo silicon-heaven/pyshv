@@ -16,8 +16,8 @@ class ExampleDevice(DeviceClient):
     async def _ls(self, path: str) -> collections.abc.Sequence[tuple[str, bool]] | None:
         pth = path.split("/") if path else []
         if len(pth) == 0:
-            return [("tracks", True)]
-        if pth[0] == "tracks":
+            return [("track", True)]
+        if pth[0] == "track":
             if len(pth) == 1:
                 return [(k, False) for k in self.tracks.keys()]
             if len(pth) == 2 and pth[1] in self.tracks:
@@ -30,7 +30,31 @@ class ExampleDevice(DeviceClient):
         tuple[str, DeviceClient.MethodSignature, DeviceClient.MethodFlags, str, str]
     ] | None:
         pth = path.split("/") if path else []
-        if len(pth) > 0 and pth[0] == "tracks":
+        if len(pth) == 0:
+            return [
+                (
+                    "appName",
+                    DeviceClient.MethodSignature.RET_VOID,
+                    DeviceClient.MethodFlags.GETTER,
+                    "rd",
+                    "",
+                ),
+                (
+                    "appVersion",
+                    DeviceClient.MethodSignature.RET_VOID,
+                    DeviceClient.MethodFlags.GETTER,
+                    "rd",
+                    "",
+                ),
+                (
+                    "echo",
+                    DeviceClient.MethodSignature.RET_PARAM,
+                    DeviceClient.MethodFlags(0),
+                    "wr",
+                    "",
+                ),
+            ]
+        if pth[0] == "track":
             if len(pth) == 1:
                 return []
             if len(pth) == 2 and pth[1] in self.tracks:
@@ -59,6 +83,13 @@ class ExampleDevice(DeviceClient):
         params: SHVType,
     ) -> SHVType:
         pth = path.split("/") if path else []
+        if len(pth) == 0:
+            if method == "appName":
+                return "pyshv-example_device"
+            if method == "appVersion":
+                return "unknown"
+            if method == "echo":
+                return params
         if len(pth) == 2 and pth[1] in self.tracks:
             if method == "get":
                 return self.tracks[pth[1]]

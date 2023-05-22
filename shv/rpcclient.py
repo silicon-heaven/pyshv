@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 class RpcClient:
     """RPC connection to some SHV peer.
 
-    You most likely want to use `connect` or `connect_device` class methods
-    instead of initializing this class directly.
+    You most likely want to use :func:`connect` class methods instead of
+    initializing this class directly.
 
     :param reader: Reader for the connection to the SHV RPC server.
     :param writer: Writer for the connection to the SHV RPC server.

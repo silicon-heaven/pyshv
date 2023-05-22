@@ -28,16 +28,19 @@ class RpcError(RuntimeError):
     property `shv_error_map` that is used to lookup a more appropriate error
     object. If you are adding any of your own error codes you can add them to
     this map to be looked up by their code.
+
+    :param msg: Message describing the error circumstances.
+    :param code: Error code.
     """
 
     shv_error_code: RpcErrorCode = RpcErrorCode.UNKNOWN
     shv_error_map: dict[int, typing.Type[RpcError]] = {}
 
-    def __new__(cls, _, code: RpcErrorCode | None = None):
+    def __new__(cls, msg: str, code: RpcErrorCode | None = None):
         ncls = cls.shv_error_map.get(cls.shv_error_code if code is None else code, cls)
         return super(RpcError, cls).__new__(ncls)
 
-    def __init__(self, msg: str, code: int | None = None):
+    def __init__(self, msg: str, code: RpcErrorCode | None = None):
         super().__init__(str(msg), self.shv_error_code if code is None else code)
 
     @property
@@ -46,7 +49,8 @@ class RpcError(RuntimeError):
         return self.args[0]
 
     @property
-    def error_code(self):
+    def error_code(self) -> RpcErrorCode:
+        """Provides access to the :class:`RpcErrorCode`."""
         return self.args[1]
 
 
