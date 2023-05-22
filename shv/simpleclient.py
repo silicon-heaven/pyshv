@@ -1,10 +1,10 @@
 """RPC client manager that provides facitility to simply connect to the broker."""
 import asyncio
 import collections.abc
-import copy
 import datetime
 import enum
 import logging
+import time
 import typing
 
 from .rpcclient import RpcClient, RpcProtocol
@@ -29,6 +29,9 @@ class SimpleClient:
     the different operation is performed.
     """
 
+    IDLE_TIMEOUT = 180
+    """Number of seconds before we are disconnected from the broker automatically."""
+
     class LoginType(enum.Enum):
         """Enum specifying which login type should be used."""
 
@@ -44,6 +47,9 @@ class SimpleClient:
         """Client ID assigned on login by SHV broker."""
         self.task = asyncio.create_task(self._loop())
         """Task running the message handling loop."""
+        self.keep_alive_task = asyncio.create_task(self._keep_alive_loop())
+        """Task running the keep alive loop."""
+        self._last_activity = time.monotonic()
         self._calls_event: dict[int, asyncio.Event] = {}
         self._calls_msg: dict[int, RpcMessage] = {}
 
@@ -85,8 +91,9 @@ class SimpleClient:
             return
         await self.client.disconnect()
 
-    @staticmethod
+    @classmethod
     async def _login(
+        cls,
         client: RpcClient,
         user: str | None,
         password: str | None,
@@ -107,9 +114,12 @@ class SimpleClient:
         await client.call_shv_method(None, "hello")
         await client.read_rpc_message()
         # TODO support nonce
-        params = {
+        params: SHVType = {
             "login": {"password": password, "type": login_type.value, "user": user},
-            "options": login_options,
+            "options": {
+                "idleWatchDogTimeOut": int(cls.IDLE_TIMEOUT),
+                **(login_options if login_options else {}),  # type: ignore
+            },
         }
         logger.debug("LOGGING IN")
         await client.call_shv_method(None, "login", params)
@@ -128,6 +138,16 @@ class SimpleClient:
         while msg := await self.client.read_rpc_message(throw_error=False):
             asyncio.create_task(self._message(msg))
 
+    async def _keep_alive_loop(self) -> None:
+        """Loop run in asyncio task to send pings to the broker when idling."""
+        idlet = self.IDLE_TIMEOUT / 2
+        while not self.client.writer.is_closing():
+            t = time.monotonic() - self._last_activity
+            if t < idlet:
+                await asyncio.sleep(idlet - t)
+            await self.client.call_shv_method(".broker/app", "ping")
+            self._last_activity = time.monotonic()
+
     async def _message(self, msg: RpcMessage) -> None:
         """Handle every received message."""
         if msg.is_request():
@@ -141,6 +161,7 @@ class SimpleClient:
             except Exception as exp:
                 resp.set_rpc_error(RpcMethodCallExceptionError(str(exp)))
             await self.client.send_rpc_message(resp)
+            self._last_activity = time.monotonic()
         elif msg.is_response():
             rid = msg.request_id()
             assert rid is not None
@@ -168,6 +189,7 @@ class SimpleClient:
         event = asyncio.Event()
         self._calls_event[rid] = event
         await self.client.call_shv_method_with_id(rid, path, method, params)
+        self._last_activity = time.monotonic()
         await event.wait()
         msg = self._calls_msg.pop(rid)
         err = msg.rpc_error()
