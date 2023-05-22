@@ -1,6 +1,6 @@
 [project]
 name = "pyshv"
-version = "0.1.0"
+version = "0.1.1"
 description = "Pure Python SHV implementation"
 readme = "README.rst"
 authors = [
