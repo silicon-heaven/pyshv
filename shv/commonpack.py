@@ -48,8 +48,8 @@ class CommonReader(abc.ABC):
         Compared to regular read this reads always given number of bytes.
 
         :param size: Number of bytes to read.
-        :returns: Read bytes.
-        :raises EOFError: in case EOF is encountered.
+        :return: Read bytes.
+        :raise EOFError: in case EOF is encountered.
         """
         assert size > 0
         res = bytes()
@@ -64,7 +64,7 @@ class CommonReader(abc.ABC):
     def _read_byte(self) -> int:
         """Read a single byte and return it as int.
 
-        :returns: Read byte. This also returns `0` when EOF is encountered. Make
+        :return: Read byte. This also returns `0` when EOF is encountered. Make
         sure that you use `0` to terminate what you are doing. If you expect `0`
         to be received please use `_read` instead.
         """
@@ -79,7 +79,7 @@ class CommonReader(abc.ABC):
         Peeked byte is actually read from the stream and is stored to
         `peek_bytes`.
 
-        :returns: Peeked byte. This also returns `0` when EOF is encountered.
+        :return: Peeked byte. This also returns `0` when EOF is encountered.
         Make sure that you use `0` to terminate what you are doing.
         """
         if len(self.peek_bytes) == 0:
@@ -99,8 +99,8 @@ class CommonReader(abc.ABC):
         """Read bytes and check that it is what we expected.
 
         :param data: Expected bytes.
-        :raises ValueError: when unexpected byte was received.
-        :raises EOFError: in case EOF is encountered.
+        :raise ValueError: when unexpected byte was received.
+        :raise EOFError: in case EOF is encountered.
         """
         b = self._read(len(data))
         if data != b:
@@ -118,14 +118,14 @@ class CommonReader(abc.ABC):
     def read(self) -> SHVType:
         """Read next SHV value.
 
-        :raises EOFError: in case EOF is encountered.
+        :raise EOFError: in case EOF is encountered.
         """
 
     @abc.abstractmethod
     def read_meta(self) -> SHVMetaType | None:
         """Read next meta value without reading the value.
 
-        :raises EOFError: in case EOF is encountered.
+        :raise EOFError: in case EOF is encountered.
         """
 
     @classmethod

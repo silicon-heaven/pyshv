@@ -51,7 +51,7 @@ intersphinx_mapping = {
 
 smv_tag_whitelist = r"^v.*$"
 smv_branch_whitelist = r"^master$"
-smv_remote_whitelist = r'^.*$'
+smv_remote_whitelist = r"^.*$"
 
 
 def build_finished_gitignore(app, exception):

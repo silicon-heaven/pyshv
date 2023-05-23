@@ -73,7 +73,7 @@ class SimpleClient:
         :param password: Password used to login
         :param login_type: Type of the login to be used
         :param login_options: Options sent with login
-        :raises RuntimeError: in case connection is already established
+        :raise RuntimeError: in case connection is already established
         """
         client = await RpcClient.connect(host, port, protocol)
         cid = await cls._login(client, user, password, login_type, login_options)
@@ -106,7 +106,7 @@ class SimpleClient:
         The login need to be performed only once right after the connection is
         established.
 
-        :returns: Client ID assigned by broker or `None` in case none was
+        :return: Client ID assigned by broker or `None` in case none was
             assigned.
         """
         # Note: The implementation here expects that broker won't sent any other
@@ -182,8 +182,8 @@ class SimpleClient:
         :param path: SHV path method is associated with.
         :param method: SHV method name to be called.
         :param params: Parameters passed to the called method.
-        :returns: Return value on successful method call.
-        :raises RpcError: The call result in error that is propagated by raising
+        :return: Return value on successful method call.
+        :raise RpcError: The call result in error that is propagated by raising
             `RpcError` or its children based on the failure.
         """
         rid = self.client.next_request_id()
@@ -201,9 +201,9 @@ class SimpleClient:
     async def ls(self, path: str) -> list[str]:
         """List child nodes of the node on the specified path.
 
-        :params path: SHV path to the node we want children to be listed for.
-        :returns: list of child nodes.
-        :raises RpcMethodNotFoundError: when there is no such path.
+        :param path: SHV path to the node we want children to be listed for.
+        :return: list of child nodes.
+        :raise RpcMethodNotFoundError: when there is no such path.
         """
         res = await self.call(path, "ls")
         if not isinstance(res, list):
@@ -217,10 +217,10 @@ class SimpleClient:
         children of the node. This can safe unnecessary listing requests when
         you are iterating over the tree.
 
-        :params path: SHV path to the node we want children to be listed for.
-        :returns: dictionary where keys are names of the nodes and values are
+        :param path: SHV path to the node we want children to be listed for.
+        :return: dictionary where keys are names of the nodes and values are
             booleans signaling presence of at least one child.
-        :raises RpcMethodNotFoundError: when there is no such path.
+        :raise RpcMethodNotFoundError: when there is no such path.
         """
         res = await self.call(path, "ls", ("", 1))
         if not isinstance(res, list):
@@ -230,9 +230,9 @@ class SimpleClient:
     async def dir(self, path: str) -> list[str]:
         """List methods associated with node on the specified path.
 
-        :params path: SHV path to the node we want methods to be listed for.
-        :returns: list of the node's methods.
-        :raises RpcMethodNotFoundError: when there is no such path.
+        :param path: SHV path to the node we want methods to be listed for.
+        :return: list of the node's methods.
+        :raise RpcMethodNotFoundError: when there is no such path.
         """
         res = await self.call(path, "dir", ("", 0))
         if not isinstance(res, list):
@@ -242,9 +242,9 @@ class SimpleClient:
     async def dir_details(self, path: str) -> dict[str, dict[str, SHVType]]:
         """List methods associated with node on the specified path.
 
-        :params path: SHV path to the node we want methods to be listed for.
-        :returns: list of the node's methods.
-        :raises RpcMethodNotFoundError: when there is no such path.
+        :param path: SHV path to the node we want methods to be listed for.
+        :return: list of the node's methods.
+        :raise RpcMethodNotFoundError: when there is no such path.
         """
         res = await self.call(path, "dir")
         if not isinstance(res, list):
@@ -258,15 +258,15 @@ class SimpleClient:
         Subscribe is always performed on the node itself as well as all its
         children.
 
-        :params path: SHV path to the node to subscribe.
+        :param path: SHV path to the node to subscribe.
         """
         await self.call(".broker/app", "subscribe", path)
 
     async def unsubscribe(self, path: str) -> bool:
         """Perform unsubscribe for signals on given path.
 
-        :params path: SHV path previously passed to :func:`subscribe`.
-        :returns: ``True`` in case such subscribe was located and ``False``
+        :param path: SHV path previously passed to :func:`subscribe`.
+        :return: ``True`` in case such subscribe was located and ``False``
             otherwise.
         """
         resp = await self.call(".broker/app", "unsubscribe", path)
@@ -551,7 +551,7 @@ class DeviceClient(SimpleClient):
         some children.
 
         :param path: SHV path that should be listed.
-        :returns: List of child nodes of the node on the path or ``None`` for
+        :return: List of child nodes of the node on the path or ``None`` for
             invalid nodes.
         """
         return None if path else []
@@ -577,7 +577,7 @@ class DeviceClient(SimpleClient):
         ``dir`` signatures.
 
         :param path: SHV path method should be listed for.
-        :returns: List of methods associated with given node or ``None`` for
+        :return: List of methods associated with given node or ``None`` for
             invalid nodes.
         """
         return None if self._ls(path) is None else []

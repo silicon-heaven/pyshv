@@ -35,7 +35,7 @@ def convert(
     :param outf: Output data format.
     :param options: Cpon writer options. This is used only when:
         `outf == CPFormat.CPON`.
-    :returns: Bytes in case `odata` was `None` otherwise `None`.
+    :return: Bytes in case `odata` was `None` otherwise `None`.
     """
     if isinstance(inp, str):
         inp = inp.encode("utf-8")

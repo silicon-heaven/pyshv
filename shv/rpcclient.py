@@ -81,7 +81,7 @@ class RpcClient:
         :param shv_path: Path to the node with requested method
         :param method: Name of the method to call
         :param params: Parameters passed to the method
-        :returns: assigned request ID you can use to identify the response
+        :return: assigned request ID you can use to identify the response
         """
         rid = self.next_request_id()
         await self.call_shv_method_with_id(rid, shv_path, method, params)
@@ -143,8 +143,8 @@ class RpcClient:
         """Read next received RPC message or wait for next to be received.
 
         :param throw_error: If RpcError should be raised or not.
-        :returns: Next RPC message is returned or `None` in case of EOF.
-        :raises RpcError: When mesasge is error and `throw_error` is `True`.
+        :return: Next RPC message is returned or `None` in case of EOF.
+        :raise RpcError: When mesasge is error and `throw_error` is `True`.
         """
         while not self.reader.at_eof():
             msg = self._get_rpc_msg()
