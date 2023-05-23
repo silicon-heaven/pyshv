@@ -153,9 +153,11 @@ class SimpleClient:
         """Handle every received message."""
         if msg.is_request():
             resp = msg.make_response()
+            method = msg.method()
+            assert method
             try:
                 resp.set_result(
-                    await self._method_call(msg.shv_path(), msg.method(), msg.params())
+                    await self._method_call(msg.shv_path() or "", method, msg.params())
                 )
             except RpcError as exp:
                 resp.set_rpc_error(exp)
@@ -171,7 +173,7 @@ class SimpleClient:
                 self._calls_event.pop(rid).set()
         elif msg.is_signal():
             if msg.method() == "chng":
-                await self._value_update(msg.shv_path(), msg.params())
+                await self._value_update(msg.shv_path() or "", msg.params())
 
     async def call(self, path: str, method: str, params: SHVType = None) -> SHVType:
         """Call given method on given path with given parameters.
@@ -273,19 +275,14 @@ class SimpleClient:
         assert is_shvbool(resp)
         return bool(resp)
 
-    async def _method_call(
-        self,
-        path: str | None,
-        method: str | None,
-        params: SHVType,
-    ) -> SHVType:
+    async def _method_call(self, path: str, method: str, params: SHVType) -> SHVType:
         """Handle request in the provided message.
 
         You have to set some RpcMessage that is sent back as a response.
         """
         raise RpcMethodNotFoundError(f"No such path '{path}' or method '{method}'")
 
-    async def _value_update(self, path: str | None, value: SHVType) -> None:
+    async def _value_update(self, path: str, value: SHVType) -> None:
         """Handle value change (`chng` method)."""
 
 
@@ -314,8 +311,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
     def __len__(self):
         return len(self._cache)
 
-    async def _value_update(self, path: str | None, value: SHVType) -> None:
-        path = path or ""
+    async def _value_update(self, path: str, value: SHVType) -> None:
         handler = self._get_handler(path)
         if handler is not None and not shvmeta_eq(self._cache.get(path, None), value):
             handler(self, path, value)
@@ -458,12 +454,7 @@ class DeviceClient(SimpleClient):
             host, port, protocol, user, password, login_type, options
         )
 
-    async def _method_call(
-        self,
-        path: str | None,
-        method: str | None,
-        params: SHVType,
-    ) -> SHVType:
+    async def _method_call(self, path: str, method: str, params: SHVType) -> SHVType:
         if method == "ls":
             if not is_shvnull(params) and not (
                 isinstance(params, list)
@@ -472,7 +463,6 @@ class DeviceClient(SimpleClient):
                 and isinstance(params[1], int)
             ):
                 raise RpcInvalidParamsError("Use Null or list with path and attributes")
-            path = path or ""
             children = False
             if isinstance(params, list):
                 path = "/".join(filter(lambda v: v, (path, params[0])))
@@ -502,7 +492,7 @@ class DeviceClient(SimpleClient):
                 filter(
                     lambda v: v,
                     (
-                        path or "",
+                        path,
                         params if isinstance(params, str) else "",
                         params[0] if isinstance(params, list) else "",
                     ),

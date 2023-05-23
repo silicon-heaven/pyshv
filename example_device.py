@@ -76,12 +76,7 @@ class ExampleDevice(DeviceClient):
                 ]
         return await super()._dir(path)
 
-    async def _method_call(
-        self,
-        path: str | None,
-        method: str | None,
-        params: SHVType,
-    ) -> SHVType:
+    async def _method_call(self, path: str, method: str, params: SHVType) -> SHVType:
         pth = path.split("/") if path else []
         if len(pth) == 0:
             if method == "appName":
