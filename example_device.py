@@ -3,7 +3,15 @@ import asyncio
 import collections.abc
 import logging
 
-from shv import DeviceClient, RpcClient, RpcInvalidParamsError, RpcMessage, SHVType
+from shv import (
+    DeviceClient,
+    RpcClient,
+    RpcInvalidParamsError,
+    RpcMessage,
+    RpcMethodFlags,
+    RpcMethodSignature,
+    SHVType,
+)
 
 
 class ExampleDevice(DeviceClient):
@@ -27,29 +35,29 @@ class ExampleDevice(DeviceClient):
     async def _dir(
         self, path: str
     ) -> collections.abc.Sequence[
-        tuple[str, DeviceClient.MethodSignature, DeviceClient.MethodFlags, str, str]
+        tuple[str, RpcMethodSignature, RpcMethodFlags, str, str]
     ] | None:
         pth = path.split("/") if path else []
         if len(pth) == 0:
             return [
                 (
                     "appName",
-                    DeviceClient.MethodSignature.RET_VOID,
-                    DeviceClient.MethodFlags.GETTER,
+                    RpcMethodSignature.RET_VOID,
+                    RpcMethodFlags.GETTER,
                     "rd",
                     "",
                 ),
                 (
                     "appVersion",
-                    DeviceClient.MethodSignature.RET_VOID,
-                    DeviceClient.MethodFlags.GETTER,
+                    RpcMethodSignature.RET_VOID,
+                    RpcMethodFlags.GETTER,
                     "rd",
                     "",
                 ),
                 (
                     "echo",
-                    DeviceClient.MethodSignature.RET_PARAM,
-                    DeviceClient.MethodFlags(0),
+                    RpcMethodSignature.RET_PARAM,
+                    RpcMethodFlags(0),
                     "wr",
                     "",
                 ),
@@ -61,15 +69,15 @@ class ExampleDevice(DeviceClient):
                 return [
                     (
                         "get",
-                        DeviceClient.MethodSignature.RET_VOID,
-                        DeviceClient.MethodFlags.GETTER,
+                        RpcMethodSignature.RET_VOID,
+                        RpcMethodFlags.GETTER,
                         "rd",
                         "Get current track",
                     ),
                     (
                         "set",
-                        DeviceClient.MethodSignature.VOID_PARAM,
-                        DeviceClient.MethodFlags.SETTER,
+                        RpcMethodSignature.VOID_PARAM,
+                        RpcMethodFlags.SETTER,
                         "wr",
                         "Set track",
                     ),

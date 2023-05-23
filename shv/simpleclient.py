@@ -15,6 +15,7 @@ from .rpcerrors import (
     RpcMethodNotFoundError,
 )
 from .rpcmessage import RpcMessage
+from .rpcmethod import RpcMethodFlags, RpcMethodSignature
 from .value import SHVType, is_shvbool, is_shvnull, shvmeta, shvmeta_eq
 
 logger = logging.getLogger(__name__)
@@ -405,22 +406,6 @@ class DeviceClient(SimpleClient):
     and ``_dir`` methods.
     """
 
-    class MethodSignature(enum.IntEnum):
-        """Signature of the method."""
-
-        VOID_VOID = 0
-        VOID_PARAM = 1
-        RET_VOID = 2
-        RET_PARAM = 3
-
-    class MethodFlags(enum.IntFlag):
-        """Flags assigned to the methods."""
-
-        SIGNAL = 1 << 0
-        GETTER = 1 << 1
-        SETTER = 1 << 2
-        LARGE_RESULT_HINT = 1 << 3
-
     @classmethod
     async def connect(
         cls,
@@ -504,15 +489,15 @@ class DeviceClient(SimpleClient):
             dirres = [
                 (
                     "dir",
-                    self.MethodSignature.RET_PARAM,
-                    self.MethodFlags(0),
+                    RpcMethodSignature.RET_PARAM,
+                    RpcMethodFlags(0),
                     "bws",
                     "",
                 ),
                 (
                     "ls",
-                    self.MethodSignature.RET_PARAM,
-                    self.MethodFlags(0),
+                    RpcMethodSignature.RET_PARAM,
+                    RpcMethodFlags(0),
                     "bws",
                     "",
                 ),
@@ -549,7 +534,7 @@ class DeviceClient(SimpleClient):
     async def _dir(
         self, path: str
     ) -> collections.abc.Sequence[
-        tuple[str, MethodSignature, MethodFlags, str, str]
+        tuple[str, RpcMethodSignature, RpcMethodFlags, str, str]
     ] | None:
         """Implement ``dir`` method for all nodes.
 

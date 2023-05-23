@@ -4,7 +4,15 @@ import functools
 
 import pytest
 
-from shv import DeviceClient, RpcClient, SHVUInt, SimpleClient, shvmeta_eq
+from shv import (
+    DeviceClient,
+    RpcClient,
+    RpcMethodFlags,
+    RpcMethodSignature,
+    SHVUInt,
+    SimpleClient,
+    shvmeta_eq,
+)
 
 
 @pytest.mark.parametrize(
@@ -109,13 +117,13 @@ async def test_dir(client, path, result):
             {
                 "dir": {
                     "name": "dir",
-                    "signature": DeviceClient.MethodSignature.RET_PARAM,
+                    "signature": RpcMethodSignature.RET_PARAM,
                     "flags": 0,
                     "accessGrant": "bws",
                 },
                 "ls": {
                     "name": "ls",
-                    "signature": DeviceClient.MethodSignature.RET_PARAM,
+                    "signature": RpcMethodSignature.RET_PARAM,
                     "flags": 0,
                     "accessGrant": "bws",
                 },
