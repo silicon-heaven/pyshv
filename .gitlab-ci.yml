@@ -142,7 +142,7 @@ pages:
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
   needs: []
   script:
-    - nix develop -c sphinx-multiversion -b html docs public
+    - nix develop -c sphinx-multiversion docs public
     - | # Add index.html to public root to redirect to $CI_DEFUALT_BRANCH/index.html
       cat >public/index.html << EOF
       <!DOCTYPE html>
