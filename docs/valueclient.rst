@@ -93,7 +93,7 @@ we do not have to ask for new value every time but we still have it as soon as
 possible. This of course could get pretty noisy once there would be multiple
 devices connected to the SHV broker and we are never interested in all changes.
 Because of that SHV broker filters all signals unless we explicitly ask for them
-trough :func:`shv.SimpleClient.subscribe`. Subscribing is always recursive and
+through :func:`shv.SimpleClient.subscribe`. Subscribing is always recursive and
 thus signals from child nodes are also propagated. :class:`shv.ValueClient`
 caches these values and you can quickly access them using subscribe operator.
 
