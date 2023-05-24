@@ -9,7 +9,7 @@ import typing
 from .chainpack import ChainPack, ChainPackReader, ChainPackWriter
 from .cpon import Cpon, CponReader
 from .rpcmessage import RpcMessage
-from .rpcprotocol import RpcProtocol
+from .rpcurl import RpcProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ class RpcClient:
         if host is None:
             if protocol == RpcProtocol.TCP:
                 host = "localhost"
-            elif protocol == RpcProtocol.LOCAL_SOCKET:
+            elif protocol == RrcProtocol.LOCAL_SOCKET:
                 host = "shv.sock"
             else:
                 raise RuntimeError(f"Invalid protocol: {protocol}")

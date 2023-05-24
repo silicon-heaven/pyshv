@@ -5,7 +5,7 @@ import logging
 import typing
 
 from .rpcclient import RpcClient
-from .rpcprotocol import RpcProtocol
+from .rpcurl import RpcProtocol
 
 logger = logging.getLogger(__name__)
 

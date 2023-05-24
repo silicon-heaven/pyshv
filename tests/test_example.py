@@ -1,17 +1,19 @@
 """Perform tests of our examples."""
 import asyncio
+import dataclasses
 
 import pytest
 
 import example_client
 from example_device import example_device
-from shv import RpcMethodNotFoundError, shvmeta_eq
+from shv import RpcMethodNotFoundError, RpcUrl, shvmeta_eq
 
 
 @pytest.fixture(name="device")
-async def fixture_device(event_loop, shvbroker, port):
+async def fixture_device(event_loop, shvbroker, url):
     """Run example device and provide socket to access it."""
-    task = event_loop.create_task(example_device(port=port))
+    nurl = dataclasses.replace(url, device_mount_point="test/device")
+    task = event_loop.create_task(example_device(nurl))
     yield task
     task.cancel()
     try:
@@ -101,5 +103,5 @@ async def test_invalid_request(device, client):
         await client.call("test/device/track/4", "nosuchmethod")
 
 
-async def test_example_client(shvbroker, port):
-    await example_client.test(port=port)
+async def test_example_client(shvbroker, url):
+    await example_client.example_client(url)

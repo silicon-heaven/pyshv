@@ -96,9 +96,8 @@
               gitlint
               pkgs.shvapp
               (python3.withPackages (p:
-                [
-                  p.sphinx-autobuild
-                ] ++ foldl (prev: f: prev ++ f p) [] [
+                [p.sphinx-autobuild]
+                ++ foldl (prev: f: prev ++ f p) [] [
                   requires
                   requires-docs
                   requires-test

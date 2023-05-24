@@ -21,7 +21,7 @@ You need to call function ``ValueClient.connect``
 :class:`shv.ValueClient` instance that is connected and logged in to the SHV
 broker.
 
->>> client = await shv.ValueClient.connect("localhost", user="admin", password="admin!123", login_type=shv.SimpleClient.LoginType.PLAIN)
+>>> client = await shv.ValueClient.connect(RpcUrl.parse(""tcp://admin@localhost?password=admin!123""))
 
 
 Discovering SHV tree

@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from shv import SimpleClient
+from shv import RpcLoginType, RpcUrl, SimpleClient
 
 
 @pytest.fixture(name="port", scope="module")
@@ -19,6 +19,18 @@ def fixture_port(unused_tcp_port_factory):
 def fixture_sslport(unused_tcp_port_factory):
     """Override for sslPort for shvbroker."""
     return unused_tcp_port_factory()
+
+
+@pytest.fixture(name="url", scope="module")
+def fixture_url(port):
+    """Provides RpcUrl for connecting to the broker."""
+    return RpcUrl(
+        host="localhost",
+        port=port,
+        username="admin",
+        password="admin!123",
+        login_type=RpcLoginType.PLAIN,
+    )
 
 
 @pytest.fixture(name="shvbroker", scope="module")
@@ -53,13 +65,7 @@ def fixture_shvbroker(port, sslport):
 
 
 @pytest.fixture(name="client")
-async def fixture_client(shvbroker, port):
-    client = await SimpleClient.connect(
-        host="localhost",
-        port=port,
-        user="admin",
-        password="admin!123",
-        login_type=SimpleClient.LoginType.PLAIN,
-    )
+async def fixture_client(shvbroker, url):
+    client = await SimpleClient.connect(url)
     yield client
     await client.disconnect()

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import asyncio
 import collections.abc
 import logging
@@ -7,10 +8,20 @@ from shv import (
     DeviceClient,
     RpcClient,
     RpcInvalidParamsError,
+    RpcLoginType,
     RpcMessage,
     RpcMethodFlags,
     RpcMethodSignature,
+    RpcUrl,
     SHVType,
+)
+
+log_levels = (
+    logging.DEBUG,
+    logging.INFO,
+    logging.WARNING,
+    logging.ERROR,
+    logging.CRITICAL,
 )
 
 
@@ -113,20 +124,42 @@ class ExampleDevice(DeviceClient):
         return await super()._method_call(path, method, params)
 
 
-async def example_device(port=3755):
-    client = await ExampleDevice.connect(
-        host="localhost",
-        port=port,
-        user="test",
-        password="test",
-        login_type=DeviceClient.LoginType.PLAIN,
-        mount_point="test/device",
+async def example_device(url: RpcUrl):
+    client = await ExampleDevice.connect(url)
+    if client is not None:
+        await client.task
+
+
+def parse_args():
+    """Parse passed arguments and return result."""
+    parser = argparse.ArgumentParser(
+        "example_device", description="Silicon Heaven example device"
     )
-    await client.task
+    parser.add_argument(
+        "-v",
+        action="count",
+        default=0,
+        help="Increase verbosity level of logging",
+    )
+    parser.add_argument(
+        "-q",
+        action="count",
+        default=0,
+        help="Decrease verbosity level of logging",
+    )
+    parser.add_argument(
+        "URL",
+        nargs="?",
+        default="tcp://test@localhost?password=test&devmount=test/device",
+        help="SHV RPC URL specifying connection to the broker.",
+    )
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
+    args = parse_args()
     logging.basicConfig(
-        level=logging.DEBUG, format="%(levelname)s[%(module)s:%(lineno)d] %(message)s"
+        level=log_levels[sorted([1 - args.v + args.q, 0, len(log_levels) - 1])[1]],
+        format="[%(asctime)s] [%(levelname)s] - %(message)s",
     )
-    asyncio.run(example_device())
+    asyncio.run(example_device(RpcUrl.parse(args.URL)))

@@ -17,8 +17,8 @@ from .rpcerrors import (
 )
 from .rpcmessage import RpcMessage
 from .rpcmethod import RpcMethodFlags, RpcMethodSignature
-from .rpcprotocol import RpcProtocol
 from .rpcserver import RpcServer
+from .rpcurl import RpcLoginType, RpcProtocol, RpcUrl
 from .simpleclient import DeviceClient, SimpleClient, ValueClient
 from .value import (
     SHVBool,
@@ -56,8 +56,10 @@ __all__ = [
     "RpcClient",
     # rpcserver
     "RpcServer",
-    # rpcprotocol
+    # rpcurl
     "RpcProtocol",
+    "RpcLoginType",
+    "RpcUrl",
     # rpcmessage
     "RpcMessage",
     # rpcmethod

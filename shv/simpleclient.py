@@ -2,12 +2,12 @@
 import asyncio
 import collections.abc
 import datetime
-import enum
 import logging
 import time
 import typing
+import warnings
 
-from .rpcclient import RpcClient, RpcProtocol
+from .rpcclient import RpcClient
 from .rpcerrors import (
     RpcError,
     RpcInvalidParamsError,
@@ -16,6 +16,7 @@ from .rpcerrors import (
 )
 from .rpcmessage import RpcMessage
 from .rpcmethod import RpcMethodFlags, RpcMethodSignature
+from .rpcurl import RpcLoginType, RpcUrl
 from .value import SHVType, is_shvbool, is_shvnull, shvmeta, shvmeta_eq
 
 logger = logging.getLogger(__name__)
@@ -33,14 +34,6 @@ class SimpleClient:
     IDLE_TIMEOUT = 180
     """Number of seconds before we are disconnected from the broker automatically."""
 
-    class LoginType(enum.Enum):
-        """Enum specifying which login type should be used."""
-
-        PLAIN = "PLAIN"
-        """Plain login format should be used."""
-        SHA1 = "SHA1"
-        """Use hash algorithm SHA1 (preferred and common default)."""
-
     def __init__(self, client: RpcClient, client_id: int | None):
         self.client = client
         """The underlaying RPC client instance."""
@@ -57,27 +50,21 @@ class SimpleClient:
     @classmethod
     async def connect(
         cls,
-        host: str | None,
-        port: int = 3755,
-        protocol: RpcProtocol = RpcProtocol.TCP,
-        user: str | None = None,
-        password: str | None = None,
-        login_type: LoginType = LoginType.SHA1,
+        url: RpcUrl,
         login_options: dict[str, SHVType] | None = None,
     ) -> typing.Union["SimpleClient", None]:
         """Connect and login to the SHV broker.
 
-        :param host: IP/Hostname (TCP) or socket path (LOCKAL_SOCKET)
-        :param port: Port (TCP) to connect to
-        :param protocol: Protocol used to connect to the server
-        :param user: User name used to login
-        :param password: Password used to login
-        :param login_type: Type of the login to be used
-        :param login_options: Options sent with login
-        :raise RuntimeError: in case connection is already established
+        :param url: SHV RPC URL to the broker
+        :param login_options: Additional options sent with login
         """
-        client = await RpcClient.connect(host, port, protocol)
-        cid = await cls._login(client, user, password, login_type, login_options)
+        client = await RpcClient.connect(url.host, url.port, url.protocol)
+        options = url.login_options()
+        if login_options:
+            options.update(login_options)
+        cid = await cls.login(
+            client, url.username, url.password, url.login_type, options
+        )
         if client.writer.is_closing():
             return None
         return cls(client, cid)
@@ -94,12 +81,12 @@ class SimpleClient:
         self.keep_alive_task.cancel()
 
     @classmethod
-    async def _login(
+    async def login(
         cls,
         client: RpcClient,
-        user: str | None,
+        username: str | None,
         password: str | None,
-        login_type: LoginType,
+        login_type: RpcLoginType,
         login_options: dict[str, SHVType] | None,
     ) -> int | None:
         """Perform login to the broker.
@@ -117,7 +104,7 @@ class SimpleClient:
         await client.read_rpc_message()
         # TODO support nonce
         params: SHVType = {
-            "login": {"password": password, "type": login_type.value, "user": user},
+            "login": {"password": password, "type": login_type.value, "user": username},
             "options": {
                 "idleWatchDogTimeOut": int(cls.IDLE_TIMEOUT),
                 **(login_options if login_options else {}),  # type: ignore
@@ -409,35 +396,12 @@ class DeviceClient(SimpleClient):
     @classmethod
     async def connect(
         cls,
-        host: str | None,
-        port: int = 3755,
-        protocol: RpcProtocol = RpcProtocol.TCP,
-        user: str | None = None,
-        password: str | None = None,
-        login_type: SimpleClient.LoginType = SimpleClient.LoginType.SHA1,
+        url: RpcUrl,
         login_options: dict[str, SHVType] | None = None,
-        device_id: str = "",
-        mount_point: str = "",
     ) -> typing.Union["SimpleClient", None]:
-        """Connect and login to the SHV broker for devices.
-
-        Please see documentation for :func:`SimpleClient.connect` as well as
-        this one.
-
-        :param device_id: Identifier for this device.
-        :param mount_point: Mount point request on connected SHV broker.
-        """
-        options: dict[str, SHVType] = {
-            "device": {
-                **({"deviceId": device_id} if device_id is not None else {}),
-                **({"mountPoint": mount_point} if mount_point is not None else {}),
-            },
-        }
-        if login_options is not None:
-            options.update({k: v for k, v in login_options.items() if k != "device"})
-        return await super(DeviceClient, cls).connect(
-            host, port, protocol, user, password, login_type, options
-        )
+        if not url.device_id and not url.device_mount_point:
+            warnings.warn("You should specify device ID or device mount point!")
+        return await super(DeviceClient, cls).connect(url, login_options)
 
     async def _method_call(self, path: str, method: str, params: SHVType) -> SHVType:
         if method == "ls":
