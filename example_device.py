@@ -10,9 +10,9 @@ from shv import (
     RpcInvalidParamsError,
     RpcLoginType,
     RpcMessage,
+    RpcMethodAccess,
     RpcMethodFlags,
     RpcMethodSignature,
-    RpcMethodAccess,
     RpcUrl,
     SHVType,
 )
@@ -96,19 +96,21 @@ class ExampleDevice(DeviceClient):
                 ]
         return await super()._dir(path)
 
-    async def _method_call(self, path: str, method: str, params: SHVType) -> SHVType:
+    async def _method_call(
+        self, path: str, method: str, access: RpcMethodAccess, params: SHVType
+    ) -> SHVType:
         pth = path.split("/") if path else []
         if len(pth) == 0:
             if method == "appName":
                 return "pyshv-example_device"
             if method == "appVersion":
                 return "unknown"
-            if method == "echo":
+            if method == "echo" and access >= RpcMethodAccess.WRITE:
                 return params
         if len(pth) == 2 and pth[1] in self.tracks:
-            if method == "get":
+            if method == "get" and access >= RpcMethodAccess.READ:
                 return self.tracks[pth[1]]
-            if method == "set":
+            if method == "set" and access >= RpcMethodAccess.WRITE:
                 if not isinstance(params, list) or not all(
                     isinstance(v, int) for v in params
                 ):
@@ -122,7 +124,7 @@ class ExampleDevice(DeviceClient):
                     sig.set_params(params)
                     await self.client.send_rpc_message(sig)
                 return True
-        return await super()._method_call(path, method, params)
+        return await super()._method_call(path, method, access, params)
 
 
 async def example_device(url: RpcUrl):

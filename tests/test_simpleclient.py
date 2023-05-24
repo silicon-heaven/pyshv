@@ -3,7 +3,7 @@ import dataclasses
 
 import pytest
 
-from shv import RpcLoginType, RpcMethodSignature, SHVUInt, shvmeta_eq, SimpleClient
+from shv import RpcLoginType, RpcMethodSignature, SHVUInt, SimpleClient, shvmeta_eq
 
 
 @pytest.mark.parametrize(

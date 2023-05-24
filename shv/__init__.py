@@ -16,7 +16,7 @@ from .rpcerrors import (
     RpcParseError,
 )
 from .rpcmessage import RpcMessage
-from .rpcmethod import RpcMethodFlags, RpcMethodSignature, RpcMethodAccess
+from .rpcmethod import RpcMethodAccess, RpcMethodFlags, RpcMethodSignature
 from .rpcserver import RpcServer
 from .rpcurl import RpcLoginType, RpcProtocol, RpcUrl
 from .simpleclient import DeviceClient, SimpleClient, ValueClient

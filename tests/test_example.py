@@ -1,25 +1,8 @@
 """Perform tests of our examples."""
-import asyncio
-import dataclasses
-
 import pytest
 
 import example_client
-from example_device import example_device
-from shv import RpcMethodNotFoundError, RpcUrl, shvmeta_eq
-
-
-@pytest.fixture(name="device")
-async def fixture_device(event_loop, shvbroker, url):
-    """Run example device and provide socket to access it."""
-    nurl = dataclasses.replace(url, device_mount_point="test/device")
-    task = event_loop.create_task(example_device(nurl))
-    yield task
-    task.cancel()
-    try:
-        await task
-    except asyncio.CancelledError:
-        pass
+from shv import RpcMethodNotFoundError, shvmeta_eq
 
 
 @pytest.mark.parametrize(
@@ -31,7 +14,7 @@ async def fixture_device(event_loop, shvbroker, url):
         ("test/device/track", [str(i) for i in range(1, 9)]),
     ),
 )
-async def test_ls(device, client, path, result):
+async def test_ls(example_device, client, path, result):
     res = await client.call(path, "ls")
     assert shvmeta_eq(res, result)
 
@@ -45,7 +28,12 @@ async def test_ls(device, client, path, result):
                 {"accessGrant": "bws", "flags": 0, "signature": 3, "name": "dir"},
                 {"accessGrant": "bws", "flags": 0, "signature": 3, "name": "ls"},
                 {"accessGrant": "bws", "flags": 2, "name": "appName", "signature": 2},
-                {"accessGrant": "bws", "flags": 2, "name": "appVersion", "signature": 2},
+                {
+                    "accessGrant": "bws",
+                    "flags": 2,
+                    "name": "appVersion",
+                    "signature": 2,
+                },
                 {"accessGrant": "wr", "flags": 0, "name": "echo", "signature": 3},
             ],
         ),
@@ -79,17 +67,17 @@ async def test_ls(device, client, path, result):
         ),
     ),
 )
-async def test_dir(device, client, path, result):
+async def test_dir(example_device, client, path, result):
     res = await client.call(path, "dir", ("", 127))
     assert shvmeta_eq(res, result)
 
 
-async def test_get(device, client):
+async def test_get(example_device, client):
     res = await client.call("test/device/track/4", "get")
     assert res == [0, 1, 2, 3]
 
 
-async def test_set(device, client):
+async def test_set(example_device, client):
     tracks = [3, 2, 1, 0]
     res = await client.call("test/device/track/4", "set", tracks)
     assert res is True
@@ -98,7 +86,7 @@ async def test_set(device, client):
     assert shvmeta_eq(res, tracks)
 
 
-async def test_invalid_request(device, client):
+async def test_invalid_request(example_device, client):
     with pytest.raises(RpcMethodNotFoundError):
         await client.call("test/device/track/4", "nosuchmethod")
 

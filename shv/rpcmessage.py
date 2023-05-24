@@ -7,6 +7,7 @@ import enum
 from .chainpack import ChainPackWriter
 from .cpon import CponWriter
 from .rpcerrors import RpcError, RpcErrorCode
+from .rpcmethod import RpcMethodAccess
 from .value import SHVDict, SHVMeta, SHVType, is_shvimap, is_shvmap, shvmeta
 
 
@@ -23,6 +24,7 @@ class RpcMessage:
         SHVPATH = 9
         METHOD = 10
         CALLER_IDS = 11
+        ACCESS_GRANT = 14
 
     class Key(enum.IntEnum):
         """Keys in the toplevel IMap of the RPC message."""
@@ -111,6 +113,22 @@ class RpcMessage:
         else:
             some: SHVType = cids
             self.value = SHVMeta.new(self.value, {self.Tag.CALLER_IDS: some})
+
+    def access_grant(self) -> RpcMethodAccess | None:
+        """Granted access level of the caller."""
+        res = shvmeta(self.value).get(self.Tag.ACCESS_GRANT, None)
+        if isinstance(res, str):
+            return RpcMethodAccess.fromstr(res)
+        return None
+
+    def set_access_grant(self, access: RpcMethodAccess | None) -> None:
+        """Granted access level of the caller."""
+        if access is None:
+            shvmeta(self.value).pop(self.Tag.ACCESS_GRANT, None)
+        else:
+            self.value = SHVMeta.new(
+                self.value, {self.Tag.ACCESS_GRANT: RpcMethodAccess.tostr(access)}
+            )
 
     def method(self) -> str | None:
         """SHV method name for this message."""

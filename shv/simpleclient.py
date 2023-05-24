@@ -155,10 +155,15 @@ class SimpleClient:
         if msg.is_request():
             resp = msg.make_response()
             method = msg.method()
-            assert method
+            assert method  # is ensured by is_request but not detected by mypy
             try:
                 resp.set_result(
-                    await self._method_call(msg.shv_path() or "", method, msg.params())
+                    await self._method_call(
+                        msg.shv_path() or "",
+                        method,
+                        msg.access_grant() or RpcMethodAccess.BROWSE,
+                        msg.params(),
+                    )
                 )
             except RpcError as exp:
                 resp.set_rpc_error(exp)

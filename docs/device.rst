@@ -58,7 +58,7 @@ calls ``_ls`` to check if path is valid or not and if it is it won't return
     async def _dir(
         self, path: str
     ) -> collections.abc.Sequence[
-        tuple[str, RpcMethodSignature, RpcMethodFlags, str, str]
+        tuple[str, RpcMethodSignature, RpcMethodFlags, RpcMethodAccess, str]
     ] | None:
         pth = path.split("/") if path else []
         if pth[0] == "track":
@@ -70,14 +70,14 @@ calls ``_ls`` to check if path is valid or not and if it is it won't return
                         "get",
                         RpcMethodSignature.RET_VOID,
                         RpcMethodFlags.GETTER,
-                        "rd",
+                        RpcMethodAccess.READ
                         "Get current track",
                     ),
                     (
                         "set",
                         RpcMethodSignature.VOID_PARAM,
                         RpcMethodFlags.SETTER,
-                        "wr",
+                        RpcMethodAccess.WRITE
                         "Set track",
                     ),
                 ]
