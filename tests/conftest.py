@@ -1,14 +1,14 @@
 import asyncio
+import dataclasses
 import pathlib
 import socket
 import subprocess
 import time
-import dataclasses
 
 import pytest
 
-from shv import RpcLoginType, RpcUrl, SimpleClient
 from example_device import example_device
+from shv import RpcLoginType, RpcUrl, SimpleClient
 
 
 @pytest.fixture(name="port", scope="module")

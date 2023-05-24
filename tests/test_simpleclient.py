@@ -3,7 +3,14 @@ import dataclasses
 
 import pytest
 
-from shv import RpcLoginType, RpcMethodSignature, SHVUInt, SimpleClient, shvmeta_eq
+from shv import (
+    RpcLoginType,
+    RpcMethodSignature,
+    SHVUInt,
+    SimpleClient,
+    ValueClient,
+    shvmeta_eq,
+)
 
 
 @pytest.mark.parametrize(
@@ -184,3 +191,22 @@ async def test_sha_login(shvbroker, url):
     client = await SimpleClient.connect(nurl)
     assert await client.ls("") == [".broker"]
     await client.disconnect()
+
+
+async def test_value_client(example_device, url):
+    """Check that we correctly cache values in value client."""
+    client = await ValueClient.connect(url)
+    await client.subscribe("test/device/track")
+
+    assert len(client) == 0
+    assert not list(iter(client))
+    with pytest.raises(KeyError):
+        _ = client["test/device/track/1"]
+
+    await client.get_snapshot("test/device/track")
+    assert client["test/device/track/1"] == [0]
+    assert len(client) == 8
+    assert list(iter(client)) == [f"test/device/track/{i}" for i in range(1, 9)]
+
+    await client.prop_set("test/device/track/1", [1, 2])
+    assert client["test/device/track/1"] == [1, 2]
