@@ -16,7 +16,7 @@ from .rpcerrors import (
     RpcParseError,
 )
 from .rpcmessage import RpcMessage
-from .rpcmethod import RpcMethodFlags, RpcMethodSignature
+from .rpcmethod import RpcMethodFlags, RpcMethodSignature, RpcMethodAccess
 from .rpcserver import RpcServer
 from .rpcurl import RpcLoginType, RpcProtocol, RpcUrl
 from .simpleclient import DeviceClient, SimpleClient, ValueClient
@@ -65,6 +65,7 @@ __all__ = [
     # rpcmethod
     "RpcMethodSignature",
     "RpcMethodFlags",
+    "RpcMethodAccess",
     # rpcerror
     "RpcErrorCode",
     "RpcError",

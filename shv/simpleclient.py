@@ -16,7 +16,7 @@ from .rpcerrors import (
     RpcMethodNotFoundError,
 )
 from .rpcmessage import RpcMessage
-from .rpcmethod import RpcMethodFlags, RpcMethodSignature
+from .rpcmethod import RpcMethodAccess, RpcMethodFlags, RpcMethodSignature
 from .rpcurl import RpcLoginType, RpcUrl
 from .value import SHVType, is_shvbool, is_shvnull, shvmeta, shvmeta_eq
 
@@ -276,10 +276,19 @@ class SimpleClient:
         assert is_shvbool(resp)
         return bool(resp)
 
-    async def _method_call(self, path: str, method: str, params: SHVType) -> SHVType:
+    async def _method_call(
+        self, path: str, method: str, access: RpcMethodAccess, params: SHVType
+    ) -> SHVType:
         """Handle request in the provided message.
 
         You have to set some RpcMessage that is sent back as a response.
+
+        :param path: SHV path to the node the method is associated with.
+        :param method: method requested to be called.
+        :param access: access level of the client specified in the request.
+        :param params: Parameters to be passed to the called method.
+        :return: result of the method call. To report error you should raise
+            :exc:`RpcError`.
         """
         raise RpcMethodNotFoundError(f"No such path '{path}' or method '{method}'")
 
@@ -416,7 +425,9 @@ class DeviceClient(SimpleClient):
             warnings.warn("You should specify device ID or device mount point!")
         return await super(DeviceClient, cls).connect(url, login_options)
 
-    async def _method_call(self, path: str, method: str, params: SHVType) -> SHVType:
+    async def _method_call(
+        self, path: str, method: str, access: RpcMethodAccess, params: SHVType
+    ) -> SHVType:
         if method == "ls":
             if not is_shvnull(params) and not (
                 isinstance(params, list)
@@ -468,14 +479,14 @@ class DeviceClient(SimpleClient):
                     "dir",
                     RpcMethodSignature.RET_PARAM,
                     RpcMethodFlags(0),
-                    "bws",
+                    RpcMethodAccess.BROWSE,
                     "",
                 ),
                 (
                     "ls",
                     RpcMethodSignature.RET_PARAM,
                     RpcMethodFlags(0),
-                    "bws",
+                    RpcMethodAccess.BROWSE,
                     "",
                 ),
                 *dirres,
@@ -486,13 +497,13 @@ class DeviceClient(SimpleClient):
                         "name": v[0],
                         "signature": v[1],
                         "flags": v[2],
-                        "accessGrant": v[3],
+                        "accessGrant": RpcMethodAccess.tostr(v[3]),
                         **({"description": v[4]} if v[4] else {}),
                     }
                     for v in dirres
                 )
             return list(v[0] for v in dirres)
-        return await super()._method_call(path, method, params)
+        return await super()._method_call(path, method, access, params)
 
     async def _ls(self, path: str) -> collections.abc.Sequence[tuple[str, bool]] | None:
         """Implement ``ls`` method for all nodes.
@@ -511,7 +522,7 @@ class DeviceClient(SimpleClient):
     async def _dir(
         self, path: str
     ) -> collections.abc.Sequence[
-        tuple[str, RpcMethodSignature, RpcMethodFlags, str, str]
+        tuple[str, RpcMethodSignature, RpcMethodFlags, RpcMethodAccess, str]
     ] | None:
         """Implement ``dir`` method for all nodes.
 

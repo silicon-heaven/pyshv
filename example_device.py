@@ -12,6 +12,7 @@ from shv import (
     RpcMessage,
     RpcMethodFlags,
     RpcMethodSignature,
+    RpcMethodAccess,
     RpcUrl,
     SHVType,
 )
@@ -46,7 +47,7 @@ class ExampleDevice(DeviceClient):
     async def _dir(
         self, path: str
     ) -> collections.abc.Sequence[
-        tuple[str, RpcMethodSignature, RpcMethodFlags, str, str]
+        tuple[str, RpcMethodSignature, RpcMethodFlags, RpcMethodAccess, str]
     ] | None:
         pth = path.split("/") if path else []
         if len(pth) == 0:
@@ -55,21 +56,21 @@ class ExampleDevice(DeviceClient):
                     "appName",
                     RpcMethodSignature.RET_VOID,
                     RpcMethodFlags.GETTER,
-                    "rd",
+                    RpcMethodAccess.BROWSE,
                     "",
                 ),
                 (
                     "appVersion",
                     RpcMethodSignature.RET_VOID,
                     RpcMethodFlags.GETTER,
-                    "rd",
+                    RpcMethodAccess.BROWSE,
                     "",
                 ),
                 (
                     "echo",
                     RpcMethodSignature.RET_PARAM,
                     RpcMethodFlags(0),
-                    "wr",
+                    RpcMethodAccess.WRITE,
                     "",
                 ),
             ]
@@ -82,14 +83,14 @@ class ExampleDevice(DeviceClient):
                         "get",
                         RpcMethodSignature.RET_VOID,
                         RpcMethodFlags.GETTER,
-                        "rd",
+                        RpcMethodAccess.READ,
                         "Get current track",
                     ),
                     (
                         "set",
                         RpcMethodSignature.VOID_PARAM,
                         RpcMethodFlags.SETTER,
-                        "wr",
+                        RpcMethodAccess.WRITE,
                         "Set track",
                     ),
                 ]
