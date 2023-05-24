@@ -2,6 +2,7 @@
 import asyncio
 import collections.abc
 import datetime
+import hashlib
 import logging
 import time
 import typing
@@ -101,8 +102,19 @@ class SimpleClient:
         # messages until login is actually performed. That is what happens but
         # it is not defined in any SHV design document as it seems.
         await client.call_shv_method(None, "hello")
-        await client.read_rpc_message()
-        # TODO support nonce
+        resp = await client.read_rpc_message()
+        if resp is None:
+            return None
+        resl = resp.result()
+        assert isinstance(resl, collections.abc.Mapping)
+
+        nonce = resl.get("nonce", None)
+        if login_type is RpcLoginType.SHA1:
+            assert isinstance(nonce, str)
+            m = hashlib.sha1()
+            m.update(nonce.encode("utf-8"))
+            m.update((password or "").encode("utf-8"))
+            password = m.hexdigest()
         params: SHVType = {
             "login": {"password": password, "type": login_type.value, "user": username},
             "options": {
@@ -110,6 +122,7 @@ class SimpleClient:
                 **(login_options if login_options else {}),  # type: ignore
             },
         }
+
         logger.debug("LOGGING IN")
         await client.call_shv_method(None, "login", params)
         resp = await client.read_rpc_message()

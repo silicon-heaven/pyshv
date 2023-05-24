@@ -1,18 +1,9 @@
 """Check implemntation of SimpleClient."""
-import collections
-import functools
+import dataclasses
 
 import pytest
 
-from shv import (
-    DeviceClient,
-    RpcClient,
-    RpcMethodFlags,
-    RpcMethodSignature,
-    SHVUInt,
-    SimpleClient,
-    shvmeta_eq,
-)
+from shv import RpcLoginType, RpcMethodSignature, SHVUInt, shvmeta_eq, SimpleClient
 
 
 @pytest.mark.parametrize(
@@ -177,3 +168,19 @@ async def test_dir_details(client, path, result):
     """Verify that we can use dir method."""
     res = await client.dir_details(path)
     assert res == result
+
+
+async def test_sha_login(shvbroker, url):
+    """Check that we can login with sha1 password.
+
+    Commonly we login with plain password in tests here but we need to check
+    ability to login with SHA1 hashed password as well.
+    """
+    nurl = dataclasses.replace(
+        url,
+        password="57a261a7bcb9e6cf1db80df501cdd89cee82957e",
+        login_type=RpcLoginType.SHA1,
+    )
+    client = await SimpleClient.connect(nurl)
+    assert await client.ls("") == [".broker"]
+    await client.disconnect()
