@@ -1,12 +1,11 @@
 """RPC client manager that provides facitility to simply connect to the broker."""
 import asyncio
 import collections.abc
-import datetime
 import hashlib
 import logging
 import time
+import traceback
 import typing
-import warnings
 
 from .rpcclient import RpcClient
 from .rpcerrors import (
@@ -16,9 +15,14 @@ from .rpcerrors import (
     RpcMethodNotFoundError,
 )
 from .rpcmessage import RpcMessage
-from .rpcmethod import RpcMethodAccess, RpcMethodFlags, RpcMethodSignature
+from .rpcmethod import (
+    RpcMethodAccess,
+    RpcMethodDesc,
+    RpcMethodFlags,
+    RpcMethodSignature,
+)
 from .rpcurl import RpcLoginType, RpcUrl
-from .value import SHVType, is_shvbool, is_shvnull, shvmeta, shvmeta_eq
+from .value import SHVType, is_shvbool, is_shvnull
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +38,18 @@ class SimpleClient:
 
     IDLE_TIMEOUT = 180
     """Number of seconds before we are disconnected from the broker automatically."""
+
+    APP_NAME: str = "pyshv"
+    """Name of the application reported to the SHV.
+
+    You can change this value in child class to report a more accurate
+    application name.
+    """
+    APP_VERSION: str = "unknown"
+    """Version of the application reported to the SHV.
+
+    You should change this value in child class to report a correct number.
+    """
 
     def __init__(self, client: RpcClient, client_id: int | None):
         self.client = client
@@ -167,8 +183,12 @@ class SimpleClient:
                 )
             except RpcError as exp:
                 resp.set_rpc_error(exp)
-            except Exception as exp:
-                resp.set_rpc_error(RpcMethodCallExceptionError(str(exp)))
+            except Exception as exc:
+                resp.set_rpc_error(
+                    RpcMethodCallExceptionError(
+                        "".join(traceback.format_exception(exc))
+                    )
+                )
             await self.client.send_rpc_message(resp)
             self._last_activity = time.monotonic()
         elif msg.is_response():
@@ -245,20 +265,19 @@ class SimpleClient:
         res = await self.call(path, "dir", ("", 0))
         if not isinstance(res, list):
             raise RpcMethodCallExceptionError(f"Invalid result returned: {repr(res)}")
-        return res
+        return [m for m in res if isinstance(m, str)]
 
-    async def dir_details(self, path: str) -> dict[str, dict[str, SHVType]]:
+    async def dir_details(self, path: str) -> list[RpcMethodDesc]:
         """List methods associated with node on the specified path.
 
         :param path: SHV path to the node we want methods to be listed for.
-        :return: list of the node's methods.
+        :return: list of the node's method descriptors.
         :raise RpcMethodNotFoundError: when there is no such path.
         """
         res = await self.call(path, "dir")
         if not isinstance(res, list):
             raise RpcMethodCallExceptionError(f"Invalid result returned: {repr(res)}")
-        print(res)
-        return {v["name"]: v for v in res}
+        return [RpcMethodDesc.frommap(m) for m in res]
 
     async def subscribe(self, path: str) -> None:
         """Perform subscribe for signals on given path.
@@ -295,257 +314,119 @@ class SimpleClient:
         :return: result of the method call. To report error you should raise
             :exc:`RpcError`.
         """
-        raise RpcMethodNotFoundError(f"No such path '{path}' or method '{method}'")
-
-    async def _value_update(self, path: str, value: SHVType) -> None:
-        """Handle value change (`chng` method)."""
-
-
-class ValueClient(SimpleClient, collections.abc.Mapping):
-    """SHV client made to track values more easily.
-
-    This tailors to the use case of tracking and accessing various values more
-    easily. You need to subscribe to specific path and this class automatically
-    provides you with cached latest value as received through signals or fetched
-    from logs (logs fetching has to be performed explicitly).
-
-    To access subscribed value you can index this object with SHV path to it.
-    """
-
-    def __init__(self, client: RpcClient, client_id: int | None):
-        super().__init__(client, client_id)
-        self._cache: dict[str, SHVType] = {}
-        self._handlers: dict[str, typing.Callable] = {}
-
-    def __getitem__(self, key: str) -> SHVType:
-        return self._cache[key]
-
-    def __iter__(self) -> typing.Iterator[str]:
-        return iter(self._cache.keys())
-
-    def __len__(self):
-        return len(self._cache)
-
-    async def _value_update(self, path: str, value: SHVType) -> None:
-        handler = self._get_handler(path)
-        if handler is not None and not shvmeta_eq(self._cache.get(path, None), value):
-            handler(self, path, value)
-        self._cache[path] = value
-
-    def _get_handler(self, path: str) -> None | typing.Callable:
-        """Get the handler for the longest path match."""
-        split_key = path.split("/")
-        paths = (
-            "/".join(split_key[: len(split_key) - i]) for i in range(len(split_key))
-        )
-        return next(
-            (self._handlers[path] for path in paths if path in self._handlers),
-            None,
-        )
-
-    async def prop_get(self, path: str) -> SHVType:
-        """Get value from the property associated with the node on given path."""
-        return await self.call(path, "get")
-
-    async def prop_set(self, path: str, value: SHVType) -> None:
-        """Set value to the property associated with the node on given path."""
-        await self.call(path, "set", value)
-
-    def on_change(self, path: str, callback: typing.Callable | None) -> None:
-        """Register new callback handler called when value changes.
-
-        The handler is called right before value is updated and thus it is
-        possible to access the old and new value is provided as an argument.
-
-        To clear the callback on the specific path you can pass `None`.
-
-        :param path:
-        :param callback:
-        """
-        if callback is None:
-            self._handlers.pop(path)
-        else:
-            self._handlers[path] = callback
-
-    async def log_snapshot(self, path: str) -> None:
-        """Get snapshot of the logs.
-
-        Use this to receive old values.
-
-        :param path: SHV path to the node with `getLog` method.
-        """
-        params: SHVType = {
-            "recordCountLimit": 10000,
-            "withPathsDict": True,
-            "withSnapshot": True,
-            "withTypeInfo": False,
-            "since": datetime.datetime.now(),
-        }
-        result = await self.call(path, "getLog", params)
-        if result:
-            paths_dict = shvmeta(result).get("pathsDict", None)
-            if isinstance(paths_dict, collections.abc.Sequence):
-                for list_item in paths_dict:
-                    if not isinstance(list_item, collections.abc.Sequence):
-                        continue
-                    idx = list_item[1]
-                    if not isinstance(idx, int):
-                        continue
-                    value = list_item[2]
-                    spath = paths_dict[idx]
-                    if not isinstance(spath, str):
-                        continue
-                    await self._value_update(spath, value)
-
-    async def get_snapshot(self, path: str) -> None:
-        """Get snapshot of data using get methods.
-
-        This provides a way for you to initialize cache without logs. It
-        iterates over SHV tree and calls any get method it encounters.
-        """
-        # TODO rewrite this to use ls_with_children to safe on method calls
-        if "get" in await self.dir(path) and path not in self._cache:
-            self._cache[path] = await self.prop_get(path)
-        for node in await self.ls(path):
-            await self.get_snapshot("/".join((path, node)))
-
-
-class DeviceClient(SimpleClient):
-    """SHV client tailored for device implementation.
-
-    Device in SHV is client that supports ``ls`` and ``dir`` methods and thus
-    provides some tree of nodes that have method associated with it.
-
-    To use it you should create new class based on it and implement your ``_ls``
-    and ``_dir`` methods.
-    """
-
-    @classmethod
-    async def connect(
-        cls,
-        url: RpcUrl,
-        login_options: dict[str, SHVType] | None = None,
-    ) -> typing.Union["SimpleClient", None]:
-        if not url.device_id and not url.device_mount_point:
-            warnings.warn("You should specify device ID or device mount point!")
-        return await super(DeviceClient, cls).connect(url, login_options)
-
-    async def _method_call(
-        self, path: str, method: str, access: RpcMethodAccess, params: SHVType
-    ) -> SHVType:
         if method == "ls":
-            if not is_shvnull(params) and not (
+            return self._method_call_ls(path, params)
+        if method == "dir":
+            return self._method_call_dir(path, params)
+        if method == "appName":
+            return self.APP_NAME
+        if method == "appVersion":
+            return self.APP_VERSION
+        if method == "echo" and access >= RpcMethodAccess.WRITE:
+            return params
+        raise RpcMethodNotFoundError(
+            f"No such path '{path}' or method '{method}' or access rights."
+        )
+
+    def _method_call_ls(self, path: str, params: SHVType) -> SHVType:
+        """Implementation of the ``ls`` method call."""
+        if not is_shvnull(params) and not (
+            isinstance(params, list)
+            and len(params) == 2
+            and isinstance(params[0], str)
+            and isinstance(params[1], int)
+        ):
+            raise RpcInvalidParamsError("Use Null or list with path and attributes")
+        children = False
+        if isinstance(params, list):
+            path = "/".join(filter(lambda v: v, (path, params[0])))
+            if params[1] & 0x1:
+                children = True
+        lsres = self._ls(path)
+        if not children:
+            return list(val[0] for val in lsres)
+        return list(lsres)
+
+    def _ls(self, path: str) -> typing.Iterator[tuple[str, bool]]:
+        """Implement ``ls`` method for all nodes.
+
+        The default implementation returns empty list for the root and raises
+        exception :exc:`RpcMethodNotFoundError` otherwise. Your implementation
+        should return list of child nodes. Every node should be tuple with its
+        name and boolean signaling if there are some children.
+
+        You should call this method as a last resort as it will most likely
+        raise error.
+
+        :param path: SHV path that should be listed.
+        :return: Iterator over child nodes of the node on the path.
+        :raise RpcMethodNotFoundError: when there is no such method. This has to
+            be on first iteration and thus you should not yield any value if you
+            plan to raise this exception!
+        """
+        if path:
+            raise RpcMethodNotFoundError(f"No such node: {path}")
+        return iter(())
+
+    def _method_call_dir(self, path: str, params: SHVType) -> SHVType:
+        if (
+            not is_shvnull(params)
+            and not isinstance(params, str)
+            and not (
                 isinstance(params, list)
                 and len(params) == 2
                 and isinstance(params[0], str)
                 and isinstance(params[1], int)
-            ):
-                raise RpcInvalidParamsError("Use Null or list with path and attributes")
-            children = False
-            if isinstance(params, list):
-                path = "/".join(filter(lambda v: v, (path, params[0])))
-                if params[1] & 0x1:
-                    children = True
-            lsres = await self._ls(path)
-            if lsres is None:
-                raise RpcMethodNotFoundError("No such node")
-            if not children:
-                return list(val[0] for val in lsres)
-            return lsres
-        if method == "dir":
-            if (
-                not is_shvnull(params)
-                and not isinstance(params, str)
-                and not (
-                    isinstance(params, list)
-                    and len(params) == 2
-                    and isinstance(params[0], str)
-                    and isinstance(params[1], int)
-                )
-            ):
-                raise RpcInvalidParamsError(
-                    "Use Null, string or list with path and attributes"
-                )
-            path = "/".join(
-                filter(
-                    lambda v: v,
-                    (
-                        path,
-                        params if isinstance(params, str) else "",
-                        params[0] if isinstance(params, list) else "",
-                    ),
-                )
             )
-            dirres = await self._dir(path)
-            if dirres is None:
-                raise RpcMethodNotFoundError("No such node")
-            dirres = [
+        ):
+            raise RpcInvalidParamsError(
+                "Use Null, string or list with path and attributes"
+            )
+        path = "/".join(
+            filter(
+                lambda v: v,
                 (
-                    "dir",
-                    RpcMethodSignature.RET_PARAM,
-                    RpcMethodFlags(0),
-                    RpcMethodAccess.BROWSE,
-                    "",
+                    path,
+                    params if isinstance(params, str) else "",
+                    params[0] if isinstance(params, list) else "",
                 ),
-                (
-                    "ls",
-                    RpcMethodSignature.RET_PARAM,
-                    RpcMethodFlags(0),
-                    RpcMethodAccess.BROWSE,
-                    "",
-                ),
-                *dirres,
-            ]
-            if isinstance(params, list) and params[1] == 127:
-                return list(
-                    {
-                        "name": v[0],
-                        "signature": v[1],
-                        "flags": v[2],
-                        "accessGrant": RpcMethodAccess.tostr(v[3]),
-                        **({"description": v[4]} if v[4] else {}),
-                    }
-                    for v in dirres
-                )
-            return list(v[0] for v in dirres)
-        return await super()._method_call(path, method, access, params)
+            )
+        )
+        try:
+            next(self._ls(path))  # detect missing node (raises RpcMethodNotFoundError)
+        except StopIteration:
+            pass
+        dirres = self._dir(path)
+        if isinstance(params, list) and params[1] == 127:
+            return [d.tomap() for d in dirres]
+        return list(d.name for d in dirres)
 
-    async def _ls(self, path: str) -> collections.abc.Sequence[tuple[str, bool]] | None:
-        """Implement ``ls`` method for all nodes.
-
-        The default implementation returns empty list for the root and ``None``
-        otherwise. Your implementation should return list of child nodes. Every
-        node should be tuple with its name and boolean signaling if there are
-        some children.
-
-        :param path: SHV path that should be listed.
-        :return: List of child nodes of the node on the path or ``None`` for
-            invalid nodes.
-        """
-        return None if path else []
-
-    async def _dir(
-        self, path: str
-    ) -> collections.abc.Sequence[
-        tuple[str, RpcMethodSignature, RpcMethodFlags, RpcMethodAccess, str]
-    ] | None:
+    def _dir(self, path: str) -> typing.Iterator[RpcMethodDesc]:
         """Implement ``dir`` method for all nodes.
 
-        The default implementation returns ``None`` for all paths ``_ls`` does
-        (it calls it to check) and empty list otherwise. Your implementations
-        needs to return list of methods where tuple has these fields:
+        This implementation is called only when :meth:`_ls` does not raise
+        exception and thus only for valid paths.
 
-        * Name of the method
-        * Signature of the method
-        * Flags for the method
-        * Access rights script (for example ``"rd"`` or ``"wr"``)
-        * Description of the method
-
-        Note that the caller automatically prefixes your list with ``ls`` and
-        ``dir`` signatures.
+        Always call this as first before you yield your own methods to provide
+        users with standard ones.
 
         :param path: SHV path method should be listed for.
-        :return: List of methods associated with given node or ``None`` for
-            invalid nodes.
+        :return: List of methods associated with given node.
         """
-        return None if self._ls(path) is None else []
+        yield RpcMethodDesc("dir", RpcMethodSignature.RET_PARAM)
+        yield RpcMethodDesc("ls", RpcMethodSignature.RET_PARAM)
+        if not path:
+            yield RpcMethodDesc(
+                "appName", RpcMethodSignature.RET_VOID, RpcMethodFlags.GETTER
+            )
+            yield RpcMethodDesc(
+                "appVersion", RpcMethodSignature.RET_VOID, RpcMethodFlags.GETTER
+            )
+            yield RpcMethodDesc(
+                "echo",
+                RpcMethodSignature.RET_PARAM,
+                access=RpcMethodAccess.WRITE,
+            )
+
+    async def _value_update(self, path: str, value: SHVType) -> None:
+        """Handle value change (`chng` method)."""

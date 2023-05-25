@@ -62,7 +62,7 @@ class RpcClient:
         if host is None:
             if protocol == RpcProtocol.TCP:
                 host = "localhost"
-            elif protocol == RrcProtocol.LOCAL_SOCKET:
+            elif protocol == RpcProtocol.LOCAL_SOCKET:
                 host = "shv.sock"
             else:
                 raise RuntimeError(f"Invalid protocol: {protocol}")

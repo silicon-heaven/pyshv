@@ -91,5 +91,12 @@ async def test_invalid_request(example_device, client):
         await client.call("test/device/track/4", "nosuchmethod")
 
 
+async def test_no_such_node(example_device, client):
+    with pytest.raises(RpcMethodNotFoundError):
+        await client.ls("test/device/track/none")
+    with pytest.raises(RpcMethodNotFoundError):
+        await client.dir("test/device/track/none")
+
+
 async def test_example_client(shvbroker, url):
     await example_client.example_client(url)

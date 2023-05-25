@@ -5,6 +5,9 @@ import pytest
 
 from shv import (
     RpcLoginType,
+    RpcMethodAccess,
+    RpcMethodDesc,
+    RpcMethodFlags,
     RpcMethodSignature,
     SHVUInt,
     SimpleClient,
@@ -112,62 +115,49 @@ async def test_dir(client, path, result):
     (
         (
             "",
-            {
-                "dir": {
-                    "name": "dir",
-                    "signature": RpcMethodSignature.RET_PARAM,
-                    "flags": 0,
-                    "accessGrant": "bws",
-                },
-                "ls": {
-                    "name": "ls",
-                    "signature": RpcMethodSignature.RET_PARAM,
-                    "flags": 0,
-                    "accessGrant": "bws",
-                },
-            },
+            [
+                RpcMethodDesc("dir", RpcMethodSignature.RET_PARAM),
+                RpcMethodDesc("ls", RpcMethodSignature.RET_PARAM),
+            ],
         ),
         (
             ".broker/app/log",
-            {
-                "chng": {
-                    "accessGrant": "rd",
-                    "flags": 1,
-                    "name": "chng",
-                    "signature": 1,
-                },
-                "dir": {
-                    "accessGrant": "bws",
-                    "flags": 0,
-                    "name": "dir",
-                    "signature": 3,
-                },
-                "getSendLogAsSignalEnabled": {
-                    "accessGrant": "rd",
-                    "flags": 2,
-                    "name": "getSendLogAsSignalEnabled",
-                    "signature": 2,
-                },
-                "ls": {"accessGrant": "rd", "flags": 0, "name": "ls", "signature": 3},
-                "setSendLogAsSignalEnabled": {
-                    "accessGrant": "wr",
-                    "flags": 4,
-                    "name": "setSendLogAsSignalEnabled",
-                    "signature": 3,
-                },
-                "setVerbosity": {
-                    "accessGrant": "cmd",
-                    "flags": 4,
-                    "name": "setVerbosity",
-                    "signature": 3,
-                },
-                "verbosity": {
-                    "accessGrant": "rd",
-                    "flags": 2,
-                    "name": "verbosity",
-                    "signature": 2,
-                },
-            },
+            [
+                RpcMethodDesc("dir", RpcMethodSignature.RET_PARAM),
+                RpcMethodDesc(
+                    "ls", RpcMethodSignature.RET_PARAM, access=RpcMethodAccess.READ
+                ),
+                RpcMethodDesc(
+                    "chng",
+                    RpcMethodSignature.VOID_PARAM,
+                    RpcMethodFlags.SIGNAL,
+                    RpcMethodAccess.READ,
+                ),
+                RpcMethodDesc(
+                    "getSendLogAsSignalEnabled",
+                    RpcMethodSignature.RET_VOID,
+                    RpcMethodFlags.GETTER,
+                    RpcMethodAccess.READ,
+                ),
+                RpcMethodDesc(
+                    "setSendLogAsSignalEnabled",
+                    RpcMethodSignature.RET_PARAM,
+                    RpcMethodFlags.SETTER,
+                    RpcMethodAccess.WRITE,
+                ),
+                RpcMethodDesc(
+                    "verbosity",
+                    RpcMethodSignature.RET_VOID,
+                    RpcMethodFlags.GETTER,
+                    RpcMethodAccess.READ,
+                ),
+                RpcMethodDesc(
+                    "setVerbosity",
+                    RpcMethodSignature.RET_PARAM,
+                    RpcMethodFlags.SETTER,
+                    RpcMethodAccess.COMMAND,
+                ),
+            ],
         ),
     ),
 )

@@ -16,10 +16,15 @@ from .rpcerrors import (
     RpcParseError,
 )
 from .rpcmessage import RpcMessage
-from .rpcmethod import RpcMethodAccess, RpcMethodFlags, RpcMethodSignature
+from .rpcmethod import (
+    RpcMethodAccess,
+    RpcMethodDesc,
+    RpcMethodFlags,
+    RpcMethodSignature,
+)
 from .rpcserver import RpcServer
 from .rpcurl import RpcLoginType, RpcProtocol, RpcUrl
-from .simpleclient import DeviceClient, SimpleClient, ValueClient
+from .simpleclient import SimpleClient
 from .value import (
     SHVBool,
     SHVBytes,
@@ -42,6 +47,7 @@ from .value import (
     shvmeta,
     shvmeta_eq,
 )
+from .valueclient import ValueClient
 
 __all__ = [
     # cpon
@@ -66,6 +72,7 @@ __all__ = [
     "RpcMethodSignature",
     "RpcMethodFlags",
     "RpcMethodAccess",
+    "RpcMethodDesc",
     # rpcerror
     "RpcErrorCode",
     "RpcError",
@@ -79,8 +86,8 @@ __all__ = [
     "RpcParseError",
     # simpleclient
     "SimpleClient",
+    # valueclient
     "ValueClient",
-    "DeviceClient",
     # value
     "SHVMeta",
     "shvmeta",

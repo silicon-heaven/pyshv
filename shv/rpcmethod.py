@@ -1,5 +1,10 @@
 """Types used in SHV RPC method description."""
+import collections.abc
+import dataclasses
 import enum
+import typing
+
+from .value import SHVType
 
 
 class RpcMethodSignature(enum.IntEnum):
@@ -33,20 +38,19 @@ class RpcMethodAccess(enum.IntEnum):
     DEVEL = enum.auto()
     ADMIN = enum.auto()
 
-    @classmethod
-    def tostr(cls, access: "RpcMethodAccess") -> str:
+    def tostr(self) -> str:
         """Convert to string representation."""
         return {
-            cls.BROWSE: "bws",
-            cls.READ: "rd",
-            cls.WRITE: "wr",
-            cls.COMMAND: "cmd",
-            cls.CONFIG: "cfg",
-            cls.SERVICE: "srv",
-            cls.SUPER_SERVICE: "ssrv",
-            cls.DEVEL: "dev",
-            cls.ADMIN: "su",
-        }.get(access, "bws")
+            self.BROWSE.value: "bws",
+            self.READ.value: "rd",
+            self.WRITE.value: "wr",
+            self.COMMAND.value: "cmd",
+            self.CONFIG.value: "cfg",
+            self.SERVICE.value: "srv",
+            self.SUPER_SERVICE.value: "ssrv",
+            self.DEVEL.value: "dev",
+            self.ADMIN.value: "su",
+        }.get(self.value, "bws")
 
     @classmethod
     def fromstr(cls, access: str) -> "RpcMethodAccess":
@@ -62,3 +66,55 @@ class RpcMethodAccess(enum.IntEnum):
             "dev": cls.DEVEL,
             "su": cls.ADMIN,
         }.get(access, cls.BROWSE)
+
+
+@dataclasses.dataclass
+class RpcMethodDesc:
+    """Description of the SHV RPC method.
+
+    This is implemented as :func:`dataclasses.dataclass`.
+
+    :param name: Name of the method.
+    :param signature: Calling signature for this method.
+    :param flags: Flags assigned to the method.
+    :param access: Minimal granted access level for this method.
+    :param description: Short description of the method.
+    """
+
+    name: str
+    signature: RpcMethodSignature = RpcMethodSignature.VOID_VOID
+    flags: RpcMethodFlags = RpcMethodFlags(0)
+    access: RpcMethodAccess = RpcMethodAccess.BROWSE
+    description: str = ""
+
+    def tomap(self) -> SHVType:
+        """Convert method description to SHV Map."""
+        return {
+            "name": self.name,
+            "signature": self.signature,
+            "flags": self.flags,
+            "accessGrant": RpcMethodAccess.tostr(self.access),
+            **({"description": self.description} if self.description else {}),
+        }
+
+    @classmethod
+    def frommap(cls, desc: SHVType) -> "RpcMethodDesc":
+        """Convert SHV method description to ."""
+        if not isinstance(desc, collections.abc.Mapping):
+            raise ValueError(f"Not valid method description: {repr(desc)}")
+        name = desc.get("name", None)
+        signature = desc.get("signature", None)
+        flags = desc.get("flags", None)
+        access = desc.get("accessGrant", None)
+        if not isinstance(name, str):
+            raise ValueError(f"Invalid method name format: {repr(name)}")
+        return cls(
+            name=name,
+            signature=RpcMethodSignature(
+                signature if isinstance(signature, int) else 0
+            ),
+            flags=RpcMethodFlags(flags if isinstance(flags, int) else 0),
+            access=RpcMethodAccess.fromstr(
+                access if isinstance(access, str) else "bws"
+            ),
+        )

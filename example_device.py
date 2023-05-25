@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 import argparse
 import asyncio
-import collections.abc
 import logging
+import typing
 
 from shv import (
-    DeviceClient,
     RpcClient,
     RpcInvalidParamsError,
-    RpcLoginType,
     RpcMessage,
     RpcMethodAccess,
+    RpcMethodDesc,
     RpcMethodFlags,
     RpcMethodSignature,
     RpcUrl,
     SHVType,
+    SimpleClient,
 )
 
 log_levels = (
@@ -26,87 +26,51 @@ log_levels = (
 )
 
 
-class ExampleDevice(DeviceClient):
+class ExampleDevice(SimpleClient):
     """Simple device demostrating the way to implement request handling."""
+
+    APP_NAME = "pyshv-example_device"
 
     def __init__(self, client: RpcClient, client_id: int | None):
         super().__init__(client, client_id)
         self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
 
-    async def _ls(self, path: str) -> collections.abc.Sequence[tuple[str, bool]] | None:
+    def _ls(self, path: str) -> typing.Iterator[tuple[str, bool]]:
         pth = path.split("/") if path else []
         if len(pth) == 0:
-            return [("track", True)]
+            yield ("track", True)
+            return
         if pth[0] == "track":
             if len(pth) == 1:
-                return [(k, False) for k in self.tracks.keys()]
+                yield from ((k, False) for k in self.tracks.keys())
+                return
             if len(pth) == 2 and pth[1] in self.tracks:
-                return []
-        return await super()._ls(path)
+                return
+        yield from super()._ls(path)
 
-    async def _dir(
-        self, path: str
-    ) -> collections.abc.Sequence[
-        tuple[str, RpcMethodSignature, RpcMethodFlags, RpcMethodAccess, str]
-    ] | None:
+    def _dir(self, path: str) -> typing.Iterator[RpcMethodDesc]:
+        yield from super()._dir(path)
         pth = path.split("/") if path else []
-        if len(pth) == 0:
-            return [
-                (
-                    "appName",
-                    RpcMethodSignature.RET_VOID,
-                    RpcMethodFlags.GETTER,
-                    RpcMethodAccess.BROWSE,
-                    "",
-                ),
-                (
-                    "appVersion",
-                    RpcMethodSignature.RET_VOID,
-                    RpcMethodFlags.GETTER,
-                    RpcMethodAccess.BROWSE,
-                    "",
-                ),
-                (
-                    "echo",
-                    RpcMethodSignature.RET_PARAM,
-                    RpcMethodFlags(0),
-                    RpcMethodAccess.WRITE,
-                    "",
-                ),
-            ]
-        if pth[0] == "track":
-            if len(pth) == 1:
-                return []
-            if len(pth) == 2 and pth[1] in self.tracks:
-                return [
-                    (
-                        "get",
-                        RpcMethodSignature.RET_VOID,
-                        RpcMethodFlags.GETTER,
-                        RpcMethodAccess.READ,
-                        "Get current track",
-                    ),
-                    (
-                        "set",
-                        RpcMethodSignature.VOID_PARAM,
-                        RpcMethodFlags.SETTER,
-                        RpcMethodAccess.WRITE,
-                        "Set track",
-                    ),
-                ]
-        return await super()._dir(path)
+        if len(pth) == 2 and pth[0] == "track" and pth[1] in self.tracks:
+            yield RpcMethodDesc(
+                "get",
+                RpcMethodSignature.RET_VOID,
+                RpcMethodFlags.GETTER,
+                RpcMethodAccess.READ,
+                "Get current track",
+            )
+            yield RpcMethodDesc(
+                "set",
+                RpcMethodSignature.VOID_PARAM,
+                RpcMethodFlags.SETTER,
+                RpcMethodAccess.WRITE,
+                "Set track",
+            )
 
     async def _method_call(
         self, path: str, method: str, access: RpcMethodAccess, params: SHVType
     ) -> SHVType:
         pth = path.split("/") if path else []
-        if len(pth) == 0:
-            if method == "appName":
-                return "pyshv-example_device"
-            if method == "appVersion":
-                return "unknown"
-            if method == "echo" and access >= RpcMethodAccess.WRITE:
-                return params
         if len(pth) == 2 and pth[1] in self.tracks:
             if method == "get" and access >= RpcMethodAccess.READ:
                 return self.tracks[pth[1]]
