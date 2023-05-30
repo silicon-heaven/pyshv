@@ -112,6 +112,8 @@ class RpcMessage:
             shvmeta(self.value).pop(self.Tag.CALLER_IDS, None)
         else:
             some: SHVType = cids
+            if len(cids) == 1:
+                some = cids[0]
             self.value = SHVMeta.new(self.value, {self.Tag.CALLER_IDS: some})
 
     def access_grant(self) -> RpcMethodAccess | None:

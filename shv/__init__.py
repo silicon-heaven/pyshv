@@ -22,7 +22,7 @@ from .rpcmethod import (
     RpcMethodFlags,
     RpcMethodSignature,
 )
-from .rpcserver import RpcServer
+from .rpcserver import create_rpc_server
 from .rpcurl import RpcLoginType, RpcProtocol, RpcUrl
 from .simpleclient import SimpleClient
 from .value import (
@@ -44,6 +44,7 @@ from .value import (
     is_shvimap,
     is_shvmap,
     is_shvnull,
+    shvget,
     shvmeta,
     shvmeta_eq,
 )
@@ -61,7 +62,7 @@ __all__ = [
     # rpcclient
     "RpcClient",
     # rpcserver
-    "RpcServer",
+    "create_rpc_server",
     # rpcurl
     "RpcProtocol",
     "RpcLoginType",
@@ -107,6 +108,7 @@ __all__ = [
     "SHVDict",
     "is_shvmap",
     "is_shvimap",
+    "shvget",
     "SHVType",
     "SHVMetaType",
 ]

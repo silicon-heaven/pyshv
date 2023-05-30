@@ -36,7 +36,7 @@ class SimpleClient:
     the different operation is performed.
     """
 
-    IDLE_TIMEOUT = 180
+    IDLE_TIMEOUT: float = 180
     """Number of seconds before we are disconnected from the broker automatically."""
 
     APP_NAME: str = "pyshv"
@@ -58,9 +58,6 @@ class SimpleClient:
         """Client ID assigned on login by SHV broker."""
         self.task = asyncio.create_task(self._loop())
         """Task running the message handling loop."""
-        self.keep_alive_task = asyncio.create_task(self._keep_alive_loop())
-        """Task running the keep alive loop."""
-        self._last_activity = time.monotonic()
         self._calls_event: dict[int, asyncio.Event] = {}
         self._calls_msg: dict[int, RpcMessage] = {}
 
@@ -95,7 +92,7 @@ class SimpleClient:
         if self.client.writer.is_closing():
             return
         await self.client.disconnect()
-        self.keep_alive_task.cancel()
+        await self.task
 
     @classmethod
     async def login(
@@ -153,18 +150,24 @@ class SimpleClient:
 
     async def _loop(self) -> None:
         """Loop run in asyncio task to receive messages."""
+        keep_alive_task = asyncio.create_task(self._keep_alive_loop())
         while msg := await self.client.read_rpc_message(throw_error=False):
             asyncio.create_task(self._message(msg))
+        keep_alive_task.cancel()
+        try:
+            await keep_alive_task
+        except asyncio.exceptions.CancelledError:
+            pass
 
     async def _keep_alive_loop(self) -> None:
-        """Loop run in asyncio task to send pings to the broker when idling."""
+        """Loop run alongside with _loop to send pings to the broker when idling."""
         idlet = self.IDLE_TIMEOUT / 2
         while not self.client.writer.is_closing():
-            t = time.monotonic() - self._last_activity
+            t = time.monotonic() - self.client.last_activity
             if t < idlet:
                 await asyncio.sleep(idlet - t)
-            await self.client.call_shv_method(".broker/app", "ping")
-            self._last_activity = time.monotonic()
+            else:
+                await self.client.call_shv_method(".broker/app", "ping")
 
     async def _message(self, msg: RpcMessage) -> None:
         """Handle every received message."""
@@ -190,7 +193,6 @@ class SimpleClient:
                     )
                 )
             await self.client.send_rpc_message(resp)
-            self._last_activity = time.monotonic()
         elif msg.is_response():
             rid = msg.request_id()
             assert rid is not None
@@ -218,7 +220,6 @@ class SimpleClient:
         event = asyncio.Event()
         self._calls_event[rid] = event
         await self.client.call_shv_method_with_id(rid, path, method, params)
-        self._last_activity = time.monotonic()
         await event.wait()
         msg = self._calls_msg.pop(rid)
         err = msg.rpc_error()
@@ -287,7 +288,7 @@ class SimpleClient:
 
         :param path: SHV path to the node to subscribe.
         """
-        await self.call(".broker/app", "subscribe", path)
+        await self.call(".broker/app", "subscribe", {"path": path})
 
     async def unsubscribe(self, path: str) -> bool:
         """Perform unsubscribe for signals on given path.
@@ -296,7 +297,7 @@ class SimpleClient:
         :return: ``True`` in case such subscribe was located and ``False``
             otherwise.
         """
-        resp = await self.call(".broker/app", "unsubscribe", path)
+        resp = await self.call(".broker/app", "unsubscribe", {"path": path})
         assert is_shvbool(resp)
         return bool(resp)
 
@@ -347,7 +348,7 @@ class SimpleClient:
             return list(val[0] for val in lsres)
         return list(lsres)
 
-    def _ls(self, path: str) -> typing.Iterator[tuple[str, bool]]:
+    def _ls(self, path: str) -> typing.Iterator[tuple[str, bool | None]]:
         """Implement ``ls`` method for all nodes.
 
         The default implementation returns empty list for the root and raises

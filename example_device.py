@@ -35,7 +35,7 @@ class ExampleDevice(SimpleClient):
         super().__init__(client, client_id)
         self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
 
-    def _ls(self, path: str) -> typing.Iterator[tuple[str, bool]]:
+    def _ls(self, path: str) -> typing.Iterator[tuple[str, bool | None]]:
         pth = path.split("/") if path else []
         if len(pth) == 0:
             yield ("track", True)

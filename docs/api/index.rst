@@ -8,5 +8,6 @@ API reference
    rpcmessage
    value
    rpccom
+   broker
    cpon
    chainpack

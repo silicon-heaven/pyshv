@@ -44,6 +44,7 @@ lint = [
 
 [project.scripts]
 pycp2cp = "shv.cp2cp.__main__:main"
+pyshvbroker = "shv.broker.__main__:main"
 
 [build-system]
 requires = ["setuptools"]
@@ -56,6 +57,15 @@ exclude = ["docs", "tests*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+
+[tool.coverage.run]
+branch = true
+omit = ["tests/*"]
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if typing.TYPE_CHECKING:"
+]
 
 [tool.isort]
 profile = 'black'

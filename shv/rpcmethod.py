@@ -118,3 +118,66 @@ class RpcMethodDesc:
                 access if isinstance(access, str) else "bws"
             ),
         )
+
+    @classmethod
+    def getter(
+        cls,
+        name: str = "get",
+        access: RpcMethodAccess = RpcMethodAccess.READ,
+        description: str = "",
+    ) -> "RpcMethodDesc":
+        """New getter method description.
+
+        :param name: Name of the method.
+        :param access: Minimal granted access level for this getter.
+        :param description: Short description of the value.
+        """
+        return cls(
+            name,
+            RpcMethodSignature.RET_VOID,
+            RpcMethodFlags.GETTER,
+            access,
+            description,
+        )
+
+    @classmethod
+    def setter(
+        cls,
+        name: str = "set",
+        access: RpcMethodAccess = RpcMethodAccess.WRITE,
+        description: str = "",
+    ) -> "RpcMethodDesc":
+        """New setter method description.
+
+        :param name: Name of the method.
+        :param access: Minimal granted access level for this setter.
+        :param description: Short description of the value.
+        """
+        return cls(
+            name,
+            RpcMethodSignature.VOID_PARAM,
+            RpcMethodFlags.SETTER,
+            access,
+            description,
+        )
+
+    @classmethod
+    def signal(
+        cls,
+        name: str = "chng",
+        access: RpcMethodAccess = RpcMethodAccess.WRITE,
+        description: str = "",
+    ) -> "RpcMethodDesc":
+        """New signal method description.
+
+        :param name: Name of the method.
+        :param access: Minimal granted access level for this setter.
+        :param description: Short description of the value.
+        """
+        return cls(
+            name,
+            RpcMethodSignature.RET_VOID,
+            RpcMethodFlags.SIGNAL,
+            access,
+            description,
+        )

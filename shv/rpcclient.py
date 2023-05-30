@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import io
 import logging
+import time
 import typing
 
 from .chainpack import ChainPack, ChainPackReader, ChainPackWriter
@@ -42,6 +43,8 @@ class RpcClient:
         reader: asyncio.StreamReader,
         writer: asyncio.StreamWriter,
     ):
+        self.last_activity = time.monotonic()
+        """Last activity on this connection (read or write of the message)."""
         self.reader = reader
         self.writer = writer
         self._read_data = bytearray(0)
@@ -102,7 +105,6 @@ class RpcClient:
         msg.set_method(method)
         msg.set_params(params)
         msg.set_request_id(req_id)
-
         await self.send_rpc_message(msg)
 
     async def send_rpc_message(self, msg: RpcMessage) -> None:
@@ -118,6 +120,7 @@ class RpcClient:
         self.writer.write(ChainPack.ProtocolType.to_bytes(1, "big"))
         self.writer.write(data)
         await self.writer.drain()
+        self.last_activity = time.monotonic()
 
     def _get_rpc_msg(self):
         if len(self._read_data) < 6:
@@ -148,6 +151,7 @@ class RpcClient:
         """
         while not self.reader.at_eof():
             msg = self._get_rpc_msg()
+            self.last_activity = time.monotonic()
             if msg:
                 logger.debug("==> REC: %s", msg.to_string())
                 if throw_error and msg.is_error():

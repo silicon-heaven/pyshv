@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RpcError` that represents SHV RPC errors
 - `SHVMeta` and variation on SHV types based on it with companion functions to
   manage these custom extended types
+- Small broker implemented purely in Python
 
 ### Changed
 - `RpcMessage.ErrorCode` moved and renamed to `RpcErrorCode`

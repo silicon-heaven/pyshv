@@ -7,7 +7,7 @@ import time
 
 import pytest
 
-from example_device import example_device
+from example_device import ExampleDevice
 from shv import RpcLoginType, RpcUrl, SimpleClient
 
 
@@ -33,6 +33,11 @@ def fixture_url(port):
         password="admin!123",
         login_type=RpcLoginType.PLAIN,
     )
+
+
+@pytest.fixture(name="url_test", scope="module")
+def fixture_url_test(url):
+    return dataclasses.replace(url, username="test", password="test")
 
 
 @pytest.fixture(name="shvbroker", scope="module")
@@ -73,14 +78,17 @@ async def fixture_client(shvbroker, url):
     await client.disconnect()
 
 
+@pytest.fixture(name="test_client")
+async def fixture_test_client(shvbroker, url_test):
+    client = await SimpleClient.connect(url_test)
+    yield client
+    await client.disconnect()
+
+
 @pytest.fixture(name="example_device")
 async def fixture_example_device(event_loop, shvbroker, url):
     """Run example device and provide socket to access it."""
     nurl = dataclasses.replace(url, device_mount_point="test/device")
-    task = event_loop.create_task(example_device(nurl))
-    yield task
-    task.cancel()
-    try:
-        await task
-    except asyncio.CancelledError:
-        pass
+    device = await ExampleDevice.connect(nurl)
+    yield device
+    await device.disconnect()

@@ -77,5 +77,84 @@ multiple clients.
 SHV RPC Broker
 --------------
 
-.. error::
-    Not yet implemented in Python.
+Broker is an element in the network that allows exchange of the messages between
+multiple clients. To connected clients it behaves like a device with exception
+that some SHV paths are not handled directly by it but rather propagated to some
+other client. The message propagation depends on its type.
+
+**Requests**: Broker looks up the correct client it should forward message to
+based on the SHV path. It handles request itself if there is no such client.
+If client is located, broker modifies SHV path by removing mount point of the
+client, by adding caller's ID (which is client ID of the original client) and
+by assigning granted access level. The message is then sent to the located
+client. Broker doesn't remember this request because that is not required.
+**Response** is returned to the correct client based on the caller's ID.
+
+As stated, target client is located based on some mount path. This mount path
+needs to be provided by that client on login. It is option
+``device.mountPoint``.
+
+**Signals**: Signals are propagated based on the subscriptions clients made
+beforehand. All clients are checked for the subscription and if message matches
+some then it is propagated to that client. The SHV path of the message is
+prefixed with mount point of the client the signal was received from. This way
+other clients see signals as being delivered from the correct place in the SHV
+tree.
+
+Clients can subscribe by calling method ``subscribe`` on path ``.broker/app``.
+This method expects map with keys ``path`` and ``method``. Subscribe applies to
+any node that is under given path and method that matches specified method name.
+The default if not provided for ``path`` is top level node (empty string) and
+for ``method`` is ``chng`` (the default signal method).
+
+The previous subscription can be canceled with method ``unsubscribe`` on path
+``.broker/app``. The parameters need to be the same as for previous
+``subscribe``. It returns ``true`` when such subscribe is located and ``false``
+otherwise.
+
+There is also special method ``rejectNotSubscribed`` on path ``.broker/app``
+that allows users to cancel subscription without knowing the exact parameters
+used to subscribe. You need to provide ``path`` and ``method`` and it locates
+first matching subscription and cancels it. ``true`` is returned if that is
+successful and ``false`` otherwise. Note that by sending empty message until you
+get ``false`` you can unsubscribe all subscriptions.
+
+
+Access control
+--------------
+
+User can be limited from accessing some methods. The right of access is
+controlled by the device that handles request not by the intermediate brokers.
+At the same time devices don't and should not know about users and thus the
+complete access control is in reality split to two steps. Client sends request
+to the broker and it assigns to the message one of predefined access levels
+based on its own rules. The message is then delivered to the device that checks
+this granted access level and either performs the method or raises error based
+on it.
+
+The predefined access levels understood by pySHV are the following:
+
+  :bws: (:attr:`shv.RpcMethodAccess.BROWSE`) is the lowest possible access
+    level. This level allows user to list SHV nodes tree and to discover
+    methods. Nothing more is allowed.
+  :rd: (:attr:`shv.RpcMethodAccess.READ`) provides user with read access and
+    thus access should be allowed only to methods that perform reading of
+    values. Those method should not have side effects.
+  :wr: (:attr:`shv.RpcMethodAccess.WRITE`) provides user with write access and
+    thus access should be allowed to the method that modify some values.
+  :cmd: (:attr:`shv.RpcMethodAccess.COMMAND`) provides user with access to
+    methods that control and command the device.
+  :cfg: (:attr:`shv.RpcMethodAccess.CONFIG`) provides user with access to
+    methods used to modify device's configuration.
+  :srv: (:attr:`shv.RpcMethodAccess.SERVICE`) provides user with access to
+    methods used to service devices and SHV network.
+  :ssrv: (:attr:`shv.RpcMethodAccess.SUPER_SERVICE`) provides user with access
+    to methods used to service devices and SHV network that can harm the
+    network or device.
+  :dev: (:attr:`shv.RpcMethodAccess.DEVEL`) provides user with access to methods
+    used only for development purposes.
+  :admin: (:attr:`shv.RpcMethodAccess.ADMIN`) provides user with access to
+    all methods.
+
+Levels are sorted from the lowest to the highest and are understood to include
+all lover level rights.

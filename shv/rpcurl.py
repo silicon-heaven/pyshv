@@ -87,15 +87,10 @@ class RpcUrl:
         res = cls("", protocol=protocol)
 
         if protocol is RpcProtocol.TCP:
-            netloc = sr.netloc or sr.path
-            splt1 = netloc.split("@", maxsplit=1)
-            if len(splt1) > 1:
-                res.username = splt1[0]
-                splt1[0] = splt1[1]
-            splt2 = splt1[0].split(":", maxsplit=1)
-            res.host = splt2[0]
-            if len(splt2) > 1:
-                res.port = int(splt2[1])
+            res.username = sr.username or ""
+            res.host = sr.hostname or ""
+            if sr.port is not None:
+                res.port = int(sr.port)
         elif protocol is RpcProtocol.LOCAL_SOCKET:
             res.host = f"/{sr.netloc}{sr.path}" if sr.netloc else sr.path
         else:
@@ -129,7 +124,11 @@ class RpcUrl:
             netloc = "//"
             if self.username:
                 netloc += f"{self.username}@"
-            netloc += f"{self.host}:{self.port}"
+            if ":" in self.host:
+                netloc += f"[{self.host}]"
+            else:
+                netloc += self.host
+            netloc += f":{self.port}"
         elif self.protocol is RpcProtocol.LOCAL_SOCKET:
             netloc = self.host
         else:

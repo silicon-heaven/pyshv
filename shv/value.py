@@ -213,3 +213,34 @@ def is_shvimap(value: typing.Any) -> bool:
     return isinstance(value, collections.abc.Mapping) and all(
         isinstance(k, int) for k in value.keys()
     )
+
+
+TSHVType = typing.TypeVar("TSHVType", bound=SHVType)
+
+
+def shvget(
+    value: SHVType,
+    key: str | int | collections.abc.Sequence[str | int],
+    default: TSHVType,
+    tp: typing.Type[TSHVType],
+) -> TSHVType:
+    """Get value from possible (i)map or (i)map of (i)maps or default.
+
+    It is very common to query SHVType for keys and expecting a specific type or using
+    default value if it is present or is of invalid type. It is a fails safe approach.
+
+    :param value: Some type to be accessed
+    :param key: Key or list of keys that should be recursively applied to the value.
+    :param default: Default value used if value is not present or is of invalid type.
+    :param tp: Type of the expected value.
+    """
+    if not isinstance(key, (str, int)):
+        if len(key) == 0:
+            return value if isinstance(value, tp) else default
+        if isinstance(value, collections.abc.Mapping):
+            return shvget(value.get(key[0], {}), key[1:], default, tp)
+        return default
+    if isinstance(value, collections.abc.Mapping):
+        res = value.get(key, default)
+        return res if isinstance(res, tp) else default
+    return default

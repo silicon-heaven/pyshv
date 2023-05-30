@@ -32,6 +32,7 @@ DATA = [
             device_mount_point="/dev/null",
         ),
     ),
+    ("tcp://[::]:4242", RpcUrl("::", port=4242)),
 ]
 
 
@@ -46,10 +47,9 @@ DATA = [
             "localsocket://dev/null",
             RpcUrl("/dev/null", protocol=RpcProtocol.LOCAL_SOCKET),
         ),
-        ("tcp:localhost", RpcUrl("localhost")),
         ("tcp://localhost", RpcUrl("localhost")),
-        ("tcp:test@localhost:4242", RpcUrl("localhost", username="test", port=4242)),
-        ("tcp:localhost?devid=foo", RpcUrl("localhost", device_id="foo")),
+        ("tcp://test@localhost:4242", RpcUrl("localhost", username="test", port=4242)),
+        ("tcp://localhost?devid=foo", RpcUrl("localhost", device_id="foo")),
     ],
 )
 def test_parse(url, rpcurl):
