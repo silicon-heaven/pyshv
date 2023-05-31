@@ -398,7 +398,7 @@ class SimpleClient:
         except StopIteration:
             pass
         dirres = self._dir(path)
-        if isinstance(params, list) and params[1] == 127:
+        if not isinstance(params, list) or params[1] == 127:
             return [d.tomap() for d in dirres]
         return list(d.name for d in dirres)
 

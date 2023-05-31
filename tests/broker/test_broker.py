@@ -10,7 +10,6 @@ from shv import (
     RpcMethodCallExceptionError,
     RpcMethodNotFoundError,
     SimpleClient,
-    ValueClient,
     broker,
     shvmeta_eq,
 )
@@ -22,7 +21,7 @@ async def fixture_shvbroker(event_loop, config, url):
     b = broker.RpcBroker(config)
     await b.start_serving()
     event_loop.create_task(b.serve_forever())
-    yield broker
+    yield b
     await b.terminate()
 
 
