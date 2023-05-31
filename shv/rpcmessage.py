@@ -39,6 +39,19 @@ class RpcMessage:
         CODE = 1
         MESSAGE = 2
 
+    @classmethod
+    def chng(cls, path, value) -> "RpcMessage":
+        """Create message for ``chng`` signal.
+
+        :param path: SHV path for signal.
+        :param value: New value to be sent in the message.
+        """
+        res = cls()
+        res.set_method("chng")
+        res.set_shv_path(path)
+        res.set_params(value)
+        return res
+
     def is_valid(self) -> bool:
         """Check if message is valid RPC message."""
         # TODO maybe do more work than just check basic type

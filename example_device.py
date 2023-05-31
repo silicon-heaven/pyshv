@@ -82,11 +82,9 @@ class ExampleDevice(SimpleClient):
                 old_track = self.tracks[pth[1]]
                 self.tracks[pth[1]] = params
                 if old_track != params:
-                    sig = RpcMessage()
-                    sig.set_method("chng")
-                    sig.set_shv_path("track/" + pth[1])
-                    sig.set_params(params)
-                    await self.client.send_rpc_message(sig)
+                    await self.client.send_rpc_message(
+                        RpcMessage.chng("track/" + pth[1], params)
+                    )
                 return True
         return await super()._method_call(path, method, access, params)
 
