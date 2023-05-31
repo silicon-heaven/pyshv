@@ -67,7 +67,7 @@
           inherit (pkgs.python3Packages) template-python;
           default = template-python;
         };
-        legacyPackages = pkgs.extend self.overlays.default;
+        legacyPackages = pkgs;
 
         devShells = filterPackages system {
           default = pkgs.mkShell {
@@ -75,7 +75,8 @@
               editorconfig-checker
               gitlint
               (python3.withPackages (p:
-                foldl (prev: f: prev ++ f p) [] [
+                [p.sphinx-autobuild]
+                ++ foldl (prev: f: prev ++ f p) [] [
                   requires
                   requires-docs
                   requires-test

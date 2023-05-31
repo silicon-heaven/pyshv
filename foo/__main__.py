@@ -1,5 +1,6 @@
 """Implementation of command line application."""
 import argparse
+import locale
 import logging
 import sys
 
@@ -26,7 +27,7 @@ def main():
     cnt = 0
     if args.file:
         for path in args.file:
-            with open(path, "r") as file:
+            with open(path, "r", encoding=locale.getpreferredencoding()) as file:
                 cnt += count_foo(file)
     else:
         cnt += count_foo(sys.stdin)

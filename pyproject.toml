@@ -42,9 +42,18 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-exclude = ["docs"]
+exclude = ["docs", "tests*"]
 [tool.setuptools.package-data]
 "*" = ["py.typed"]
+
+[tool.coverage.run]
+branch = true
+omit = ["tests/*"]
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if typing.TYPE_CHECKING:"
+]
 
 [tool.isort]
 profile = 'black'
@@ -52,14 +61,14 @@ profile = 'black'
 [tool.pylint.main]
 recursive = "y"
 ignore = ["tests", "docs"]
-fail-under = 9
+fail-under = 9.5
 [tool.pylint.format]
 disable = [
+  # Exception can be safely caught because there is BaseException for unsafe
+  # ones (such as SystemExit) and there are reasons to catch all exceptions.
+  "W0718",
   # Prevent usage of module name in documentation (seems unreasonable)
   "C0104",
-  # Requires encoding to be set for open but default is to use system's
-  # encoding which is way more reasonable than introducing some assumptions.
-  "W1514",
   # We have pydocstyle for the following ones
   "C0103", "C0114", "C0115", "C0116",
 ]
