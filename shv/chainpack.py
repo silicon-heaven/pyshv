@@ -4,7 +4,6 @@ import datetime
 import decimal
 import math
 import struct
-import sys
 
 from . import commonpack
 from .value import SHVMeta, SHVMetaType, SHVType, SHVUInt
@@ -298,9 +297,9 @@ class ChainPackWriter(commonpack.CommonWriter):
             r = data[i]
             self._write(r)
 
-    def write_meta(self, mmap: dict) -> None:
+    def write_meta(self, meta: dict) -> None:
         self._write(ChainPack.CP_MetaMap)
-        self._write_map_data(mmap)
+        self._write_map_data(meta)
 
     def write_null(self) -> None:
         self._write(ChainPack.CP_Null)

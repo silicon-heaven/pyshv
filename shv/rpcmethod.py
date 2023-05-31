@@ -2,7 +2,6 @@
 import collections.abc
 import dataclasses
 import enum
-import typing
 
 from .value import SHVType
 

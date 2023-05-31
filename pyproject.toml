@@ -73,10 +73,12 @@ profile = 'black'
 [tool.pylint.main]
 recursive = "y"
 ignore = ["tests", "docs"]
-fail-under = 9
+fail-under = 9.5
 [tool.pylint.format]
 # C0103,C0116,C0115,C0114: We have pydocstyle for this.
 # C0104: prevent usage of module name in documentation (seems unreasonable)
-disable = "C0104,C0103,C0116,C0115,C0114"
+# W0718: Exception can be safely caught because there is BaseException for
+# unsafe ones.
+disable = "C0104,C0103,C0116,C0115,C0114,W0718"
 # https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html
 max-line-length = 88
