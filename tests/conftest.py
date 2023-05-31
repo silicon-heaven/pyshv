@@ -8,7 +8,7 @@ import time
 import pytest
 
 from example_device import ExampleDevice
-from shv import RpcLoginType, RpcUrl, SimpleClient
+from shv import RpcLoginType, RpcUrl, SimpleClient, ValueClient
 
 
 @pytest.fixture(name="port", scope="module")
@@ -78,9 +78,9 @@ async def fixture_client(shvbroker, url):
     await client.disconnect()
 
 
-@pytest.fixture(name="test_client")
-async def fixture_test_client(shvbroker, url_test):
-    client = await SimpleClient.connect(url_test)
+@pytest.fixture(name="value_client")
+async def fixture_value_client(shvbroker, url_test):
+    client = await ValueClient.connect(url_test)
     yield client
     await client.disconnect()
 

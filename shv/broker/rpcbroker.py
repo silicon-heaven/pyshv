@@ -57,8 +57,8 @@ class RpcBroker:
         # Note: we do not allow recursive mount points and thus first match is the
         # correct and the only client.
         for c in self.clients.values():
-            if c.mount_point and pth[:len(c.mount_point)] == c.mount_point:
-                return c, "/".join(pth[len(c.mount_point):])
+            if c.mount_point and pth[: len(c.mount_point)] == c.mount_point:
+                return c, "/".join(pth[len(c.mount_point) :])
         return None
 
     async def start_serving(self) -> None:
@@ -77,11 +77,26 @@ class RpcBroker:
         # TODO handle returned errors
 
     def close(self) -> None:
+        """Request stop listening.
+
+        This stops all servers and thus they no longer accept a new connections but the
+        old connections are still kept and working.
+        """
         for server in self.servers.values():
             server.close()
 
     async def wait_closed(self) -> None:
+        """Wait for close to complete."""
         await asyncio.gather(
             *(server.wait_closed() for server in self.servers.values()),
             return_exceptions=True,
         )
+
+    async def terminate(self) -> None:
+        """Request termination of the broker.
+
+        This closes broker as well as disconnects all established clients.
+        """
+        self.close()
+        await self.wait_closed()
+        await asyncio.gather(*(client.disconnect() for client in self.clients.values()))

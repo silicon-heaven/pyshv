@@ -23,8 +23,7 @@ async def fixture_shvbroker(event_loop, config, url):
     await b.start_serving()
     event_loop.create_task(b.serve_forever())
     yield broker
-    b.close()
-    await b.wait_closed()
+    await b.terminate()
 
 
 @pytest.mark.parametrize(
@@ -157,13 +156,12 @@ async def test_reject_not_subscribed(client, example_device):
     )
 
 
-async def test_with_example_set(example_device, url_test):
+async def test_with_example_set(example_device, value_client):
     """Perform set to trigger also notifications."""
-    client = await ValueClient.connect(url_test)
-    await client.subscribe("test/device/track")
-    await client.prop_set("test/device/track/1", [1, 2])
-    assert await client.prop_get("test/device/track/1") == [1, 2]
-    assert client["test/device/track/1"] == [1, 2]
+    await value_client.subscribe("test/device/track")
+    await value_client.prop_set("test/device/track/1", [1, 2])
+    assert await value_client.prop_get("test/device/track/1") == [1, 2]
+    assert value_client["test/device/track/1"] == [1, 2]
 
 
 async def test_invalid_login(shvbroker, url):
