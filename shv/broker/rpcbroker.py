@@ -54,17 +54,11 @@ class RpcBroker:
                 return None
             return (client, "/".join(pth[4:])) if client else None
 
-        matches = sorted(
-            [
-                (c, pth[len(c.mount_point) :])
-                for c in self.clients.values()
-                if c.mount_point and pth[: len(c.mount_point)] == c.mount_point
-            ],
-            key=lambda v: len(v[1]),
-            reverse=True,
-        )
-        if len(matches) > 0:
-            return matches[0][0], "/".join(matches[0][1])
+        # Note: we do not allow recursive mount points and thus first match is the
+        # correct and the only client.
+        for c in self.clients.values():
+            if c.mount_point and pth[:len(c.mount_point)] == c.mount_point:
+                return c, "/".join(pth[len(c.mount_point):])
         return None
 
     async def start_serving(self) -> None:
