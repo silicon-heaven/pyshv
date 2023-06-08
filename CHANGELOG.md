@@ -21,7 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    require `io.BytesIO` instead of `UnpackContext` and `PackContext`
 - `RpcMessage` has now attribute `value` instead of `rpcValue` (this is
   intentional break to force users to review their code due to the type change)
-- `rpcclient.get_next_rpc_request_id` was moved to `RpcClient.next_request_id`
+- `RpcClient` methods for sending and receiving RPC messages were replaced with
+  `send` and `receive` methods.
+- `rpcclient.get_next_rpc_request_id` was moved to `RpcMessage.next_request_id`
 
 ### Removed
 - `ClinetConnection`, please use `SimpleClient` or `ValueClient` instead

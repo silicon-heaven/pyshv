@@ -85,9 +85,9 @@ class RpcBrokerClient(SimpleClient):
 
     async def _message(self, msg: RpcMessage) -> None:
         if self.state == self.State.CONNECTED:
-            return await self.client.send_rpc_message(await self._message_hello(msg))
+            return await self.client.send(await self._message_hello(msg))
         if self.state == self.State.HELLO:
-            return await self.client.send_rpc_message(await self._message_login(msg))
+            return await self.client.send(await self._message_login(msg))
 
         path = msg.shv_path() or ""
         method = msg.method() or ""
@@ -105,7 +105,7 @@ class RpcBrokerClient(SimpleClient):
             # Propagate to some peer
             msg.set_caller_ids(list(msg.caller_ids() or ()) + [self.broker_client_id])
             msg.set_shv_path(cpath[1])
-            await cpath[0].client.send_rpc_message(msg)
+            await cpath[0].client.send(msg)
 
         if msg.is_response():
             cids = list(msg.caller_ids() or ())
@@ -118,7 +118,7 @@ class RpcBrokerClient(SimpleClient):
             except KeyError:
                 return
             if peer is not None and not peer.client.writer.is_closing():
-                await peer.client.send_rpc_message(msg)
+                await peer.client.send(msg)
 
         if msg.is_signal():
             # TODO this might add unnecessary /
@@ -128,7 +128,7 @@ class RpcBrokerClient(SimpleClient):
                 if client is self:
                     continue
                 if client.get_subscription(fullpath, method) is not None:
-                    await client.client.send_rpc_message(msg)
+                    await client.client.send(msg)
 
     async def _message_hello(self, msg: RpcMessage) -> RpcMessage:
         resp = msg.make_response()

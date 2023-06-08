@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import collections.abc
 import enum
+import typing
 
 from .chainpack import ChainPackWriter
 from .cpon import CponWriter
@@ -13,6 +14,19 @@ from .value import SHVDict, SHVMeta, SHVType, is_shvimap, is_shvmap, shvmeta
 
 class RpcMessage:
     """Single SHV RPC message representation."""
+
+    last_request_id: typing.ClassVar[int] = 0
+    """Counter of request IDs to ensure that every request has unique ID."""
+
+    @classmethod
+    def next_request_id(cls) -> int:
+        """Provides you with unique request identifier.
+
+        The identifier won't repeat for this application as it is just simple
+        counter that should never wrap.
+        """
+        cls.last_request_id += 1
+        return cls.last_request_id
 
     def __init__(self, rpc_val=None):
         self.value = SHVMeta.new({}, {}) if rpc_val is None else rpc_val
@@ -40,17 +54,50 @@ class RpcMessage:
         MESSAGE = 2
 
     @classmethod
+    def request(
+        cls,
+        path: str | None,
+        method: str,
+        params: SHVType = None,
+        rid: int | None = None,
+    ) -> "RpcMessage":
+        """Create request message.
+
+        :param path: SHV path for signal.
+        :param method: method name for signal.
+        :param params: Parameters passed to the method.
+        :param rid: Request identifier for this message. It is automatically assigned if
+          ``None`` is passed.
+        """
+        res = cls()
+        res.set_request_id(rid or cls.next_request_id())
+        res.set_method(method)
+        res.set_shv_path(path)
+        res.set_params(params)
+        return res
+
+    @classmethod
+    def signal(cls, path, method, value) -> "RpcMessage":
+        """Create signal message.
+
+        :param path: SHV path for signal.
+        :param method: method name for signal.
+        :param value: Value to be sent in the message.
+        """
+        res = cls()
+        res.set_method(method)
+        res.set_shv_path(path)
+        res.set_params(value)
+        return res
+
+    @classmethod
     def chng(cls, path, value) -> "RpcMessage":
         """Create message for ``chng`` signal.
 
         :param path: SHV path for signal.
         :param value: New value to be sent in the message.
         """
-        res = cls()
-        res.set_method("chng")
-        res.set_shv_path(path)
-        res.set_params(value)
-        return res
+        return cls.signal(path, "chng", value)
 
     def is_valid(self) -> bool:
         """Check if message is valid RPC message."""

@@ -114,8 +114,8 @@ class SimpleClient:
         # Note: The implementation here expects that broker won't sent any other
         # messages until login is actually performed. That is what happens but
         # it is not defined in any SHV design document as it seems.
-        await client.call_shv_method(None, "hello")
-        resp = await client.read_rpc_message()
+        await client.send(RpcMessage.request(None, "hello"))
+        resp = await client.receive()
         if resp is None:
             return None
         resl = resp.result()
@@ -137,8 +137,8 @@ class SimpleClient:
         }
 
         logger.debug("LOGGING IN")
-        await client.call_shv_method(None, "login", params)
-        resp = await client.read_rpc_message()
+        await client.send(RpcMessage.request(None, "login", params))
+        resp = await client.receive()
         if resp is None:
             return None
         result = resp.result()
@@ -151,7 +151,7 @@ class SimpleClient:
     async def _loop(self) -> None:
         """Loop run in asyncio task to receive messages."""
         keep_alive_task = asyncio.create_task(self._keep_alive_loop())
-        while msg := await self.client.read_rpc_message(throw_error=False):
+        while msg := await self.client.receive(raise_error=False):
             asyncio.create_task(self._message(msg))
         keep_alive_task.cancel()
         try:
@@ -167,7 +167,7 @@ class SimpleClient:
             if t < idlet:
                 await asyncio.sleep(idlet - t)
             else:
-                await self.client.call_shv_method(".broker/app", "ping")
+                await self.client.send(RpcMessage.request(".broker/app", "ping"))
 
     async def _message(self, msg: RpcMessage) -> None:
         """Handle every received message."""
@@ -192,7 +192,7 @@ class SimpleClient:
                         "".join(traceback.format_exception(exc))
                     )
                 )
-            await self.client.send_rpc_message(resp)
+            await self.client.send(resp)
         elif msg.is_response():
             rid = msg.request_id()
             assert rid is not None
@@ -216,10 +216,12 @@ class SimpleClient:
         :raise RpcError: The call result in error that is propagated by raising
             `RpcError` or its children based on the failure.
         """
-        rid = self.client.next_request_id()
+        msg = RpcMessage.request(path, method, params)
+        rid = msg.request_id()
+        assert rid is not None
         event = asyncio.Event()
         self._calls_event[rid] = event
-        await self.client.call_shv_method_with_id(rid, path, method, params)
+        await self.client.send(msg)
         await event.wait()
         msg = self._calls_msg.pop(rid)
         err = msg.rpc_error()

@@ -25,19 +25,6 @@ class RpcClient:
     :param writer: Writer for the connection to the SHV RPC server.
     """
 
-    lastRequestId: typing.ClassVar[int] = 0
-    """Counter of request IDs to ensure that every request has unique ID."""
-
-    @classmethod
-    def next_request_id(cls) -> int:
-        """Provides you with unique request identifier.
-
-        The identifier won't repeat for this application as it is just simple
-        counter that should never wrap.
-        """
-        cls.lastRequestId += 1
-        return cls.lastRequestId
-
     def __init__(
         self,
         reader: asyncio.StreamReader,
@@ -78,36 +65,7 @@ class RpcClient:
         logger.debug("%s CONNECTED", str(protocol))
         return client
 
-    async def call_shv_method(self, shv_path, method, params=None) -> int:
-        """Call the given SHV method on given path.
-
-        :param shv_path: Path to the node with requested method
-        :param method: Name of the method to call
-        :param params: Parameters passed to the method
-        :return: assigned request ID you can use to identify the response
-        """
-        rid = self.next_request_id()
-        await self.call_shv_method_with_id(rid, shv_path, method, params)
-        return rid
-
-    async def call_shv_method_with_id(
-        self, req_id, shv_path, method, params=None
-    ) -> None:
-        """Call the given SHV method on given path with specific request ID.
-
-        :param req_id: Request ID used to submit the method call with.
-        :param shv_path: Path to the node with requested method
-        :param method: Name of the method to call
-        :param params: Parameters passed to the method
-        """
-        msg = RpcMessage()
-        msg.set_shv_path(shv_path)
-        msg.set_method(method)
-        msg.set_params(params)
-        msg.set_request_id(req_id)
-        await self.send_rpc_message(msg)
-
-    async def send_rpc_message(self, msg: RpcMessage) -> None:
+    async def send(self, msg: RpcMessage) -> None:
         """Send the given SHV RPC Message.
 
         :param msg: Message to be sent
@@ -140,21 +98,19 @@ class RpcClient:
         self._read_data = self._read_data[packet_len:]
         return RpcMessage(rpc_val)
 
-    async def read_rpc_message(
-        self, throw_error: bool = True
-    ) -> typing.Optional[RpcMessage]:
+    async def receive(self, raise_error: bool = True) -> typing.Optional[RpcMessage]:
         """Read next received RPC message or wait for next to be received.
 
-        :param throw_error: If RpcError should be raised or not.
+        :param raise_error: If RpcError should be raised or not.
         :return: Next RPC message is returned or `None` in case of EOF.
-        :raise RpcError: When mesasge is error and `throw_error` is `True`.
+        :raise RpcError: When mesasge is error and ``raise_error`` is `True`.
         """
         while not self.reader.at_eof():
             msg = self._get_rpc_msg()
             self.last_activity = time.monotonic()
             if msg:
                 logger.debug("==> REC: %s", msg.to_string())
-                if throw_error and msg.is_error():
+                if raise_error and msg.is_error():
                     raise msg.rpc_error()
                 return msg
             data = await self.reader.read(1024)

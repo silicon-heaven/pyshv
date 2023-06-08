@@ -7,6 +7,7 @@ from shv import (
     RpcClient,
     RpcInvalidParamsError,
     RpcInvalidRequestError,
+    RpcMessage,
     RpcMethodCallExceptionError,
     RpcMethodNotFoundError,
     SimpleClient,
@@ -171,27 +172,27 @@ async def test_invalid_login(shvbroker, url):
 
 async def test_invalid_hello_seq(shvbroker, url):
     client = await RpcClient.connect(url.host, url.port, url.protocol)
-    await client.call_shv_method(None, "invalid")
+    await client.send(RpcMessage.request(None, "invalid"))
     with pytest.raises(RpcInvalidRequestError):
-        await client.read_rpc_message()
+        await client.receive()
 
 
 async def test_invalid_login_seq(shvbroker, url):
     client = await RpcClient.connect(url.host, url.port, url.protocol)
-    await client.call_shv_method(None, "hello")
-    await client.read_rpc_message()
-    await client.call_shv_method(None, "invalid")
+    await client.send(RpcMessage.request(None, "hello"))
+    await client.receive()
+    await client.send(RpcMessage.request(None, "invalid"))
     with pytest.raises(RpcInvalidRequestError):
-        await client.read_rpc_message()
+        await client.receive()
 
 
 async def test_invalid_login_null(shvbroker, url):
     client = await RpcClient.connect(url.host, url.port, url.protocol)
-    await client.call_shv_method(None, "hello")
-    await client.read_rpc_message()
-    await client.call_shv_method(None, "login")
+    await client.send(RpcMessage.request(None, "hello"))
+    await client.receive()
+    await client.send(RpcMessage.request(None, "login"))
     with pytest.raises(RpcInvalidParamsError):
-        await client.read_rpc_message()
+        await client.receive()
 
 
 async def test_double_mount(shvbroker, url):
