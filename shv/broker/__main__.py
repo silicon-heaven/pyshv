@@ -5,7 +5,6 @@ import configparser
 import logging
 
 from .rpcbroker import RpcBroker
-from .rpcbrokerclient import RpcBrokerClient
 from .rpcbrokerconfig import RpcBrokerConfig
 
 logger = logging.getLogger(__name__)
@@ -22,7 +21,9 @@ def parse_args():
     """Parse passed arguments and return result."""
     parser = argparse.ArgumentParser("pyshvbroker", description="Silicon Heaven broker")
     parser.add_argument(
-        "--version", action="version", version=f"%(prog)s {RpcBrokerClient.APP_VERSION}"
+        "--version",
+        action="version",
+        version=f"%(prog)s {RpcBroker.Client.APP_VERSION}",
     )
     parser.add_argument(
         "-v",
