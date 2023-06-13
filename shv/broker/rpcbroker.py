@@ -181,12 +181,14 @@ class RpcBroker:
             method = msg.method() or ""
 
             if msg.is_request():
-                # Set upper access granted to the level allowed by user
+                # Set access granted to the level allowed by user
                 assert self.user is not None
                 access = self.user.access_level(path, method)
-                print(self.user.name)
-                # TODO if rpc_access_grant is su we can keep what was there
-                msg.set_rpc_access_grant(access)
+                if (
+                    access is not RpcMethodAccess.ADMIN
+                    or msg.rpc_access_grant() is None
+                ):
+                    msg.set_rpc_access_grant(access)
                 # Check if we should delegate it or handle it ourself
                 if (cpath := self.broker.peer_on_path(path)) is None:
                     return await super()._message(msg)

@@ -157,7 +157,9 @@ The predefined access levels understood by pySHV are the following:
   :dev: (:attr:`shv.RpcMethodAccess.DEVEL`) provides user with access to methods
     used only for development purposes.
   :su: (:attr:`shv.RpcMethodAccess.ADMIN`) provides user with access to
-    all methods.
+    all methods. It has also unique feature that it keeps message access level
+    as received. This makes it the level you want to use to include broker in
+    other broker (chaining brokers).
 
 Levels are sorted from the lowest to the highest and are understood to include
 all lover level rights.

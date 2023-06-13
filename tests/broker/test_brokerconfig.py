@@ -35,7 +35,7 @@ def test_rules(config):
 
 ROLE_ADMIN = broker.RpcBrokerConfig.Role(
     "admin",
-    RpcMethodAccess.ADMIN,
+    RpcMethodAccess.DEVEL,
     frozenset({RULE_ADMIN}),
 )
 ROLE_CLIENT = broker.RpcBrokerConfig.Role(
@@ -146,7 +146,7 @@ def test_login_invalid(config, user, password, nonce, tp):
 @pytest.mark.parametrize(
     "user,path,method,expected",
     (
-        (USER_ADMIN, "any", "get", RpcMethodAccess.ADMIN),
+        (USER_ADMIN, "any", "get", RpcMethodAccess.DEVEL),
         (USER_TEST, "any", "get", RpcMethodAccess.BROWSE),
         (USER_TEST, "test/device", "appName", RpcMethodAccess.COMMAND),
         (USER_TEST, "test/device/track/1", "get", RpcMethodAccess.COMMAND),
