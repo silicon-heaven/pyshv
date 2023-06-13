@@ -16,14 +16,16 @@ class RpcBrokerConfig:
         """Description of access rule."""
 
         name: str
-        path: str
-        method: str = ""
-        level: RpcMethodAccess = RpcMethodAccess.BROWSE
+        """Name of the rule."""
+        path: str = ""
+        """Path prefix that need to match for this rule to apply."""
+        methods: frozenset[str] = dataclasses.field(default_factory=frozenset)
+        """Set of methods this rule matches. Empty set matches all methods."""
 
         def applies(self, path: str, method: str) -> bool:
             """Check if this rule applies."""
-            return (not self.method or method == self.method) and (
-                not self.path or path.startswith(self.path)
+            return (not self.methods or method in self.methods) and path.startswith(
+                self.path
             )
 
     @dataclasses.dataclass(frozen=True)
@@ -31,17 +33,21 @@ class RpcBrokerConfig:
         """Generic roles assigned to the users."""
 
         name: str
+        """Name of the role."""
+        access: RpcMethodAccess = RpcMethodAccess.BROWSE
+        """Access level granted to the user by this role."""
         rules: frozenset["RpcBrokerConfig.Rule"] = dataclasses.field(
             default_factory=frozenset
         )
+        """Rules used to check if this role should apply."""
         roles: frozenset["RpcBrokerConfig.Role"] = dataclasses.field(
             default_factory=frozenset
         )
+        """Additional roles to check."""
 
-        def __iter__(self) -> typing.Iterator["RpcBrokerConfig.Rule"]:
-            yield from self.rules
-            for role in self.roles:
-                yield from iter(role)
+        def applies(self, path: str, method: str) -> bool:
+            """Check if this role applies by this rules."""
+            return any(rule.applies(path, method) for rule in self.rules)
 
     @dataclasses.dataclass(frozen=True)
     class User:
@@ -54,18 +60,20 @@ class RpcBrokerConfig:
             default_factory=frozenset
         )
 
+        def all_roles(self) -> typing.Iterator["RpcBrokerConfig.Role"]:
+            """Iterate over all roles assigned to this user."""
+            rlst = list(self.roles)
+            while rlst:
+                role = rlst.pop()
+                yield role
+                rlst.extend(role.roles)
+
         def access_level(self, path: str, method: str) -> RpcMethodAccess:
             """Deduce access level for this used on given path and method."""
-            res = RpcMethodAccess.BROWSE
-            for role in self.rules():
-                if role.applies(path, method) and role.level > res:
-                    res = role.level
-            return res
-
-        def rules(self) -> typing.Iterable["RpcBrokerConfig.Rule"]:
-            """Iterate over all rules assigned to this used."""
-            for role in self.roles:
-                yield from role.rules
+            for role in self.all_roles():
+                if role.applies(path, method):
+                    return role.access
+            return RpcMethodAccess.BROWSE
 
         @property
         def shapass(self) -> str:
@@ -208,14 +216,14 @@ class RpcBrokerConfig:
                 cls.Rule(
                     secname[6:],
                     sec.get("path", ""),
-                    sec.get("method", ""),
-                    RpcMethodAccess.fromstr(sec.get("level", "")),
+                    frozenset(sec.get("methods", "").split()),
                 )
             )
         for secname, sec in filter(lambda v: v[0].startswith("roles."), config.items()):
             res.add_role(
                 cls.Role(
                     secname[6:],
+                    RpcMethodAccess.fromstr(sec.get("access", "")),
                     frozenset(
                         res.rule(rule_name)
                         for rule_name in sec.get("rules", "").split()

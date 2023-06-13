@@ -38,9 +38,9 @@ this:
 
   [roles.admin]
   rules = admin
+  access = su
 
   [rules.admin]
-  level = su
 
 This configuration file specifies that broker should listen on all IP addresses
 for TCP/IP connection on port 3755 and on local socket ``shvbroker.sock``. It
@@ -71,27 +71,26 @@ also declares one user that is admin and has highest access level.
   ``roles.`` and the rest of the section name is name of the role. The allowed
   options are:
 
-  :rules: Space separated list of rules that this role assigns to the user.
+  :access: Access level granted to the user with this role. Note that access
+    level of the first role that has at least one matching rule is used. The
+    ordering of the roles can be used to specify complex access rules.
+  :rules: Space separated list of rules that are checked to find out if this
+    role applies.
   :roles: Space separated list of other roles. This allows combination of the
     roles and thus higher versatility in the way roles are structured. All rules
-    from these roles are recursively considered to be part of the role
-    specifying this option.
+    from these roles are considered to be part of the role specifying this
+    option but checked after all top level ones were checked (BFS algorithm).
 
 :rules.:
-  Rules specify level of access for some specific method and path. These rules
-  are assigned recursively to the path and the highest level always applies and
-  thus you can't lower the access level if you grant higher one to the upper
-  path. The allowed options are:
+  Rules provide simple matching of path and methods and are used to determine if
+  role applies to some specific SHV RPC request.
 
   :path: Path in the SHV node tree that this rules applies to and its children.
     The default is empty path and that is top level node.
-  :method: Method name this rule applies to. There is no wild matching, the
-    method name has to match exactly. The only exception is empty method name
-    that matches any method. The default is empty method and this if you do not
-    specify this option the rules applies to all methods.
-  :level: Highest access level granted to the user having this rule in its
-    roles. Note that we always use highest level from any rule that matches. We
-    do not look for most exact rule.
+  :methods: Space separated list if names this rule applies to. There is no wild
+    matching, the method name has to match exactly. Empty list is considered to
+    match all methods. The default is empty list and thus if you do not specify
+    this option the rules applies to all methods on matching path.
 
 
 The complete configuration example used in pySHV tests:

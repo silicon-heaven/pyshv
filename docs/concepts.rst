@@ -16,9 +16,9 @@ There are three types of messages used in the Silicon Heaven RPC communication.
 
 :Requests:
     Message used to call some method. Such messages is required to have some
-    request ID, method name and optionally some parameters and client IDs and
-    SHV path. The other side needs to respond. Parameters can be any valid SHV
-    data.
+    request ID, method name and optionally some parameters, client IDs, SHV
+    path and granted access level. The other side needs to respond. Parameters
+    can be any valid SHV data.
 :Responses:
     Message sent by side that received some request. This message has to have
     request ID and response but it can't have method name. It also needs to have
@@ -41,6 +41,10 @@ request.
 
 The SHV path is used to select exact node of method in the SHV tree. The SHV
 tree is discussed in the next section.
+
+The granted access level that can be sent with request is part of access
+control. It needs to be a string. Multiple levels can be specified and separted
+by comma. Please read up on this field in the section about access control.
 
 SHV RPC network design
 ----------------------
@@ -125,12 +129,11 @@ Access control
 
 User can be limited from accessing some methods. The right of access is
 controlled by the device that handles request not by the intermediate brokers.
-At the same time devices don't and should not know about users and thus the
-complete access control is in reality split to two steps. Client sends request
-to the broker and it assigns to the message one of predefined access levels
-based on its own rules. The message is then delivered to the device that checks
-this granted access level and either performs the method or raises error based
-on it.
+At the same time devices don't and should not know about user accounts and thus
+the complete access control is in reality split to two steps. Client sends
+request to the broker and it assigns to the message some access levels based on
+its own rules. The message is then delivered to the device that checks this
+granted access level and either performs the method or raises error based on it.
 
 The predefined access levels understood by pySHV are the following:
 
@@ -153,8 +156,11 @@ The predefined access levels understood by pySHV are the following:
     network or device.
   :dev: (:attr:`shv.RpcMethodAccess.DEVEL`) provides user with access to methods
     used only for development purposes.
-  :admin: (:attr:`shv.RpcMethodAccess.ADMIN`) provides user with access to
+  :su: (:attr:`shv.RpcMethodAccess.ADMIN`) provides user with access to
     all methods.
 
 Levels are sorted from the lowest to the highest and are understood to include
 all lover level rights.
+
+There are other access levels in the SHV RPC network but those are not directly
+supported by pySHV implementation.

@@ -164,6 +164,12 @@ async def test_with_example_set(example_device, value_client):
     assert value_client["test/device/track/1"] == [1, 2]
 
 
+async def test_unauthorized_access(shvbroker, value_client):
+    """Check that we are not allowed to access node we do not have access to."""
+    with pytest.raises(RpcMethodNotFoundError):
+        await value_client.call(".broker/clients/0", "userName")
+
+
 async def test_invalid_login(shvbroker, url):
     nurl = dataclasses.replace(url, password="invalid")
     with pytest.raises(RpcMethodCallExceptionError):
@@ -208,3 +214,9 @@ async def test_sub_mount(shvbroker, url):
     await SimpleClient.connect(nurl1)
     with pytest.raises(RpcMethodCallExceptionError):
         await SimpleClient.connect(nurl2)
+
+
+async def test_broker_client(example_device, shvbroker):
+    """Check that we can use broker's clients as clients as well."""
+    client = shvbroker.clients[0]
+    assert await client.call("", "appName") == "pyshv-example_device"

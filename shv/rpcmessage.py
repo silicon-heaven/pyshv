@@ -176,15 +176,32 @@ class RpcMessage:
                 some = cids[0]
             self.value = SHVMeta.new(self.value, {self.Tag.CALLER_IDS: some})
 
-    def access_grant(self) -> RpcMethodAccess | None:
+    def access_grant(self) -> list[str] | None:
         """Granted access level of the caller."""
         res = shvmeta(self.value).get(self.Tag.ACCESS_GRANT, None)
         if isinstance(res, str):
-            return RpcMethodAccess.fromstr(res)
+            return res.split(",")
         return None
 
-    def set_access_grant(self, access: RpcMethodAccess | None) -> None:
+    def set_access_grant(self, access: collections.abc.Sequence[str]) -> None:
         """Granted access level of the caller."""
+        if not access:
+            shvmeta(self.value).pop(self.Tag.ACCESS_GRANT, None)
+        else:
+            self.value = SHVMeta.new(
+                self.value, {self.Tag.ACCESS_GRANT: ",".join(access)}
+            )
+
+    def rpc_access_grant(self) -> RpcMethodAccess | None:
+        """Granted access level of the caller as :class:`shv.RpcMethodAccess`."""
+        m = RpcMethodAccess.strmap()
+        for access in self.access_grant() or []:
+            if access in m:
+                return m[access]
+        return None
+
+    def set_rpc_access_grant(self, access: RpcMethodAccess | None) -> None:
+        """Set granted access level of the caller."""
         if access is None:
             shvmeta(self.value).pop(self.Tag.ACCESS_GRANT, None)
         else:

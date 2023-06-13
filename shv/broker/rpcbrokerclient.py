@@ -96,9 +96,9 @@ class RpcBrokerClient(SimpleClient):
             # Set upper access granted to the level allowed by user
             assert self.user is not None
             access = self.user.access_level(path, method)
-            msgaccess = msg.access_grant()
-            if msgaccess is None or msgaccess > access:
-                msg.set_access_grant(access)
+            print(self.user.name)
+            # TODO if rpc_access_grant is su we can keep what was there
+            msg.set_rpc_access_grant(access)
             # Check if we should delegate it or handle it ourself
             if (cpath := self.broker.peer_on_path(path)) is None:
                 return await super()._message(msg)
@@ -117,8 +117,7 @@ class RpcBrokerClient(SimpleClient):
                 peer = self.broker.clients[cid]
             except KeyError:
                 return
-            if peer is not None and not peer.client.writer.is_closing():
-                await peer.client.send(msg)
+            await peer.client.send(msg)
 
         if msg.is_signal():
             # TODO this might add unnecessary /
@@ -198,11 +197,10 @@ class RpcBrokerClient(SimpleClient):
                 except ValueError:
                     pass
                 else:
-                    if cid in self.broker.clients:
-                        if len(pth) == 3:
-                            yield ("app", None)
-                            return
-                        return
+                    # Deper paths are handled by forwarding to the client
+                    assert len(pth) == 3
+                    yield ("app", None)
+                    return
         else:
             res: set[tuple[str, bool | None]] = set()
             if len(pth) == 0:
@@ -250,28 +248,22 @@ class RpcBrokerClient(SimpleClient):
                 yield RpcMethodDesc.getter("clientId")
                 yield RpcMethodDesc.getter("mountPoint")
                 return
-            if len(pth) > 2 and pth[1] == "clients":
-                if len(pth) == 3:
-                    yield RpcMethodDesc.getter(
-                        "userName", access=RpcMethodAccess.SERVICE
-                    )
-                    yield RpcMethodDesc.getter(
-                        "mountPoint", access=RpcMethodAccess.SERVICE
-                    )
-                    yield RpcMethodDesc.getter(
-                        "subscriptions", access=RpcMethodAccess.SERVICE
-                    )
-                    yield RpcMethodDesc(
-                        "dropClient",
-                        RpcMethodSignature.RET_VOID,
-                        access=RpcMethodAccess.SERVICE,
-                    )
-                    yield RpcMethodDesc.getter(
-                        "idleTime", access=RpcMethodAccess.SERVICE
-                    )
-                    yield RpcMethodDesc.getter(
-                        "idleTimeMax", access=RpcMethodAccess.SERVICE
-                    )
+            if len(pth) == 3 and pth[1] == "clients":
+                yield RpcMethodDesc.getter("userName", access=RpcMethodAccess.SERVICE)
+                yield RpcMethodDesc.getter("mountPoint", access=RpcMethodAccess.SERVICE)
+                yield RpcMethodDesc.getter(
+                    "subscriptions", access=RpcMethodAccess.SERVICE
+                )
+                yield RpcMethodDesc(
+                    "dropClient",
+                    RpcMethodSignature.RET_VOID,
+                    access=RpcMethodAccess.SERVICE,
+                )
+                yield RpcMethodDesc.getter("idleTime", access=RpcMethodAccess.SERVICE)
+                yield RpcMethodDesc.getter(
+                    "idleTimeMax", access=RpcMethodAccess.SERVICE
+                )
+                return
 
     async def _method_call(
         self, path: str, method: str, access: RpcMethodAccess, params: SHVType
@@ -321,30 +313,28 @@ class RpcBrokerClient(SimpleClient):
             except ValueError:
                 pass
             else:
-                if cid in self.broker.clients:
-                    client = self.broker.clients[cid]
-                    if client is not None and access >= RpcMethodAccess.SERVICE:
-                        if method == "userName":
-                            assert client.user is not None
-                            return client.user.name
-                        if method == "mountPoint":
-                            return (
-                                "/".join(self.mount_point) if self.mount_point else None
-                            )
-                        if method == "subscriptions":
-                            return [
-                                {"path": s.path, "method": s.method}
-                                for s in client.subscriptions
-                            ]
-                        if method == "dropClient":
-                            await client.disconnect()
-                            return True
-                        if method == "idleTime":
-                            return int(
-                                (time.monotonic() - client.client.last_activity) * 1000
-                            )
-                        if method == "idleTimeMax":
-                            return int(self.IDLE_TIMEOUT * 1000)
+                if (
+                    client := self.broker.clients.get(cid, None)
+                ) is not None and access >= RpcMethodAccess.SERVICE:
+                    if method == "userName":
+                        assert client.user is not None
+                        return client.user.name
+                    if method == "mountPoint":
+                        return "/".join(self.mount_point) if self.mount_point else None
+                    if method == "subscriptions":
+                        return [
+                            {"path": s.path, "method": s.method}
+                            for s in client.subscriptions
+                        ]
+                    if method == "dropClient":
+                        await client.disconnect()
+                        return True
+                    if method == "idleTime":
+                        return int(
+                            (time.monotonic() - client.client.last_activity) * 1000
+                        )
+                    if method == "idleTimeMax":
+                        return int(self.IDLE_TIMEOUT * 1000)
         return await super()._method_call(path, method, access, params)
 
     def get_subscription(

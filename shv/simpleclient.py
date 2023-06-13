@@ -180,7 +180,7 @@ class SimpleClient:
                     await self._method_call(
                         msg.shv_path() or "",
                         method,
-                        msg.access_grant() or RpcMethodAccess.BROWSE,
+                        msg.rpc_access_grant() or RpcMethodAccess.BROWSE,
                         msg.params(),
                     )
                 )

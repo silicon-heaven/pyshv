@@ -2,6 +2,7 @@
 import collections.abc
 import dataclasses
 import enum
+import functools
 
 from .value import SHVType
 
@@ -37,23 +38,9 @@ class RpcMethodAccess(enum.IntEnum):
     DEVEL = enum.auto()
     ADMIN = enum.auto()
 
-    def tostr(self) -> str:
-        """Convert to string representation."""
-        return {
-            self.BROWSE.value: "bws",
-            self.READ.value: "rd",
-            self.WRITE.value: "wr",
-            self.COMMAND.value: "cmd",
-            self.CONFIG.value: "cfg",
-            self.SERVICE.value: "srv",
-            self.SUPER_SERVICE.value: "ssrv",
-            self.DEVEL.value: "dev",
-            self.ADMIN.value: "su",
-        }.get(self.value, "bws")
-
     @classmethod
-    def fromstr(cls, access: str) -> "RpcMethodAccess":
-        """Convert to string representation."""
+    @functools.cache
+    def strmap(cls) -> dict[str, "RpcMethodAccess"]:
         return {
             "bws": cls.BROWSE,
             "rd": cls.READ,
@@ -64,7 +51,21 @@ class RpcMethodAccess(enum.IntEnum):
             "ssrv": cls.SUPER_SERVICE,
             "dev": cls.DEVEL,
             "su": cls.ADMIN,
-        }.get(access, cls.BROWSE)
+        }
+
+    @classmethod
+    @functools.cache
+    def strrmap(cls) -> dict[int, str]:
+        return {v.value: k for k, v in cls.strmap().items()}
+
+    def tostr(self) -> str:
+        """Convert to string representation."""
+        return self.strrmap().get(self.value, "bws")
+
+    @classmethod
+    def fromstr(cls, access: str) -> "RpcMethodAccess":
+        """Convert to string representation."""
+        return cls.strmap().get(access, cls.BROWSE)
 
 
 @dataclasses.dataclass

@@ -13,36 +13,18 @@ def test_listen(config):
     }
 
 
-RULE_ADMIN = broker.RpcBrokerConfig.Rule(
-    "admin", path="", method="", level=RpcMethodAccess.ADMIN
+RULE_ADMIN = broker.RpcBrokerConfig.Rule("admin", path="")
+RULE_COM = broker.RpcBrokerConfig.Rule(
+    "com", path=".broker/app", methods=frozenset(("ping", "echo"))
 )
-RULE_PING = broker.RpcBrokerConfig.Rule(
-    "ping", path=".broker/app", method="ping", level=RpcMethodAccess.READ
+RULE_SIGNALS = broker.RpcBrokerConfig.Rule(
+    "signals", path=".broker/app", methods=frozenset(("subscribe", "unsubscribe"))
 )
-RULE_ECHO = broker.RpcBrokerConfig.Rule(
-    "echo", path=".broker/app", method="echo", level=RpcMethodAccess.WRITE
-)
-RULE_SUBSCRIBE = broker.RpcBrokerConfig.Rule(
-    "subscribe",
-    path=".broker/app",
-    method="subscribe",
-    level=RpcMethodAccess.READ,
-)
-RULE_UNSUBSCRIBE = broker.RpcBrokerConfig.Rule(
-    "unsubscribe",
-    path=".broker/app",
-    method="unsubscribe",
-    level=RpcMethodAccess.READ,
-)
-RULE_TESTER = broker.RpcBrokerConfig.Rule(
-    "tester", path="test", method="", level=RpcMethodAccess.WRITE
-)
+RULE_TESTER = broker.RpcBrokerConfig.Rule("tester", path="test")
 RULES = {
     RULE_ADMIN,
-    RULE_PING,
-    RULE_ECHO,
-    RULE_SUBSCRIBE,
-    RULE_UNSUBSCRIBE,
+    RULE_COM,
+    RULE_SIGNALS,
     RULE_TESTER,
 }
 
@@ -53,14 +35,17 @@ def test_rules(config):
 
 ROLE_ADMIN = broker.RpcBrokerConfig.Role(
     "admin",
+    RpcMethodAccess.ADMIN,
     frozenset({RULE_ADMIN}),
 )
 ROLE_CLIENT = broker.RpcBrokerConfig.Role(
     "client",
-    frozenset({RULE_PING, RULE_ECHO, RULE_SUBSCRIBE, RULE_UNSUBSCRIBE}),
+    RpcMethodAccess.WRITE,
+    frozenset({RULE_COM, RULE_SIGNALS}),
 )
 ROLE_TESTER = broker.RpcBrokerConfig.Role(
     "tester",
+    RpcMethodAccess.COMMAND,
     frozenset({RULE_TESTER}),
     frozenset({ROLE_CLIENT}),
 )
@@ -73,16 +58,6 @@ ROLES = {
 
 def test_roles(config):
     assert set(config.roles()) == ROLES
-
-
-def test_roles_in_role(config):
-    assert set(config.role("tester")) == {
-        RULE_TESTER,
-        RULE_PING,
-        RULE_ECHO,
-        RULE_SUBSCRIBE,
-        RULE_UNSUBSCRIBE,
-    }
 
 
 USER_ADMIN = broker.RpcBrokerConfig.User(
@@ -166,3 +141,18 @@ def test_login_valid_test(config):
 )
 def test_login_invalid(config, user, password, nonce, tp):
     assert config.login(user, password, nonce, tp) is None
+
+
+@pytest.mark.parametrize(
+    "user,path,method,expected",
+    (
+        (USER_ADMIN, "any", "get", RpcMethodAccess.ADMIN),
+        (USER_TEST, "any", "get", RpcMethodAccess.BROWSE),
+        (USER_TEST, "test/device", "appName", RpcMethodAccess.COMMAND),
+        (USER_TEST, "test/device/track/1", "get", RpcMethodAccess.COMMAND),
+        (USER_TEST, ".broker/app", "subscribe", RpcMethodAccess.WRITE),
+        (USER_TEST, ".broker/app", "unsubscribe", RpcMethodAccess.WRITE),
+    ),
+)
+def test_access_level(user, path, method, expected):
+    assert user.access_level(path, method) == expected
