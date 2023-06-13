@@ -68,12 +68,12 @@ class RpcBrokerConfig:
                 yield role
                 rlst.extend(role.roles)
 
-        def access_level(self, path: str, method: str) -> RpcMethodAccess:
-            """Deduce access level for this used on given path and method."""
+        def access_level(self, path: str, method: str) -> RpcMethodAccess | None:
+            """Deduce access level (if any) for this user on given path and method."""
             for role in self.all_roles():
                 if role.applies(path, method):
                     return role.access
-            return RpcMethodAccess.BROWSE
+            return None
 
         @property
         def shapass(self) -> str:

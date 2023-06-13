@@ -184,6 +184,11 @@ class RpcBroker:
                 # Set access granted to the level allowed by user
                 assert self.user is not None
                 access = self.user.access_level(path, method)
+                if access is None:
+                    resp = msg.make_response()
+                    resp.set_shverror(RpcErrorCode.METHOD_NOT_FOUND, "No access")
+                    await self.client.send(resp)
+                    return
                 if (
                     access is not RpcMethodAccess.ADMIN
                     or msg.rpc_access_grant() is None

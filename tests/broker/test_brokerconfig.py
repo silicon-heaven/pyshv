@@ -21,11 +21,13 @@ RULE_SIGNALS = broker.RpcBrokerConfig.Rule(
     "signals", path=".broker/app", methods=frozenset(("subscribe", "unsubscribe"))
 )
 RULE_TESTER = broker.RpcBrokerConfig.Rule("tester", path="test")
+RULE_BROWSE = broker.RpcBrokerConfig.Rule("browse", methods=frozenset(("ls", "dir")))
 RULES = {
     RULE_ADMIN,
     RULE_COM,
     RULE_SIGNALS,
     RULE_TESTER,
+    RULE_BROWSE,
 }
 
 
@@ -38,10 +40,16 @@ ROLE_ADMIN = broker.RpcBrokerConfig.Role(
     RpcMethodAccess.DEVEL,
     frozenset({RULE_ADMIN}),
 )
+ROLE_BROWSE = broker.RpcBrokerConfig.Role(
+    "browse",
+    RpcMethodAccess.BROWSE,
+    frozenset({RULE_BROWSE}),
+)
 ROLE_CLIENT = broker.RpcBrokerConfig.Role(
     "client",
     RpcMethodAccess.WRITE,
     frozenset({RULE_COM, RULE_SIGNALS}),
+    frozenset({ROLE_BROWSE}),
 )
 ROLE_TESTER = broker.RpcBrokerConfig.Role(
     "tester",
@@ -53,6 +61,7 @@ ROLES = {
     ROLE_ADMIN,
     ROLE_TESTER,
     ROLE_CLIENT,
+    ROLE_BROWSE,
 }
 
 
@@ -147,7 +156,9 @@ def test_login_invalid(config, user, password, nonce, tp):
     "user,path,method,expected",
     (
         (USER_ADMIN, "any", "get", RpcMethodAccess.DEVEL),
-        (USER_TEST, "any", "get", RpcMethodAccess.BROWSE),
+        (USER_TEST, "any", "ls", RpcMethodAccess.BROWSE),
+        (USER_TEST, "any", "dir", RpcMethodAccess.BROWSE),
+        (USER_TEST, "any", "get", None),
         (USER_TEST, "test/device", "appName", RpcMethodAccess.COMMAND),
         (USER_TEST, "test/device/track/1", "get", RpcMethodAccess.COMMAND),
         (USER_TEST, ".broker/app", "subscribe", RpcMethodAccess.WRITE),
