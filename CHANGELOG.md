@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- `ValueClient.prop_change_wait` that simplifies a common operation of waiting
+  for a new value.
+
+### Changed
+- `ValueClient` now caches new value for subscribed paths when `prop_get` is
+  used and optionally right on `prop_set`.
+
 ### Fixed
 - Packing of `Decimal` in ChainPack that in some cases packed invalid value
 
