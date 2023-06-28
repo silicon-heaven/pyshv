@@ -9,7 +9,7 @@ from . import count_foo
 logger = logging.getLogger(__name__)
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """Parse passed arguments and return result."""
     parser = argparse.ArgumentParser(description="Foo counter")
     parser.add_argument(
@@ -20,7 +20,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
+def main() -> None:
     """Application's entrypoint."""
     args = parse_args()
 
