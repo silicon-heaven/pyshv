@@ -2,7 +2,7 @@
 import collections.abc
 import datetime
 import decimal
-import math
+import functools
 import struct
 
 from . import commonpack
@@ -359,10 +359,15 @@ class ChainPackWriter(commonpack.CommonWriter):
         self._write(struct.pack("<d", value))  # little endian
 
     def write_decimal(self, value: decimal.Decimal) -> None:
-        n, d = value.as_integer_ratio()
+        t = value.as_tuple()
+        mantisa = functools.reduce(
+            lambda a, b: a + (b[1] * 10 ** b[0]), enumerate(reversed(t.digits)), 0
+        ) * (-1 if t.sign else 1)
+        exponent = t.exponent
+        assert isinstance(exponent, int)
         self._write(ChainPack.CP_Decimal)
-        self.write_int_data(n)
-        self.write_int_data(-int(math.log10(d)))
+        self.write_int_data(mantisa)
+        self.write_int_data(exponent)
 
     def write_list(self, value: collections.abc.Iterable[SHVType]) -> None:
         self._write(ChainPack.CP_List)

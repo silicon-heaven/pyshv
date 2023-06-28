@@ -9,7 +9,7 @@ from .chainpack import ChainPackWriter
 from .cpon import CponWriter
 from .rpcerrors import RpcError, RpcErrorCode
 from .rpcmethod import RpcMethodAccess
-from .value import SHVDict, SHVMeta, SHVType, is_shvimap, is_shvmap, shvmeta
+from .value import SHVDict, SHVMeta, SHVType, is_shvimap, shvmeta
 
 
 class RpcMessage:
