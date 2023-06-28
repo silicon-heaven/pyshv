@@ -91,7 +91,7 @@ pydocstyle:
 editorconfig-checker:
   extends: .style
   script:
-    - nix develop -c editorconfig-checker -disable-max-line-length
+    - nix develop -c editorconfig-checker
 
 gitlint:
   extends: .style
