@@ -72,7 +72,7 @@ class SimpleClient:
         :param url: SHV RPC URL to the broker
         :param login_options: Additional options sent with login
         """
-        client = await RpcClient.connect(url.host, url.port, url.protocol)
+        client = await RpcClient.connect(url.location, url.port, url.protocol)
         options = url.login_options()
         if login_options:
             options.update(login_options)

@@ -39,28 +39,28 @@ class RpcClient:
     @classmethod
     async def connect(
         cls,
-        host: str | None,
+        location: str | None,
         port: int = 3755,
         protocol: RpcProtocol = RpcProtocol.TCP,
     ) -> RpcClient:
         """Connect to the SHV RPC server.
 
-        :param host: IP/Hostname (TCP) or socket path (LOCKAL_SOCKET)
+        :param location: IP/Hostname (TCP) or socket path (LOCKAL_SOCKET)
         :param port: Port (TCP) to connect to
         :param protocol: Protocol used to connect to the server
         """
-        if host is None:
+        if location is None:
             if protocol == RpcProtocol.TCP:
-                host = "localhost"
+                location = "localhost"
             elif protocol == RpcProtocol.LOCAL_SOCKET:
-                host = "shv.sock"
+                location = "shv.sock"
             else:
                 raise RuntimeError(f"Invalid protocol: {protocol}")
-        logger.debug("Connecting to: %s:%d", host, port)
+        logger.debug("Connecting to: %s:%d", location, port)
         if protocol == RpcProtocol.TCP:
-            reader, writer = await asyncio.open_connection(host, port)
+            reader, writer = await asyncio.open_connection(location, port)
         elif protocol == RpcProtocol.LOCAL_SOCKET:
-            reader, writer = await asyncio.open_unix_connection(host)
+            reader, writer = await asyncio.open_unix_connection(location)
         client = cls(reader, writer)
         logger.debug("%s CONNECTED", str(protocol))
         return client

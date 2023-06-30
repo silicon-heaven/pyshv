@@ -36,8 +36,12 @@ class RpcUrl:
     """
 
     # URL primary fields
-    host: str
-    """Hostname of the SHV RPC server."""
+    location: str
+    """Hostname of the SHV RPC server or path to the socket.
+
+    .. versionchanged:: 0.3.0
+       This attribute was named ``host`` in version 0.2.0.
+    """
     port: int = 3755
     """Port the SHV RPC server is listening on."""
     protocol: RpcProtocol = RpcProtocol.TCP
@@ -86,28 +90,29 @@ class RpcUrl:
 
         res = cls("", protocol=protocol)
 
+        res.username = sr.username or ""
         if protocol is RpcProtocol.TCP:
-            res.username = sr.username or ""
-            res.host = sr.hostname or ""
+            res.location = sr.hostname or ""
             if sr.port is not None:
                 res.port = int(sr.port)
+            if sr.path:
+                raise ValueError(f"Path is not supported for tcp: {sr.path}")
         elif protocol is RpcProtocol.LOCAL_SOCKET:
-            res.host = f"/{sr.netloc}{sr.path}" if sr.netloc else sr.path
+            res.location = f"/{sr.netloc}{sr.path}" if sr.netloc else sr.path
         else:
             raise NotImplementedError()  # pragma: no cover
 
+        # We prefer SHA1 password and thus discard plain if both are present
+        if opts := pqs.pop("shapass", []):
+            res.password = opts[0]
+            res.login_type = RpcLoginType.SHA1
+        elif opts := pqs.pop("password", []):
+            res.password = opts[0]
+            res.login_type = RpcLoginType.PLAIN
         if opts := pqs.pop("devid", []):
             res.device_id = opts[0]
         if opts := pqs.pop("devmount", []):
             res.device_mount_point = opts[0]
-        if protocol in (RpcProtocol.TCP,):
-            # We prefer SHA1 password and thus discard plain if both are present
-            if opts := pqs.pop("shapass", []):
-                res.password = opts[0]
-                res.login_type = RpcLoginType.SHA1
-            elif opts := pqs.pop("password", []):
-                res.password = opts[0]
-                res.login_type = RpcLoginType.PLAIN
 
         if pqs:
             raise ValueError(f"Unsupported URL queries: {pqs.keys()}")
@@ -124,13 +129,13 @@ class RpcUrl:
             netloc = "//"
             if self.username:
                 netloc += f"{self.username}@"
-            if ":" in self.host:
-                netloc += f"[{self.host}]"
+            if ":" in self.location:
+                netloc += f"[{self.location}]"
             else:
-                netloc += self.host
+                netloc += self.location
             netloc += f":{self.port}"
         elif self.protocol is RpcProtocol.LOCAL_SOCKET:
-            netloc = self.host
+            netloc = self.location
         else:
             raise NotImplementedError()  # pragma: no cover
 
@@ -139,7 +144,7 @@ class RpcUrl:
             opts.append(f"devid={self.device_id}")
         if self.device_mount_point:
             opts.append(f"devmount={self.device_mount_point}")
-        if self.protocol in (RpcProtocol.TCP,) and self.password:
+        if self.password:
             if self.login_type is RpcLoginType.SHA1:
                 # TODO escape password string?
                 opts.append(f"shapass={self.password}")

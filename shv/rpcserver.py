@@ -28,10 +28,10 @@ async def create_rpc_server(
 
     if url.protocol is RpcProtocol.TCP:
         server = await asyncio.start_server(
-            client_connect, host=url.host, port=url.port
+            client_connect, host=url.location, port=url.port
         )
     elif url.protocol is RpcProtocol.LOCAL_SOCKET:
-        server = await asyncio.start_unix_server(client_connect, path=url.host)
+        server = await asyncio.start_unix_server(client_connect, path=url.location)
     else:
         raise RuntimeError(f"Invalid protocol: {url.protocol}")
     return server
