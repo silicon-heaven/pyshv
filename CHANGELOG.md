@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- `ValueClient.future_change` that provides a future for notification value.
 - `ValueClient.prop_change_wait` that simplifies a common operation of waiting
   for a new value.
 

@@ -28,6 +28,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         self._handlers: dict[
             str, typing.Callable[[ValueClient, str, SHVType], None]
         ] = {}
+        self._futures: dict[str, list[asyncio.Future]] = {}
 
     def __getitem__(self, key: str) -> SHVType:
         return self._cache[key]
@@ -42,6 +43,8 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         handler = self._get_handler(path)
         if handler is not None and not shvmeta_eq(self._cache.get(path, None), value):
             handler(self, path, value)
+        for future in self._futures.pop(path, []):
+            future.set_result(value)
         if self.is_subscribed(path):
             self._cache[path] = value
 
@@ -112,26 +115,20 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         init = self._cache.get(path, None) if value is None else value
         is_subscibed = self.is_subscribed(path)
         if is_subscibed:
-            event = asyncio.Event()
-            old_handler = self._handlers.get(path, None)
-            self._handlers[path] = lambda s, p, v: event.set() if p == path else None
-        try:
-            tstart = time.monotonic()
-            while timeout < 0 or time.monotonic() - tstart < timeout:
-                if is_subscibed:
-                    try:
-                        await asyncio.wait_for(event.wait(), get_period)
-                        return self._cache[path]
-                    except TimeoutError:
-                        pass
-                else:
-                    await asyncio.sleep(get_period)
-                value = await self.prop_get(path)
-                if init != value:
-                    return value
-        finally:
+            future = self.future_change(path)
+        tstart = time.monotonic()
+        while timeout < 0 or time.monotonic() - tstart < timeout:
             if is_subscibed:
-                self.on_change(path, old_handler)
+                try:
+                    await asyncio.wait_for(future, get_period)
+                    return future.result()
+                except TimeoutError:
+                    pass
+            else:
+                await asyncio.sleep(get_period)
+            value = await self.prop_get(path)
+            if init != value:
+                return value
         raise TimeoutError
 
     def on_change(
@@ -146,7 +143,12 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         the device if this signal is sent really only on value change or if it is sent
         more often.
 
-        :param path: SHV path to the node change is expected on.
+        The default implementation of handler lookup (:meth:`_get_handler`) is that the
+        most matching callback path is selected and callback for it called. This way you
+        can get all notifications delivered to a single handler if you use empty string
+        as the path.
+
+        :param path: SHV path to the node (includes its children) change is expected on.
         :param callback: Function called when change notification is received. You can
             pass ``None`` to remove any existing callback. Note that there can be only
             one callback registered for a single path and thus a different callback
@@ -156,6 +158,20 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
             self._handlers.pop(path)
         else:
             self._handlers[path] = callback
+
+    def future_change(self, path: str) -> asyncio.Future:
+        """Provides a way to await for the future change signal.
+
+        Compared to the :meth:`on_change` the path has to match exactly.
+
+        :param path: SHV path to the node the change signal is expected on.
+        :return: future value.
+        """
+        if path not in self._futures:
+            self._futures[path] = []
+        future = asyncio.get_running_loop().create_future()
+        self._futures[path].append(future)
+        return future
 
     async def subscribe(self, path: str) -> None:
         await super().subscribe(path)
