@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Packing of `Decimal` in ChainPack that in some cases packed invalid value
+- Unpacking of strings in Cpon that mangled UTF-8 encoding
+- Packing of `str` in Cpon that invalidly escaped some characters
 
 
 ## [0.2.0] - 2023-06-16

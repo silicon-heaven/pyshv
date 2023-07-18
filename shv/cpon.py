@@ -191,35 +191,37 @@ class CponReader(commonpack.CommonReader):
         return bytes(res)
 
     def _read_cstring(self) -> str:
-        res = ""
+        res = bytearray()
         self._peek_drop()  # eat '"'
         while True:
             b = self._read_byte()
             if b == ord("\\"):
                 b = self._read_byte()
-                if ord("\\"):
-                    res += "\\"
-                elif ord("b"):
-                    res += "\b"
-                elif ord('"'):
-                    res += '"'
-                elif ord("f"):
-                    res += "\f"
-                elif ord("n"):
-                    res += "\n"
-                elif ord("r"):
-                    res += "\r"
-                elif ord("t"):
-                    res += "\t"
-                elif ord("0"):
-                    res += "\0"
+                if b == ord("\\"):
+                    res += b"\\"
+                elif b == ord("b"):
+                    res += b"\b"
+                elif b == ord('"'):
+                    res += b'"'
+                elif b == ord("f"):
+                    res += b"\f"
+                elif b == ord("n"):
+                    res += b"\n"
+                elif b == ord("r"):
+                    res += b"\r"
+                elif b == ord("t"):
+                    res += b"\t"
+                elif b == ord("0"):
+                    res += b"\0"
                 else:
-                    res += chr(b)
+                    res += bytes((b,))
             else:
                 if b == ord('"'):
                     break  # end of string
-                res += chr(b)
-        return res
+                res += bytes((b,))
+        # Note: this is required to correctly decode the UTF-8 string that contains
+        # multiple bytes.
+        return res.decode("utf-8")
 
     def _read_list(self):
         res = []
@@ -344,11 +346,7 @@ class CponWriter(commonpack.CommonWriter):
 
     def write_blob(self, value: bytes | bytearray) -> None:
         self._writestr('b"')
-        self._writeesc(value)
-        self._writestr('"')
-
-    def _writeesc(self, data: bytes) -> None:
-        for d in data:
+        for d in value:
             if d >= 0x7F:
                 self._writestr("\\")
                 self._writestr(self._nibble_to_hexdigit(d // 16))
@@ -365,6 +363,7 @@ class CponWriter(commonpack.CommonWriter):
                         ord('"'): '\\"',
                     }.get(d, chr(d))
                 )
+        self._writestr('"')
 
     @staticmethod
     def _nibble_to_hexdigit(b: int) -> str:
@@ -380,7 +379,18 @@ class CponWriter(commonpack.CommonWriter):
 
     def write_cstring(self, value: str) -> None:
         self._writestr('"')
-        self._writeesc(value.encode("utf-8"))
+        for d in value:
+            self._writestr(
+                {
+                    "\0": "\\0",
+                    "\\": "\\\\",
+                    "\t": "\\t",
+                    "\b": "\\b",
+                    "\r": "\\r",
+                    "\n": "\\n",
+                    '"': '\\"',
+                }.get(d, d)
+            )
         self._writestr('"')
 
     def write_int(self, value: int) -> None:

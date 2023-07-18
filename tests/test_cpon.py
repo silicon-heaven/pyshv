@@ -30,6 +30,8 @@ DATA: list = [
     ("3E+2", decimal.Decimal((0, (3,), 2))),
     ('""', ""),
     ('"foo"', "foo"),
+    ('"dvaačtyřicet"', "dvaačtyřicet"),
+    ('"some\\t\\"tab\\""', 'some\t"tab"'),
     ("[]", []),
     ("[1]", [1]),
     ("[1,2,3]", [1, 2, 3]),
