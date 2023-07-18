@@ -1,6 +1,7 @@
 """SHV RPC URL for RpcClient and RpcServer."""
 import dataclasses
 import enum
+import getpass
 import urllib.parse
 
 from .value import SHVType
@@ -47,7 +48,7 @@ class RpcUrl:
     """Port the SHV RPC server is listening on."""
     protocol: RpcProtocol = RpcProtocol.TCP
     """SHV RPC protocol used to communicate (This is scheme in URL therminology)"""
-    username: str = ""
+    username: str = getpass.getuser()
     """User name used to login to the remote server."""
 
     # Options
@@ -92,7 +93,7 @@ class RpcUrl:
 
         res = cls("", protocol=protocol)
 
-        res.username = sr.username or ""
+        res.username = sr.username or res.username
         if protocol in (RpcProtocol.TCP, RpcProtocol.UDP):
             res.location = sr.hostname or ""
             if sr.port is not None:
@@ -130,7 +131,7 @@ class RpcUrl:
         }
         if self.protocol in (RpcProtocol.TCP, RpcProtocol.UDP):
             netloc = "//"
-            if self.username:
+            if self.username and self.username != type(self).username:
                 netloc += f"{self.username}@"
             if ":" in self.location:
                 netloc += f"[{self.location}]"

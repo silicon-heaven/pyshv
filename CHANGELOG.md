@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nodes and its children instead of just generic string prefix.
 - `ValueClient.prop_get` reports value change only when it really happened.
 - `ValueClient.prop_change_wait` implementation
+- `RpcUrl` uses local user's name instead of empty string
 
 
 ## [0.2.0] - 2023-06-16
