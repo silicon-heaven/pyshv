@@ -6,18 +6,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- `ValueClient.future_change` that provides a future for notification value.
+- `ValueClient.wait_for_change` that blocks task until value change is detected.
 - `ValueClient.prop_change_wait` that simplifies a common operation of waiting
   for a new value.
+- `ValueClient.get_snapshot` is now able to snapshot multiple paths or
+  subscribed paths if no path is given.
+- `ValueClient.clean_cache` method to remove old entried for no longer
+  subscribed paths.
 
 ### Changed
+- URL now uses field `location` instead of `host` as it is more descriptive
+  considering the usage.
+- Login is now allowed for local socket because it can be used to elevate access
+  rights of some clients without need to have multiple sockets.
 - `ValueClient` now caches new value for subscribed paths when `prop_get` is
   used and optionally right on `prop_set`.
+- `ValueClient.unsubscribe` now calls `ValueClient.clean_cache` on successful
+  unsubscribe (this can be suppressed with argument).
 
 ### Fixed
 - Packing of `Decimal` in ChainPack that in some cases packed invalid value
-- Unpacking of strings in Cpon that mangled UTF-8 encoding
-- Packing of `str` in Cpon that invalidly escaped some characters
+- Unpacking of strings in Cpon that mangled UTF-8 encoding.
+- Packing of `str` in Cpon that invalidly escaped some characters.
+- `ValueClient.get_snapshot` no longer fails when node is not implementing `ls`
+  method.
+- `ValueClient.is_subscribed` now correctly matches only paths for subscribed
+  nodes and its children instead of just generic string prefix.
+- `ValueClient.prop_get` reports value change only when it really happened.
+- `ValueClient.prop_change_wait` implementation
 
 
 ## [0.2.0] - 2023-06-16

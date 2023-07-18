@@ -9,6 +9,6 @@
 	},
 	"test":{
 		"password":{"format":"PLAIN", "password":"test"},
-		"roles":["tester", "ping", "echo"]
+		"roles":["tester", "ping", "echo", "subscribe"]
 	}
 }

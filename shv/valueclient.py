@@ -6,6 +6,7 @@ import time
 import typing
 
 from .rpcclient import RpcClient
+from .rpcerrors import RpcMethodNotFoundError
 from .simpleclient import SimpleClient
 from .value import SHVType, shvmeta, shvmeta_eq
 
@@ -46,6 +47,9 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         for future in self._futures.pop(path, []):
             future.set_result(value)
         if self.is_subscribed(path):
+            # Theoretically we should get only paths we subscribed for but user might
+            # invoke subscribe on its own which could break our cache logic and thus
+            # just guard against it here.
             self._cache[path] = value
 
     def _get_handler(
@@ -54,7 +58,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         """Get the handler for the longest path match."""
         split_key = path.split("/")
         paths = (
-            "/".join(split_key[: len(split_key) - i]) for i in range(len(split_key))
+            "/".join(split_key[: len(split_key) - i]) for i in range(len(split_key) + 1)
         )
         return next(
             (self._handlers[path] for path in paths if path in self._handlers),
@@ -71,7 +75,8 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         :return: Value of the property node.
         """
         value = await self.call(path, "get")
-        await self._value_update(path, value)
+        if self._cache.get(path, None) != value:
+            await self._value_update(path, value)
         return value
 
     async def prop_set(self, path: str, value: SHVType, update: bool = False) -> None:
@@ -112,24 +117,39 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
             only on multiples of ``get_period``.
         :param get_period: How often the pooling should be performed.
         """
-        init = self._cache.get(path, None) if value is None else value
-        is_subscibed = self.is_subscribed(path)
-        if is_subscibed:
-            future = self.future_change(path)
-        tstart = time.monotonic()
-        while timeout < 0 or time.monotonic() - tstart < timeout:
-            if is_subscibed:
-                try:
-                    await asyncio.wait_for(future, get_period)
-                    return future.result()
-                except TimeoutError:
-                    pass
-            else:
-                await asyncio.sleep(get_period)
-            value = await self.prop_get(path)
-            if init != value:
-                return value
-        raise TimeoutError
+        tasks: set[asyncio.Task] = {
+            asyncio.create_task(
+                self._prop_change_wait(
+                    path,
+                    self._cache.get(path, None) if value is None else value,
+                    get_period,
+                )
+            )
+        }
+        if self.is_subscribed(path):
+            tasks.add(asyncio.create_task(self.wait_for_change(path)))
+        done, pending = await asyncio.wait(
+            tasks, timeout=timeout, return_when=asyncio.FIRST_COMPLETED
+        )
+        for task in pending:
+            task.cancel()
+        for task in pending:
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+        if not done:
+            raise TimeoutError
+        return done.pop().result()
+
+    async def _prop_change_wait(
+        self, path: str, value: SHVType, period: float
+    ) -> SHVType:
+        while True:
+            v = await self.prop_get(path)
+            if v != value:
+                return v
+            await asyncio.sleep(period)
 
     def on_change(
         self,
@@ -159,8 +179,8 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         else:
             self._handlers[path] = callback
 
-    def future_change(self, path: str) -> asyncio.Future:
-        """Provides a way to await for the future change signal.
+    async def wait_for_change(self, path: str) -> SHVType:
+        """Provide a way to await for the future change signal.
 
         Compared to the :meth:`on_change` the path has to match exactly.
 
@@ -171,28 +191,47 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
             self._futures[path] = []
         future = asyncio.get_running_loop().create_future()
         self._futures[path].append(future)
-        return future
+        return await future
 
     async def subscribe(self, path: str) -> None:
         await super().subscribe(path)
         self._subscribes.add(path)
 
-    async def unsubscribe(self, path: str) -> bool:
+    async def unsubscribe(self, path: str, clean_cache: bool = True) -> bool:
+        """Perform unsubscribe for signals on given path.
+
+        :param path: SHV path previously passed to :func:`subscribe`.
+        :param wipe_cache: If no longer subscribed paths should be removed from cache or
+            not. The default is to remove them but you can also do multiple unsibscribes
+            and then call :meth:`clean_cache` for all of the at once.
+        :return: ``True`` in case such subscribe was located and ``False`` otherwise.
+        """
         res = await super().unsubscribe(path)
         if res:
             self._subscribes.remove(path)
+            if clean_cache:
+                self.clean_cache()
         return res
 
     def is_subscribed(self, path: str) -> bool:
         """Check if we are subscribed for given SHV path.
 
-        Subscribed paths are cached and this this is also check if this path would be
-        cached.
+        Subscribed paths are cached and this is also check if this path would be cached.
 
         :param path: SHV path to
         :return: ``True`` if subscribed for that path and ``False`` otherwise.
         """
-        return any(path.startswith for v in self._subscribes)
+        pth = path.split("/")
+        paths = ("/".join(pth[: i + 1]) for i in range(len(pth)))
+        return any(path in self._subscribes for path in paths)
+
+    def clean_cache(self) -> None:
+        """Remove no longer subscribed paths from cache.
+
+        There is commonly no need to call this method unless you call
+        :meth:`unsubscribe` with ``wipe_cache=False``.
+        """
+        self._cache = {k: v for k, v in self._cache.items() if self.is_subscribed(k)}
 
     async def log_snapshot(self, path: str) -> None:
         """Get snapshot of the logs.
@@ -224,14 +263,28 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
                         continue
                     await self._value_update(spath, value)
 
-    async def get_snapshot(self, path: str) -> None:
-        """Get snapshot of data using get methods.
+    async def get_snapshot(self, *paths: str, update: bool = False) -> None:
+        """Get snapshot of data on subscribed paths using get methods.
 
         This provides a way for you to initialize cache without logs. It
         iterates over SHV tree and calls any get method it encounters.
+
+        :param paths: Paths to be snapshoted. If none is provide the sunscriptions are
+            used instead.
+        :param update: If already cached values should be updated or just skipped.
         """
-        # TODO rewrite this to use ls_with_children to safe on method calls
-        if "get" in await self.dir(path) and path not in self._cache:
-            self._cache[path] = await self.prop_get(path)
-        for node in await self.ls(path):
-            await self.get_snapshot("/".join((path, node)))
+        pths: dict[str, bool | None] = {
+            pth: True for pth in (paths if paths else self._subscribes)
+        }
+        while pths:
+            pth, children = pths.popitem()
+            if children in (True, None):  # None means "we do not know"
+                try:
+                    ls = await self.ls_with_children(pth)
+                    pths.update({"/".join((pth, k)): v for k, v in ls.items()})
+                except RpcMethodNotFoundError:
+                    pass  # ls might not be present which is not an issue
+            if not self.is_subscribed(pth) or (not update and pth in self._cache):
+                continue
+            if "get" in await self.dir(pth):
+                self._cache[pth] = await self.prop_get(pth)

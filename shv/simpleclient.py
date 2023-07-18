@@ -241,7 +241,7 @@ class SimpleClient:
             raise RpcMethodCallExceptionError(f"Invalid result returned: {repr(res)}")
         return res
 
-    async def ls_with_children(self, path: str) -> dict[str, bool]:
+    async def ls_with_children(self, path: str) -> dict[str, bool | None]:
         """List child nodes of the node on the specified path.
 
         Compared to the :func:`ls` method this provides you also with info on
@@ -250,7 +250,8 @@ class SimpleClient:
 
         :param path: SHV path to the node we want children to be listed for.
         :return: dictionary where keys are names of the nodes and values are
-            booleans signaling presence of at least one child.
+            booleans or ``None``  signaling presence of at least one child. The ``None``
+            in this case signals uncertainty.
         :raise RpcMethodNotFoundError: when there is no such path.
         """
         res = await self.call(path, "ls", ("", 1))
@@ -296,8 +297,7 @@ class SimpleClient:
         """Perform unsubscribe for signals on given path.
 
         :param path: SHV path previously passed to :func:`subscribe`.
-        :return: ``True`` in case such subscribe was located and ``False``
-            otherwise.
+        :return: ``True`` in case such subscribe was located and ``False`` otherwise.
         """
         resp = await self.call(".broker/app", "unsubscribe", {"path": path})
         assert is_shvbool(resp)
