@@ -13,7 +13,7 @@ from ..rpcclient import RpcClient
 from ..rpcerrors import RpcErrorCode
 from ..rpcmessage import RpcMessage
 from ..rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodSignature
-from ..rpcserver import create_rpc_server
+from ..rpcserver import RpcServer, create_rpc_server
 from ..rpcurl import RpcLoginType
 from ..simpleclient import SimpleClient
 from ..value import SHVType, shvget
@@ -33,7 +33,7 @@ class RpcBroker:
         self.clients: dict[int, RpcBroker.Client] = {}
         self.next_caller_id = 0
         self.config = config
-        self.servers: dict[str, asyncio.Server] = {}
+        self.servers: dict[str, RpcServer] = {}
 
     def add_client(self, client: RpcClient):
         """Add a new client to be handled by the broker.
@@ -80,10 +80,16 @@ class RpcBroker:
                 self.servers[name] = await create_rpc_server(self.add_client, url)
 
     async def serve_forever(self) -> None:
-        """Serve all configured servers."""
+        """Serve all configured servers and block.
+
+        This is a convenient coroutine that you can use to block main task until broker
+        termination. You do not have to await this coroutine to run broker, awaiting on
+        :meth:`start_serving` and keeping the loop running is enough to get broker
+        working.
+        """
         await self.start_serving()
         await asyncio.gather(
-            *(server.serve_forever() for server in self.servers.values()),
+            *(server.wait_closed() for server in self.servers.values()),
             return_exceptions=True,
         )
         # TODO handle returned errors
@@ -164,7 +170,7 @@ class RpcBroker:
             self.broker.clients.pop(self.broker_client_id, None)
 
         async def _keep_alive_loop(self) -> None:
-            while not self.client.writer.is_closing():
+            while self.client.connected():
                 t = time.monotonic() - self.client.last_activity
                 if t < self.IDLE_TIMEOUT:
                     await asyncio.sleep(self.IDLE_TIMEOUT - t)

@@ -109,4 +109,4 @@ understand it please read the previous section describing the INI file format
 configuration.
 
 The configuration then can be used to initialize :class:`shv.broker.RpcBroker`.
-To run the broker you have to await :meth:`shv.broker.RpcBroker.serve_forever`.
+To run the broker you have to await :meth:`shv.broker.RpcBroker.start_serving`.

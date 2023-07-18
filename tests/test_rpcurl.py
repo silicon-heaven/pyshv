@@ -7,6 +7,10 @@ DATA = [
     ("localsocket:/dev/null", RpcUrl("/dev/null", protocol=RpcProtocol.LOCAL_SOCKET)),
     ("tcp://test@localhost:4242", RpcUrl("localhost", username="test", port=4242)),
     (
+        "udp://test@localhost:4242",
+        RpcUrl("localhost", protocol=RpcProtocol.UDP, username="test", port=4242),
+    ),
+    (
         "tcp://localhost:4242?devid=foo&devmount=/dev/null",
         RpcUrl("localhost", port=4242, device_id="foo", device_mount_point="/dev/null"),
     ),

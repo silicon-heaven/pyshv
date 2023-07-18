@@ -10,6 +10,7 @@ class RpcProtocol(enum.Enum):
     """Enum of supported RPC protocols by this Python implementation."""
 
     TCP = enum.auto()
+    UDP = enum.auto()
     LOCAL_SOCKET = enum.auto()
 
 
@@ -82,6 +83,7 @@ class RpcUrl:
 
         protocols = {
             "tcp": RpcProtocol.TCP,
+            "udp": RpcProtocol.UDP,
             "localsocket": RpcProtocol.LOCAL_SOCKET,
         }
         if sr.scheme not in protocols:
@@ -91,12 +93,12 @@ class RpcUrl:
         res = cls("", protocol=protocol)
 
         res.username = sr.username or ""
-        if protocol is RpcProtocol.TCP:
+        if protocol in (RpcProtocol.TCP, RpcProtocol.UDP):
             res.location = sr.hostname or ""
             if sr.port is not None:
                 res.port = int(sr.port)
             if sr.path:
-                raise ValueError(f"Path is not supported for tcp: {sr.path}")
+                raise ValueError(f"Path is not supported for {sr.scheme}: {sr.path}")
         elif protocol is RpcProtocol.LOCAL_SOCKET:
             res.location = f"/{sr.netloc}{sr.path}" if sr.netloc else sr.path
         else:
@@ -123,9 +125,10 @@ class RpcUrl:
         """Convert to string URL."""
         protocols = {
             RpcProtocol.TCP: "tcp",
+            RpcProtocol.UDP: "udp",
             RpcProtocol.LOCAL_SOCKET: "localsocket",
         }
-        if self.protocol is RpcProtocol.TCP:
+        if self.protocol in (RpcProtocol.TCP, RpcProtocol.UDP):
             netloc = "//"
             if self.username:
                 netloc += f"{self.username}@"

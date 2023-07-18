@@ -7,7 +7,7 @@ import time
 import traceback
 import typing
 
-from .rpcclient import RpcClient
+from .rpcclient import RpcClient, RpcClientDatagram, RpcClientStream
 from .rpcerrors import (
     RpcError,
     RpcInvalidParamsError,
@@ -21,7 +21,7 @@ from .rpcmethod import (
     RpcMethodFlags,
     RpcMethodSignature,
 )
-from .rpcurl import RpcLoginType, RpcUrl
+from .rpcurl import RpcLoginType, RpcProtocol, RpcUrl
 from .value import SHVType, is_shvbool, is_shvnull
 
 logger = logging.getLogger(__name__)
@@ -72,14 +72,22 @@ class SimpleClient:
         :param url: SHV RPC URL to the broker
         :param login_options: Additional options sent with login
         """
-        client = await RpcClient.connect(url.location, url.port, url.protocol)
+        client: RpcClient
+        if url.protocol in (RpcProtocol.TCP, RpcProtocol.LOCAL_SOCKET):
+            client = await RpcClientStream.connect(url.location, url.port, url.protocol)
+        elif url.protocol is RpcProtocol.UDP:
+            client = await RpcClientDatagram.connect(
+                url.location, url.port, url.protocol
+            )
+        else:
+            raise NotImplementedError(f"Unimplemented protocol: {url.protocol}")
         options = url.login_options()
         if login_options:
             options.update(login_options)
         cid = await cls.login(
             client, url.username, url.password, url.login_type, options
         )
-        if client.writer.is_closing():
+        if not client.connected():
             return None
         return cls(client, cid)
 
@@ -89,7 +97,7 @@ class SimpleClient:
         The call to the disconnect when client is not connected is silently
         ignored.
         """
-        if self.client.writer.is_closing():
+        if not self.client.connected():
             return
         await self.client.disconnect()
         await self.task
@@ -161,8 +169,9 @@ class SimpleClient:
 
     async def _keep_alive_loop(self) -> None:
         """Loop run alongside with _loop to send pings to the broker when idling."""
+        # TODO move this to client and use asyncio.wait_for
         idlet = self.IDLE_TIMEOUT / 2
-        while not self.client.writer.is_closing():
+        while self.client.connected():
             t = time.monotonic() - self.client.last_activity
             if t < idlet:
                 await asyncio.sleep(idlet - t)

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   subscribed paths if no path is given.
 - `ValueClient.clean_cache` method to remove old entried for no longer
   subscribed paths.
+- Support for UDP/IP protocol
 
 ### Changed
 - URL now uses field `location` instead of `host` as it is more descriptive
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   used and optionally right on `prop_set`.
 - `ValueClient.unsubscribe` now calls `ValueClient.clean_cache` on successful
   unsubscribe (this can be suppressed with argument).
+- `create_rpc_server` returns `RpcServer` instead of `asyncio.Server`
 
 ### Fixed
 - Packing of `Decimal` in ChainPack that in some cases packed invalid value
