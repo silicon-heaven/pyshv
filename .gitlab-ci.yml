@@ -1,4 +1,5 @@
 stages:
+  - devenv
   - test
   - lint
   - style
@@ -14,7 +15,7 @@ variables:
   GIT_SUBMODULE_UPDATE_FLAGS: --jobs 2
 
 .nix:
-  image: nixos/nix
+  image: registry.gitlab.com/cynerd/gitlab-ci-nix
   tags:
     - docker
   cache:
@@ -22,19 +23,23 @@ variables:
     paths:
       - ".nix-cache"
   before_script:
-    - echo "experimental-features = nix-command flakes" >>/etc/nix/nix.conf
-    - echo "extra-substituters = file://$PWD/.nix-cache" >>/etc/nix/nix.conf
-    - find /nix/store -maxdepth 1 ! -name \*.drv | sort >/nix/.before
+    - gitlab-ci-nix-cache-before
   after_script:
-    - find /nix/store -maxdepth 1 ! -name \*.drv | sort >/nix/.after
-    - comm -13 /nix/.before /nix/.after | xargs nix copy --to "file://$PWD/.nix-cache"
+    - gitlab-ci-nix-cache-after
+
+## Development environment #####################################################
+devenv:
+  stage: devenv
+  extends: .nix
+  script:
+    - nix develop -c true
 
 ## Test stage ##################################################################
 tests:
   stage: test
   extends: .nix
   script:
-    - nix develop -c pytest -v --junitxml=report.xml --cov=. --cov-report xml:coverage.xml --cov-report html:coverage --cov-report term
+    - nix develop --quiet -c pytest -v --junitxml=report.xml --cov=. --cov-report xml:coverage.xml --cov-report html:coverage --cov-report term
   artifacts:
     reports:
       junit: report.xml
@@ -69,13 +74,13 @@ include:
 pylint:
   extends: .lint
   script:
-    - nix develop -c pylint --output-format=colorized .
+    - nix develop --quiet -c pylint --output-format=colorized .
 
 mypy:
   extends: .lint
   script:
     - mkdir .mypy-cache
-    - nix develop -c mypy --cache-dir .mypy-cache --ignore-missing-imports .
+    - nix develop --quiet -c mypy --cache-dir .mypy-cache --ignore-missing-imports .
 
 ## Style stage #################################################################
 .style:
@@ -87,28 +92,28 @@ mypy:
 black:
   extends: .style
   script:
-    - nix develop -c black --diff --check .
+    - nix develop --quiet -c black --diff --check .
 
 isort:
   extends: .style
   script:
-    - nix develop -c isort --diff --check .
+    - nix develop --quiet -c isort --diff --check .
 
 pydocstyle:
   extends: .style
   script:
-    - nix develop -c pydocstyle --match='(?!tests/)*.py' .
+    - nix develop --quiet -c pydocstyle --match='(?!tests/)*.py' .
 
 editorconfig-checker:
   extends: .style
   script:
-    - nix develop -c editorconfig-checker -exclude '.nix-cache/.*'
+    - nix develop --quiet -c editorconfig-checker -exclude '.nix-cache/.*'
 
 gitlint:
   extends: .style
   script:
     - git fetch
-    - nix develop -c gitlint --commits origin/master..$CI_COMMIT_SHA
+    - nix develop --quiet -c gitlint --commits origin/master..$CI_COMMIT_SHA
 
 ## Release creation ############################################################
 .deploy:
@@ -132,8 +137,8 @@ release:
 gitlab-pypi:
   extends: [.nix, .deploy]
   script:
-    - nix develop -c python3 -m build
-    - TWINE_PASSWORD=$CI_JOB_TOKEN TWINE_USERNAME=gitlab-ci-token nix develop -c twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/*
+    - nix develop --quiet -c python3 -m build
+    - TWINE_PASSWORD=$CI_JOB_TOKEN TWINE_USERNAME=gitlab-ci-token nix develop --quiet -c twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/*
 
 pages:
   stage: deploy
@@ -143,7 +148,7 @@ pages:
   needs: []
   script:
     - git fetch
-    - nix develop -c sphinx-multiversion docs public
+    - nix develop --quiet -c sphinx-multiversion docs public
     - | # Add index.html to public root to redirect to $CI_DEFUALT_BRANCH/index.html
       cat >public/index.html << EOF
       <!DOCTYPE html>
