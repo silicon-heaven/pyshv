@@ -7,7 +7,7 @@ import time
 import traceback
 import typing
 
-from .rpcclient import RpcClient, RpcClientDatagram, RpcClientStream
+from .rpcclient import RpcClient, connect_rpc_client
 from .rpcerrors import (
     RpcError,
     RpcInvalidParamsError,
@@ -71,22 +71,10 @@ class SimpleClient:
 
         :param url: SHV RPC URL to the broker
         :param login_options: Additional options sent with login
+        :return: Connected instance.
         """
-        client: RpcClient
-        if url.protocol in (RpcProtocol.TCP, RpcProtocol.LOCAL_SOCKET):
-            client = await RpcClientStream.connect(url.location, url.port, url.protocol)
-        elif url.protocol is RpcProtocol.UDP:
-            client = await RpcClientDatagram.connect(
-                url.location, url.port, url.protocol
-            )
-        else:
-            raise NotImplementedError(f"Unimplemented protocol: {url.protocol}")
-        options = url.login_options()
-        if login_options:
-            options.update(login_options)
-        cid = await cls.login(
-            client, url.username, url.password, url.login_type, options
-        )
+        client = await connect_rpc_client(url)
+        cid = await cls.urllogin(client, url)
         if not client.connected():
             return None
         return cls(client, cid)
@@ -116,8 +104,12 @@ class SimpleClient:
         The login need to be performed only once right after the connection is
         established.
 
-        :return: Client ID assigned by broker or `None` in case none was
-            assigned.
+        :param: client: Connected client the login should be performed on.
+        :param username: User's name used to login.
+        :param password: Password used to authenticate the user.
+        :param login_type: The password format and login process selection.
+        :param login_options: Login options.
+        :return: Client ID assigned by broker or `None` in case none was assigned.
         """
         # Note: The implementation here expects that broker won't sent any other
         # messages until login is actually performed. That is what happens but
@@ -155,6 +147,28 @@ class SimpleClient:
         if isinstance(cid, int):
             return cid
         return 0
+
+    @classmethod
+    async def urllogin(
+        cls,
+        client: RpcClient,
+        url: RpcUrl,
+        login_options: dict[str, SHVType] | None = None,
+    ) -> int | None:
+        """Variation of :meth:`login` that takes arguments from RPC URL.
+
+        :param: client: Connected client the login should be performed on.
+        :param url: RPC URL with login info.
+        :param login_options: Additional custom login options that are not supported by
+            RPC URL.
+        :return: Client ID assigned by broker or `None` in case none was assigned.
+        """
+        options = url.login_options()
+        if login_options:
+            options.update(login_options)
+        return await cls.login(
+            client, url.username, url.password, url.login_type, options
+        )
 
     async def _loop(self) -> None:
         """Loop run in asyncio task to receive messages."""

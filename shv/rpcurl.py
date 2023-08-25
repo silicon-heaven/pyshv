@@ -13,6 +13,7 @@ class RpcProtocol(enum.Enum):
     TCP = enum.auto()
     UDP = enum.auto()
     LOCAL_SOCKET = enum.auto()
+    SERIAL = enum.auto()
 
 
 class RpcLoginType(enum.Enum):
@@ -60,6 +61,8 @@ class RpcUrl:
     """Device identifier sent to the server with login."""
     device_mount_point: str | None = None
     """Request for mounting of connected device to the specified mount point."""
+    baudrate: int = 115200
+    """Baudrate used for some of the link protocols."""
 
     def login_options(self) -> dict[str, SHVType]:
         """Assemble login options for the SHV RPC broker from options here."""
@@ -86,6 +89,10 @@ class RpcUrl:
             "tcp": RpcProtocol.TCP,
             "udp": RpcProtocol.UDP,
             "localsocket": RpcProtocol.LOCAL_SOCKET,
+            "unix": RpcProtocol.LOCAL_SOCKET,
+            "serial": RpcProtocol.SERIAL,
+            "serialport": RpcProtocol.SERIAL,
+            "rs232": RpcProtocol.SERIAL,
         }
         if sr.scheme not in protocols:
             raise ValueError(f"Invalid scheme: {sr.scheme}")
@@ -100,7 +107,7 @@ class RpcUrl:
                 res.port = int(sr.port)
             if sr.path:
                 raise ValueError(f"Path is not supported for {sr.scheme}: {sr.path}")
-        elif protocol is RpcProtocol.LOCAL_SOCKET:
+        elif protocol in (RpcProtocol.LOCAL_SOCKET, RpcProtocol.SERIAL):
             res.location = f"/{sr.netloc}{sr.path}" if sr.netloc else sr.path
         else:
             raise NotImplementedError()  # pragma: no cover
@@ -116,6 +123,9 @@ class RpcUrl:
             res.device_id = opts[0]
         if opts := pqs.pop("devmount", []):
             res.device_mount_point = opts[0]
+        if protocol is RpcProtocol.SERIAL:
+            if opts := pqs.pop("baudrate", []):
+                res.baudrate = int(opts[0])
 
         if pqs:
             raise ValueError(f"Unsupported URL queries: {pqs.keys()}")
@@ -156,6 +166,8 @@ class RpcUrl:
                 opts.append(f"password={self.password}")
             else:
                 raise NotImplementedError()  # pragma: no cover
+        if self.baudrate != type(self).baudrate:
+            opts.append(f"baudrate={self.baudrate}")
 
         return (
             f"{protocols[self.protocol]}:{netloc}{'?' if opts else ''}{'&'.join(opts)}"

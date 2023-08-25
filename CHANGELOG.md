@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ValueClient.clean_cache` method to remove old entried for no longer
   subscribed paths.
 - Support for UDP/IP protocol
+- Initial support for Serial protocol
+- Ability to reset the client connection (`RpcClient.reset`)
 
 ### Changed
 - URL now uses field `location` instead of `host` as it is more descriptive

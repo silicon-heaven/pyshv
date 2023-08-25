@@ -2,10 +2,12 @@
 import abc
 import asyncio
 import collections.abc
+import contextlib
 import functools
 import logging
 import typing
 
+from .chainpack import ChainPack
 from .rpcclient import RpcClient, RpcClientStream
 from .rpcmessage import RpcMessage
 from .rpcurl import RpcProtocol, RpcUrl
@@ -62,7 +64,7 @@ class RpcServerStream(RpcServer):
             await res
 
     @classmethod
-    async def tcp_listen(
+    async def listen(
         cls,
         client_connected_cb: typing.Callable[
             [RpcClient], None | collections.abc.Awaitable[None]
@@ -102,6 +104,7 @@ class RpcServerStream(RpcServer):
         :param path: Path to the Unix domain socket.
         :return: Handle used to control the listening server.
         """
+        # TODO try to remove socket on server stop
         loop = asyncio.get_running_loop()
         future = loop.create_future()
         res = cls(
@@ -120,7 +123,8 @@ class RpcServerStream(RpcServer):
     async def wait_closed(self) -> None:
         assert self._server is not None
         await self._server.wait_closed()
-        await self._task
+        with contextlib.suppress(asyncio.CancelledError):
+            await self._task
 
 
 class RpcServerDatagram(RpcServer):
@@ -138,7 +142,9 @@ class RpcServerDatagram(RpcServer):
 
         async def send(self, msg: RpcMessage) -> None:
             await super().send(msg)
-            self._protocol.transport.sendto(b"\x01" + msg.to_chainpack(), self._addr)
+            self._protocol.transport.sendto(
+                bytes((ChainPack.ProtocolType,)) + msg.to_chainpack(), self._addr
+            )
 
         async def _receive(self) -> bytes | None:
             queue = self._protocol.existing_clients.get(self._addr, None)
@@ -148,6 +154,9 @@ class RpcServerDatagram(RpcServer):
             queue.task_done()
             return data
 
+        async def _reset(self) -> None:
+            self._protocol.transport._sock.sendto(bytes(), self._addr)  # type: ignore
+
         def connected(self) -> bool:
             return self._addr in self._protocol.existing_clients
 
@@ -155,6 +164,8 @@ class RpcServerDatagram(RpcServer):
             if self._addr in self._protocol.existing_clients:
                 await self._protocol.existing_clients[self._addr].put(None)
             self._protocol.existing_clients.pop(self._addr, None)
+            if not self._protocol.existing_clients and not self._protocol.accept_new:
+                self._protocol.transport.close()
 
     class _Protocol(asyncio.DatagramProtocol):
         """Implementation of Asyncio datagram protocol to listen on UDP."""
@@ -169,19 +180,23 @@ class RpcServerDatagram(RpcServer):
             self.existing_clients: dict[str, asyncio.Queue] = {}
             self.transport: asyncio.DatagramTransport
             self.accept_new: bool = True
+            self._loop = asyncio.get_running_loop()
 
         def connection_made(self, transport):
             self.transport = transport
 
         def datagram_received(self, data, addr):
-            if addr not in self.existing_clients:
+            if not data or addr not in self.existing_clients:
                 if not self.accept_new:
                     return
                 self.existing_clients[addr] = asyncio.Queue()
-                self.new_client_cb(
+                res = self.new_client_cb(
                     RpcServerDatagram._RpcClientDatagramServer(addr, self)
                 )
-            self.existing_clients[addr].put_nowait(data)
+                if asyncio.iscoroutine(res):
+                    self._loop.create_task(res)
+            if data:
+                self.existing_clients[addr].put_nowait(data)
 
     def __init__(
         self,
@@ -223,7 +238,10 @@ class RpcServerDatagram(RpcServer):
         listening for a new connections and all clients are disconnected.
         """
         self._protocol.accept_new = False
-        self._close.set_result(None)
+        if not self._protocol.existing_clients:
+            self._transport.close()
+        if not self._close.done():
+            self._close.set_result(None)
 
     async def wait_closed(self) -> None:
         await self._close
@@ -235,15 +253,17 @@ async def create_rpc_server(
     ],
     url: RpcUrl,
 ) -> RpcServer:
-    """Create server listening on given URL."""
+    """Create server listening on given URL.
+
+    :param client_connected_cb: function called for every new client connected.
+    :param url: RPC URL specifying where server should listen.
+    """
     if url.protocol is RpcProtocol.TCP:
-        return await RpcServerStream.tcp_listen(
-            client_connected_cb, url.location, url.port
-        )
+        return await RpcServerStream.listen(client_connected_cb, url.location, url.port)
     if url.protocol is RpcProtocol.LOCAL_SOCKET:
         return await RpcServerStream.unix_listen(client_connected_cb, url.location)
     if url.protocol is RpcProtocol.UDP:
         return await RpcServerDatagram.listen(
             client_connected_cb, url.location, url.port
         )
-    raise RuntimeError(f"Invalid protocol: {url.protocol}")
+    raise NotImplementedError(f"Unimplemented protocol: {url.protocol}")

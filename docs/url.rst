@@ -17,9 +17,8 @@ The base format is::
 
   URL = scheme ":" ["//" [username "@"] authority] [path] ["?" options]
 
-``options`` is sequence of attribute-value pairs split by ``=`` an
-joined by ``&`` (example: ``password=test&devid=foo``). Supported
-options are:
+``options`` is sequence of attribute-value pairs split by ``=`` an joined by
+``&`` (example: ``password=test&devid=foo``). Generally supported options are:
 
   :password: Plain text password used to login to the server.
   :shapass: Password hashed with SHA1 used to login to the server.
@@ -45,7 +44,7 @@ The default ``username`` is the local user's name.
 
   ::
 
-    scheme = "localsocket"
+    scheme = ("localsocket" | "unix")
 
   There is no default path and thus empty ``path`` is considered invalid.
   Any non-empty ``authority`` is also considered as invalid because it has no
@@ -61,3 +60,22 @@ The default ``username`` is the local user's name.
 
   The default ``host`` is ``localhost`` and ``port`` is ``3755``. Any non-empty
   ``path`` is invalid as it has no meaning in IP.
+
+
+**RS232 / Serial protocol**
+
+  ::
+
+    scheme = ("serial" | "serialport" | "rs232")
+
+  ``path`` needs to point to valit serial device. There is no default path and
+  thus empty ``path`` is considered invalid. Any non-empty ``authority`` is
+  also considered as invalid because it has no meaning.
+
+  The additional supported options are:
+
+  :baudrate: Specifies baudrate used for the serial communication.
+
+  Other common serial-port parameters are at the moment not configurable and are
+  expected to be: eight bits per word, no parity, single stop bit, enabled
+  hardware flow control, disabled software flow control.

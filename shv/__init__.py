@@ -2,7 +2,13 @@
 from . import chainpack, cpon
 from .chainpack import ChainPackReader, ChainPackWriter
 from .cpon import CponReader, CponWriter
-from .rpcclient import RpcClient, RpcClientDatagram, RpcClientStream
+from .rpcclient import (
+    RpcClient,
+    RpcClientDatagram,
+    RpcClientSerial,
+    RpcClientStream,
+    connect_rpc_client,
+)
 from .rpcerrors import (
     RpcError,
     RpcErrorCode,
@@ -60,9 +66,11 @@ __all__ = [
     "ChainPackReader",
     "ChainPackWriter",
     # rpcclient
+    "connect_rpc_client",
     "RpcClient",
     "RpcClientStream",
     "RpcClientDatagram",
+    "RpcClientSerial",
     # rpcserver
     "create_rpc_server",
     "RpcServer",

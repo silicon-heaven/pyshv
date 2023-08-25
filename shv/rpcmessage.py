@@ -9,7 +9,7 @@ from .chainpack import ChainPackWriter
 from .cpon import CponWriter
 from .rpcerrors import RpcError, RpcErrorCode
 from .rpcmethod import RpcMethodAccess
-from .value import SHVDict, SHVMeta, SHVType, is_shvimap, shvmeta
+from .value import SHVDict, SHVMeta, SHVType, is_shvimap, shvmeta, shvmeta_eq
 
 
 class RpcMessage:
@@ -30,6 +30,9 @@ class RpcMessage:
 
     def __init__(self, rpc_val=None):
         self.value = SHVMeta.new({}, {}) if rpc_val is None else rpc_val
+
+    def __eq__(self, other):
+        return isinstance(other, RpcMessage) and shvmeta_eq(self.value, other.value)
 
     class Tag(enum.IntEnum):
         """Tags in Meta for RPC message."""

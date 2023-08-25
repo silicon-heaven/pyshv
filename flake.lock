@@ -5,11 +5,11 @@
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1681202837,
-        "narHash": "sha256-H+Rh19JDwRtpVPAWp64F+rlEtxUWBAQW28eAi3SRSzg=",
+        "lastModified": 1692799911,
+        "narHash": "sha256-3eihraek4qL744EvQXsK1Ha6C3CR7nnT8X2qWap4RNk=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "cfacdce06f30d2b68473a46042957675eebb3401",
+        "rev": "f9e7cf818399d17d347f847525c5a5a8032e4e44",
         "type": "github"
       },
       "original": {
@@ -36,11 +36,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1684759798,
-        "narHash": "sha256-Kpbf5yKvKcj/yPqE1zYC6gju4JwTsYxTIZEvOII0jr4=",
+        "lastModified": 1694032533,
+        "narHash": "sha256-I8cfCV/4JNJJ8KHOTxTU1EphKT8ARSb4s9pq99prYV0=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "c7eb65213bd7d95eafb8c5e2e181f04da103d054",
+        "rev": "efd23a1c9ae8c574e2ca923c2b2dc336797f4cc4",
         "type": "github"
       },
       "original": {
@@ -75,11 +75,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1682590530,
-        "narHash": "sha256-Agpswh52I3qOZeaAmw3V/Kzw1zb6yyQ5mqaZOBzCE5k=",
+        "lastModified": 1691081147,
+        "narHash": "sha256-K19rIrLxuB5xVy/ZEbNHeHnPapyyeMvH9bOv3pGuvn8=",
         "ref": "refs/heads/master",
-        "rev": "fefca3fc2ef80ae8486ba892edf79fbc5ce4d7e8",
-        "revCount": 2063,
+        "rev": "e3154552a55d59be7d5c2426b92cd758e088444e",
+        "revCount": 2096,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/silicon-heaven/shvapp.git"
