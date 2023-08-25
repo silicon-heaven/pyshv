@@ -47,8 +47,8 @@ def parse_args():
     return parser.parse_args()
 
 
-async def main() -> None:
-    """Application's entrypoint."""
+async def async_main() -> None:
+    """Application's entrypoint coroutine."""
     args = parse_args()
 
     logging.basicConfig(
@@ -64,5 +64,10 @@ async def main() -> None:
     await broker.serve_forever()
 
 
+def main() -> None:
+    """Application's entrypoint."""
+    asyncio.run(async_main())
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

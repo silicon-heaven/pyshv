@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `create_rpc_server` returns `RpcServer` instead of `asyncio.Server`
 
 ### Fixed
+- Running pyshvbroker as a standalone application not working
 - Packing of `Decimal` in ChainPack that in some cases packed invalid value
 - Unpacking of strings in Cpon that mangled UTF-8 encoding.
 - Packing of `str` in Cpon that invalidly escaped some characters.
