@@ -169,9 +169,10 @@ class RpcBroker:
             logger.info("Client disconnected: %s", self.broker_client_id)
             self.broker.clients.pop(self.broker_client_id, None)
 
-        async def _keep_alive_loop(self) -> None:
+        async def _activity_loop(self) -> None:
+            """Loop run alongside with :meth:`_loop` to disconnect inactive clients."""
             while self.client.connected():
-                t = time.monotonic() - self.client.last_activity
+                t = time.monotonic() - self.client.last_receive
                 if t < self.IDLE_TIMEOUT:
                     await asyncio.sleep(self.IDLE_TIMEOUT - t)
                 else:
@@ -456,7 +457,7 @@ class RpcBroker:
                             return True
                         if method == "idleTime":
                             return int(
-                                (time.monotonic() - client.client.last_activity) * 1000
+                                (time.monotonic() - client.client.last_receive) * 1000
                             )
                         if method == "idleTimeMax":
                             return int(self.IDLE_TIMEOUT * 1000)

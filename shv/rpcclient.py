@@ -26,18 +26,23 @@ class RpcClient(abc.ABC):
     """RPC connection to some SHV peer."""
 
     def __init__(self):
-        self.last_activity = time.monotonic()
-        """Last activity on this connection (read or write of the message)."""
+        self.last_send = time.monotonic()
+        """Monotonic time when last message was sent on this connection.
 
-    def _mark_activity(self):
-        """Mark that there was an activity received from the peer."""
-        self.last_activity = time.monotonic()
+        The initial value is time of the RpcClient creation.
+        """
+        self.last_receive = time.monotonic()
+        """Monotonic time when last message was received on this connection.
+
+        The initial value is time of the RpcClient creation.
+        """
 
     async def send(self, msg: RpcMessage) -> None:
         """Send the given SHV RPC Message.
 
         :param msg: Message to be sent
         """
+        self.last_send = time.monotonic()
         logger.debug("<== SND: %s", msg.to_string())
 
     async def receive(self, raise_error: bool = True) -> typing.Optional[RpcMessage]:
@@ -48,7 +53,7 @@ class RpcClient(abc.ABC):
         :raise RpcError: When mesasge is error and ``raise_error`` is `True`.
         """
         data = await self._receive()
-        self._mark_activity()
+        self.last_receive = time.monotonic()
         if data is None:
             return None
         proto = data[0]
@@ -198,7 +203,6 @@ class RpcClientStream(RpcClient):
                 self._read_data = self._read_data[off + size :]
                 return msg
             self._read_data += await self.reader.read(1024)
-            self._mark_activity()
         return None
 
     async def _reset(self) -> None:

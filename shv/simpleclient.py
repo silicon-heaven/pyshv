@@ -172,21 +172,20 @@ class SimpleClient:
 
     async def _loop(self) -> None:
         """Loop run in asyncio task to receive messages."""
-        keep_alive_task = asyncio.create_task(self._keep_alive_loop())
+        activity_task = asyncio.create_task(self._activity_loop())
         while msg := await self.client.receive(raise_error=False):
             asyncio.create_task(self._message(msg))
-        keep_alive_task.cancel()
+        activity_task.cancel()
         try:
-            await keep_alive_task
+            await activity_task
         except asyncio.exceptions.CancelledError:
             pass
 
-    async def _keep_alive_loop(self) -> None:
-        """Loop run alongside with _loop to send pings to the broker when idling."""
-        # TODO move this to client and use asyncio.wait_for
+    async def _activity_loop(self) -> None:
+        """Loop run alongside with :meth:`_loop` to send pings to the broker when idling."""
         idlet = self.IDLE_TIMEOUT / 2
         while self.client.connected():
-            t = time.monotonic() - self.client.last_activity
+            t = time.monotonic() - self.client.last_send
             if t < idlet:
                 await asyncio.sleep(idlet - t)
             else:
