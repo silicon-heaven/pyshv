@@ -25,14 +25,14 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
     def __init__(self, client: RpcClient, client_id: int | None):
         super().__init__(client, client_id)
         self._subscribes: set[str] = set()
-        self._cache: dict[str, SHVType] = {}
+        self._cache: dict[str, tuple[float, SHVType]] = {}
         self._handlers: dict[
             str, typing.Callable[[ValueClient, str, SHVType], None]
         ] = {}
         self._futures: dict[str, list[asyncio.Future]] = {}
 
     def __getitem__(self, key: str) -> SHVType:
-        return self._cache[key]
+        return self._cache[key][1]
 
     def __iter__(self) -> typing.Iterator[str]:
         return iter(self._cache.keys())
@@ -42,7 +42,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
 
     async def _value_update(self, path: str, value: SHVType) -> None:
         handler = self._get_handler(path)
-        if handler is not None and not shvmeta_eq(self._cache.get(path, None), value):
+        if handler is not None and not shvmeta_eq(self.get(path, None), value):
             handler(self, path, value)
         for future in self._futures.pop(path, []):
             future.set_result(value)
@@ -50,7 +50,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
             # Theoretically we should get only paths we subscribed for but user might
             # invoke subscribe on its own which could break our cache logic and thus
             # just guard against it here.
-            self._cache[path] = value
+            self._cache[path] = (time.time(), value)
 
     def _get_handler(
         self, path: str
@@ -65,17 +65,23 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
             None,
         )
 
-    async def prop_get(self, path: str) -> SHVType:
+    async def prop_get(self, path: str, max_age: float = 0.0) -> SHVType:
         """Get value from the property associated with the node on given path.
 
         This always calls get method compared to item access that is served only from
         cache.
 
         :param path: SHV path to the property node.
+        :param max_age: is maximum age in seconds to be specified for the get. Nonzero
+        value results in value to be served from cache anywhere along the way (thus not
+        just local cache).
         :return: Value of the property node.
         """
-        value = await self.call(path, "get")
-        if self._cache.get(path, None) != value:
+        # Serve from cache if cache was updated not before max_age
+        if path in self._cache and self._cache[path][0] + max_age >= time.time():
+            return self._cache[path]
+        value = await self.call(path, "get", max_age if int(max_age * 1000) else None)
+        if self.get(path, None) != value:
             await self._value_update(path, value)
         return value
 
@@ -121,7 +127,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
             asyncio.create_task(
                 self._prop_change_wait(
                     path,
-                    self._cache.get(path, None) if value is None else value,
+                    self.get(path, None) if value is None else value,
                     get_period,
                 )
             )
@@ -287,4 +293,4 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
             if not self.is_subscribed(pth) or (not update and pth in self._cache):
                 continue
             if "get" in await self.dir(pth):
-                self._cache[pth] = await self.prop_get(pth)
+                self._cache[pth] = (time.time(), await self.prop_get(pth))

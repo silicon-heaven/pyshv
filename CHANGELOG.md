@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   subscribed paths if no path is given.
 - `ValueClient.clean_cache` method to remove old entried for no longer
   subscribed paths.
+- `ValueClient.prop_get` now supports `max_age` parameter
 - Support for UDP/IP protocol
 - Initial support for Serial protocol
 - Ability to reset the client connection (`RpcClient.reset`)
