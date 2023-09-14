@@ -1,4 +1,5 @@
 stages:
+  - devenv
   - test
   - lint
   - style
@@ -10,19 +11,37 @@ workflow:
 
 variables:
   GIT_DEPTH: 0
-  GIT_SUBMODULE_STRATEGY: recursive
-  GIT_SUBMODULE_UPDATE_FLAGS: --jobs 2
 
 .nix:
+  image: registry.gitlab.com/cynerd/gitlab-ci-nix
   tags:
-    - nix
+    - docker
+  cache:
+    key: "nix"
+    paths:
+      - ".nix-cache"
+  before_script:
+    - gitlab-ci-nix-cache-before
+  after_script:
+    - gitlab-ci-nix-cache-after
 
-## Test stage ##################################################################
-tests:
-  stage: test
+## Development environment #####################################################
+devenv:
+  stage: devenv
   extends: .nix
   script:
-    - nix develop -c pytest -v --junitxml=report.xml --cov=. --cov-report xml:coverage.xml --cov-report html:coverage --cov-report term
+    - nix develop -c true
+
+## Test stage ##################################################################
+.test:
+  stage: test
+  extends: .nix
+  needs: ["devenv"]
+
+tests:
+  extends: .test
+  script:
+    - nix develop --quiet -c pytest -v --junitxml=report.xml --cov=. --cov-report xml:coverage.xml --cov-report html:coverage --cov-report term
   artifacts:
     reports:
       junit: report.xml
@@ -34,73 +53,70 @@ tests:
   coverage: '/^TOTAL.*\s+([^\s]+)%$/'
 
 nix-build:
-  stage: test
-  extends: .nix
+  extends: .test
   script:
     - nix build
 
 nix-check:
-  stage: test
-  extends: .nix
+  extends: .test
   script:
     - nix flake check
 
 include:
-  - template: Security/SAST.gitlab-ci.yml
   - template: Security/Secret-Detection.gitlab-ci.yml
 
 ## Linters #####################################################################
 .lint:
   stage: lint
   extends: .nix
-  needs: []
+  needs: ["devenv"]
 
 pylint:
   extends: .lint
   script:
-    - nix develop -c pylint --output-format=colorized .
+    - nix develop --quiet -c pylint --output-format=colorized .
 
 mypy:
   extends: .lint
   script:
     - mkdir .mypy-cache
-    - nix develop -c mypy --cache-dir .mypy-cache --install-types --non-interactive .
+    - nix develop --quiet -c mypy --cache-dir .mypy-cache --install-types --non-interactive .
 
 ## Style stage #################################################################
 .style:
   stage: style
   extends: .nix
-  needs: []
+  needs: ["devenv"]
   allow_failure: true
 
 black:
   extends: .style
   script:
-    - nix develop -c black --diff --check .
+    - nix develop --quiet -c black --diff --check .
 
 isort:
   extends: .style
   script:
-    - nix develop -c isort --diff --check .
+    - nix develop --quiet -c isort --diff --check .
 
 pydocstyle:
   extends: .style
   script:
-    - nix develop -c pydocstyle --match='(?!tests/)*.py' .
+    - nix develop --quiet -c pydocstyle --match='(?!tests/)*.py' .
 
 editorconfig-checker:
   extends: .style
   script:
-    - nix develop -c editorconfig-checker
+    - nix develop --quiet -c editorconfig-checker -exclude '.nix-cache/.*'
 
 gitlint:
   extends: .style
   script:
     - git fetch
-    - nix develop -c gitlint --commits origin/master..$CI_COMMIT_SHA
+    - nix develop --quiet -c gitlint --commits origin/master..$CI_COMMIT_SHA
 
 ## Release creation ############################################################
-.release:
+.deploy:
   stage: deploy
   rules:
     - if: '$CI_COMMIT_TAG'
@@ -109,29 +125,42 @@ gitlint:
       artifacts: false
 
 release:
-  extends: .release
-  image: "registry.nic.cz/turris/python-template/baseimg:release"
+  extends: .deploy
+  image: "registry.gitlab.com/gitlab-org/release-cli:latest"
   before_script:
     - "apk update"
     - "apk add bash curl jq py3-pip"
     - "pip install yq"
   script:
-    - "bash .deploy.sh"
+    - "bash .release.sh"
 
-pypi:
-  extends: [.nix, .release]
+gitlab-pypi:
+  extends: [.nix, .deploy]
   script:
-    - nix develop -c ./setup.py sdist bdist
-    - TWINE_PASSWORD=$CI_JOB_TOKEN TWINE_USERNAME=gitlab-ci-token nix develop -c twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/*
+    - nix develop --quiet -c python3 -m build
+    - TWINE_PASSWORD=$CI_JOB_TOKEN TWINE_USERNAME=gitlab-ci-token nix develop --quiet -c twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/*
 
 pages:
   stage: deploy
   extends: .nix
   rules:
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
-  needs: []
+  needs: ["devenv"]
   script:
-    - nix develop -c sphinx-build -b html docs public
+    - git fetch
+    - nix develop --quiet -c sphinx-multiversion docs public
+    - | # Add index.html to public root to redirect to $CI_DEFUALT_BRANCH/index.html
+      cat >public/index.html << EOF
+      <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Redirecting to $CI_DEFAULT_BRANCH branch</title>
+            <meta charset="utf-8">
+            <meta http-equiv="refresh" content="0; url=./$CI_DEFAULT_BRANCH/index.html">
+            <link rel="canonical" href="$CI_PAGES_URL/$CI_DEFAULT_BRANCH/index.html">
+          </head>
+        </html>
+      EOF
   artifacts:
     paths:
     - public
