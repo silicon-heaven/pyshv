@@ -40,24 +40,6 @@
           nativeBuildInputs = [sphinxHook] ++ requires-docs pythonPackages;
           nativeCheckInputs = [pytestCheckHook] ++ requires-test pythonPackages;
         };
-
-      pypkg-multiversion = {
-        buildPythonPackage,
-        fetchFromGitHub,
-        sphinx,
-      }:
-        buildPythonPackage {
-          pname = "sphinx-multiversion";
-          version = "0.2.4";
-          src = fetchFromGitHub {
-            owner = "Holzhaus";
-            repo = "sphinx-multiversion";
-            rev = "v0.2.4";
-            hash = "sha256-ZFEELAeZ/m1pap1DmS4PogL3eZ3VuhTdmwDOg5rKOPA=";
-          };
-          propagatedBuildInputs = [sphinx];
-          doCheck = false;
-        };
     in
       {
         overlays = {
@@ -66,9 +48,8 @@
               prevOverride = oldAttrs.packageOverrides or (_: _: {});
             in {
               packageOverrides = composeExtensions prevOverride (
-                pyfinal: pyprev: {
-                  template-python = pyfinal.callPackage pypkgs-template-python {};
-                  sphinx-multiversion = pyfinal.callPackage pypkg-multiversion {};
+                pyself: pysuper: {
+                  template-python = pyself.callPackage pypkgs-template-python {};
                 }
               );
             });

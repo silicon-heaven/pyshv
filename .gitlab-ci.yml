@@ -147,20 +147,7 @@ pages:
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
   needs: ["devenv"]
   script:
-    - git fetch
-    - nix develop --quiet -c sphinx-multiversion docs public
-    - | # Add index.html to public root to redirect to $CI_DEFUALT_BRANCH/index.html
-      cat >public/index.html << EOF
-      <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Redirecting to $CI_DEFAULT_BRANCH branch</title>
-            <meta charset="utf-8">
-            <meta http-equiv="refresh" content="0; url=./$CI_DEFAULT_BRANCH/index.html">
-            <link rel="canonical" href="$CI_PAGES_URL/$CI_DEFAULT_BRANCH/index.html">
-          </head>
-        </html>
-      EOF
+    - nix develop --quiet -c sphinx-build docs public
   artifacts:
     paths:
     - public
