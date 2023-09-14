@@ -11,8 +11,6 @@ workflow:
 
 variables:
   GIT_DEPTH: 0
-  GIT_SUBMODULE_STRATEGY: recursive
-  GIT_SUBMODULE_UPDATE_FLAGS: --jobs 2
 
 .nix:
   image: registry.gitlab.com/cynerd/gitlab-ci-nix
