@@ -20,6 +20,7 @@ repository = "http://jessie.elektroline.cz/emb/template/python"
 docs = [
   "sphinx",
   "sphinx_rtd_theme",
+  "sphinx-multiversion",
   "myst-parser",
 ]
 test = [
