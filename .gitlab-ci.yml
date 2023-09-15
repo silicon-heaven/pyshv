@@ -128,11 +128,11 @@ release:
   extends: .deploy
   image: "registry.gitlab.com/gitlab-org/release-cli:latest"
   before_script:
-    - "apk update"
-    - "apk add bash curl jq py3-pip"
-    - "pip install yq"
+    - apk update
+    - apk add bash curl jq py3-pip
+    - pip install yq
   script:
-    - "bash .release.sh"
+    - bash .release.sh
 
 gitlab-pypi:
   extends: [.nix, .deploy]
