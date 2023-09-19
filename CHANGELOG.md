@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ValueClient.prop_change_wait` implementation
 - `RpcUrl` uses local user's name instead of empty string
 - Handling of idle ping for `SimpleClient` when used only to listen
+- `pycp2cp` invocation with file
 
 
 ## [0.2.0] - 2023-06-16

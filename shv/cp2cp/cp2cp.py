@@ -45,8 +45,8 @@ def convert(
         istream = io.BytesIO(inp)
     elif isinstance(inp, pathlib.Path):
         istream = inp.open("rb")
-    elif isinstance(inp, io.TextIOBase):
-        istream = inp.buffer
+    elif isinstance(inp, io.IOBase):
+        istream = inp
     else:
         assert isinstance(inp, io.RawIOBase)
         istream = inp
@@ -56,8 +56,8 @@ def convert(
         ostream = io.BytesIO()
     elif isinstance(outp, pathlib.Path):
         ostream = outp.open("wb")
-    elif isinstance(outp, io.TextIOBase):
-        ostream = outp.buffer
+    elif isinstance(outp, io.IOBase):
+        ostream = outp
     else:
         assert isinstance(outp, io.RawIOBase)
         ostream = outp
