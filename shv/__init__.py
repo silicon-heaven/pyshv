@@ -30,6 +30,7 @@ from .rpcmethod import (
 )
 from .rpcserver import RpcServer, RpcServerDatagram, RpcServerStream, create_rpc_server
 from .rpcurl import RpcLoginType, RpcProtocol, RpcUrl
+from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
 from .simpleclient import SimpleClient
 from .value import (
     SHVBool,
@@ -124,4 +125,7 @@ __all__ = [
     "shvget",
     "SHVType",
     "SHVMetaType",
+    # shvversion
+    "SHV_VERSION_MAJOR",
+    "SHV_VERSION_MINOR",
 ]

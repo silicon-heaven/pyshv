@@ -65,54 +65,6 @@ async def test_ls(client, path, result):
 @pytest.mark.parametrize(
     "path,result",
     (
-        ("", {".broker": True}),
-        (
-            ".broker",
-            {
-                "app": True,
-                "clients": True,
-                "currentClient": False,
-                "etc": True,
-                "masters": False,
-                "mounts": False,
-            },
-        ),
-        (".broker/app/log", {}),
-    ),
-)
-async def test_ls_with_children(client, path, result):
-    """Verify that we can use ls_with_children method."""
-    res = await client.ls_with_children(path)
-    assert res == result
-
-
-@pytest.mark.parametrize(
-    "path,result",
-    (
-        ("", ["dir", "ls"]),
-        (
-            ".broker/app/log",
-            [
-                "dir",
-                "ls",
-                "chng",
-                "getSendLogAsSignalEnabled",
-                "setSendLogAsSignalEnabled",
-                "verbosity",
-                "setVerbosity",
-            ],
-        ),
-    ),
-)
-async def test_dir(client, path, result):
-    """Verify that we can use dir method."""
-    res = await client.dir(path)
-    assert res == result
-
-
-@pytest.mark.parametrize(
-    "path,result",
-    (
         (
             "",
             [
@@ -163,7 +115,7 @@ async def test_dir(client, path, result):
 )
 async def test_dir_details(client, path, result):
     """Verify that we can use dir method."""
-    res = await client.dir_details(path)
+    res = await client.dir(path)
     assert res == result
 
 

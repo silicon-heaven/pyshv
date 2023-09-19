@@ -18,7 +18,7 @@ Client
 Server
 ------
 
-.. automethod:: shv.create_rpc_server
+.. automethod:: shv.rpcserver.create_rpc_server
 .. autoclass:: shv.RpcServer
 .. autoclass:: shv.RpcServerStream
 .. autoclass:: shv.RpcServerDatagram

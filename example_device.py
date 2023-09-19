@@ -35,18 +35,14 @@ class ExampleDevice(SimpleClient):
         super().__init__(client, client_id)
         self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
 
-    def _ls(self, path: str) -> typing.Iterator[tuple[str, bool | None]]:
+    def _ls(self, path: str) -> typing.Iterator[str]:
+        yield from super()._ls(path)
         pth = path.split("/") if path else []
         if len(pth) == 0:
-            yield ("track", True)
-            return
-        if pth[0] == "track":
+            yield "track"
+        elif pth[0] == "track":
             if len(pth) == 1:
-                yield from ((k, False) for k in self.tracks.keys())
-                return
-            if len(pth) == 2 and pth[1] in self.tracks:
-                return
-        yield from super()._ls(path)
+                yield from self.tracks.keys()
 
     def _dir(self, path: str) -> typing.Iterator[RpcMethodDesc]:
         yield from super()._dir(path)

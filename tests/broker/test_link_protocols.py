@@ -31,7 +31,7 @@ class Protocol:
 
     async def test_with_client(self, shvbroker, url):
         client = await SimpleClient.connect(url)
-        assert "foo" == await client.call("", "echo", "foo")
+        assert await client.call(".app", "ping") is None
         await client.disconnect()
 
 

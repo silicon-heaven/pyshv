@@ -279,18 +279,15 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
             used instead.
         :param update: If already cached values should be updated or just skipped.
         """
-        pths: dict[str, bool | None] = {
-            pth: True for pth in (paths if paths else self._subscribes)
-        }
+        pths: list[str] = list(paths if paths else self._subscribes)
+        # TODO we can skip paths that are outside of our subscriptions
         while pths:
-            pth, children = pths.popitem()
-            if children in (True, None):  # None means "we do not know"
-                try:
-                    ls = await self.ls_with_children(pth)
-                    pths.update({"/".join((pth, k)): v for k, v in ls.items()})
-                except RpcMethodNotFoundError:
-                    pass  # ls might not be present which is not an issue
+            pth = pths.pop()
+            try:
+                pths.extend((f"{pth}/{name}" for name in await self.ls(pth)))
+            except RpcMethodNotFoundError:
+                pass  # ls might not be present which is not an issue
             if not self.is_subscribed(pth) or (not update and pth in self._cache):
                 continue
-            if "get" in await self.dir(pth):
+            if await self.dir_description(pth, "get"):
                 self._cache[pth] = (time.time(), await self.prop_get(pth))

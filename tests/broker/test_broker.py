@@ -8,8 +8,12 @@ from shv import (
     RpcInvalidParamsError,
     RpcInvalidRequestError,
     RpcMessage,
+    RpcMethodAccess,
     RpcMethodCallExceptionError,
+    RpcMethodDesc,
+    RpcMethodFlags,
     RpcMethodNotFoundError,
+    RpcMethodSignature,
     SimpleClient,
     broker,
     shvmeta_eq,
@@ -28,12 +32,13 @@ async def fixture_shvbroker(event_loop, config, url):
 @pytest.mark.parametrize(
     "path,nodes",
     (
-        ("", [".broker"]),
-        (".broker", ["app", "clients", "currentClient"]),
-        (".broker/app", []),
-        (".broker/clients", ["0"]),  # only connection is us
-        (".broker/clients/0", ["app"]),
+        ("", [".app", ".broker"]),
+        (".broker", ["currentClient", "client", "clientInfo"]),
         (".broker/currentClient", []),
+        (".broker/client", ["0"]),  # only connection is us
+        (".broker/client/0", [".app"]),
+        (".broker/clientInfo", ["0"]),  # only connection is us
+        (".broker/clientInfo/0", []),
     ),
 )
 async def test_empty_ls(client, path, nodes):
@@ -46,7 +51,7 @@ async def test_empty_ls(client, path, nodes):
     (
         "foo",
         ".broker/foo",
-        ".broker/clients/foo",
+        ".broker/client/foo",
     ),
 )
 async def test_empty_ls_invalid(client, path):
@@ -58,32 +63,118 @@ async def test_empty_ls_invalid(client, path):
 @pytest.mark.parametrize(
     "path,methods",
     (
-        ("", ["dir", "ls", "appName", "appVersion", "echo"]),
         (
-            ".broker/app",
+            "",
             [
-                "dir",
-                "ls",
-                "ping",
-                "subscribe",
-                "unsubscribe",
-                "rejectNotSubscribed",
-                "mountPoints",
+                RpcMethodDesc("dir", signature=RpcMethodSignature.RET_PARAM),
+                RpcMethodDesc("ls", signature=RpcMethodSignature.RET_PARAM),
             ],
         ),
-        (".broker/currentClient", ["dir", "ls", "clientId", "mountPoint"]),
-        (".broker/clients", ["dir", "ls"]),
         (
-            ".broker/clients/0",
+            ".app",
             [
-                "dir",
-                "ls",
-                "userName",
-                "mountPoint",
-                "subscriptions",
-                "dropClient",
-                "idleTime",
-                "idleTimeMax",
+                RpcMethodDesc("dir", signature=RpcMethodSignature.RET_PARAM),
+                RpcMethodDesc("ls", signature=RpcMethodSignature.RET_PARAM),
+                RpcMethodDesc(
+                    "shvVersionMajor",
+                    signature=RpcMethodSignature.RET_VOID,
+                    flags=RpcMethodFlags.GETTER,
+                ),
+                RpcMethodDesc(
+                    "shvVersionMinor",
+                    signature=RpcMethodSignature.RET_VOID,
+                    flags=RpcMethodFlags.GETTER,
+                ),
+                RpcMethodDesc(
+                    "appName",
+                    signature=RpcMethodSignature.RET_VOID,
+                    flags=RpcMethodFlags.GETTER,
+                ),
+                RpcMethodDesc(
+                    "appVersion",
+                    signature=RpcMethodSignature.RET_VOID,
+                    flags=RpcMethodFlags.GETTER,
+                ),
+                RpcMethodDesc("ping"),
+            ],
+        ),
+        (
+            ".broker/currentClient",
+            [
+                RpcMethodDesc("dir", signature=RpcMethodSignature.RET_PARAM),
+                RpcMethodDesc("ls", signature=RpcMethodSignature.RET_PARAM),
+                RpcMethodDesc.getter(
+                    "info",
+                    access=RpcMethodAccess.BROWSE,
+                ),
+                RpcMethodDesc(
+                    "subscribe",
+                    signature=RpcMethodSignature.VOID_PARAM,
+                    access=RpcMethodAccess.READ,
+                ),
+                RpcMethodDesc(
+                    "unsubscribe",
+                    signature=RpcMethodSignature.RET_PARAM,
+                    access=RpcMethodAccess.READ,
+                ),
+                RpcMethodDesc(
+                    "rejectNotSubscribed",
+                    signature=RpcMethodSignature.RET_PARAM,
+                    access=RpcMethodAccess.READ,
+                ),
+                RpcMethodDesc.getter(
+                    "subscriptions",
+                    access=RpcMethodAccess.READ,
+                ),
+            ],
+        ),
+        (
+            ".broker/client",
+            [
+                RpcMethodDesc("dir", signature=RpcMethodSignature.RET_PARAM),
+                RpcMethodDesc("ls", signature=RpcMethodSignature.RET_PARAM),
+            ],
+        ),
+        (
+            ".broker/clientInfo/0",
+            [
+                RpcMethodDesc("dir", signature=RpcMethodSignature.RET_PARAM),
+                RpcMethodDesc("ls", signature=RpcMethodSignature.RET_PARAM),
+                RpcMethodDesc(
+                    "userName",
+                    signature=RpcMethodSignature.RET_VOID,
+                    access=RpcMethodAccess.SERVICE,
+                    flags=RpcMethodFlags.GETTER,
+                ),
+                RpcMethodDesc(
+                    "mountPoint",
+                    signature=RpcMethodSignature.RET_VOID,
+                    access=RpcMethodAccess.SERVICE,
+                    flags=RpcMethodFlags.GETTER,
+                ),
+                RpcMethodDesc(
+                    "subscriptions",
+                    signature=RpcMethodSignature.RET_VOID,
+                    access=RpcMethodAccess.SERVICE,
+                    flags=RpcMethodFlags.GETTER,
+                ),
+                RpcMethodDesc(
+                    "dropClient",
+                    signature=RpcMethodSignature.VOID_VOID,
+                    access=RpcMethodAccess.SERVICE,
+                ),
+                RpcMethodDesc(
+                    "idleTime",
+                    signature=RpcMethodSignature.RET_VOID,
+                    access=RpcMethodAccess.SERVICE,
+                    flags=RpcMethodFlags.GETTER,
+                ),
+                RpcMethodDesc(
+                    "idleTimeMax",
+                    signature=RpcMethodSignature.RET_VOID,
+                    access=RpcMethodAccess.SERVICE,
+                    flags=RpcMethodFlags.GETTER,
+                ),
             ],
         ),
     ),
@@ -96,15 +187,19 @@ async def test_empty_dir(client, path, methods):
 @pytest.mark.parametrize(
     "path,method,result",
     (
-        (".broker/app", "ping", None),
-        (".broker/app", "mountPoints", {}),
-        (".broker/currentClient", "clientId", 0),
-        (".broker/currentClient", "mountPoint", None),
-        (".broker/clients/0", "userName", "admin"),
-        (".broker/clients/0", "mountPoint", None),
-        (".broker/clients/0", "subscriptions", []),
-        (".broker/clients/0", "idleTime", 0),  # we are the one asking
-        (".broker/clients/0", "idleTimeMax", 180000),
+        (".broker", "mountPoints", []),
+        (
+            ".broker/currentClient",
+            "info",
+            {"clientId": 0, "mountPoint": [], "subscriptions": [], "userName": "admin"},
+        ),
+        (".broker/currentClient", "subscriptions", []),
+        (".broker/client/0/.app", "appName", "pyshv"),
+        (".broker/clientInfo/0", "userName", "admin"),
+        (".broker/clientInfo/0", "mountPoint", None),
+        (".broker/clientInfo/0", "subscriptions", []),
+        (".broker/clientInfo/0", "idleTime", 0),  # we are the one asking
+        (".broker/clientInfo/0", "idleTimeMax", 180000),
     ),
 )
 async def test_empty_call(client, path, method, result):
@@ -115,9 +210,9 @@ async def test_empty_call(client, path, method, result):
 @pytest.mark.parametrize(
     "path,nodes",
     (
-        (".broker/clients", ["0", "1"]),
-        ("", [".broker", "test"]),
-        ("test/device", ["track"]),
+        (".broker/client", ["0", "1"]),
+        ("", [".app", ".broker", "test"]),
+        ("test/device", [".app", "track"]),
         ("test/device/track", ["1", "2", "3", "4", "5", "6", "7", "8"]),
     ),
 )
@@ -127,11 +222,11 @@ async def test_with_example_ls(client, example_device, path, nodes):
 
 async def test_subscribe(client, example_device):
     await client.subscribe("test/device/track")
-    assert await client.call(".broker/clients/0", "subscriptions") == [
+    assert await client.call(".broker/currentClient", "subscriptions") == [
         {"method": "chng", "path": "test/device/track"}
     ]
     assert await client.unsubscribe("test/device/track") is True
-    assert await client.call(".broker/clients/0", "subscriptions") == []
+    assert await client.call(".broker/currentClient", "subscriptions") == []
     assert await client.unsubscribe("test/device/track") is False
 
 
@@ -139,7 +234,7 @@ async def test_reject_not_subscribed(client, example_device):
     await client.subscribe("test/device/track")
     assert (
         await client.call(
-            ".broker/app",
+            ".broker/currentClient",
             "rejectNotSubscribed",
             {"path": "no/such/node"},
         )
@@ -147,7 +242,7 @@ async def test_reject_not_subscribed(client, example_device):
     )
     assert (
         await client.call(
-            ".broker/app",
+            ".broker/currentClient",
             "rejectNotSubscribed",
             {"path": "test/device/track/1", "method": "chng"},
         )
@@ -218,4 +313,4 @@ async def test_sub_mount(shvbroker, url):
 async def test_broker_client(example_device, shvbroker):
     """Check that we can use broker's clients as clients as well."""
     client = shvbroker.clients[0]
-    assert await client.call("", "appName") == "pyshv-example_device"
+    assert await client.call(".app", "appName") == "pyshv-example_device"
