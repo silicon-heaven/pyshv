@@ -12,21 +12,26 @@ class RpcBrokerConfig:
     """Generic store of broker configuration."""
 
     @dataclasses.dataclass(frozen=True)
-    class Rule:
-        """Description of access rule."""
+    class Method:
+        """Combination of method and SHV path."""
 
-        name: str
-        """Name of the rule."""
         path: str = ""
-        """Path prefix that need to match for this rule to apply."""
-        methods: frozenset[str] = dataclasses.field(default_factory=frozenset)
-        """Set of methods this rule matches. Empty set matches all methods."""
+        """Path prefix that need to match for this to apply."""
+        method: str = ""
+        """Method name that should be matched. Empty matches all methods."""
+
+        @classmethod
+        def fromstr(cls, string: str) -> "RpcBrokerConfig.Method":
+            """Parse :class:`RpcBrokerConfig.Method` from string."""
+            if ":" not in string:
+                raise ValueError(f"Invalid specification of method: {string}")
+            return cls(*string.split(":", maxsplit=1))
 
         def applies(self, path: str, method: str) -> bool:
-            """Check if this rule applies."""
-            return (not self.methods or method in self.methods) and path.startswith(
-                self.path
-            )
+            """Check if this method applies to this combination of path and method."""
+            return (
+                not self.path or path == self.path or path.startswith(self.path + "/")
+            ) and (not self.method or method == self.method)
 
     @dataclasses.dataclass(frozen=True)
     class Role:
@@ -36,18 +41,18 @@ class RpcBrokerConfig:
         """Name of the role."""
         access: RpcMethodAccess = RpcMethodAccess.BROWSE
         """Access level granted to the user by this role."""
-        rules: frozenset["RpcBrokerConfig.Rule"] = dataclasses.field(
+        methods: frozenset["RpcBrokerConfig.Method"] = dataclasses.field(
             default_factory=frozenset
         )
-        """Rules used to check if this role should apply."""
+        """Methods used to check if this role should apply."""
         roles: frozenset["RpcBrokerConfig.Role"] = dataclasses.field(
             default_factory=frozenset
         )
-        """Additional roles to check."""
+        """Additional roles to applied after this role."""
 
         def applies(self, path: str, method: str) -> bool:
-            """Check if this role applies by this rules."""
-            return any(rule.applies(path, method) for rule in self.rules)
+            """Check if this role applies on any method."""
+            return any(rule.applies(path, method) for rule in self.methods)
 
     @dataclasses.dataclass(frozen=True)
     class User:
@@ -73,6 +78,19 @@ class RpcBrokerConfig:
             for role in self.all_roles():
                 if role.applies(path, method):
                     return role.access
+            # These are defined paths we need to allow all users to access
+            if path == ".broker/currentClient" or (
+                path == ".app"
+                and method
+                in (
+                    "shvVersionMajor",
+                    "shvVersionMinor",
+                    "appName",
+                    "appVersion",
+                    "ping",
+                )
+            ):
+                return RpcMethodAccess.BROWSE
             return None
 
         @property
@@ -105,7 +123,6 @@ class RpcBrokerConfig:
         """URLs the broker should listen on."""
         self._users: dict[str, "RpcBrokerConfig.User"] = {}
         self._roles: dict[str, "RpcBrokerConfig.Role"] = {}
-        self._rules: dict[str, "RpcBrokerConfig.Rule"] = {}
 
     def add_user(self, info: User) -> None:
         """Add or replace user.
@@ -136,9 +153,6 @@ class RpcBrokerConfig:
         :param info: role description.
         :raise ValueError: in case it specifies unknown rule.
         """
-        for rule in role.rules:
-            if rule is not self._rules.get(rule.name, None):
-                raise ValueError(f"Invalid rule '{rule.name}'")
         for srole in role.roles:
             if srole is not self._roles.get(srole.name, None):
                 raise ValueError(f"Invalid role '{srole.name}'")
@@ -168,32 +182,6 @@ class RpcBrokerConfig:
         """Iterate over all roles."""
         yield from self._roles.values()
 
-    def add_rule(self, rule: Rule) -> None:
-        """Add or replace rule.
-
-        :param info: rule description.
-        """
-        oldrule = self._rules.get(rule.name, None)
-        if oldrule is not None:
-            for name, role in self._roles.items():
-                if oldrule in role.rules:
-                    self._roles[name] = dataclasses.replace(
-                        role, rules=(role.rules ^ {oldrule, rule})
-                    )
-        self._rules[rule.name] = rule
-
-    def rule(self, name: str) -> Rule:
-        """Get rule with given name.
-
-        :param name: Name of the rule.
-        :raise KeyError: when there is no such rule.
-        """
-        return self._rules[name]
-
-    def rules(self) -> typing.Iterator[Rule]:
-        """Iterate over all rules."""
-        yield from self._rules.values()
-
     def login(
         self, user: str, password: str, nonce: str, login_type: RpcLoginType
     ) -> typing.Optional["RpcBrokerConfig.User"]:
@@ -211,22 +199,14 @@ class RpcBrokerConfig:
         if "listen" in config:
             for name, url in config["listen"].items():
                 res.listen[name] = RpcUrl.parse(url)
-        for secname, sec in filter(lambda v: v[0].startswith("rules."), config.items()):
-            res.add_rule(
-                cls.Rule(
-                    secname[6:],
-                    sec.get("path", ""),
-                    frozenset(sec.get("methods", "").split()),
-                )
-            )
         for secname, sec in filter(lambda v: v[0].startswith("roles."), config.items()):
             res.add_role(
                 cls.Role(
                     secname[6:],
                     RpcMethodAccess.fromstr(sec.get("access", "")),
                     frozenset(
-                        res.rule(rule_name)
-                        for rule_name in sec.get("rules", "").split()
+                        cls.Method.fromstr(method)
+                        for method in sec.get("methods", "").split()
                     ),
                 )
             )

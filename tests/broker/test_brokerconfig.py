@@ -8,53 +8,45 @@ from shv import RpcLoginType, RpcMethodAccess, RpcUrl, broker
 
 def test_listen(config):
     assert config.listen == {
-        "internet": RpcUrl.parse("tcp://[::]:3755"),
+        "internet": RpcUrl.parse("tcp://localhost:3755"),
         "unix": RpcUrl.parse("localsocket:shvbroker.sock"),
     }
-
-
-RULE_ADMIN = broker.RpcBrokerConfig.Rule("admin", path="")
-RULE_COM = broker.RpcBrokerConfig.Rule(
-    "com", path=".broker/app", methods=frozenset(("ping", "echo"))
-)
-RULE_SIGNALS = broker.RpcBrokerConfig.Rule(
-    "signals", path=".broker/app", methods=frozenset(("subscribe", "unsubscribe"))
-)
-RULE_TESTER = broker.RpcBrokerConfig.Rule("tester", path="test")
-RULE_BROWSE = broker.RpcBrokerConfig.Rule("browse", methods=frozenset(("ls", "dir")))
-RULES = {
-    RULE_ADMIN,
-    RULE_COM,
-    RULE_SIGNALS,
-    RULE_TESTER,
-    RULE_BROWSE,
-}
-
-
-def test_rules(config):
-    assert set(config.rules()) == RULES
 
 
 ROLE_ADMIN = broker.RpcBrokerConfig.Role(
     "admin",
     RpcMethodAccess.DEVEL,
-    frozenset({RULE_ADMIN}),
+    frozenset({broker.RpcBrokerConfig.Method()}),
 )
 ROLE_BROWSE = broker.RpcBrokerConfig.Role(
     "browse",
     RpcMethodAccess.BROWSE,
-    frozenset({RULE_BROWSE}),
+    frozenset(
+        {
+            broker.RpcBrokerConfig.Method(method="ls"),
+            broker.RpcBrokerConfig.Method(method="dir"),
+        }
+    ),
 )
 ROLE_CLIENT = broker.RpcBrokerConfig.Role(
     "client",
     RpcMethodAccess.WRITE,
-    frozenset({RULE_COM, RULE_SIGNALS}),
+    frozenset(
+        {
+            broker.RpcBrokerConfig.Method(".broker/currentClient", "subscribe"),
+            broker.RpcBrokerConfig.Method(".broker/currentClient", "unsubscribe"),
+            broker.RpcBrokerConfig.Method(
+                ".broker/currentClient", "rejectNotSubscribed"
+            ),
+            broker.RpcBrokerConfig.Method(".broker/currentClient", "subscriptions"),
+        }
+    ),
     frozenset({ROLE_BROWSE}),
 )
 ROLE_TESTER = broker.RpcBrokerConfig.Role(
     "tester",
     RpcMethodAccess.COMMAND,
-    frozenset({RULE_TESTER}),
+    frozenset({broker.RpcBrokerConfig.Method("test")}),
     frozenset({ROLE_CLIENT}),
 )
 ROLES = {
@@ -104,7 +96,6 @@ def test_default_config():
     assert config.listen == {}
     assert set(config.users()) == set()
     assert set(config.roles()) == set()
-    assert set(config.rules()) == set()
 
 
 def test_login_valid_admin(config):
@@ -159,10 +150,23 @@ def test_login_invalid(config, user, password, nonce, tp):
         (USER_TEST, "any", "ls", RpcMethodAccess.BROWSE),
         (USER_TEST, "any", "dir", RpcMethodAccess.BROWSE),
         (USER_TEST, "any", "get", None),
-        (USER_TEST, "test/device", "appName", RpcMethodAccess.COMMAND),
+        (USER_TEST, "test/device/.app", "appName", RpcMethodAccess.COMMAND),
         (USER_TEST, "test/device/track/1", "get", RpcMethodAccess.COMMAND),
-        (USER_TEST, ".broker/app", "subscribe", RpcMethodAccess.WRITE),
-        (USER_TEST, ".broker/app", "unsubscribe", RpcMethodAccess.WRITE),
+        (USER_TEST, ".app", "shvVersionMajor", RpcMethodAccess.BROWSE),
+        (USER_TEST, ".app", "shvVersionMinor", RpcMethodAccess.BROWSE),
+        (USER_TEST, ".app", "appName", RpcMethodAccess.BROWSE),
+        (USER_TEST, ".app", "appVersion", RpcMethodAccess.BROWSE),
+        (USER_TEST, ".app", "ping", RpcMethodAccess.BROWSE),
+        (USER_TEST, ".broker/currentClient", "info", RpcMethodAccess.BROWSE),
+        (USER_TEST, ".broker/currentClient", "subscribe", RpcMethodAccess.WRITE),
+        (USER_TEST, ".broker/currentClient", "unsubscribe", RpcMethodAccess.WRITE),
+        (
+            USER_TEST,
+            ".broker/currentClient",
+            "rejectNotSubscribed",
+            RpcMethodAccess.WRITE,
+        ),
+        (USER_TEST, ".broker/currentClient", "subscriptions", RpcMethodAccess.WRITE),
     ),
 )
 def test_access_level(user, path, method, expected):
