@@ -6,7 +6,7 @@ import functools
 import struct
 
 from . import commonpack
-from .value import SHVMeta, SHVMetaType, SHVType, SHVUInt
+from .value import SHVMeta, SHVMetaType, SHVType, SHVUInt, decimal_rexp
 
 
 class ChainPack:
@@ -359,14 +359,9 @@ class ChainPackWriter(commonpack.CommonWriter):
         self._write(struct.pack("<d", value))  # little endian
 
     def write_decimal(self, value: decimal.Decimal) -> None:
-        t = value.as_tuple()
-        mantisa = functools.reduce(
-            lambda a, b: a + (b[1] * 10 ** b[0]), enumerate(reversed(t.digits)), 0
-        ) * (-1 if t.sign else 1)
-        exponent = t.exponent
-        assert isinstance(exponent, int)
+        mantissa, exponent = decimal_rexp(value)
         self._write(ChainPack.CP_Decimal)
-        self.write_int_data(mantisa)
+        self.write_int_data(mantissa)
         self.write_int_data(exponent)
 
     def write_list(self, value: collections.abc.Iterable[SHVType]) -> None:

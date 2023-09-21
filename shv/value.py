@@ -5,6 +5,7 @@ import datetime
 import decimal
 import itertools
 import typing
+import functools
 
 SHVType: typing.TypeAlias = typing.Union[
     None,
@@ -179,6 +180,24 @@ class SHVFloat(float, SHVMeta):
 
 class SHVDecimal(decimal.Decimal, SHVMeta):
     """Decimal with :class:`SHVMeta`."""
+
+
+def decimal_rexp(value: decimal.Decimal) -> tuple[int, int]:
+    """Decomposes decimal number to the mantissa and exponent.
+
+    Python's Decimal does not directly provides a way to get mantissa and exponent. In
+    SHV it is the preferred way to store decimal numbers and this this functions is
+    provided for that.
+
+    :param value: Decimal number to be decomposed to mantissa and exponent.
+    :returns: Tuple with mantissa and decimal exponent.
+    """
+    t = value.as_tuple()
+    mantissa = functools.reduce(
+        lambda a, b: a + (b[1] * 10 ** b[0]), enumerate(reversed(t.digits)), 0
+    ) * (-1 if t.sign else 1)
+    assert isinstance(t.exponent, int)
+    return mantissa, t.exponent
 
 
 class SHVBytes(bytes, SHVMeta):
