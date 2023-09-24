@@ -2,14 +2,14 @@
   description = "Flake for Pure Python SHV implementation";
 
   inputs = {
-    shvapp.url = "git+https://github.com/silicon-heaven/shvapp.git?submodules=1";
+    libshv.url = "git+https://github.com/silicon-heaven/libshv.git?submodules=1";
   };
 
   outputs = {
     self,
     flake-utils,
     nixpkgs,
-    shvapp,
+    libshv,
   }:
     with builtins;
     with flake-utils.lib;
@@ -29,7 +29,7 @@
         pythonPackages,
         sphinxHook,
         pytestCheckHook,
-        shvapp,
+        libshv,
       }:
         buildPythonPackage {
           pname = pyproject.project.name;
@@ -42,7 +42,7 @@
           outputs = ["out" "doc"];
           propagatedBuildInputs = requires pythonPackages;
           nativeBuildInputs = [sphinxHook] ++ requires-docs pythonPackages;
-          nativeCheckInputs = [pytestCheckHook shvapp] ++ requires-test pythonPackages;
+          nativeCheckInputs = [pytestCheckHook libshv] ++ requires-test pythonPackages;
         };
 
       pypkg-multiversion = {
@@ -75,7 +75,7 @@
             python3Packages = final.python3.pkgs;
           };
           default = composeManyExtensions [
-            shvapp.overlays.default
+            libshv.overlays.default
             self.overlays.pyshv
           ];
         };
@@ -94,7 +94,7 @@
             packages = with pkgs; [
               editorconfig-checker
               gitlint
-              pkgs.shvapp
+              pkgs.libshv
               (python3.withPackages (p:
                 [p.sphinx-autobuild]
                 ++ foldl (prev: f: prev ++ f p) [] [

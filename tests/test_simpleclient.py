@@ -20,20 +20,20 @@ from shv import (
     "path,method,params,result",
     (
         (".broker/app", "echo", 42, 42),
-        ("", "ls", None, [".broker"]),
+        ("", "ls", None, [".broker", "test"]),
         (
             "",
             "dir",
             None,
             [
                 {
-                    "accessGrant": "bws",
+                    "access": "bws",
                     "flags": SHVUInt(0),
                     "name": "dir",
                     "signature": 3,
                 },
                 {
-                    "accessGrant": "bws",
+                    "access": "bws",
                     "flags": SHVUInt(0),
                     "name": "ls",
                     "signature": 3,
@@ -51,7 +51,7 @@ async def test_call(client, path, method, params, result):
 @pytest.mark.parametrize(
     "path,result",
     (
-        ("", [".broker"]),
+        ("", [".broker", "test"]),
         (".broker", ["app", "clients", "currentClient", "etc", "masters", "mounts"]),
         (".broker/app/log", []),
     ),
@@ -76,9 +76,7 @@ async def test_ls(client, path, result):
             ".broker/app/log",
             [
                 RpcMethodDesc("dir", RpcMethodSignature.RET_PARAM),
-                RpcMethodDesc(
-                    "ls", RpcMethodSignature.RET_PARAM, access=RpcMethodAccess.READ
-                ),
+                RpcMethodDesc("ls", RpcMethodSignature.RET_PARAM, access=RpcMethodAccess.READ),
                 RpcMethodDesc(
                     "chng",
                     RpcMethodSignature.VOID_PARAM,
@@ -131,5 +129,5 @@ async def test_sha_login(shvbroker, url):
         login_type=RpcLoginType.SHA1,
     )
     client = await SimpleClient.connect(nurl)
-    assert await client.ls("") == [".broker"]
+    assert await client.ls("") == [".broker", "test"]
     await client.disconnect()

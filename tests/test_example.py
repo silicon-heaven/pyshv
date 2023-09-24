@@ -9,7 +9,7 @@ from shv import RpcMethodNotFoundError, shvmeta_eq
     "path,result",
     (
         ("", [".broker", "test"]),
-        ("test", ["device"]),
+        ("test", ["device", 'someInt', 'someText', 'uptime']),
         ("test/device", [".app", "track"]),
         ("test/device/track", [str(i) for i in range(1, 9)]),
     ),
@@ -25,58 +25,58 @@ async def test_ls(example_device, client, path, result):
         (
             "test/device",
             [
-                {"accessGrant": "bws", "flags": 0, "signature": 3, "name": "dir"},
-                {"accessGrant": "bws", "flags": 0, "signature": 3, "name": "ls"},
+                {"access": "bws", "flags": 0, "signature": 3, "name": "dir"},
+                {"access": "bws", "flags": 0, "signature": 3, "name": "ls"},
             ],
         ),
         (
             "test/device/.app",
             [
-                {"accessGrant": "bws", "flags": 0, "signature": 3, "name": "dir"},
-                {"accessGrant": "bws", "flags": 0, "signature": 3, "name": "ls"},
+                {"access": "bws", "flags": 0, "signature": 3, "name": "dir"},
+                {"access": "bws", "flags": 0, "signature": 3, "name": "ls"},
                 {
-                    "accessGrant": "bws",
+                    "access": "bws",
                     "flags": 2,
                     "name": "shvVersionMajor",
                     "signature": 2,
                 },
                 {
-                    "accessGrant": "bws",
+                    "access": "bws",
                     "flags": 2,
                     "name": "shvVersionMinor",
                     "signature": 2,
                 },
-                {"accessGrant": "bws", "flags": 2, "name": "appName", "signature": 2},
+                {"access": "bws", "flags": 2, "name": "appName", "signature": 2},
                 {
-                    "accessGrant": "bws",
+                    "access": "bws",
                     "flags": 2,
                     "name": "appVersion",
                     "signature": 2,
                 },
-                {"accessGrant": "bws", "flags": 0, "name": "ping", "signature": 0},
+                {"access": "bws", "flags": 0, "name": "ping", "signature": 0},
             ],
         ),
         (
             "test/device/track",
             [
-                {"accessGrant": "bws", "flags": 0, "signature": 3, "name": "dir"},
-                {"accessGrant": "bws", "flags": 0, "signature": 3, "name": "ls"},
+                {"access": "bws", "flags": 0, "signature": 3, "name": "dir"},
+                {"access": "bws", "flags": 0, "signature": 3, "name": "ls"},
             ],
         ),
         (
             "test/device/track/1",
             [
-                {"accessGrant": "bws", "flags": 0, "signature": 3, "name": "dir"},
-                {"accessGrant": "bws", "flags": 0, "signature": 3, "name": "ls"},
+                {"access": "bws", "flags": 0, "signature": 3, "name": "dir"},
+                {"access": "bws", "flags": 0, "signature": 3, "name": "ls"},
                 {
-                    "accessGrant": "rd",
+                    "access": "rd",
                     "flags": 2,
                     "signature": 2,
                     "name": "get",
                     "description": "Get current track",
                 },
                 {
-                    "accessGrant": "wr",
+                    "access": "wr",
                     "flags": 4,
                     "signature": 1,
                     "name": "set",
@@ -88,7 +88,6 @@ async def test_ls(example_device, client, path, result):
 )
 async def test_dir(example_device, client, path, result):
     res = await client.call(path, "dir")
-    print(res)
     assert shvmeta_eq(res, result)
 
 

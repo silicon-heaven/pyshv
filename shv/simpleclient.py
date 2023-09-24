@@ -1,7 +1,6 @@
 """RPC client manager that provides facitility to simply connect to the broker."""
 import asyncio
 import collections.abc
-import functools
 import hashlib
 import logging
 import time
@@ -16,12 +15,7 @@ from .rpcerrors import (
     RpcMethodNotFoundError,
 )
 from .rpcmessage import RpcMessage
-from .rpcmethod import (
-    RpcMethodAccess,
-    RpcMethodDesc,
-    RpcMethodFlags,
-    RpcMethodSignature,
-)
+from .rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodSignature
 from .rpcurl import RpcLoginType, RpcUrl
 from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
 from .value import SHVType, is_shvbool, is_shvnull
@@ -452,18 +446,10 @@ class SimpleClient:
         yield RpcMethodDesc("dir", RpcMethodSignature.RET_PARAM)
         yield RpcMethodDesc("ls", RpcMethodSignature.RET_PARAM)
         if path == ".app":
-            yield RpcMethodDesc(
-                "shvVersionMajor", RpcMethodSignature.RET_VOID, RpcMethodFlags.GETTER
-            )
-            yield RpcMethodDesc(
-                "shvVersionMinor", RpcMethodSignature.RET_VOID, RpcMethodFlags.GETTER
-            )
-            yield RpcMethodDesc(
-                "appName", RpcMethodSignature.RET_VOID, RpcMethodFlags.GETTER
-            )
-            yield RpcMethodDesc(
-                "appVersion", RpcMethodSignature.RET_VOID, RpcMethodFlags.GETTER
-            )
+            yield RpcMethodDesc.getter("shvVersionMajor", RpcMethodAccess.BROWSE)
+            yield RpcMethodDesc.getter("shvVersionMinor", RpcMethodAccess.BROWSE)
+            yield RpcMethodDesc.getter("appName", RpcMethodAccess.BROWSE)
+            yield RpcMethodDesc.getter("appVersion", RpcMethodAccess.BROWSE)
             yield RpcMethodDesc("ping", RpcMethodSignature.VOID_VOID)
 
     async def _value_update(self, path: str, value: SHVType) -> None:

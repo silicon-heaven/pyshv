@@ -46,7 +46,7 @@ def fixture_shvbroker(port, sslport):
     confdir = pathlib.Path(__file__).parent / "shvbroker-etc"
     with subprocess.Popen(
         [
-            "shvbroker",
+            "minimalshvbroker",
             "--config-dir",
             str(confdir),
             "--server-port",

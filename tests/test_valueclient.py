@@ -51,7 +51,7 @@ async def test_get_snapshot(value_client, example_device):
 
 async def test_get_snapshot_subscribes(value_client, example_device):
     """Check get_snapshot without arguments."""
-    await value_client.subscribe("test")
+    await value_client.subscribe("test/device")
     await value_client.get_snapshot()
     assert "test/device/track/1" in value_client
     assert len(value_client) == 8

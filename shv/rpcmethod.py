@@ -93,7 +93,7 @@ class RpcMethodDesc:
             "name": self.name,
             "signature": self.signature,
             "flags": self.flags,
-            "accessGrant": RpcMethodAccess.tostr(self.access),
+            "access": RpcMethodAccess.tostr(self.access),
             **({"description": self.description} if self.description else {}),
         }
 
@@ -105,7 +105,7 @@ class RpcMethodDesc:
         name = desc.get("name", None)
         signature = desc.get("signature", None)
         flags = desc.get("flags", None)
-        access = desc.get("accessGrant", None)
+        access = desc.get("access", None)
         if not isinstance(name, str):
             raise ValueError(f"Invalid method name format: {repr(name)}")
         return cls(
