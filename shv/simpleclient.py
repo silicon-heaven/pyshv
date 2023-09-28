@@ -56,7 +56,7 @@ class SimpleClient:
         """Task running the message handling loop."""
         self._calls_event: dict[int, asyncio.Event] = {}
         self._calls_msg: dict[int, RpcMessage] = {}
-        self.__peer_is_shv01: None | bool = None
+        self.__peer_is_shv3: None | bool = None
 
     @classmethod
     async def connect(
@@ -188,7 +188,7 @@ class SimpleClient:
             else:
                 await self.client.send(
                     RpcMessage.request(
-                        ".app" if self._peer_is_shv01() else ".broker/currentClient",
+                        ".app" if await self._peer_is_shv3() else ".broker/currentClient",
                         "ping",
                     )
                 )
@@ -316,7 +316,7 @@ class SimpleClient:
         :param path: SHV path to the node to subscribe.
         """
         await self.call(
-            ".broker/currentClient" if await self._peer_is_shv01() else ".broker/app",
+            ".app/broker/currentClient" if await self._peer_is_shv3() else ".broker/app",
             "subscribe",
             {"method": "chng", "path": path},
         )
@@ -328,22 +328,22 @@ class SimpleClient:
         :return: ``True`` in case such subscribe was located and ``False`` otherwise.
         """
         resp = await self.call(
-            ".broker/currentClient" if await self._peer_is_shv01() else ".broker/app",
+            ".app/broker/currentClient" if await self._peer_is_shv3() else ".broker/app",
             "unsubscribe",
             {"method": "chng", "path": path},
         )
         assert is_shvbool(resp)
         return bool(resp)
 
-    async def _peer_is_shv01(self) -> bool:
+    async def _peer_is_shv3(self) -> bool:
         """Check if peer supports at least SHV 0.1."""
-        if self.__peer_is_shv01 is None:
+        if self.__peer_is_shv3 is None:
             try:
                 major = await self.call(".app", "shvVersionMajor")
-                self.__peer_is_shv01 = isinstance(major, int) and major >= 0
+                self.__peer_is_shv3 = isinstance(major, int) and major >= 0
             except RpcError:
-                self.__peer_is_shv01 = False
-        return self.__peer_is_shv01
+                self.__peer_is_shv3 = False
+        return self.__peer_is_shv3
 
     async def _method_call(
         self, path: str, method: str, access: RpcMethodAccess, params: SHVType

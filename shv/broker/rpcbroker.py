@@ -66,9 +66,9 @@ class RpcBroker:
         """
         pth = path.split("/")
 
-        if len(pth) >= 3 and pth[0] == ".broker" and pth[1] == "client":
-            client = self.get_client(pth[2])
-            return (client, "/".join(pth[3:])) if client else None
+        if len(pth) >= 4 and pth[:3] == [".app", "broker", "client"]:
+            client = self.get_client(pth[3])
+            return (client, "/".join(pth[4:])) if client else None
 
         # Note: we do not allow recursive mount points and thus first match is the
         # correct and the only client.
@@ -302,20 +302,18 @@ class RpcBroker:
         def _ls(self, path: str) -> typing.Iterator[str]:
             yield from super()._ls(path)
             pth = path.split("/") if path else []
-            if len(pth) > 0 and pth[0] == ".broker":
+            if len(pth) > 0 and pth[0] == ".app":
                 if len(pth) == 1:
-                    yield "currentClient"
-                    yield "client"
-                    yield "clientInfo"
-                elif pth[1] in ("client", "clientInfo"):
+                    yield "broker"
+                elif pth[1] == "broker":
                     if len(pth) == 2:
-                        for cid, c in self.broker.clients.items():
-                            yield str(cid)
+                        yield "currentClient"
+                        yield "client"
+                        yield "clientInfo"
+                    elif pth[2] in ("client", "clientInfo") and len(pth) == 3:
+                        yield from map(str, self.broker.clients.keys())
             else:
-                res: set[str] = set()
-                if len(pth) == 0:
-                    res.add(".broker")
-                res |= {
+                res: set[str] = {
                     c.mount_point[len(pth)]
                     for c in self.broker.clients.values()
                     if c.mount_point and c.mount_point[: len(pth)] == pth
@@ -326,71 +324,60 @@ class RpcBroker:
 
         def _dir(self, path: str) -> typing.Iterator[RpcMethodDesc]:
             yield from super()._dir(path)
-            pth = path.split("/") if path else []
-            if len(pth) > 0 and pth[0] == ".broker":
-                if len(pth) == 1:
-                    yield RpcMethodDesc(
-                        "clientInfo",
-                        RpcMethodSignature.RET_PARAM,
-                        access=RpcMethodAccess.SERVICE,
-                    )
-                    yield RpcMethodDesc.getter(
-                        "clients", access=RpcMethodAccess.SERVICE
-                    )
-                    yield RpcMethodDesc(
-                        "disconnectClient",
-                        RpcMethodSignature.RET_PARAM,
-                        access=RpcMethodAccess.SERVICE,
-                    )
-                    yield RpcMethodDesc.getter(
-                        "mountPoints", access=RpcMethodAccess.READ
-                    )
-                elif len(pth) == 2 and pth[1] == "currentClient":
-                    yield RpcMethodDesc.getter("info", access=RpcMethodAccess.BROWSE)
-                    yield RpcMethodDesc(
-                        "subscribe",
-                        RpcMethodSignature.VOID_PARAM,
-                        access=RpcMethodAccess.READ,
-                    )
-                    yield RpcMethodDesc(
-                        "unsubscribe",
-                        RpcMethodSignature.RET_PARAM,
-                        access=RpcMethodAccess.READ,
-                    )
-                    yield RpcMethodDesc(
-                        "rejectNotSubscribed",
-                        RpcMethodSignature.RET_PARAM,
-                        access=RpcMethodAccess.READ,
-                    )
-                    yield RpcMethodDesc.getter(
-                        "subscriptions", access=RpcMethodAccess.READ
-                    )
-                elif len(pth) == 3 and pth[1] == "clientInfo":
-                    yield RpcMethodDesc.getter(
-                        "userName", access=RpcMethodAccess.SERVICE
-                    )
-                    yield RpcMethodDesc.getter(
-                        "mountPoint", access=RpcMethodAccess.SERVICE
-                    )
-                    yield RpcMethodDesc.getter(
-                        "subscriptions", access=RpcMethodAccess.SERVICE
-                    )
-                    yield RpcMethodDesc(
-                        "dropClient",
-                        RpcMethodSignature.VOID_VOID,
-                        access=RpcMethodAccess.SERVICE,
-                    )
-                    yield RpcMethodDesc.getter(
-                        "idleTime", access=RpcMethodAccess.SERVICE
-                    )
-                    yield RpcMethodDesc.getter(
-                        "idleTimeMax", access=RpcMethodAccess.SERVICE
-                    )
+            if path == ".app/broker":
+                yield RpcMethodDesc(
+                    "clientInfo",
+                    RpcMethodSignature.RET_PARAM,
+                    access=RpcMethodAccess.SERVICE,
+                )
+                yield RpcMethodDesc.getter("clients", access=RpcMethodAccess.SERVICE)
+                yield RpcMethodDesc(
+                    "disconnectClient",
+                    RpcMethodSignature.VOID_PARAM,
+                    access=RpcMethodAccess.SERVICE,
+                )
+                yield RpcMethodDesc.getter("mountPoints", access=RpcMethodAccess.READ)
+            elif path == ".app/broker/currentClient":
+                yield RpcMethodDesc.getter("info", access=RpcMethodAccess.BROWSE)
+                yield RpcMethodDesc(
+                    "subscribe",
+                    RpcMethodSignature.VOID_PARAM,
+                    access=RpcMethodAccess.READ,
+                )
+                yield RpcMethodDesc(
+                    "unsubscribe",
+                    RpcMethodSignature.RET_PARAM,
+                    access=RpcMethodAccess.READ,
+                )
+                yield RpcMethodDesc(
+                    "rejectNotSubscribed",
+                    RpcMethodSignature.RET_PARAM,
+                    access=RpcMethodAccess.READ,
+                )
+                yield RpcMethodDesc.getter("subscriptions", access=RpcMethodAccess.READ)
+            elif (
+                path.startswith(".app/broker/clientInfo/")
+                and (client := self.broker.get_client(path[23:])) is not None
+            ):
+                yield RpcMethodDesc.getter("userName", access=RpcMethodAccess.SERVICE)
+                yield RpcMethodDesc.getter("mountPoint", access=RpcMethodAccess.SERVICE)
+                yield RpcMethodDesc.getter(
+                    "subscriptions", access=RpcMethodAccess.SERVICE
+                )
+                yield RpcMethodDesc(
+                    "dropClient",
+                    RpcMethodSignature.VOID_VOID,
+                    access=RpcMethodAccess.SERVICE,
+                )
+                yield RpcMethodDesc.getter("idleTime", access=RpcMethodAccess.SERVICE)
+                yield RpcMethodDesc.getter(
+                    "idleTimeMax", access=RpcMethodAccess.SERVICE
+                )
 
         async def _method_call(
             self, path: str, method: str, access: RpcMethodAccess, params: SHVType
         ) -> SHVType:
-            if path == ".broker":
+            if path == ".app/broker":
                 if method == "clientInfo" and access >= RpcMethodAccess.SERVICE:
                     if not isinstance(params, int):
                         raise RpcInvalidParamsError("Use Int")
@@ -421,7 +408,7 @@ class RpcBroker:
                         for c in self.broker.clients.values()
                         if c.mount_point
                     ]
-            elif path == ".broker/currentClient":
+            elif path == ".app/broker/currentClient":
                 if method == "info":
                     return self.infomap()
                 if access >= RpcMethodAccess.READ:
@@ -453,26 +440,25 @@ class RpcBroker:
                             self.subscriptions.remove(sub)
                             return True
                         return False
-            elif path.startswith(".broker/clientInfo/"):
-                if (
-                    client := self.broker.get_client(path[19:])
-                ) is not None and access >= RpcMethodAccess.SERVICE:
-                    if method == "userName":
-                        assert client.user is not None
-                        return client.user.name
-                    if method == "mountPoint":
-                        return "/".join(self.mount_point) if self.mount_point else None
-                    if method == "subscriptions":
-                        return client.subslist()
-                    if method == "dropClient":
-                        await client.disconnect()
-                        return None
-                    if method == "idleTime":
-                        return int(
-                            (time.monotonic() - client.client.last_receive) * 1000
-                        )
-                    if method == "idleTimeMax":
-                        return int(self.IDLE_TIMEOUT * 1000)
+            elif (
+                path.startswith(".app/broker/clientInfo/")
+                and (client := self.broker.get_client(path[23:])) is not None
+                and access >= RpcMethodAccess.SERVICE
+            ):
+                if method == "userName":
+                    assert client.user is not None
+                    return client.user.name
+                if method == "mountPoint":
+                    return "/".join(self.mount_point) if self.mount_point else None
+                if method == "subscriptions":
+                    return client.subslist()
+                if method == "dropClient":
+                    await client.disconnect()
+                    return None
+                if method == "idleTime":
+                    return int((time.monotonic() - client.client.last_receive) * 1000)
+                if method == "idleTimeMax":
+                    return int(self.IDLE_TIMEOUT * 1000)
             return await super()._method_call(path, method, access, params)
 
         def infomap(self) -> SHVType:

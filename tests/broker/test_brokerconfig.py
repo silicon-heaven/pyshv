@@ -31,16 +31,7 @@ ROLE_BROWSE = broker.RpcBrokerConfig.Role(
 ROLE_CLIENT = broker.RpcBrokerConfig.Role(
     "client",
     RpcMethodAccess.WRITE,
-    frozenset(
-        {
-            broker.RpcBrokerConfig.Method(".broker/currentClient", "subscribe"),
-            broker.RpcBrokerConfig.Method(".broker/currentClient", "unsubscribe"),
-            broker.RpcBrokerConfig.Method(
-                ".broker/currentClient", "rejectNotSubscribed"
-            ),
-            broker.RpcBrokerConfig.Method(".broker/currentClient", "subscriptions"),
-        }
-    ),
+    frozenset({broker.RpcBrokerConfig.Method(".app/broker/currentClient", "")}),
     frozenset({ROLE_BROWSE}),
 )
 ROLE_TESTER = broker.RpcBrokerConfig.Role(
@@ -157,16 +148,20 @@ def test_login_invalid(config, user, password, nonce, tp):
         (USER_TEST, ".app", "appName", RpcMethodAccess.BROWSE),
         (USER_TEST, ".app", "appVersion", RpcMethodAccess.BROWSE),
         (USER_TEST, ".app", "ping", RpcMethodAccess.BROWSE),
-        (USER_TEST, ".broker/currentClient", "info", RpcMethodAccess.BROWSE),
-        (USER_TEST, ".broker/currentClient", "subscribe", RpcMethodAccess.WRITE),
-        (USER_TEST, ".broker/currentClient", "unsubscribe", RpcMethodAccess.WRITE),
+        (USER_TEST, ".app/broker/currentClient", "subscribe", RpcMethodAccess.WRITE),
+        (USER_TEST, ".app/broker/currentClient", "unsubscribe", RpcMethodAccess.WRITE),
         (
             USER_TEST,
-            ".broker/currentClient",
+            ".app/broker/currentClient",
             "rejectNotSubscribed",
             RpcMethodAccess.WRITE,
         ),
-        (USER_TEST, ".broker/currentClient", "subscriptions", RpcMethodAccess.WRITE),
+        (
+            USER_TEST,
+            ".app/broker/currentClient",
+            "subscriptions",
+            RpcMethodAccess.WRITE,
+        ),
     ),
 )
 def test_access_level(user, path, method, expected):
