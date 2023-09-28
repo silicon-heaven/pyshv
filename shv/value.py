@@ -3,9 +3,9 @@ import abc
 import collections.abc
 import datetime
 import decimal
+import functools
 import itertools
 import typing
-import functools
 
 SHVType: typing.TypeAlias = typing.Union[
     None,

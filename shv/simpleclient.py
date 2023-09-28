@@ -188,7 +188,9 @@ class SimpleClient:
             else:
                 await self.client.send(
                     RpcMessage.request(
-                        ".app" if await self._peer_is_shv3() else ".broker/currentClient",
+                        ".app"
+                        if await self._peer_is_shv3()
+                        else ".broker/currentClient",
                         "ping",
                     )
                 )
@@ -316,7 +318,9 @@ class SimpleClient:
         :param path: SHV path to the node to subscribe.
         """
         await self.call(
-            ".app/broker/currentClient" if await self._peer_is_shv3() else ".broker/app",
+            ".app/broker/currentClient"
+            if await self._peer_is_shv3()
+            else ".broker/app",
             "subscribe",
             {"method": "chng", "path": path},
         )
@@ -328,7 +332,9 @@ class SimpleClient:
         :return: ``True`` in case such subscribe was located and ``False`` otherwise.
         """
         resp = await self.call(
-            ".app/broker/currentClient" if await self._peer_is_shv3() else ".broker/app",
+            ".app/broker/currentClient"
+            if await self._peer_is_shv3()
+            else ".broker/app",
             "unsubscribe",
             {"method": "chng", "path": path},
         )

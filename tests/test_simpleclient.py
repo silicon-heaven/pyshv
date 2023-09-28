@@ -76,7 +76,9 @@ async def test_ls(client, path, result):
             ".broker/app/log",
             [
                 RpcMethodDesc("dir", RpcMethodSignature.RET_PARAM),
-                RpcMethodDesc("ls", RpcMethodSignature.RET_PARAM, access=RpcMethodAccess.READ),
+                RpcMethodDesc(
+                    "ls", RpcMethodSignature.RET_PARAM, access=RpcMethodAccess.READ
+                ),
                 RpcMethodDesc(
                     "chng",
                     RpcMethodSignature.VOID_PARAM,

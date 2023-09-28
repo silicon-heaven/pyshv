@@ -9,7 +9,7 @@ from shv import RpcMethodNotFoundError, shvmeta_eq
     "path,result",
     (
         ("", [".broker", "test"]),
-        ("test", ["device", 'someInt', 'someText', 'uptime']),
+        ("test", ["device", "someInt", "someText", "uptime"]),
         ("test/device", [".app", "track"]),
         ("test/device/track", [str(i) for i in range(1, 9)]),
     ),
