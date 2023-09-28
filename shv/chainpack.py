@@ -2,7 +2,6 @@
 import collections.abc
 import datetime
 import decimal
-import functools
 import struct
 
 from . import commonpack
@@ -96,7 +95,7 @@ class ChainPackReader(commonpack.CommonReader):
         elif packing_schema == ChainPack.CP_CString:
             value = self._read_cstring()
         else:
-            raise TypeError(f"ChainPack - Invalid type: {packing_schema}")
+            raise ValueError(f"ChainPack - Invalid type: {packing_schema}")
         if meta is not None:
             value = SHVMeta.new(value, meta)
         return value
@@ -390,7 +389,7 @@ class ChainPackWriter(commonpack.CommonWriter):
         tzdelta = value.utcoffset()
         tzoff = int(tzdelta.total_seconds() // 60 // 15) if tzdelta is not None else 0
         if not -63 <= tzoff <= 63:
-            raise TypeError(f"Invalid UTC offset value: {tzoff}")
+            raise ValueError(f"Invalid UTC offset value: {tzoff}")
         ms = res % 1000 == 0
         if ms:
             res //= 1000

@@ -18,6 +18,7 @@ from .chainpack import ChainPack, ChainPackReader, ChainPackWriter
 from .cpon import Cpon, CponReader
 from .rpcmessage import RpcMessage
 from .rpcurl import RpcProtocol, RpcUrl
+from .value import SHVType
 
 logger = logging.getLogger(__name__)
 
@@ -51,17 +52,26 @@ class RpcClient(abc.ABC):
         :param raise_error: If RpcError should be raised or not.
         :return: Next RPC message is returned or `None` in case of EOF.
         :raise RpcError: When mesasge is error and ``raise_error`` is `True`.
+        :raise EOFError: in case EOF is encountered.
         """
-        data = await self._receive()
-        self.last_receive = time.monotonic()
-        if data is None:
-            return None
-        proto = data[0]
-        rd = ChainPackReader if proto == 1 else CponReader if proto == 2 else None
-        if rd is None:
-            # TODO we need to implement error that disconnects this client
-            raise NotImplementedError
-        msg = RpcMessage(rd(io.BytesIO(data[1:])).read())
+        shvdata: SHVType = None
+        while True:
+            data = await self._receive()
+            self.last_receive = time.monotonic()
+            if data is None:
+                return None
+            proto = data[0]
+            rd = ChainPackReader if proto == 1 else CponReader if proto == 2 else None
+            if rd is not None:
+                try:
+                    shvdata = rd(io.BytesIO(data[1:])).read()
+                except ValueError:
+                    pass
+                else:
+                    break
+            logger.debug("==> Invalid message received")
+
+        msg = RpcMessage(shvdata)
         logger.debug("==> REC: %s", msg.to_string())
         if raise_error and msg.is_error():
             error = msg.rpc_error()

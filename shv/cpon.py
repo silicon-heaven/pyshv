@@ -54,7 +54,7 @@ class CponReader(commonpack.CommonReader):
                             if b == ord("\n"):
                                 break
                     else:
-                        raise TypeError("Malformed comment")
+                        raise ValueError("Malformed comment")
                 elif b in (ord(":"), ord(",")):
                     self._peek_drop()
                     continue
@@ -88,25 +88,25 @@ class CponReader(commonpack.CommonReader):
             self._peek_drop()
             b = self._peek_byte()
             if b != ord("{"):
-                raise TypeError("Invalid IMap prefix.")
+                raise ValueError("Invalid IMap prefix.")
             value = self._read_map()
         elif b == ord("d"):
             self._peek_drop()
             b = self._peek_byte()
             if b != ord('"'):
-                raise TypeError("Invalid DateTime prefix.")
+                raise ValueError("Invalid DateTime prefix.")
             value = self._read_datetime()
         elif b == ord("b"):
             self._peek_drop()
             b = self._peek_byte()
             if b != ord('"'):
-                raise TypeError("Invalid Blob prefix.")
+                raise ValueError("Invalid Blob prefix.")
             value = self._read_blob()
         elif b == ord("x"):
             self._peek_drop()
             b = self._peek_byte()
             if b != ord('"'):
-                raise TypeError("Invalid HexBlob prefix.")
+                raise ValueError("Invalid HexBlob prefix.")
             value = self._read_hexblob()
         elif b == ord("t"):
             self._read_check(b"true")
@@ -118,7 +118,7 @@ class CponReader(commonpack.CommonReader):
             self._read_check(b"null")
             value = None
         else:
-            raise TypeError("Malformed Cpon input.")
+            raise ValueError("Malformed Cpon input.")
         if meta is not None:
             value = SHVMeta.new(value, meta)
         return value

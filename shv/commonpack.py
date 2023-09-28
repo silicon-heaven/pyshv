@@ -118,6 +118,7 @@ class CommonReader(abc.ABC):
     def read(self) -> SHVType:
         """Read next SHV value.
 
+        :raise ValueError: when unexpected byte was received.
         :raise EOFError: in case EOF is encountered.
         """
 
