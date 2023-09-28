@@ -380,9 +380,12 @@ class SimpleClient:
 
     def _method_call_ls(self, path: str, params: SHVType) -> SHVType:
         """Implementation of ``ls`` method call."""
-        # TODO this is backward compatibility
+        # TODO list is backward compatibility
         if is_shvnull(params) or isinstance(params, list):
-            res = list(self._ls(path))
+            res = []
+            for v in self._ls(path):
+                if v not in res:
+                    res.append(v)
             if not res and not self._valid_path(path):
                 raise RpcMethodNotFoundError(f"No such node: {path}")
             return res
