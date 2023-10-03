@@ -8,7 +8,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path("..").absolute()))
 
 project = "pySHV"
-copyright = "2023, Elektroline a.s."
+copyright = "SPDX-License-Identifier: MIT"
 author = "Elektroline a.s."
 
 
@@ -19,7 +19,6 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.todo",
     "sphinx_rtd_theme",
-    "myst_parser",
     "sphinx_multiversion",
 ]
 

@@ -3,6 +3,7 @@ name = "pyshv"
 version = "0.3.0"
 description = "Pure Python SHV implementation"
 readme = "README.rst"
+license = {file = "LICENSE"}
 authors = [
   { name="Elektroline a.s." },
 ]
@@ -28,7 +29,6 @@ docs = [
   "sphinx",
   "sphinx_rtd_theme",
   "sphinx-multiversion",
-  "myst-parser",
 ]
 test = [
   "pytest",
