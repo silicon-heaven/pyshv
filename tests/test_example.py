@@ -46,11 +46,11 @@ async def test_ls(example_device, client, path, result):
                     "name": "shvVersionMinor",
                     "signature": 2,
                 },
-                {"access": "bws", "flags": 2, "name": "appName", "signature": 2},
+                {"access": "bws", "flags": 2, "name": "name", "signature": 2},
                 {
                     "access": "bws",
                     "flags": 2,
-                    "name": "appVersion",
+                    "name": "version",
                     "signature": 2,
                 },
                 {"access": "bws", "flags": 0, "name": "ping", "signature": 0},

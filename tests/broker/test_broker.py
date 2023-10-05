@@ -88,12 +88,12 @@ async def test_empty_ls_invalid(client, path):
                     flags=RpcMethodFlags.GETTER,
                 ),
                 RpcMethodDesc(
-                    "appName",
+                    "name",
                     signature=RpcMethodSignature.RET_VOID,
                     flags=RpcMethodFlags.GETTER,
                 ),
                 RpcMethodDesc(
-                    "appVersion",
+                    "version",
                     signature=RpcMethodSignature.RET_VOID,
                     flags=RpcMethodFlags.GETTER,
                 ),
@@ -215,7 +215,7 @@ async def test_empty_dir(client, path, methods):
             {"clientId": 0, "mountPoint": [], "subscriptions": [], "userName": "admin"},
         ),
         (".app/broker/currentClient", "subscriptions", []),
-        (".app/broker/client/0/.app", "appName", "pyshv"),
+        (".app/broker/client/0/.app", "name", "pyshv"),
         (".app/broker/clientInfo/0", "userName", "admin"),
         (".app/broker/clientInfo/0", "mountPoint", None),
         (".app/broker/clientInfo/0", "subscriptions", []),
@@ -334,4 +334,4 @@ async def test_sub_mount(shvbroker, url):
 async def test_broker_client(example_device, shvbroker):
     """Check that we can use broker's clients as clients as well."""
     client = shvbroker.clients[0]
-    assert await client.call(".app", "appName") == "pyshv-example_device"
+    assert await client.call(".app", "name") == "pyshv-example_device"

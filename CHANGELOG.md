@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+pySHV now conforms with work in progress SHV standard 3.0!
+
+### Added
+- `SimpleClient.ls_has_child` to query if child node exists
+- `SimpleClient.dir_description` to get description of a single method
+
+### Changed
+- Removed unused argument `login_options` for `SimpleClient.connect`
+- `SimpleClient.dir_details` is now `SimpleClient.dir` and old `dir`
+  implementation is removed
+- Broker configuration now no longer contains `rules` sections and instead we
+  specify `methods` in `roles` sections. Methods are combination of path and
+  method that is used to identify methods this role is applied to.
+- Received invalid messages are now skipped instead of raising exception.
+
+### Removed
+- `SimpleClient.ls_with_children` as that is now invalid with SHV 3.0
+
+
 ## [0.3.0] - 2023-09-19
 ### Added
 - `ValueClient.wait_for_change` that blocks task until value change is detected.

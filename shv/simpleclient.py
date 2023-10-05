@@ -62,12 +62,10 @@ class SimpleClient:
     async def connect(
         cls,
         url: RpcUrl,
-        login_options: dict[str, SHVType] | None = None,
     ) -> typing.Union["SimpleClient", None]:
         """Connect and login to the SHV broker.
 
         :param url: SHV RPC URL to the broker
-        :param login_options: Additional options sent with login
         :return: Connected instance.
         """
         client = await connect_rpc_client(url)
@@ -374,9 +372,9 @@ class SimpleClient:
                 return SHV_VERSION_MAJOR
             if method == "shvVersionMinor":
                 return SHV_VERSION_MINOR
-            if method == "appName":
+            if method == "name":
                 return self.APP_NAME
-            if method == "appVersion":
+            if method == "version":
                 return self.APP_VERSION
             if method == "ping":
                 return None
@@ -457,8 +455,8 @@ class SimpleClient:
         if path == ".app":
             yield RpcMethodDesc.getter("shvVersionMajor", RpcMethodAccess.BROWSE)
             yield RpcMethodDesc.getter("shvVersionMinor", RpcMethodAccess.BROWSE)
-            yield RpcMethodDesc.getter("appName", RpcMethodAccess.BROWSE)
-            yield RpcMethodDesc.getter("appVersion", RpcMethodAccess.BROWSE)
+            yield RpcMethodDesc.getter("name", RpcMethodAccess.BROWSE)
+            yield RpcMethodDesc.getter("version", RpcMethodAccess.BROWSE)
             yield RpcMethodDesc("ping", RpcMethodSignature.VOID_VOID)
 
     async def _value_update(self, path: str, value: SHVType) -> None:
