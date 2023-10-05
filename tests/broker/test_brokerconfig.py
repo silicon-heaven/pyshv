@@ -28,22 +28,15 @@ ROLE_BROWSE = broker.RpcBrokerConfig.Role(
         }
     ),
 )
-ROLE_CLIENT = broker.RpcBrokerConfig.Role(
-    "client",
-    RpcMethodAccess.WRITE,
-    frozenset({broker.RpcBrokerConfig.Method(".app/broker/currentClient", "")}),
-    frozenset({ROLE_BROWSE}),
-)
 ROLE_TESTER = broker.RpcBrokerConfig.Role(
     "tester",
     RpcMethodAccess.COMMAND,
     frozenset({broker.RpcBrokerConfig.Method("test")}),
-    frozenset({ROLE_CLIENT}),
+    frozenset({ROLE_BROWSE}),
 )
 ROLES = {
     ROLE_ADMIN,
     ROLE_TESTER,
-    ROLE_CLIENT,
     ROLE_BROWSE,
 }
 
@@ -67,10 +60,16 @@ USER_TEST = broker.RpcBrokerConfig.User(
     RpcLoginType.PLAIN,
     frozenset({ROLE_TESTER}),
 )
+USER_NOBODY = broker.RpcBrokerConfig.User(
+    "nobody",
+    "nobody",
+    RpcLoginType.PLAIN,
+)
 USERS = {
     USER_ADMIN,
     USER_SHAADMIN,
     USER_TEST,
+    USER_NOBODY,
 }
 
 
@@ -148,20 +147,24 @@ def test_login_invalid(config, user, password, nonce, tp):
         (USER_TEST, ".app", "appName", RpcMethodAccess.BROWSE),
         (USER_TEST, ".app", "appVersion", RpcMethodAccess.BROWSE),
         (USER_TEST, ".app", "ping", RpcMethodAccess.BROWSE),
-        (USER_TEST, ".app/broker/currentClient", "subscribe", RpcMethodAccess.WRITE),
-        (USER_TEST, ".app/broker/currentClient", "unsubscribe", RpcMethodAccess.WRITE),
+        (USER_TEST, ".app/broker/currentClient", "subscribe", RpcMethodAccess.READ),
+        (USER_TEST, ".app/broker/currentClient", "unsubscribe", RpcMethodAccess.READ),
         (
             USER_TEST,
             ".app/broker/currentClient",
             "rejectNotSubscribed",
-            RpcMethodAccess.WRITE,
+            RpcMethodAccess.READ,
         ),
         (
             USER_TEST,
             ".app/broker/currentClient",
             "subscriptions",
-            RpcMethodAccess.WRITE,
+            RpcMethodAccess.READ,
         ),
+        (USER_NOBODY, ".app", "ls", RpcMethodAccess.BROWSE),
+        (USER_NOBODY, ".app", "name", RpcMethodAccess.BROWSE),
+        (USER_NOBODY, ".app/broker", "ls", RpcMethodAccess.BROWSE),
+        (USER_NOBODY, ".app/broker/currentClient", "ls", RpcMethodAccess.READ),
     ),
 )
 def test_access_level(user, path, method, expected):

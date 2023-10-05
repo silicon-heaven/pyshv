@@ -18,6 +18,8 @@ pySHV now conforms with work in progress SHV standard 3.0!
 - Broker configuration now no longer contains `rules` sections and instead we
   specify `methods` in `roles` sections. Methods are combination of path and
   method that is used to identify methods this role is applied to.
+- Broker now allows all users browse access to the `.app` and read access to the
+  `.app/broker/currentClient`.
 - Received invalid messages are now skipped instead of raising exception.
 
 ### Removed
