@@ -15,18 +15,8 @@ from shv import (
     RpcMethodNotFoundError,
     RpcMethodSignature,
     SimpleClient,
-    broker,
     shvmeta_eq,
 )
-
-
-@pytest.fixture(name="shvbroker")
-async def fixture_shvbroker(event_loop, config, url):
-    config.listen = {"test": url}
-    b = broker.RpcBroker(config)
-    await b.start_serving()
-    yield b
-    await b.terminate()
 
 
 @pytest.mark.parametrize(
@@ -70,6 +60,7 @@ async def test_empty_ls_invalid(client, path):
             [
                 RpcMethodDesc("dir", signature=RpcMethodSignature.RET_PARAM),
                 RpcMethodDesc("ls", signature=RpcMethodSignature.RET_PARAM),
+                RpcMethodDesc.signal("lschng", RpcMethodAccess.BROWSE),
             ],
         ),
         (
@@ -77,6 +68,7 @@ async def test_empty_ls_invalid(client, path):
             [
                 RpcMethodDesc("dir", signature=RpcMethodSignature.RET_PARAM),
                 RpcMethodDesc("ls", signature=RpcMethodSignature.RET_PARAM),
+                RpcMethodDesc.signal("lschng", RpcMethodAccess.BROWSE),
                 RpcMethodDesc(
                     "shvVersionMajor",
                     signature=RpcMethodSignature.RET_VOID,
@@ -105,6 +97,7 @@ async def test_empty_ls_invalid(client, path):
             [
                 RpcMethodDesc("dir", signature=RpcMethodSignature.RET_PARAM),
                 RpcMethodDesc("ls", signature=RpcMethodSignature.RET_PARAM),
+                RpcMethodDesc.signal("lschng", RpcMethodAccess.BROWSE),
                 RpcMethodDesc(
                     "clientInfo",
                     signature=RpcMethodSignature.RET_PARAM,
@@ -124,6 +117,7 @@ async def test_empty_ls_invalid(client, path):
             [
                 RpcMethodDesc("dir", signature=RpcMethodSignature.RET_PARAM),
                 RpcMethodDesc("ls", signature=RpcMethodSignature.RET_PARAM),
+                RpcMethodDesc.signal("lschng", RpcMethodAccess.BROWSE),
                 RpcMethodDesc.getter(
                     "info",
                     access=RpcMethodAccess.BROWSE,
@@ -154,6 +148,7 @@ async def test_empty_ls_invalid(client, path):
             [
                 RpcMethodDesc("dir", signature=RpcMethodSignature.RET_PARAM),
                 RpcMethodDesc("ls", signature=RpcMethodSignature.RET_PARAM),
+                RpcMethodDesc.signal("lschng", RpcMethodAccess.BROWSE),
             ],
         ),
         (
@@ -161,6 +156,7 @@ async def test_empty_ls_invalid(client, path):
             [
                 RpcMethodDesc("dir", signature=RpcMethodSignature.RET_PARAM),
                 RpcMethodDesc("ls", signature=RpcMethodSignature.RET_PARAM),
+                RpcMethodDesc.signal("lschng", RpcMethodAccess.BROWSE),
                 RpcMethodDesc(
                     "userName",
                     signature=RpcMethodSignature.RET_VOID,
@@ -212,7 +208,12 @@ async def test_empty_dir(client, path, methods):
         (
             ".app/broker/currentClient",
             "info",
-            {"clientId": 0, "mountPoint": [], "subscriptions": [], "userName": "admin"},
+            {
+                "clientId": 0,
+                "mountPoint": None,
+                "subscriptions": [],
+                "userName": "admin",
+            },
         ),
         (".app/broker/currentClient", "subscriptions", []),
         (".app/broker/client/0/.app", "name", "pyshv"),
@@ -259,16 +260,13 @@ async def test_reject_not_subscribed(client, example_device):
             "rejectNotSubscribed",
             {"path": "no/such/node"},
         )
-        is False
+        == []
     )
-    assert (
-        await client.call(
-            ".app/broker/currentClient",
-            "rejectNotSubscribed",
-            {"path": "test/device/track/1", "method": "chng"},
-        )
-        is True
-    )
+    assert await client.call(
+        ".app/broker/currentClient",
+        "rejectNotSubscribed",
+        {"path": "test/device/track/1", "method": "chng"},
+    ) == [{"path": "test/device/track", "method": "chng"}]
 
 
 async def test_with_example_set(example_device, value_client):

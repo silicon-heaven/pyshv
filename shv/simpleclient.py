@@ -47,11 +47,9 @@ class SimpleClient:
     You should change this value in child class to report a correct number.
     """
 
-    def __init__(self, client: RpcClient, client_id: int | None):
+    def __init__(self, client: RpcClient):
         self.client = client
         """The underlaying RPC client instance."""
-        self.client_id = client_id
-        """Client ID assigned on login by SHV broker."""
         self.task = asyncio.create_task(self._loop())
         """Task running the message handling loop."""
         self._calls_event: dict[int, asyncio.Event] = {}
@@ -69,10 +67,10 @@ class SimpleClient:
         :return: Connected instance.
         """
         client = await connect_rpc_client(url)
-        cid = await cls.urllogin(client, url)
+        await cls.urllogin(client, url)
         if not client.connected():
             return None
-        return cls(client, cid)
+        return cls(client)
 
     async def disconnect(self) -> None:
         """Disconnect an existing connection.
@@ -93,7 +91,7 @@ class SimpleClient:
         password: str | None,
         login_type: RpcLoginType,
         login_options: dict[str, SHVType] | None,
-    ) -> int | None:
+    ) -> None:
         """Perform login to the broker.
 
         The login need to be performed only once right after the connection is
@@ -104,7 +102,6 @@ class SimpleClient:
         :param password: Password used to authenticate the user.
         :param login_type: The password format and login process selection.
         :param login_options: Login options.
-        :return: Client ID assigned by broker or `None` in case none was assigned.
         """
         # Note: The implementation here expects that broker won't sent any other
         # messages until login is actually performed. That is what happens but
@@ -123,7 +120,7 @@ class SimpleClient:
             m.update(nonce.encode("utf-8"))
             m.update((password or "").encode("utf-8"))
             password = m.hexdigest()
-        params: SHVType = {
+        param: SHVType = {
             "login": {"password": password, "type": login_type.value, "user": username},
             "options": {
                 "idleWatchDogTimeOut": int(cls.IDLE_TIMEOUT),
@@ -132,16 +129,12 @@ class SimpleClient:
         }
 
         logger.debug("LOGGING IN")
-        await client.send(RpcMessage.request(None, "login", params))
+        await client.send(RpcMessage.request(None, "login", param))
         resp = await client.receive()
         if resp is None:
             return None
         result = resp.result()
         logger.debug("LOGGED IN")
-        cid = result.get("clientId", None) if isinstance(result, dict) else None
-        if isinstance(cid, int):
-            return cid
-        return 0
 
     @classmethod
     async def urllogin(
@@ -205,7 +198,7 @@ class SimpleClient:
                         msg.shv_path() or "",
                         method,
                         msg.rpc_access_grant() or RpcMethodAccess.BROWSE,
-                        msg.params(),
+                        msg.param(),
                     )
                 )
             except RpcError as exp:
@@ -225,22 +218,22 @@ class SimpleClient:
                 self._calls_event.pop(rid).set()
         elif msg.is_signal():
             if msg.method() == "chng":
-                await self._value_update(msg.shv_path() or "", msg.params())
+                await self._value_update(msg.shv_path() or "", msg.param())
 
-    async def call(self, path: str, method: str, params: SHVType = None) -> SHVType:
-        """Call given method on given path with given parameters.
+    async def call(self, path: str, method: str, param: SHVType = None) -> SHVType:
+        """Call given method on given path with given parameter.
 
         Note that this is coroutine and this it is up to you if you await it or
         use asyncio tasks.
 
         :param path: SHV path method is associated with.
         :param method: SHV method name to be called.
-        :param params: Parameters passed to the called method.
+        :param param: Parameter passed to the called method.
         :return: Return value on successful method call.
         :raise RpcError: The call result in error that is propagated by raising
             `RpcError` or its children based on the failure.
         """
-        msg = RpcMessage.request(path, method, params)
+        msg = RpcMessage.request(path, method, param)
         rid = msg.request_id()
         assert rid is not None
         event = asyncio.Event()
@@ -252,6 +245,21 @@ class SimpleClient:
         if err is not None:
             raise err
         return msg.result()
+
+    async def signal(
+        self, path: str, method: str = "chng", param: SHVType = None
+    ) -> None:
+        """Send signal from given path and method and with given parameter.
+
+        Note that this is coroutine and this it is up to you if you await it or
+        use asyncio tasks.
+
+        :param path: SHV path method is associated with.
+        :param method: SHV method name to be called.
+        :param param: Parameter that is the signaled value.
+        """
+        msg = RpcMessage.signal(path, method, param)
+        await self.client.send(msg)
 
     async def ls(self, path: str) -> list[str]:
         """List child nodes of the node on the specified path.
@@ -307,26 +315,28 @@ class SimpleClient:
             return RpcMethodDesc.frommap(res)
         raise RpcMethodCallExceptionError(f"Invalid result returned: {repr(res)}")
 
-    async def subscribe(self, path: str) -> None:
+    async def subscribe(self, path: str, method: str = "chng") -> None:
         """Perform subscribe for signals on given path.
 
         Subscribe is always performed on the node itself as well as all its
         children.
 
         :param path: SHV path to the node to subscribe.
+        :param method: Signal method name subscribe to.
         """
         await self.call(
             ".app/broker/currentClient"
             if await self._peer_is_shv3()
             else ".broker/app",
             "subscribe",
-            {"method": "chng", "path": path},
+            {"method": method, "path": path},
         )
 
-    async def unsubscribe(self, path: str) -> bool:
+    async def unsubscribe(self, path: str, method: str = "chng") -> bool:
         """Perform unsubscribe for signals on given path.
 
         :param path: SHV path previously passed to :func:`subscribe`.
+        :param method: Signal method name previously passed to :func:`subscribe`.
         :return: ``True`` in case such subscribe was located and ``False`` otherwise.
         """
         resp = await self.call(
@@ -334,13 +344,13 @@ class SimpleClient:
             if await self._peer_is_shv3()
             else ".broker/app",
             "unsubscribe",
-            {"method": "chng", "path": path},
+            {"method": method, "path": path},
         )
         assert is_shvbool(resp)
         return bool(resp)
 
     async def _peer_is_shv3(self) -> bool:
-        """Check if peer supports at least SHV 0.1."""
+        """Check if peer supports at least SHV 3.0."""
         if self.__peer_is_shv3 is None:
             try:
                 major = await self.call(".app", "shvVersionMajor")
@@ -350,7 +360,7 @@ class SimpleClient:
         return self.__peer_is_shv3
 
     async def _method_call(
-        self, path: str, method: str, access: RpcMethodAccess, params: SHVType
+        self, path: str, method: str, access: RpcMethodAccess, param: SHVType
     ) -> SHVType:
         """Handle request in the provided message.
 
@@ -359,14 +369,14 @@ class SimpleClient:
         :param path: SHV path to the node the method is associated with.
         :param method: method requested to be called.
         :param access: access level of the client specified in the request.
-        :param params: Parameters to be passed to the called method.
+        :param param: Parameter to be passed to the called method.
         :return: result of the method call. To report error you should raise
             :exc:`RpcError`.
         """
         if method == "ls":
-            return self._method_call_ls(path, params)
+            return self._method_call_ls(path, param)
         if method == "dir":
-            return self._method_call_dir(path, params)
+            return self._method_call_dir(path, param)
         if path == ".app":
             if method == "shvVersionMajor":
                 return SHV_VERSION_MAJOR
@@ -382,10 +392,10 @@ class SimpleClient:
             f"No such path '{path}' or method '{method}' or access rights."
         )
 
-    def _method_call_ls(self, path: str, params: SHVType) -> SHVType:
+    def _method_call_ls(self, path: str, param: SHVType) -> SHVType:
         """Implementation of ``ls`` method call."""
         # TODO list is backward compatibility
-        if is_shvnull(params) or isinstance(params, list):
+        if is_shvnull(param) or isinstance(param, list):
             res = []
             for v in self._ls(path):
                 if v not in res:
@@ -393,8 +403,8 @@ class SimpleClient:
             if not res and not self._valid_path(path):
                 raise RpcMethodNotFoundError(f"No such node: {path}")
             return res
-        if isinstance(params, str):
-            return any(v == params for v in self._ls(path))
+        if isinstance(param, str):
+            return any(v == param for v in self._ls(path))
         raise RpcInvalidParamsError("Use Null or String with node name")
 
     def _ls(self, path: str) -> typing.Iterator[str]:
@@ -426,15 +436,30 @@ class SimpleClient:
             return any(path[index + 1 :] == v for v in self._ls(path[:index]))
         return any(path == v for v in self._ls(""))
 
-    def _method_call_dir(self, path: str, params: SHVType) -> SHVType:
+    async def _lschng(
+        self, path: str, nodes: collections.abc.Mapping[str, bool]
+    ) -> None:
+        """Report change in the ls method.
+
+        This provides implementation for "lschng" signal that must be used when you are
+        changing the nodes tree to signal clients about that. The argument specifies top
+        level nodes added or removed (based on the mapping value).
+
+        :param path: SHV path to the valid node which children were added or removed.
+        :param nodes: Map where key is node name of the node that is top level node,
+          that was either added (for value ``True``) or removed (for value ``False``).
+        """
+        await self.signal(path, "lschng", nodes)
+
+    def _method_call_dir(self, path: str, param: SHVType) -> SHVType:
         """Implementation of ``dir`` method call."""
         if not self._valid_path(path):
             raise RpcMethodNotFoundError(f"No such node: {path}")
-        if is_shvnull(params) or isinstance(params, list):
+        if is_shvnull(param) or isinstance(param, list):
             return list(d.tomap() for d in self._dir(path))
-        if isinstance(params, str):
+        if isinstance(param, str):
             for d in self._dir(path):
-                if d.name == params:
+                if d.name == param:
                     return d.tomap()
             return None
         raise RpcInvalidParamsError("Use Null or String with node name")
@@ -452,6 +477,7 @@ class SimpleClient:
         """
         yield RpcMethodDesc("dir", RpcMethodSignature.RET_PARAM)
         yield RpcMethodDesc("ls", RpcMethodSignature.RET_PARAM)
+        yield RpcMethodDesc.signal("lschng", RpcMethodAccess.BROWSE)
         if path == ".app":
             yield RpcMethodDesc.getter("shvVersionMajor", RpcMethodAccess.BROWSE)
             yield RpcMethodDesc.getter("shvVersionMinor", RpcMethodAccess.BROWSE)

@@ -17,7 +17,8 @@ SHVType: typing.TypeAlias = typing.Union[
     str,
     datetime.datetime,
     collections.abc.Sequence["SHVType"],
-    collections.abc.Mapping[str | int, "SHVType"],
+    collections.abc.Mapping[str, "SHVType"],
+    collections.abc.Mapping[int, "SHVType"],
     "SHVMeta",
 ]
 SHVMetaType: typing.TypeAlias = dict[int | str, SHVType]

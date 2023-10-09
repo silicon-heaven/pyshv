@@ -27,6 +27,7 @@ async def test_ls(example_device, client, path, result):
             [
                 {"access": "bws", "flags": 0, "signature": 3, "name": "dir"},
                 {"access": "bws", "flags": 0, "signature": 3, "name": "ls"},
+                {"access": "bws", "flags": 1, "signature": 2, "name": "lschng"},
             ],
         ),
         (
@@ -34,6 +35,7 @@ async def test_ls(example_device, client, path, result):
             [
                 {"access": "bws", "flags": 0, "signature": 3, "name": "dir"},
                 {"access": "bws", "flags": 0, "signature": 3, "name": "ls"},
+                {"access": "bws", "flags": 1, "signature": 2, "name": "lschng"},
                 {
                     "access": "bws",
                     "flags": 2,
@@ -61,6 +63,7 @@ async def test_ls(example_device, client, path, result):
             [
                 {"access": "bws", "flags": 0, "signature": 3, "name": "dir"},
                 {"access": "bws", "flags": 0, "signature": 3, "name": "ls"},
+                {"access": "bws", "flags": 1, "signature": 2, "name": "lschng"},
             ],
         ),
         (
@@ -68,6 +71,7 @@ async def test_ls(example_device, client, path, result):
             [
                 {"access": "bws", "flags": 0, "signature": 3, "name": "dir"},
                 {"access": "bws", "flags": 0, "signature": 3, "name": "ls"},
+                {"access": "bws", "flags": 1, "signature": 2, "name": "lschng"},
                 {
                     "access": "rd",
                     "flags": 2,

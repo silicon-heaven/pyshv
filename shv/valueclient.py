@@ -6,7 +6,7 @@ import time
 import typing
 
 from .rpcclient import RpcClient
-from .rpcerrors import RpcMethodNotFoundError
+from .rpcerrors import RpcMethodCallExceptionError, RpcMethodNotFoundError
 from .simpleclient import SimpleClient
 from .value import SHVType, shvmeta, shvmeta_eq
 
@@ -22,9 +22,9 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
     To access subscribed value you can index this object with SHV path to it.
     """
 
-    def __init__(self, client: RpcClient, client_id: int | None):
-        super().__init__(client, client_id)
-        self._subscribes: set[str] = set()
+    def __init__(self, client: RpcClient):
+        super().__init__(client)
+        self._subscribes: set[tuple[str, str]] = set()
         self._cache: dict[str, tuple[float, SHVType]] = {}
         self._handlers: dict[
             str, typing.Callable[[ValueClient, str, SHVType], None]
@@ -199,37 +199,42 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         self._futures[path].append(future)
         return await future
 
-    async def subscribe(self, path: str) -> None:
-        await super().subscribe(path)
-        self._subscribes.add(path)
+    async def subscribe(self, path: str, method: str = "chng") -> None:
+        await super().subscribe(path, method)
+        self._subscribes.add((path, method))
 
-    async def unsubscribe(self, path: str, clean_cache: bool = True) -> bool:
+    async def unsubscribe(
+        self, path: str, method: str = "chng", clean_cache: bool = True
+    ) -> bool:
         """Perform unsubscribe for signals on given path.
 
         :param path: SHV path previously passed to :func:`subscribe`.
+        :param method: Signal method name previously passed to :func:`subscribe`.
         :param wipe_cache: If no longer subscribed paths should be removed from cache or
             not. The default is to remove them but you can also do multiple unsibscribes
             and then call :meth:`clean_cache` for all of the at once.
         :return: ``True`` in case such subscribe was located and ``False`` otherwise.
         """
-        res = await super().unsubscribe(path)
+        res = await super().unsubscribe(path, method)
         if res:
-            self._subscribes.remove(path)
+            self._subscribes.remove((path, method))
             if clean_cache:
                 self.clean_cache()
         return res
 
-    def is_subscribed(self, path: str) -> bool:
+    def is_subscribed(self, path: str, method: str = "chng") -> bool:
         """Check if we are subscribed for given SHV path.
 
-        Subscribed paths are cached and this is also check if this path would be cached.
+        Subscribed paths are cached and thus this also checks if this path would be
+        cached.
 
-        :param path: SHV path to
+        :param path: SHV path
+        :param method: Signal method
         :return: ``True`` if subscribed for that path and ``False`` otherwise.
         """
         pth = path.split("/")
         paths = ("/".join(pth[: i + 1]) for i in range(len(pth)))
-        return any(path in self._subscribes for path in paths)
+        return any((path, method) in self._subscribes for path in paths)
 
     def clean_cache(self) -> None:
         """Remove no longer subscribed paths from cache.
@@ -246,14 +251,14 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
 
         :param path: SHV path.
         """
-        params: SHVType = {
+        param: SHVType = {
             "recordCountLimit": 10000,
             "withPathsDict": True,
             "withSnapshot": True,
             "withTypeInfo": False,
             "since": datetime.datetime.now(),
         }
-        result = await self.call(path, "getLog", params)
+        result = await self.call(path, "getLog", param)
         if result:
             paths_dict = shvmeta(result).get("pathsDict", None)
             if isinstance(paths_dict, collections.abc.Sequence):
@@ -279,13 +284,13 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
             used instead.
         :param update: If already cached values should be updated or just skipped.
         """
-        pths: list[str] = list(paths if paths else self._subscribes)
+        pths: list[str] = list(paths if paths else (sub[0] for sub in self._subscribes))
         # TODO we can skip paths that are outside of our subscriptions
         while pths:
             pth = pths.pop()
             try:
                 pths.extend((f"{pth}/{name}" for name in await self.ls(pth)))
-            except RpcMethodNotFoundError:
+            except (RpcMethodNotFoundError, RpcMethodCallExceptionError):
                 pass  # ls might not be present which is not an issue
             if not self.is_subscribed(pth) or (not update and pth in self._cache):
                 continue

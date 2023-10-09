@@ -31,18 +31,16 @@ class ExampleDevice(SimpleClient):
 
     APP_NAME = "pyshv-example_device"
 
-    def __init__(self, client: RpcClient, client_id: int | None):
-        super().__init__(client, client_id)
+    def __init__(self, client: RpcClient):
+        super().__init__(client)
         self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
 
     def _ls(self, path: str) -> typing.Iterator[str]:
         yield from super()._ls(path)
-        pth = path.split("/") if path else []
-        if len(pth) == 0:
+        if path == "":
             yield "track"
-        elif pth[0] == "track":
-            if len(pth) == 1:
-                yield from self.tracks.keys()
+        elif path == "track":
+            yield from self.tracks.keys()
 
     def _dir(self, path: str) -> typing.Iterator[RpcMethodDesc]:
         yield from super()._dir(path)

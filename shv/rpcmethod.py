@@ -165,7 +165,7 @@ class RpcMethodDesc:
     def signal(
         cls,
         name: str = "chng",
-        access: RpcMethodAccess = RpcMethodAccess.WRITE,
+        access: RpcMethodAccess = RpcMethodAccess.READ,
         description: str = "",
     ) -> "RpcMethodDesc":
         """New signal method description.

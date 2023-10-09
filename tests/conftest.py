@@ -40,6 +40,11 @@ def fixture_url_test(url):
     return dataclasses.replace(url, username="test", password="test")
 
 
+@pytest.fixture(name="url_test_device", scope="module")
+def fixture_url_test_device(url_test):
+    return dataclasses.replace(url_test, device_mount_point="test/device")
+
+
 @pytest.fixture(name="shvbroker", scope="module")
 def fixture_shvbroker(port, sslport):
     """SHV broker usable for all tests."""
@@ -86,9 +91,8 @@ async def fixture_value_client(shvbroker, url_test):
 
 
 @pytest.fixture(name="example_device")
-async def fixture_example_device(event_loop, shvbroker, url):
+async def fixture_example_device(shvbroker, url_test_device):
     """Run example device and provide socket to access it."""
-    nurl = dataclasses.replace(url, device_mount_point="test/device")
-    device = await ExampleDevice.connect(nurl)
+    device = await ExampleDevice.connect(url_test_device)
     yield device
     await device.disconnect()

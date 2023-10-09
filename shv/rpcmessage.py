@@ -61,14 +61,14 @@ class RpcMessage:
         cls,
         path: str | None,
         method: str,
-        params: SHVType = None,
+        param: SHVType = None,
         rid: int | None = None,
     ) -> "RpcMessage":
         """Create request message.
 
         :param path: SHV path for signal.
         :param method: method name for signal.
-        :param params: Parameters passed to the method.
+        :param param: Parameters passed to the method.
         :param rid: Request identifier for this message. It is automatically assigned if
           ``None`` is passed.
         """
@@ -76,11 +76,13 @@ class RpcMessage:
         res.set_request_id(rid or cls.next_request_id())
         res.set_method(method)
         res.set_shv_path(path)
-        res.set_params(params)
+        res.set_param(param)
         return res
 
     @classmethod
-    def signal(cls, path, method, value) -> "RpcMessage":
+    def signal(
+        cls, path: str | None, method: str, value: SHVType = None
+    ) -> "RpcMessage":
         """Create signal message.
 
         :param path: SHV path for signal.
@@ -90,7 +92,7 @@ class RpcMessage:
         res = cls()
         res.set_method(method)
         res.set_shv_path(path)
-        res.set_params(value)
+        res.set_param(value)
         return res
 
     @classmethod
@@ -224,16 +226,16 @@ class RpcMessage:
         else:
             self.value = SHVMeta.new(self.value, {self.Tag.METHOD: method})
 
-    def params(self) -> SHVType:
+    def param(self) -> SHVType:
         """SHV parameters for the method call."""
         return self.value.get(self.Key.PARAMS, None) if is_shvimap(self.value) else None
 
-    def set_params(self, params: SHVType) -> None:
+    def set_param(self, param: SHVType) -> None:
         """Set SHV parameters for this method call."""
-        if params is None:
+        if param is None:
             self.value.pop(self.Key.PARAMS, None)
         else:
-            self.value[self.Key.PARAMS] = params
+            self.value[self.Key.PARAMS] = param
 
     def result(self) -> SHVType:
         """SHV method call result."""
