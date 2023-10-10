@@ -66,20 +66,8 @@ called only if :meth:`shv.SimpleClient._ls` does not report
         yield from super()._dir(path)
         pth = path.split("/") if path else []
         if len(pth) == 2 and pth[0] == "track" and pth[1] in self.tracks:
-            yield RpcMethodDesc(
-                "get",
-                RpcMethodSignature.RET_VOID,
-                RpcMethodFlags.GETTER,
-                RpcMethodAccess.READ,
-                "Get current track",
-            )
-            yield RpcMethodDesc(
-                "set",
-                RpcMethodSignature.VOID_PARAM,
-                RpcMethodFlags.SETTER,
-                RpcMethodAccess.WRITE,
-                "Set track",
-            )
+            yield RpcMethodDesc.getter(result="List[Int]", description="List of tracks")
+            yield RpcMethodDesc.setter(param="List[Int]", description="Set track")
 
 The base implementation should be always called right at the start because it
 provides standard methods such as ``ls`` and ``dir``.

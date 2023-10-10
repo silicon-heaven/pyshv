@@ -7,15 +7,6 @@ import functools
 from .value import SHVType
 
 
-class RpcMethodSignature(enum.IntEnum):
-    """Signature of the SHV RPC method."""
-
-    VOID_VOID = 0
-    VOID_PARAM = 1
-    RET_VOID = 2
-    RET_PARAM = 3
-
-
 class RpcMethodFlags(enum.IntFlag):
     """Flags assigned to the SHV RPC methods."""
 
@@ -82,102 +73,110 @@ class RpcMethodDesc:
     """
 
     name: str
-    signature: RpcMethodSignature = RpcMethodSignature.VOID_VOID
     flags: RpcMethodFlags = RpcMethodFlags(0)
+    param: str = "Null"
+    result: str = "Null"
     access: RpcMethodAccess = RpcMethodAccess.BROWSE
     description: str = ""
 
+    def toimap(self) -> SHVType:
+        """Convert method description to SHV Map."""
+        res: dict[int, str | int] = {1: self.name, 2: self.flags}
+        if self.param != "Null":
+            res[3] = self.param
+        if self.result != "Null":
+            res[4] = self.result
+        res[5] = RpcMethodAccess.tostr(self.access)
+        return res
+
     def tomap(self) -> SHVType:
         """Convert method description to SHV Map."""
-        return {
-            "name": self.name,
-            "signature": self.signature,
-            "flags": self.flags,
-            "access": RpcMethodAccess.tostr(self.access),
-            **({"description": self.description} if self.description else {}),
-        }
+        res: dict[str, str | int] = {"name": self.name, "flags": self.flags}
+        if self.param != "Null":
+            res["param"] = self.param
+        if self.result != "Null":
+            res["result"] = self.result
+        res["access"] = RpcMethodAccess.tostr(self.access)
+        if self.description:
+            res["description"] = self.description
+        return res
 
     @classmethod
-    def frommap(cls, desc: SHVType) -> "RpcMethodDesc":
-        """Convert SHV method description to ."""
+    def fromSHV(cls, desc: SHVType) -> "RpcMethodDesc":
+        """Convert SHV method description to this object representation."""
         if not isinstance(desc, collections.abc.Mapping):
             raise ValueError(f"Not valid method description: {repr(desc)}")
-        name = desc.get("name", None)
-        signature = desc.get("signature", None)
-        flags = desc.get("flags", None)
-        access = desc.get("access", None)
+        rest: dict[str | int, SHVType] = {
+            k: v for k, v in desc.items() if isinstance(k, (int, str))
+        }
+        name = rest.pop(1, rest.pop("name", None))
+        flags = rest.pop(2, rest.pop("flags", 0))
+        param = rest.pop(3, rest.pop("param", "Null"))
+        result = rest.pop(4, rest.pop("result", "Null"))
+        access = rest.pop(5, rest.pop("access", "bws"))
+        description = rest.pop("description", "")
         if not isinstance(name, str):
             raise ValueError(f"Invalid method name format: {repr(name)}")
         return cls(
             name=name,
-            signature=RpcMethodSignature(
-                signature if isinstance(signature, int) else 0
-            ),
-            flags=RpcMethodFlags(flags if isinstance(flags, int) else 0),
-            access=RpcMethodAccess.fromstr(
-                access if isinstance(access, str) else "bws"
-            ),
+            flags=RpcMethodFlags(flags),
+            param=param,
+            result=result,
+            access=RpcMethodAccess.fromstr(access),
+            description=description,
         )
 
     @classmethod
     def getter(
         cls,
         name: str = "get",
+        param: str = "Int",
+        result: str = "Any",
         access: RpcMethodAccess = RpcMethodAccess.READ,
         description: str = "",
     ) -> "RpcMethodDesc":
         """New getter method description.
 
         :param name: Name of the method.
+        :param param: Type of the parameter this getter expects.
+        :param result: Type of the result this getter provides.
         :param access: Minimal granted access level for this getter.
         :param description: Short description of the value.
         """
-        return cls(
-            name,
-            RpcMethodSignature.RET_VOID,
-            RpcMethodFlags.GETTER,
-            access,
-            description,
-        )
+        return cls(name, RpcMethodFlags.GETTER, param, result, access, description)
 
     @classmethod
     def setter(
         cls,
         name: str = "set",
+        param: str = "Any",
+        result: str = "Null",
         access: RpcMethodAccess = RpcMethodAccess.WRITE,
         description: str = "",
     ) -> "RpcMethodDesc":
         """New setter method description.
 
         :param name: Name of the method.
+        :param param: Type of the parameter this setter expects.
+        :param result: Type of the result this setter provides.
         :param access: Minimal granted access level for this setter.
         :param description: Short description of the value.
         """
-        return cls(
-            name,
-            RpcMethodSignature.VOID_PARAM,
-            RpcMethodFlags.SETTER,
-            access,
-            description,
-        )
+        return cls(name, RpcMethodFlags.SETTER, param, result, access, description)
 
     @classmethod
     def signal(
         cls,
         name: str = "chng",
+        param: str = "Any",
         access: RpcMethodAccess = RpcMethodAccess.READ,
         description: str = "",
     ) -> "RpcMethodDesc":
         """New signal method description.
 
         :param name: Name of the method.
+        :param param: Type of the parameter this signal carries.
         :param access: Minimal granted access level for this setter.
         :param description: Short description of the value.
         """
-        return cls(
-            name,
-            RpcMethodSignature.RET_VOID,
-            RpcMethodFlags.SIGNAL,
-            access,
-            description,
-        )
+        return cls(name, RpcMethodFlags.SIGNAL, "Null", param, access, description)

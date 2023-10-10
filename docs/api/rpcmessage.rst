@@ -9,7 +9,6 @@ RPC method description types
 
 These enums are used when listing methods.
 
-.. autoclass:: shv.RpcMethodSignature
 .. autoclass:: shv.RpcMethodFlags
 .. autoclass:: shv.RpcMethodAccess
 

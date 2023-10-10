@@ -22,12 +22,7 @@ from .rpcerrors import (
     RpcParseError,
 )
 from .rpcmessage import RpcMessage
-from .rpcmethod import (
-    RpcMethodAccess,
-    RpcMethodDesc,
-    RpcMethodFlags,
-    RpcMethodSignature,
-)
+from .rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodFlags
 from .rpcserver import RpcServer, RpcServerDatagram, RpcServerStream, create_rpc_server
 from .rpcurl import RpcLoginType, RpcProtocol, RpcUrl
 from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
@@ -85,7 +80,6 @@ __all__ = [
     # rpcmessage
     "RpcMessage",
     # rpcmethod
-    "RpcMethodSignature",
     "RpcMethodFlags",
     "RpcMethodAccess",
     "RpcMethodDesc",

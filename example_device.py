@@ -11,7 +11,6 @@ from shv import (
     RpcMethodAccess,
     RpcMethodDesc,
     RpcMethodFlags,
-    RpcMethodSignature,
     RpcUrl,
     SHVType,
     SimpleClient,
@@ -46,20 +45,8 @@ class ExampleDevice(SimpleClient):
         yield from super()._dir(path)
         pth = path.split("/") if path else []
         if len(pth) == 2 and pth[0] == "track" and pth[1] in self.tracks:
-            yield RpcMethodDesc(
-                "get",
-                RpcMethodSignature.RET_VOID,
-                RpcMethodFlags.GETTER,
-                RpcMethodAccess.READ,
-                "Get current track",
-            )
-            yield RpcMethodDesc(
-                "set",
-                RpcMethodSignature.VOID_PARAM,
-                RpcMethodFlags.SETTER,
-                RpcMethodAccess.WRITE,
-                "Set track",
-            )
+            yield RpcMethodDesc.getter(result="List[Int]", description="List of tracks")
+            yield RpcMethodDesc.setter(param="List[Int]", description="Set track")
 
     async def _method_call(
         self, path: str, method: str, access: RpcMethodAccess, params: SHVType

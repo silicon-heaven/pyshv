@@ -8,10 +8,8 @@ from shv import (
     RpcMethodAccess,
     RpcMethodDesc,
     RpcMethodFlags,
-    RpcMethodSignature,
     SHVUInt,
     SimpleClient,
-    ValueClient,
     shvmeta_eq,
 )
 
@@ -68,46 +66,39 @@ async def test_ls(client, path, result):
         (
             "",
             [
-                RpcMethodDesc("dir", RpcMethodSignature.RET_PARAM),
-                RpcMethodDesc("ls", RpcMethodSignature.RET_PARAM),
+                RpcMethodDesc("dir"),
+                RpcMethodDesc("ls"),
             ],
         ),
         (
             ".broker/app/log",
             [
-                RpcMethodDesc("dir", RpcMethodSignature.RET_PARAM),
-                RpcMethodDesc(
-                    "ls", RpcMethodSignature.RET_PARAM, access=RpcMethodAccess.READ
-                ),
+                RpcMethodDesc("dir"),
+                RpcMethodDesc("ls", access=RpcMethodAccess.READ),
                 RpcMethodDesc(
                     "chng",
-                    RpcMethodSignature.VOID_PARAM,
                     RpcMethodFlags.SIGNAL,
-                    RpcMethodAccess.READ,
+                    access=RpcMethodAccess.READ,
                 ),
                 RpcMethodDesc(
                     "getSendLogAsSignalEnabled",
-                    RpcMethodSignature.RET_VOID,
                     RpcMethodFlags.GETTER,
-                    RpcMethodAccess.READ,
+                    access=RpcMethodAccess.READ,
                 ),
                 RpcMethodDesc(
                     "setSendLogAsSignalEnabled",
-                    RpcMethodSignature.RET_PARAM,
                     RpcMethodFlags.SETTER,
-                    RpcMethodAccess.WRITE,
+                    access=RpcMethodAccess.WRITE,
                 ),
                 RpcMethodDesc(
                     "verbosity",
-                    RpcMethodSignature.RET_VOID,
                     RpcMethodFlags.GETTER,
-                    RpcMethodAccess.READ,
+                    access=RpcMethodAccess.READ,
                 ),
                 RpcMethodDesc(
                     "setVerbosity",
-                    RpcMethodSignature.RET_PARAM,
                     RpcMethodFlags.SETTER,
-                    RpcMethodAccess.COMMAND,
+                    access=RpcMethodAccess.COMMAND,
                 ),
             ],
         ),

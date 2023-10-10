@@ -15,7 +15,7 @@ from .rpcerrors import (
     RpcMethodNotFoundError,
 )
 from .rpcmessage import RpcMessage
-from .rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodSignature
+from .rpcmethod import RpcMethodAccess, RpcMethodDesc
 from .rpcurl import RpcLoginType, RpcUrl
 from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
 from .value import SHVType, is_shvbool, is_shvnull
@@ -286,16 +286,16 @@ class SimpleClient:
             raise RpcMethodCallExceptionError(f"Invalid result returned: {repr(res)}")
         return res
 
-    async def dir(self, path: str) -> list[RpcMethodDesc]:
+    async def dir(self, path: str, details: bool = False) -> list[RpcMethodDesc]:
         """List methods associated with node on the specified path.
 
         :param path: SHV path to the node we want methods to be listed for.
         :return: list of the node's methods.
         :raise RpcMethodNotFoundError: when there is no such path.
         """
-        res = await self.call(path, "dir")
+        res = await self.call(path, "dir", True if details else None)
         if isinstance(res, list):
-            return [RpcMethodDesc.frommap(m) for m in res]
+            return [RpcMethodDesc.fromSHV(m) for m in res]
         raise RpcMethodCallExceptionError(f"Invalid result returned: {repr(res)}")
 
     async def dir_description(self, path: str, name: str) -> RpcMethodDesc | None:
@@ -312,7 +312,7 @@ class SimpleClient:
         if is_shvnull(res):
             return None
         if isinstance(res, dict):
-            return RpcMethodDesc.frommap(res)
+            return RpcMethodDesc.fromSHV(res)
         raise RpcMethodCallExceptionError(f"Invalid result returned: {repr(res)}")
 
     async def subscribe(self, path: str, method: str = "chng") -> None:
@@ -393,7 +393,7 @@ class SimpleClient:
         )
 
     def _method_call_ls(self, path: str, param: SHVType) -> SHVType:
-        """Implementation of ``ls`` method call."""
+        """Implement ``ls`` method call functionality."""
         # TODO list is backward compatibility
         if is_shvnull(param) or isinstance(param, list):
             res = []
@@ -452,17 +452,18 @@ class SimpleClient:
         await self.signal(path, "lschng", nodes)
 
     def _method_call_dir(self, path: str, param: SHVType) -> SHVType:
-        """Implementation of ``dir`` method call."""
+        """Implement ``dir`` method call functionality."""
         if not self._valid_path(path):
             raise RpcMethodNotFoundError(f"No such node: {path}")
-        if is_shvnull(param) or isinstance(param, list):
-            return list(d.tomap() for d in self._dir(path))
+        # TODO the list here is backward compatibility
+        if is_shvnull(param) or is_shvbool(param) or isinstance(param, list):
+            return list(d.tomap() if param else d.toimap() for d in self._dir(path))
         if isinstance(param, str):
             for d in self._dir(path):
                 if d.name == param:
                     return d.tomap()
             return None
-        raise RpcInvalidParamsError("Use Null or String with node name")
+        raise RpcInvalidParamsError("Use Null or Bool or String with node name")
 
     def _dir(self, path: str) -> typing.Iterator[RpcMethodDesc]:
         """Implement ``dir`` method for all nodes.
@@ -475,15 +476,15 @@ class SimpleClient:
         :param path: SHV path method should be listed for.
         :return: List of methods associated with given node.
         """
-        yield RpcMethodDesc("dir", RpcMethodSignature.RET_PARAM)
-        yield RpcMethodDesc("ls", RpcMethodSignature.RET_PARAM)
-        yield RpcMethodDesc.signal("lschng", RpcMethodAccess.BROWSE)
+        yield RpcMethodDesc("dir", param="idir", result="odir")
+        yield RpcMethodDesc("ls", param="ils", result="ols")
+        yield RpcMethodDesc.signal("lschng", "olschng", RpcMethodAccess.BROWSE)
         if path == ".app":
-            yield RpcMethodDesc.getter("shvVersionMajor", RpcMethodAccess.BROWSE)
-            yield RpcMethodDesc.getter("shvVersionMinor", RpcMethodAccess.BROWSE)
-            yield RpcMethodDesc.getter("name", RpcMethodAccess.BROWSE)
-            yield RpcMethodDesc.getter("version", RpcMethodAccess.BROWSE)
-            yield RpcMethodDesc("ping", RpcMethodSignature.VOID_VOID)
+            yield RpcMethodDesc.getter("shvVersionMajor", "Null", "Int")
+            yield RpcMethodDesc.getter("shvVersionMinor", "Null", "Int")
+            yield RpcMethodDesc.getter("name", "Null", "String")
+            yield RpcMethodDesc.getter("version", "Null", "String")
+            yield RpcMethodDesc("ping")
 
     async def _value_update(self, path: str, value: SHVType) -> None:
         """Handle value change (`chng` method)."""

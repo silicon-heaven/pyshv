@@ -13,7 +13,7 @@ import typing
 from ..rpcclient import RpcClient
 from ..rpcerrors import RpcErrorCode, RpcInvalidParamsError, RpcMethodCallExceptionError
 from ..rpcmessage import RpcMessage
-from ..rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodSignature
+from ..rpcmethod import RpcMethodAccess, RpcMethodDesc
 from ..rpcserver import RpcServer, create_rpc_server
 from ..rpcurl import RpcLoginType
 from ..simpleclient import SimpleClient
@@ -417,54 +417,26 @@ class RpcBroker:
         def _dir(self, path: str) -> typing.Iterator[RpcMethodDesc]:
             yield from super()._dir(path)
             if path == ".app/broker":
-                yield RpcMethodDesc(
-                    "clientInfo",
-                    RpcMethodSignature.RET_PARAM,
-                    access=RpcMethodAccess.SERVICE,
-                )
+                yield RpcMethodDesc("clientInfo", access=RpcMethodAccess.SERVICE)
                 yield RpcMethodDesc.getter("clients", access=RpcMethodAccess.SERVICE)
-                yield RpcMethodDesc(
-                    "disconnectClient",
-                    RpcMethodSignature.VOID_PARAM,
-                    access=RpcMethodAccess.SERVICE,
-                )
-                yield RpcMethodDesc.getter("mountPoints", access=RpcMethodAccess.READ)
+                yield RpcMethodDesc("disconnectClient", access=RpcMethodAccess.SERVICE)
+                yield RpcMethodDesc.getter("mountPoints")
             elif path == ".app/broker/currentClient":
                 yield RpcMethodDesc.getter("info", access=RpcMethodAccess.BROWSE)
-                yield RpcMethodDesc(
-                    "subscribe",
-                    RpcMethodSignature.VOID_PARAM,
-                    access=RpcMethodAccess.READ,
-                )
-                yield RpcMethodDesc(
-                    "unsubscribe",
-                    RpcMethodSignature.RET_PARAM,
-                    access=RpcMethodAccess.READ,
-                )
-                yield RpcMethodDesc(
-                    "rejectNotSubscribed",
-                    RpcMethodSignature.RET_PARAM,
-                    access=RpcMethodAccess.READ,
-                )
-                yield RpcMethodDesc.getter("subscriptions", access=RpcMethodAccess.READ)
+                yield RpcMethodDesc("subscribe", access=RpcMethodAccess.READ)
+                yield RpcMethodDesc("unsubscribe", access=RpcMethodAccess.READ)
+                yield RpcMethodDesc("rejectNotSubscribed", access=RpcMethodAccess.READ)
+                yield RpcMethodDesc.getter("subscriptions")
             elif (
                 path.startswith(".app/broker/clientInfo/")
                 and (client := self.broker.get_client(path[23:])) is not None
             ):
-                yield RpcMethodDesc.getter("userName", access=RpcMethodAccess.SERVICE)
-                yield RpcMethodDesc.getter("mountPoint", access=RpcMethodAccess.SERVICE)
-                yield RpcMethodDesc.getter(
-                    "subscriptions", access=RpcMethodAccess.SERVICE
-                )
-                yield RpcMethodDesc(
-                    "dropClient",
-                    RpcMethodSignature.VOID_VOID,
-                    access=RpcMethodAccess.SERVICE,
-                )
-                yield RpcMethodDesc.getter("idleTime", access=RpcMethodAccess.SERVICE)
-                yield RpcMethodDesc.getter(
-                    "idleTimeMax", access=RpcMethodAccess.SERVICE
-                )
+                yield RpcMethodDesc.getter("userName", "String")
+                yield RpcMethodDesc.getter("mountPoint", "String")
+                yield RpcMethodDesc.getter("subscriptions")
+                yield RpcMethodDesc("dropClient", access=RpcMethodAccess.SERVICE)
+                yield RpcMethodDesc.getter("idleTime")
+                yield RpcMethodDesc.getter("idleTimeMax")
 
         async def _method_call(
             self, path: str, method: str, access: RpcMethodAccess, param: SHVType
@@ -522,6 +494,9 @@ class RpcBroker:
                             self.subscriptions.remove(self.Subscription(path, method))
                         except KeyError:
                             return False
+                        # TODO we should also scan subbrokers and drop any subscribe
+                        # that no longer matches some of ours because
+                        # rejectNotSubscribed doesn't work for invalid paths.
                         return True
                     if method == "rejectNotSubscribed":
                         method = shvget(param, "method", "chng", str)

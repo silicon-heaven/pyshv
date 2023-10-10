@@ -9,7 +9,9 @@ import typing
 
 SHVType: typing.TypeAlias = typing.Union[
     None,
+    "SHVNull",
     bool,
+    "SHVBool",
     int,
     float,
     decimal.Decimal,
@@ -19,7 +21,6 @@ SHVType: typing.TypeAlias = typing.Union[
     collections.abc.Sequence["SHVType"],
     collections.abc.Mapping[str, "SHVType"],
     collections.abc.Mapping[int, "SHVType"],
-    "SHVMeta",
 ]
 SHVMetaType: typing.TypeAlias = dict[int | str, SHVType]
 
