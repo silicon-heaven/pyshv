@@ -24,21 +24,27 @@ from .rpcerrors import (
 from .rpcmessage import RpcMessage
 from .rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodFlags
 from .rpcserver import RpcServer, RpcServerDatagram, RpcServerStream, create_rpc_server
+from .rpcsubscription import RpcSubscription
 from .rpcurl import RpcLoginType, RpcProtocol, RpcUrl
 from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
 from .simpleclient import SimpleClient
 from .value import (
     SHVBool,
+    SHVBoolType,
     SHVBytes,
     SHVDatetime,
     SHVDecimal,
     SHVDict,
     SHVFloat,
+    SHVIMapType,
     SHVInt,
     SHVList,
+    SHVListType,
+    SHVMapType,
     SHVMeta,
     SHVMetaType,
     SHVNull,
+    SHVNullType,
     SHVStr,
     SHVType,
     SHVUInt,
@@ -94,6 +100,8 @@ __all__ = [
     "RpcMethodCallTimeoutError",
     "RpcMethodNotFoundError",
     "RpcParseError",
+    # rpcsubscription
+    "RpcSubscription",
     # simpleclient
     "SimpleClient",
     # valueclient
@@ -120,6 +128,11 @@ __all__ = [
     "is_shvimap",
     "shvget",
     "SHVType",
+    "SHVNullType",
+    "SHVBoolType",
+    "SHVListType",
+    "SHVMapType",
+    "SHVIMapType",
     "SHVMetaType",
     # shvversion
     "SHV_VERSION_MAJOR",

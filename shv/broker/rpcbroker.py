@@ -15,6 +15,7 @@ from ..rpcerrors import RpcErrorCode, RpcInvalidParamsError, RpcMethodCallExcept
 from ..rpcmessage import RpcMessage
 from ..rpcmethod import RpcMethodAccess, RpcMethodDesc
 from ..rpcserver import RpcServer, create_rpc_server
+from ..rpcsubscription import RpcSubscription
 from ..rpcurl import RpcLoginType
 from ..simpleclient import SimpleClient
 from ..value import SHVType, shvget
@@ -110,10 +111,18 @@ class RpcBroker:
         """
         path = msg.shv_path() or ""
         method = msg.method()
+        msgaccess = msg.rpc_access_grant() or RpcMethodAccess.READ
         assert method is not None
         for client in self.clients.values():
             assert msg.method() is not None
-            if any(s.applies(path, method) for s in client.subscriptions):
+            if client.user is None:
+                continue
+            access = client.user.access_level(path, method)
+            if (
+                access is not None
+                and access >= msgaccess
+                and any(s.applies(path, method) for s in client.subscriptions)
+            ):
                 await client.client.send(msg)
 
     async def serve_forever(self) -> None:
@@ -172,29 +181,6 @@ class RpcBroker:
             HELLO = enum.auto()
             LOGIN = enum.auto()
 
-        @dataclasses.dataclass(frozen=True)
-        class Subscription:
-            """Single subscription."""
-
-            path: str
-            """SHV Path the subscription is applied on."""
-            method: str
-            """Method name subscription is applied on."""
-
-            def applies(self, path: str, method: str) -> bool:
-                """Check if given subscription applies to this combination.
-
-                :param path: SHV Path. ``None`` is the same as ``""``.
-                :param method: Method name or empty for all method names.
-                """
-                return (
-                    not self.path
-                    or (
-                        path.startswith(self.path)
-                        and (len(path) == len(self.path) or path[len(self.path)] == "/")
-                    )
-                ) and (not self.method or method == self.method)
-
         def __init__(
             self,
             client: RpcClient,
@@ -202,7 +188,7 @@ class RpcBroker:
             broker_client_id: int,
         ):
             super().__init__(client)
-            self.subscriptions: set[RpcBroker.Client.Subscription] = set()
+            self.subscriptions: set[RpcSubscription] = set()
             """Set of all subscriptions."""
             self.state = self.State.CONNECTED
             """Specifies state of the client login process."""
@@ -255,7 +241,9 @@ class RpcBroker:
             lschng: RpcMessage | None = None
             if self.__mount_point is not None:
                 path, node = self._lschng_path(self.__mount_point)
-                lschng = RpcMessage.signal(path, "lschng", {node: False})
+                lschng = RpcMessage.signal(
+                    path, "lschng", {node: False}, RpcMethodAccess.BROWSE
+                )
             self.__mount_point = value
             if value is not None:
                 path, node = self._lschng_path(value)
@@ -264,7 +252,9 @@ class RpcBroker:
                 else:
                     if lschng is not None:
                         await self.__broker.signal(lschng)
-                    lschng = RpcMessage.signal(path, "lschng", {node: True})
+                    lschng = RpcMessage.signal(
+                        path, "lschng", {node: True}, RpcMethodAccess.BROWSE
+                    )
             if lschng is not None:
                 await self.__broker.signal(lschng)
 
@@ -275,7 +265,9 @@ class RpcBroker:
             if self.__mount_point is not None:
                 path, node = self._lschng_path(self.__mount_point)
                 await self.__broker.signal(
-                    RpcMessage.signal(path, "lschng", {node: False})
+                    RpcMessage.signal(
+                        path, "lschng", {node: False}, RpcMethodAccess.BROWSE
+                    )
                 )
 
         async def _activity_loop(self) -> None:
@@ -429,7 +421,7 @@ class RpcBroker:
                 yield RpcMethodDesc.getter("subscriptions")
             elif (
                 path.startswith(".app/broker/clientInfo/")
-                and (client := self.broker.get_client(path[23:])) is not None
+                and self.broker.get_client(path[23:]) is not None
             ):
                 yield RpcMethodDesc.getter("userName", "String")
                 yield RpcMethodDesc.getter("mountPoint", "String")
@@ -452,8 +444,8 @@ class RpcBroker:
                         raise RpcInvalidParamsError("Use String with SHV path")
                     client_pth = self.broker.client_on_path(param)
                     if client_pth is not None:
-                        client = client_pth[0]
-                    return client.infomap() if client is not None else None
+                        return client_pth[0].infomap()
+                    return None
                 if method == "clients" and access >= RpcMethodAccess.SERVICE:
                     return list(self.broker.clients.keys())
                 if method == "disconnectClient" and access >= RpcMethodAccess.SERVICE:
@@ -479,19 +471,15 @@ class RpcBroker:
                     if method == "subscriptions":
                         return self.subslist()
                     if method == "subscribe":
-                        method = shvget(param, "method", "chng", str)
-                        path = shvget(param, "path", "", str)
                         assert self.user is not None
-                        if not self.user.access_level(path, method):
-                            raise RpcMethodCallExceptionError("Access denied")
+                        sub = RpcSubscription.fromSHV(param)
+                        self.subscriptions.add(sub)
                         # TODO support subscription to the subbroker
-                        self.subscriptions.add(self.Subscription(path, method))
                         return None
                     if method == "unsubscribe":
-                        method = shvget(param, "method", "chng", str)
-                        path = shvget(param, "path", "", str)
+                        sub = RpcSubscription.fromSHV(param)
                         try:
-                            self.subscriptions.remove(self.Subscription(path, method))
+                            self.subscriptions.remove(sub)
                         except KeyError:
                             return False
                         # TODO we should also scan subbrokers and drop any subscribe

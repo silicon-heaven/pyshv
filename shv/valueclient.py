@@ -7,6 +7,7 @@ import typing
 
 from .rpcclient import RpcClient
 from .rpcerrors import RpcMethodCallExceptionError, RpcMethodNotFoundError
+from .rpcsubscription import RpcSubscription
 from .simpleclient import SimpleClient
 from .value import SHVType, shvmeta, shvmeta_eq
 
@@ -24,7 +25,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
 
     def __init__(self, client: RpcClient):
         super().__init__(client)
-        self._subscribes: set[tuple[str, str]] = set()
+        self._subscribes: set[RpcSubscription] = set()
         self._cache: dict[str, tuple[float, SHVType]] = {}
         self._handlers: dict[
             str, typing.Callable[[ValueClient, str, SHVType], None]
@@ -73,8 +74,8 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
 
         :param path: SHV path to the property node.
         :param max_age: is maximum age in seconds to be specified for the get. Nonzero
-        value results in value to be served from cache anywhere along the way (thus not
-        just local cache).
+          value results in value to be served from cache anywhere along the way (thus not
+          just local cache).
         :return: Value of the property node.
         """
         # Serve from cache if cache was updated not before max_age
@@ -199,25 +200,22 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         self._futures[path].append(future)
         return await future
 
-    async def subscribe(self, path: str, method: str = "chng") -> None:
-        await super().subscribe(path, method)
-        self._subscribes.add((path, method))
+    async def subscribe(self, sub: RpcSubscription) -> None:
+        await super().subscribe(sub)
+        self._subscribes.add(sub)
 
-    async def unsubscribe(
-        self, path: str, method: str = "chng", clean_cache: bool = True
-    ) -> bool:
+    async def unsubscribe(self, sub: RpcSubscription, clean_cache: bool = True) -> bool:
         """Perform unsubscribe for signals on given path.
 
-        :param path: SHV path previously passed to :func:`subscribe`.
-        :param method: Signal method name previously passed to :func:`subscribe`.
+        :param sub: SHV RPC subscription to be removed.
         :param wipe_cache: If no longer subscribed paths should be removed from cache or
             not. The default is to remove them but you can also do multiple unsibscribes
             and then call :meth:`clean_cache` for all of the at once.
         :return: ``True`` in case such subscribe was located and ``False`` otherwise.
         """
-        res = await super().unsubscribe(path, method)
+        res = await super().unsubscribe(sub)
         if res:
-            self._subscribes.remove((path, method))
+            self._subscribes.remove(sub)
             if clean_cache:
                 self.clean_cache()
         return res
@@ -228,13 +226,14 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         Subscribed paths are cached and thus this also checks if this path would be
         cached.
 
+        This is only local check. This won't reach the server to verify that all
+        subscriptions are still valid (not removed on the server).
+
         :param path: SHV path
         :param method: Signal method
         :return: ``True`` if subscribed for that path and ``False`` otherwise.
         """
-        pth = path.split("/")
-        paths = ("/".join(pth[: i + 1]) for i in range(len(pth)))
-        return any((path, method) in self._subscribes for path in paths)
+        return any(sub.applies(path, method) for sub in self._subscribes)
 
     def clean_cache(self) -> None:
         """Remove no longer subscribed paths from cache.
@@ -284,15 +283,19 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
             used instead.
         :param update: If already cached values should be updated or just skipped.
         """
-        pths: list[str] = list(paths if paths else (sub[0] for sub in self._subscribes))
+        pths: list[str] = list(paths) if paths else [""]
         # TODO we can skip paths that are outside of our subscriptions
         while pths:
             pth = pths.pop()
             try:
-                pths.extend((f"{pth}/{name}" for name in await self.ls(pth)))
+                pths.extend(
+                    (f"{pth}{'/' if pth else ''}{name}" for name in await self.ls(pth))
+                )
             except (RpcMethodNotFoundError, RpcMethodCallExceptionError):
                 pass  # ls might not be present which is not an issue
             if not self.is_subscribed(pth) or (not update and pth in self._cache):
+                print(f"Ignoring {pth}")
                 continue
-            if await self.dir_description(pth, "get"):
+            print(f"Getting {pth}")
+            if await self.dir_description(pth, "get") is not None:
                 self._cache[pth] = (time.time(), await self.prop_get(pth))

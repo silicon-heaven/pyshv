@@ -16,6 +16,7 @@ from .rpcerrors import (
 )
 from .rpcmessage import RpcMessage
 from .rpcmethod import RpcMethodAccess, RpcMethodDesc
+from .rpcsubscription import RpcSubscription
 from .rpcurl import RpcLoginType, RpcUrl
 from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
 from .value import SHVType, is_shvbool, is_shvnull
@@ -247,7 +248,11 @@ class SimpleClient:
         return msg.result()
 
     async def signal(
-        self, path: str, method: str = "chng", param: SHVType = None
+        self,
+        path: str,
+        method: str = "chng",
+        param: SHVType = None,
+        access: RpcMethodAccess = RpcMethodAccess.READ,
     ) -> None:
         """Send signal from given path and method and with given parameter.
 
@@ -257,8 +262,9 @@ class SimpleClient:
         :param path: SHV path method is associated with.
         :param method: SHV method name to be called.
         :param param: Parameter that is the signaled value.
+        :param access: Minimal access level needed to get the signal.
         """
-        msg = RpcMessage.signal(path, method, param)
+        msg = RpcMessage.signal(path, method, param, access)
         await self.client.send(msg)
 
     async def ls(self, path: str) -> list[str]:
@@ -315,28 +321,26 @@ class SimpleClient:
             return RpcMethodDesc.fromSHV(res)
         raise RpcMethodCallExceptionError(f"Invalid result returned: {repr(res)}")
 
-    async def subscribe(self, path: str, method: str = "chng") -> None:
+    async def subscribe(self, sub: RpcSubscription) -> None:
         """Perform subscribe for signals on given path.
 
         Subscribe is always performed on the node itself as well as all its
         children.
 
-        :param path: SHV path to the node to subscribe.
-        :param method: Signal method name subscribe to.
+        :param sub: SHV RPC subscription to be added.
         """
         await self.call(
             ".app/broker/currentClient"
             if await self._peer_is_shv3()
             else ".broker/app",
             "subscribe",
-            {"method": method, "path": path},
+            sub.toSHV(),
         )
 
-    async def unsubscribe(self, path: str, method: str = "chng") -> bool:
+    async def unsubscribe(self, sub: RpcSubscription) -> bool:
         """Perform unsubscribe for signals on given path.
 
-        :param path: SHV path previously passed to :func:`subscribe`.
-        :param method: Signal method name previously passed to :func:`subscribe`.
+        :param sub: SHV RPC subscription to be removed.
         :return: ``True`` in case such subscribe was located and ``False`` otherwise.
         """
         resp = await self.call(
@@ -344,7 +348,7 @@ class SimpleClient:
             if await self._peer_is_shv3()
             else ".broker/app",
             "unsubscribe",
-            {"method": method, "path": path},
+            sub.toSHV(),
         )
         assert is_shvbool(resp)
         return bool(resp)
@@ -449,7 +453,7 @@ class SimpleClient:
         :param nodes: Map where key is node name of the node that is top level node,
           that was either added (for value ``True``) or removed (for value ``False``).
         """
-        await self.signal(path, "lschng", nodes)
+        await self.signal(path, "lschng", nodes, RpcMethodAccess.BROWSE)
 
     def _method_call_dir(self, path: str, param: SHVType) -> SHVType:
         """Implement ``dir`` method call functionality."""

@@ -5,7 +5,7 @@ import dataclasses
 import pytest
 
 from example_device import ExampleDevice
-from shv import RpcMessage, SimpleClient
+from shv import RpcMessage, RpcSubscription, SimpleClient
 
 
 class LSClient(SimpleClient):
@@ -32,7 +32,7 @@ async def fixture_lsclient(shvbroker, url):
 
 
 async def test_lschng(lsclient, url_test_device):
-    await lsclient.subscribe("", "lschng")
+    await lsclient.subscribe(RpcSubscription("", "lschng"))
 
     device = await ExampleDevice.connect(url_test_device)
     await asyncio.sleep(0)  # Await for receive
@@ -45,7 +45,7 @@ async def test_lschng(lsclient, url_test_device):
 
 async def test_lschng_with_device(shvbroker, lsclient, example_device, url_test_device):
     """Device keeps test path valid and thus we must report it relative to it."""
-    await lsclient.subscribe("", "lschng")
+    await lsclient.subscribe(RpcSubscription("", "lschng"))
 
     nurl = dataclasses.replace(url_test_device, device_mount_point="test/foo/device")
     device = await ExampleDevice.connect(nurl)

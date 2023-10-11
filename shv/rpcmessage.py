@@ -81,18 +81,24 @@ class RpcMessage:
 
     @classmethod
     def signal(
-        cls, path: str | None, method: str, value: SHVType = None
+        cls,
+        path: str | None,
+        method: str,
+        value: SHVType = None,
+        access: RpcMethodAccess = RpcMethodAccess.READ,
     ) -> "RpcMessage":
         """Create signal message.
 
         :param path: SHV path for signal.
         :param method: method name for signal.
         :param value: Value to be sent in the message.
+        :param access: Minimal access level needed to get this signal.
         """
         res = cls()
         res.set_method(method)
         res.set_shv_path(path)
         res.set_param(value)
+        res.set_rpc_access_grant(access)
         return res
 
     @classmethod

@@ -7,22 +7,25 @@ import functools
 import itertools
 import typing
 
+SHVNullType: typing.TypeAlias = typing.Union[None, "SHVNull"]
+SHVBoolType: typing.TypeAlias = typing.Union[bool, "SHVBool"]
+SHVListType: typing.TypeAlias = collections.abc.Sequence["SHVType"]
+SHVMapType: typing.TypeAlias = collections.abc.Mapping[str, "SHVType"]
+SHVIMapType: typing.TypeAlias = collections.abc.Mapping[int, "SHVType"]
 SHVType: typing.TypeAlias = typing.Union[
-    None,
-    "SHVNull",
-    bool,
-    "SHVBool",
+    SHVNullType,
+    SHVBoolType,
     int,
     float,
     decimal.Decimal,
     bytes,
     str,
     datetime.datetime,
-    collections.abc.Sequence["SHVType"],
-    collections.abc.Mapping[str, "SHVType"],
-    collections.abc.Mapping[int, "SHVType"],
+    SHVListType,
+    SHVMapType,
+    SHVIMapType,
 ]
-SHVMetaType: typing.TypeAlias = dict[int | str, SHVType]
+SHVMetaType: typing.TypeAlias = collections.abc.MutableMapping[int | str, SHVType]
 
 
 class SHVMeta(abc.ABC):

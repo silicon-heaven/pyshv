@@ -12,6 +12,7 @@ from shv import (
     RpcMethodCallExceptionError,
     RpcMethodDesc,
     RpcMethodNotFoundError,
+    RpcSubscription,
     SimpleClient,
     shvmeta_eq,
 )
@@ -129,12 +130,14 @@ async def test_empty_dir(client, path, methods):
 
 
 @pytest.mark.parametrize(
-    "path,method,result",
+    "path,method,param,result",
     (
-        (".app/broker", "mountPoints", []),
+        (".app/broker", "mountPoints", None, []),
+        (".app/broker", "clients", None, [0]),
         (
-            ".app/broker/currentClient",
-            "info",
+            ".app/broker",
+            "clientInfo",
+            0,
             {
                 "clientId": 0,
                 "mountPoint": None,
@@ -142,18 +145,30 @@ async def test_empty_dir(client, path, methods):
                 "userName": "admin",
             },
         ),
-        (".app/broker/currentClient", "subscriptions", []),
-        (".app/broker/client/0/.app", "name", "pyshv"),
-        (".app/broker/clientInfo/0", "userName", "admin"),
-        (".app/broker/clientInfo/0", "mountPoint", None),
-        (".app/broker/clientInfo/0", "subscriptions", []),
-        (".app/broker/clientInfo/0", "idleTime", 0),  # we are the one asking
-        (".app/broker/clientInfo/0", "idleTimeMax", 180000),
+        (".app/broker", "mountedClientInfo", "test", None),
+        (
+            ".app/broker/currentClient",
+            "info",
+            None,
+            {
+                "clientId": 0,
+                "mountPoint": None,
+                "subscriptions": [],
+                "userName": "admin",
+            },
+        ),
+        (".app/broker/currentClient", "subscriptions", None, []),
+        (".app/broker/client/0/.app", "name", None, "pyshv"),
+        (".app/broker/clientInfo/0", "userName", None, "admin"),
+        (".app/broker/clientInfo/0", "mountPoint", None, None),
+        (".app/broker/clientInfo/0", "subscriptions", None, []),
+        (".app/broker/clientInfo/0", "idleTime", None, 0),  # we are the one asking
+        (".app/broker/clientInfo/0", "idleTimeMax", None, 180000),
     ),
 )
-async def test_empty_call(client, path, method, result):
+async def test_empty_call(client, path, method, param, result):
     """Call various broker methods."""
-    assert shvmeta_eq(await client.call(path, method), result)
+    assert shvmeta_eq(await client.call(path, method, param), result)
 
 
 @pytest.mark.parametrize(
@@ -170,17 +185,17 @@ async def test_with_example_ls(client, example_device, path, nodes):
 
 
 async def test_subscribe(client, example_device):
-    await client.subscribe("test/device/track")
+    await client.subscribe(RpcSubscription("test/device/track"))
     assert await client.call(".app/broker/currentClient", "subscriptions") == [
         {"method": "chng", "path": "test/device/track"}
     ]
-    assert await client.unsubscribe("test/device/track") is True
+    assert await client.unsubscribe(RpcSubscription("test/device/track")) is True
     assert await client.call(".app/broker/currentClient", "subscriptions") == []
-    assert await client.unsubscribe("test/device/track") is False
+    assert await client.unsubscribe(RpcSubscription("test/device/track")) is False
 
 
 async def test_reject_not_subscribed(client, example_device):
-    await client.subscribe("test/device/track")
+    await client.subscribe(RpcSubscription("test/device/track"))
     assert (
         await client.call(
             ".app/broker/currentClient",
@@ -198,7 +213,7 @@ async def test_reject_not_subscribed(client, example_device):
 
 async def test_with_example_set(example_device, value_client):
     """Perform set to trigger also notifications."""
-    await value_client.subscribe("test/device/track")
+    await value_client.subscribe(RpcSubscription("test/device/track"))
     await value_client.prop_set("test/device/track/1", [1, 2])
     assert await value_client.prop_get("test/device/track/1") == [1, 2]
     assert value_client["test/device/track/1"] == [1, 2]

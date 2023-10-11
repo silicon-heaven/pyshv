@@ -6,7 +6,7 @@
 	"bws":{"weight":0},
 	"cfg":{"weight":40},
 	"client":{
-		"roles":["ping", "subscribe"],
+		"roles":["ping", "echo", "subscribe"],
 		"weight":0
 	},
 	"cmd":{"weight":30},
