@@ -180,3 +180,21 @@ class RpcMethodDesc:
         :param description: Short description of the value.
         """
         return cls(name, RpcMethodFlags.SIGNAL, "Null", param, access, description)
+
+    @classmethod
+    @functools.lru_cache(maxsize=1)
+    def stddir(cls) -> "RpcMethodDesc":
+        """Get description of standard 'dir' method."""
+        return cls("dir", param="idir", result="odir")
+
+    @classmethod
+    @functools.lru_cache(maxsize=1)
+    def stdls(cls) -> "RpcMethodDesc":
+        """Get description of standard 'ls' method."""
+        return cls("ls", param="ils", result="ols")
+
+    @classmethod
+    @functools.lru_cache(maxsize=1)
+    def stdlschng(cls) -> "RpcMethodDesc":
+        """Get description of standard 'lschng' signal method."""
+        return cls.signal("lschng", "olschng", RpcMethodAccess.BROWSE)

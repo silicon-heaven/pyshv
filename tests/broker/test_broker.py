@@ -56,18 +56,14 @@ async def test_empty_ls_invalid(client, path):
     (
         (
             "",
-            [
-                RpcMethodDesc("dir", param="idir", result="odir"),
-                RpcMethodDesc("ls", param="ils", result="ols"),
-                RpcMethodDesc.signal("lschng", "olschng", RpcMethodAccess.BROWSE),
-            ],
+            [RpcMethodDesc.stddir(), RpcMethodDesc.stdls(), RpcMethodDesc.stdlschng()],
         ),
         (
             ".app",
             [
-                RpcMethodDesc("dir", param="idir", result="odir"),
-                RpcMethodDesc("ls", param="ils", result="ols"),
-                RpcMethodDesc.signal("lschng", "olschng", RpcMethodAccess.BROWSE),
+                RpcMethodDesc.stddir(),
+                RpcMethodDesc.stdls(),
+                RpcMethodDesc.stdlschng(),
                 RpcMethodDesc.getter("shvVersionMajor", "Null", "Int"),
                 RpcMethodDesc.getter("shvVersionMinor", "Null", "Int"),
                 RpcMethodDesc.getter("name", "Null", "String"),
@@ -78,9 +74,9 @@ async def test_empty_ls_invalid(client, path):
         (
             ".app/broker",
             [
-                RpcMethodDesc("dir", param="idir", result="odir"),
-                RpcMethodDesc("ls", param="ils", result="ols"),
-                RpcMethodDesc.signal("lschng", "olschng", RpcMethodAccess.BROWSE),
+                RpcMethodDesc.stddir(),
+                RpcMethodDesc.stdls(),
+                RpcMethodDesc.stdlschng(),
                 RpcMethodDesc("clientInfo", access=RpcMethodAccess.SERVICE),
                 RpcMethodDesc.getter("clients", access=RpcMethodAccess.SERVICE),
                 RpcMethodDesc("disconnectClient", access=RpcMethodAccess.SERVICE),
@@ -90,9 +86,9 @@ async def test_empty_ls_invalid(client, path):
         (
             ".app/broker/currentClient",
             [
-                RpcMethodDesc("dir", param="idir", result="odir"),
-                RpcMethodDesc("ls", param="ils", result="ols"),
-                RpcMethodDesc.signal("lschng", "olschng", RpcMethodAccess.BROWSE),
+                RpcMethodDesc.stddir(),
+                RpcMethodDesc.stdls(),
+                RpcMethodDesc.stdlschng(),
                 RpcMethodDesc.getter("info", access=RpcMethodAccess.BROWSE),
                 RpcMethodDesc("subscribe", access=RpcMethodAccess.READ),
                 RpcMethodDesc("unsubscribe", access=RpcMethodAccess.READ),
@@ -102,18 +98,14 @@ async def test_empty_ls_invalid(client, path):
         ),
         (
             ".app/broker/client",
-            [
-                RpcMethodDesc("dir", param="idir", result="odir"),
-                RpcMethodDesc("ls", param="ils", result="ols"),
-                RpcMethodDesc.signal("lschng", "olschng", RpcMethodAccess.BROWSE),
-            ],
+            [RpcMethodDesc.stddir(), RpcMethodDesc.stdls(), RpcMethodDesc.stdlschng()],
         ),
         (
             ".app/broker/clientInfo/0",
             [
-                RpcMethodDesc("dir", param="idir", result="odir"),
-                RpcMethodDesc("ls", param="ils", result="ols"),
-                RpcMethodDesc.signal("lschng", "olschng", RpcMethodAccess.BROWSE),
+                RpcMethodDesc.stddir(),
+                RpcMethodDesc.stdls(),
+                RpcMethodDesc.stdlschng(),
                 RpcMethodDesc.getter("userName", "String"),
                 RpcMethodDesc.getter("mountPoint", "String"),
                 RpcMethodDesc.getter("subscriptions"),

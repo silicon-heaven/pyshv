@@ -480,9 +480,9 @@ class SimpleClient:
         :param path: SHV path method should be listed for.
         :return: List of methods associated with given node.
         """
-        yield RpcMethodDesc("dir", param="idir", result="odir")
-        yield RpcMethodDesc("ls", param="ils", result="ols")
-        yield RpcMethodDesc.signal("lschng", "olschng", RpcMethodAccess.BROWSE)
+        yield RpcMethodDesc.stddir()
+        yield RpcMethodDesc.stdls()
+        yield RpcMethodDesc.stdlschng()
         if path == ".app":
             yield RpcMethodDesc.getter("shvVersionMajor", "Null", "Int")
             yield RpcMethodDesc.getter("shvVersionMinor", "Null", "Int")
