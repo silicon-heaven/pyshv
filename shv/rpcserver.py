@@ -35,7 +35,7 @@ class RpcServerStream(RpcServer):
             [RpcClient], None | collections.abc.Awaitable[None]
         ],
         loop: asyncio.events.AbstractEventLoop,
-        get_server: typing.Callable,  # @TODO
+        get_server: typing.Callable,  # TODO
         wait_listening: asyncio.Future,
     ):
         """Do not initialize this object directly, use :meth:`tcp_listen` or
@@ -47,7 +47,7 @@ class RpcServerStream(RpcServer):
 
     async def _serve(
         self,
-        get_server,
+        get_server: typing.Callable,
         wait_listening: asyncio.Future,
     ) -> None:
         self._server = await get_server(self._client_connect)
@@ -57,7 +57,7 @@ class RpcServerStream(RpcServer):
 
     async def _client_connect(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
-    ):
+    ) -> None:
         client = RpcClientStream(reader, writer)
         res = self._client_connected_cb(client)
         if isinstance(res, collections.abc.Awaitable):
@@ -133,7 +133,7 @@ class RpcServerDatagram(RpcServer):
     class _RpcClientDatagramServer(RpcClient):
         def __init__(
             self,
-            addr: str,
+            addr: tuple[str | typing.Any, int],
             protocol: "RpcServerDatagram._Protocol",
         ) -> None:
             super().__init__()
@@ -177,15 +177,19 @@ class RpcServerDatagram(RpcServer):
             ],
         ):
             self.new_client_cb = new_client_cb
-            self.existing_clients: dict[str, asyncio.Queue] = {}
+            self.existing_clients: dict[
+                tuple[str | typing.Any, int], asyncio.Queue[bytes | None]
+            ] = {}
             self.transport: asyncio.DatagramTransport
             self.accept_new: bool = True
             self._loop = asyncio.get_running_loop()
 
-        def connection_made(self, transport):
-            self.transport = transport
+        def connection_made(self, transport: asyncio.BaseTransport) -> None:
+            self.transport = typing.cast(asyncio.DatagramTransport, transport)
 
-        def datagram_received(self, data, addr):
+        def datagram_received(
+            self, data: bytes, addr: tuple[str | typing.Any, int]
+        ) -> None:
             if not data or addr not in self.existing_clients:
                 if not self.accept_new:
                     return

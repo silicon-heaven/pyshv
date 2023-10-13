@@ -36,21 +36,23 @@ class RpcError(RuntimeError):
     shv_error_code: RpcErrorCode = RpcErrorCode.UNKNOWN
     shv_error_map: dict[int, typing.Type[RpcError]] = {}
 
-    def __new__(cls, msg: str, code: RpcErrorCode | None = None):
+    def __new__(cls, msg: str, code: RpcErrorCode | None = None) -> "RpcError":
         ncls = cls.shv_error_map.get(cls.shv_error_code if code is None else code, cls)
         return super(RpcError, cls).__new__(ncls)
 
-    def __init__(self, msg: str, code: RpcErrorCode | None = None):
+    def __init__(self, msg: str, code: RpcErrorCode | None = None) -> None:
         super().__init__(str(msg), self.shv_error_code if code is None else code)
 
     @property
     def message(self) -> str:
         """Provides access to the SHV RPC message."""
+        assert isinstance(self.args[0], str)
         return self.args[0]
 
     @property
     def error_code(self) -> RpcErrorCode:
         """Provides access to the :class:`RpcErrorCode`."""
+        assert isinstance(self.args[1], RpcErrorCode)
         return self.args[1]
 
 

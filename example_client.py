@@ -14,14 +14,14 @@ log_levels = (
 )
 
 
-async def example_client(url: RpcUrl):
+async def example_client(url: RpcUrl) -> None:
     client = await SimpleClient.connect(url)
     assert client is not None
     res = await client.call(".broker/app", "echo", 42)
     print(f"response received: {repr(res)}")
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """Parse passed arguments and return result."""
     parser = argparse.ArgumentParser(description="Silicon Heaven example client")
     parser.add_argument(

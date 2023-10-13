@@ -38,7 +38,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
     def __iter__(self) -> typing.Iterator[str]:
         return iter(self._cache.keys())
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._cache)
 
     async def _value_update(self, path: str, value: SHVType) -> None:
@@ -147,7 +147,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
                 pass
         if not done:
             raise TimeoutError
-        return done.pop().result()
+        return done.pop().result()  # type: ignore
 
     async def _prop_change_wait(
         self, path: str, value: SHVType, period: float
@@ -196,7 +196,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         """
         if path not in self._futures:
             self._futures[path] = []
-        future = asyncio.get_running_loop().create_future()
+        future: asyncio.Future[SHVType] = asyncio.get_running_loop().create_future()
         self._futures[path].append(future)
         return await future
 

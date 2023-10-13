@@ -23,15 +23,15 @@ class CommonReader(abc.ABC):
     """Common reader base."""
 
     def __init__(
-        self, stream: typing.Union[bytes, bytearray, io.IOBase, "CommonReader"]
-    ):
+        self, stream: typing.Union[bytes, bytearray, typing.IO, "CommonReader"]
+    ) -> None:
         if isinstance(stream, (bytes, bytearray)):
             stream = io.BytesIO(stream)
         if isinstance(stream, CommonReader):
             orig = stream
             stream = stream.stream
 
-        self.stream: io.IOBase = stream
+        self.stream: typing.IO = stream
         """Stream used to receive bytes from."""
         self.peek_bytes = bytes()
         """Peeked bytes so far."""
@@ -141,17 +141,17 @@ class CommonReader(abc.ABC):
 class CommonWriter(abc.ABC):
     """Common writer base."""
 
-    def __init__(self, stream: io.IOBase | asyncio.StreamWriter | None = None):
-        self.stream = stream if stream is not None else io.BytesIO()
+    def __init__(self, stream: typing.IO | asyncio.StreamWriter | None = None) -> None:
+        self.stream = stream or io.BytesIO()
         self.bytes_cnt = 0
 
-    def _write(self, data: bytes | int):
+    def _write(self, data: bytes | int) -> None:
         if isinstance(data, int):
             data = bytes([data])
         self.bytes_cnt += len(data)
         self.stream.write(data)
 
-    def _writestr(self, data: str):
+    def _writestr(self, data: str) -> None:
         self._write(data.encode("utf-8"))
 
     def write(self, value: SHVType) -> None:

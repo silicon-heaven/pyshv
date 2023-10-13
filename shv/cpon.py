@@ -1,14 +1,22 @@
 """Cpon data format reader and writer."""
 import collections.abc
+import dataclasses
 import datetime
 import decimal
-import io
 import typing
 
 import dateutil.parser
 
 from . import commonpack
-from .value import SHVMeta, SHVMetaType, SHVType, SHVUInt
+from .value import (
+    SHVIMapType,
+    SHVListType,
+    SHVMapType,
+    SHVMeta,
+    SHVMetaType,
+    SHVType,
+    SHVUInt,
+)
 
 
 class Cpon:
@@ -30,7 +38,7 @@ class Cpon:
 class CponReader(commonpack.CommonReader):
     """Read data in Cpon format."""
 
-    def _skip_white_insignificant(self):
+    def _skip_white_insignificant(self) -> None:
         while True:
             b = self._peek_byte()
             if b == 0:
@@ -83,13 +91,13 @@ class CponReader(commonpack.CommonReader):
         elif b == ord("["):
             value = self._read_list()
         elif b == ord("{"):
-            value = self._read_map()
+            value = typing.cast(SHVMapType, self._read_map())
         elif b == ord("i"):
             self._peek_drop()
             b = self._peek_byte()
             if b != ord("{"):
                 raise ValueError("Invalid IMap prefix.")
-            value = self._read_map()
+            value = typing.cast(SHVIMapType, self._read_map())
         elif b == ord("d"):
             self._peek_drop()
             b = self._peek_byte()
@@ -123,7 +131,7 @@ class CponReader(commonpack.CommonReader):
             value = SHVMeta.new(value, meta)
         return value
 
-    def _read_datetime(self):
+    def _read_datetime(self) -> datetime.datetime:
         self._peek_drop()  # eat '"'
         date = ""
         while True:
@@ -223,7 +231,7 @@ class CponReader(commonpack.CommonReader):
         # multiple bytes.
         return res.decode("utf-8")
 
-    def _read_list(self):
+    def _read_list(self) -> SHVListType:
         res = []
         self._peek_drop()
         while True:
@@ -235,8 +243,8 @@ class CponReader(commonpack.CommonReader):
             res.append(self.read())
         return res
 
-    def _read_map(self, terminator="}"):
-        res = {}
+    def _read_map(self, terminator: str = "}") -> dict[str | int, SHVType]:
+        res: dict[str | int, SHVType] = {}
         self._peek_drop()
         while True:
             self._skip_white_insignificant()
@@ -245,6 +253,8 @@ class CponReader(commonpack.CommonReader):
                 self._peek_drop()
                 break
             key = self.read()
+            if not isinstance(key, (str, int)):
+                raise ValueError(f"Invalid Map key: {type(key)}")
             self._skip_white_insignificant()
             val = self.read()
             res[key] = val
@@ -300,25 +310,23 @@ class CponReader(commonpack.CommonReader):
             bval.append(ord("0"))
 
         if tp in (int, SHVUInt):
-            return tp(bval, 0)
+            return tp(bval, 0)  # type: ignore
         if tp == decimal.Decimal:
-            return tp(bval.decode("ascii"))
+            return tp(bval.decode("ascii"))  # type: ignore
         assert False  # should be unreachable
 
 
 class CponWriter(commonpack.CommonWriter):
     """Write data in Cpon format."""
 
+    @dataclasses.dataclass
     class Options:
-        """Options for the CponWriter.
+        """Options for the CponWriter."""
 
-        :param indent: bytes or string used to indent the code.
-        """
+        indent: bytes = b""
+        """Bytes or string used to indent the code."""
 
-        def __init__(self, indent: None | str | bytes = None):
-            self.indent = indent.encode() if isinstance(indent, str) else indent
-
-    def __init__(self, stream: io.IOBase | None = None, options: Options | None = None):
+    def __init__(self, stream: typing.IO | None = None, options: Options | None = None):
         super().__init__(stream)
         self.options = options if options is not None else self.Options()
         self._nest_level = 0
@@ -429,7 +437,7 @@ class CponWriter(commonpack.CommonWriter):
                 self._writestr(min_part)
         self._writestr('"')
 
-    def write_list(self, value: collections.abc.Collection[SHVType]) -> None:
+    def write_list(self, value: collections.abc.Sequence[SHVType]) -> None:
         self._nest_level += 1
         is_oneliner = self._is_oneline_list(value)
         self._writestr("[")
@@ -443,7 +451,7 @@ class CponWriter(commonpack.CommonWriter):
         self._writestr("]")
 
     @staticmethod
-    def _is_oneline_list(lst) -> bool:
+    def _is_oneline_list(lst: collections.abc.Sequence[SHVType]) -> bool:
         return len(lst) <= 10 and all(not isinstance(v, (list, dict)) for v in lst)
 
     def write_imap(self, value: collections.abc.Mapping[int, SHVType]) -> None:
@@ -457,12 +465,12 @@ class CponWriter(commonpack.CommonWriter):
         self._writestr("}")
 
     @staticmethod
-    def _is_oneline_map(mmap) -> bool:
+    def _is_oneline_map(mmap: collections.abc.Mapping) -> bool:
         return len(mmap) <= 10 and all(
             not isinstance(v, (list, dict)) for v in mmap.values()
         )
 
-    def _write_map_content(self, mmap) -> None:
+    def _write_map_content(self, mmap: collections.abc.Mapping) -> None:
         self._nest_level += 1
         is_oneliner = self._is_oneline_map(mmap)
         i = -1

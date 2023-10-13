@@ -6,7 +6,7 @@ from .. import cpon
 from .cp2cp import CPFormat, convert
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """Parse passed arguments and return result."""
     parser = argparse.ArgumentParser(
         "pycp2cp2", description="Chainpack to Cpon and vice versa converter"

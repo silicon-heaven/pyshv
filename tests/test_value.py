@@ -9,10 +9,11 @@ from shv import (
     SHVBytes,
     SHVDatetime,
     SHVDecimal,
-    SHVDict,
     SHVFloat,
+    SHVIMap,
     SHVInt,
     SHVList,
+    SHVMap,
     SHVMeta,
     SHVNull,
     SHVStr,
@@ -34,7 +35,8 @@ CLASSES: list = [
     (SHVDatetime, [2020, 1, 2, 3]),
     (SHVDecimal, []),
     (SHVList, []),
-    (SHVDict, []),
+    (SHVMap, []),
+    (SHVIMap, []),
 ]
 
 
@@ -79,8 +81,8 @@ REPRS: tuple = (
     (SHVStr, "foo", ""),
     (SHVDecimal, decimal.Decimal("4.2e12"), decimal.Decimal()),
     (SHVList, [1, "foo"], []),
-    (SHVDict, {"foo": 1, "": 42}, {}),
-    (SHVDict, {1: "foo", 42: ""}, {}),
+    (SHVMap, {"foo": 1, "": 42}, {}),
+    (SHVIMap, {1: "foo", 42: ""}, {}),
 )
 
 
@@ -108,7 +110,7 @@ def test_noteq(cls, value1, value2):
 @pytest.mark.parametrize("cls,value1,value2", REPRS)
 def test_hash(cls, value1, value2):
     """Our objects should not modify hash and thus it has to be the same."""
-    if cls in (SHVList, SHVDict):
+    if cls in (SHVList, SHVMap, SHVIMap):
         return  # Unhashable types
     assert hash(cls(value1)) == hash(value1)
     assert hash(cls(value2)) == hash(value2)
@@ -135,8 +137,8 @@ def test_datetime():
         (datetime.datetime.fromtimestamp(352434), SHVDatetime.fromtimestamp(352434)),
         (decimal.Decimal(42), SHVDecimal(42)),
         ([1, "foo"], SHVList([1, "foo"])),
-        ({"foo": 1}, SHVDict({"foo": 1})),
-        ({1: "foo"}, SHVDict({1: "foo"})),
+        ({"foo": 1}, SHVMap({"foo": 1})),
+        ({1: "foo"}, SHVIMap({1: "foo"})),
     ),
 )
 def test_new(value, expected):
