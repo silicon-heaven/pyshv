@@ -25,7 +25,6 @@ extensions = [
 templates_path = ["_templates"]
 exclude_patterns = ["_build"]
 
-# TODO logo
 # html_logo = "_static/logo.svg"
 # html_favicon = "_static/favicon.ico"
 html_copy_source = True

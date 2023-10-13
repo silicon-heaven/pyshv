@@ -33,9 +33,13 @@ devenv:
     - nix develop -c true
 
 ## Test stage ##################################################################
-tests:
+.test:
   stage: test
   extends: .nix
+  needs: ["devenv"]
+
+tests:
+  extends: .test
   script:
     - nix develop --quiet -c pytest -v --junitxml=report.xml --cov=. --cov-report xml:coverage.xml --cov-report html:coverage --cov-report term
   artifacts:
@@ -49,14 +53,12 @@ tests:
   coverage: '/^TOTAL.*\s+([^\s]+)%$/'
 
 nix-build:
-  stage: test
-  extends: .nix
+  extends: .test
   script:
     - nix build
 
 nix-check:
-  stage: test
-  extends: .nix
+  extends: .test
   script:
     - nix flake check
 
@@ -67,7 +69,7 @@ include:
 .lint:
   stage: lint
   extends: .nix
-  needs: []
+  needs: ["devenv"]
 
 pylint:
   extends: .lint
@@ -78,13 +80,13 @@ mypy:
   extends: .lint
   script:
     - mkdir .mypy-cache
-    - nix develop --quiet -c mypy --cache-dir .mypy-cache --ignore-missing-imports .
+    - nix develop --quiet -c mypy --cache-dir .mypy-cache --install-types --non-interactive .
 
 ## Style stage #################################################################
 .style:
   stage: style
   extends: .nix
-  needs: []
+  needs: ["devenv"]
   allow_failure: true
 
 black:
@@ -124,13 +126,13 @@ gitlint:
 
 release:
   extends: .deploy
-  image: "registry.nic.cz/turris/python-template/baseimg:release"
+  image: "registry.gitlab.com/gitlab-org/release-cli:latest"
   before_script:
-    - "apk update"
-    - "apk add bash curl jq py3-pip"
-    - "pip install yq"
+    - apk update
+    - apk add bash curl jq py3-pip
+    - pip install yq
   script:
-    - "bash .release.sh"
+    - bash .release.sh
 
 gitlab-pypi:
   extends: [.nix, .deploy]
@@ -143,7 +145,7 @@ pages:
   extends: .nix
   rules:
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
-  needs: []
+  needs: ["devenv"]
   script:
     - git fetch
     - nix develop --quiet -c sphinx-multiversion docs public
