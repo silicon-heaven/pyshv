@@ -20,6 +20,7 @@ from .rpcsubscription import RpcSubscription
 from .rpcurl import RpcLoginType, RpcUrl
 from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
 from .value import SHVType, is_shvbool, is_shvnull
+from .value_tools import shvget
 
 logger = logging.getLogger(__name__)
 
@@ -107,14 +108,11 @@ class SimpleClient:
         # Note: The implementation here expects that broker won't sent any other
         # messages until login is actually performed. That is what happens but
         # it is not defined in any SHV design document as it seems.
-        await client.send(RpcMessage.request(None, "hello"))
+        await client.send(RpcMessage.request("", "hello"))
         resp = await client.receive()
         if resp is None:
             return None
-        resl = resp.result()
-        assert isinstance(resl, collections.abc.Mapping)
-
-        nonce = resl.get("nonce", None)
+        nonce = shvget(resp.result, "nonce", str, "")
         if login_type is RpcLoginType.SHA1:
             assert isinstance(nonce, str)
             m = hashlib.sha1()
@@ -130,11 +128,10 @@ class SimpleClient:
         }
 
         logger.debug("LOGGING IN")
-        await client.send(RpcMessage.request(None, "login", param))
+        await client.send(RpcMessage.request("", "login", param))
         resp = await client.receive()
         if resp is None:
             return None
-        result = resp.result()
         logger.debug("LOGGED IN")
 
     @classmethod
@@ -143,7 +140,7 @@ class SimpleClient:
         client: RpcClient,
         url: RpcUrl,
         login_options: dict[str, SHVType] | None = None,
-    ) -> int | None:
+    ) -> None:
         """Variation of :meth:`login` that takes arguments from RPC URL.
 
         :param: client: Connected client the login should be performed on.
@@ -155,9 +152,7 @@ class SimpleClient:
         options = url.login_options()
         if login_options:
             options.update(login_options)
-        return await cls.login(
-            client, url.username, url.password, url.login_type, options
-        )
+        await cls.login(client, url.username, url.password, url.login_type, options)
 
     async def _loop(self) -> None:
         """Loop run in asyncio task to receive messages."""
@@ -189,37 +184,33 @@ class SimpleClient:
 
     async def _message(self, msg: RpcMessage) -> None:
         """Handle every received message."""
-        if msg.is_request():
+        if msg.is_request:
             resp = msg.make_response()
-            method = msg.method()
+            method = msg.method
             assert method  # is ensured by is_request but not detected by mypy
             try:
-                resp.set_result(
-                    await self._method_call(
-                        msg.shv_path() or "",
-                        method,
-                        msg.rpc_access_grant() or RpcMethodAccess.BROWSE,
-                        msg.param(),
-                    )
+                resp.result = await self._method_call(
+                    msg.path,
+                    method,
+                    msg.rpc_access or RpcMethodAccess.BROWSE,
+                    msg.param,
                 )
             except RpcError as exp:
-                resp.set_rpc_error(exp)
+                resp.rpc_error = exp
             except Exception as exc:
-                resp.set_rpc_error(
-                    RpcMethodCallExceptionError(
-                        "".join(traceback.format_exception(exc))
-                    )
+                resp.rpc_error = RpcMethodCallExceptionError(
+                    "".join(traceback.format_exception(exc))
                 )
             await self.client.send(resp)
-        elif msg.is_response():
-            rid = msg.request_id()
+        elif msg.is_response:
+            rid = msg.request_id
             assert rid is not None
             if rid in self._calls_event:
                 self._calls_msg[rid] = msg
                 self._calls_event.pop(rid).set()
-        elif msg.is_signal():
-            if msg.method() == "chng":
-                await self._value_update(msg.shv_path() or "", msg.param())
+        elif msg.is_signal:
+            if msg.method == "chng":
+                await self._value_update(msg.path, msg.param)
 
     async def call(self, path: str, method: str, param: SHVType = None) -> SHVType:
         """Call given method on given path with given parameter.
@@ -235,17 +226,15 @@ class SimpleClient:
             `RpcError` or its children based on the failure.
         """
         msg = RpcMessage.request(path, method, param)
-        rid = msg.request_id()
-        assert rid is not None
+        rid = msg.request_id
         event = asyncio.Event()
         self._calls_event[rid] = event
         await self.client.send(msg)
         await event.wait()
         msg = self._calls_msg.pop(rid)
-        err = msg.rpc_error()
-        if err is not None:
-            raise err
-        return msg.result()
+        if msg.is_error:
+            raise msg.rpc_error
+        return msg.result
 
     async def signal(
         self,
@@ -296,12 +285,13 @@ class SimpleClient:
         """List methods associated with node on the specified path.
 
         :param path: SHV path to the node we want methods to be listed for.
+        :param details: If detailed listing should be performed instead of standard one.
         :return: list of the node's methods.
         :raise RpcMethodNotFoundError: when there is no such path.
         """
         res = await self.call(path, "dir", True if details else None)
         if isinstance(res, list):
-            return [RpcMethodDesc.fromSHV(m) for m in res]
+            return [RpcMethodDesc.fromshv(m) for m in res]
         raise RpcMethodCallExceptionError(f"Invalid result returned: {repr(res)}")
 
     async def dir_description(self, path: str, name: str) -> RpcMethodDesc | None:
@@ -317,9 +307,7 @@ class SimpleClient:
             res = res[0] if len(res) == 1 else None
         if is_shvnull(res):
             return None
-        if isinstance(res, dict):
-            return RpcMethodDesc.fromSHV(res)
-        raise RpcMethodCallExceptionError(f"Invalid result returned: {repr(res)}")
+        return RpcMethodDesc.fromshv(res)
 
     async def subscribe(self, sub: RpcSubscription) -> None:
         """Perform subscribe for signals on given path.
@@ -461,11 +449,11 @@ class SimpleClient:
             raise RpcMethodNotFoundError(f"No such node: {path}")
         # TODO the list here is backward compatibility
         if is_shvnull(param) or is_shvbool(param) or isinstance(param, list):
-            return list(d.tomap() if param else d.toimap() for d in self._dir(path))
+            return list(d.toshv(bool(param)) for d in self._dir(path))
         if isinstance(param, str):
             for d in self._dir(path):
                 if d.name == param:
-                    return d.tomap()
+                    return d.toshv()
             return None
         raise RpcInvalidParamsError("Use Null or Bool or String with node name")
 

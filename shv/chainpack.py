@@ -296,7 +296,7 @@ class ChainPackWriter(commonpack.CommonWriter):
             r = data[i]
             self._write(r)
 
-    def write_meta(self, meta: dict) -> None:
+    def write_meta(self, meta: SHVMetaType) -> None:
         self._write(ChainPack.CP_MetaMap)
         self._write_map_data(meta)
 

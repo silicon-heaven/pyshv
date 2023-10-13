@@ -9,7 +9,7 @@ from .rpcclient import RpcClient
 from .rpcerrors import RpcMethodCallExceptionError, RpcMethodNotFoundError
 from .rpcsubscription import RpcSubscription
 from .simpleclient import SimpleClient
-from .value import SHVType, shvmeta, shvmeta_eq
+from .value import SHVMapType, SHVType, shvmeta, shvmeta_eq
 
 
 class ValueClient(SimpleClient, collections.abc.Mapping):
@@ -250,7 +250,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
 
         :param path: SHV path.
         """
-        param: SHVType = {
+        param: SHVMapType = {
             "recordCountLimit": 10000,
             "withPathsDict": True,
             "withSnapshot": True,

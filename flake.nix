@@ -62,6 +62,21 @@
           propagatedBuildInputs = [sphinx];
           doCheck = false;
         };
+
+      pypkg-types-serial = {
+        buildPythonPackage,
+        fetchPypi,
+      }:
+        buildPythonPackage rec {
+          pname = "types-pyserial";
+          version = "3.5.0.10";
+          src = fetchPypi {
+            inherit pname version;
+            hash = "sha256-libfaTGzM0gtBZZrMupSoUGj0ZyccPs8/vkX9x97bS0=";
+          };
+          doCheck = false;
+          pythonImportsCheck = ["serial-stubs"];
+        };
     in
       {
         overlays = {
@@ -70,6 +85,7 @@
               packageOverrides = pyfinal: pyprev: {
                 pyshv = pyfinal.callPackage pypkg-pyshv {};
                 sphinx-multiversion = pyfinal.callPackage pypkg-multiversion {};
+                types-pyserial = pyfinal.callPackage pypkg-types-serial {};
               };
             };
             python3Packages = final.python3.pkgs;

@@ -1,7 +1,6 @@
 """Common state for the RPC broker that works as server in the SHV network."""
 import asyncio
 import collections.abc
-import dataclasses
 import enum
 import importlib.metadata
 import itertools
@@ -11,14 +10,20 @@ import time
 import typing
 
 from ..rpcclient import RpcClient
-from ..rpcerrors import RpcErrorCode, RpcInvalidParamsError, RpcMethodCallExceptionError
+from ..rpcerrors import (
+    RpcError,
+    RpcErrorCode,
+    RpcInvalidParamsError,
+    RpcMethodCallExceptionError,
+)
 from ..rpcmessage import RpcMessage
 from ..rpcmethod import RpcMethodAccess, RpcMethodDesc
 from ..rpcserver import RpcServer, create_rpc_server
 from ..rpcsubscription import RpcSubscription
 from ..rpcurl import RpcLoginType
 from ..simpleclient import SimpleClient
-from ..value import SHVType, shvget
+from ..value import SHVType
+from ..value_tools import shvget
 from .rpcbrokerconfig import RpcBrokerConfig
 
 logger = logging.getLogger(__name__)
@@ -109,19 +114,15 @@ class RpcBroker:
 
         :param msg: Signal message to be sent.
         """
-        path = msg.shv_path() or ""
-        method = msg.method()
-        msgaccess = msg.rpc_access_grant() or RpcMethodAccess.READ
-        assert method is not None
+        msgaccess = msg.rpc_access or RpcMethodAccess.READ
         for client in self.clients.values():
-            assert msg.method() is not None
             if client.user is None:
                 continue
-            access = client.user.access_level(path, method)
+            access = client.user.access_level(msg.path, msg.method)
             if (
                 access is not None
                 and access >= msgaccess
-                and any(s.applies(path, method) for s in client.subscriptions)
+                and any(s.applies(msg.path, msg.method) for s in client.subscriptions)
             ):
                 await client.client.send(msg)
 
@@ -247,8 +248,8 @@ class RpcBroker:
             self.__mount_point = value
             if value is not None:
                 path, node = self._lschng_path(value)
-                if lschng is not None and lschng.shv_path() == path:
-                    lschng.param()[node] = True  # type: ignore
+                if lschng is not None and lschng.path == path:
+                    lschng.param[node] = True  # type: ignore
                 else:
                     if lschng is not None:
                         await self.__broker.signal(lschng)
@@ -285,91 +286,85 @@ class RpcBroker:
             if self.state == self.State.HELLO:
                 return await self.client.send(await self._message_login(msg))
 
-            path = msg.shv_path() or ""
-            method = msg.method() or ""
-
-            if msg.is_request():
+            if msg.is_request:
                 # Set access granted to the level allowed by user
                 assert self.user is not None
-                access = self.user.access_level(path, method)
+                access = self.user.access_level(msg.path, msg.method)
                 if access is None:
                     resp = msg.make_response()
-                    resp.set_shverror(RpcErrorCode.METHOD_NOT_FOUND, "No access")
+                    resp.rpc_error = RpcError(
+                        "No access", RpcErrorCode.METHOD_NOT_FOUND
+                    )
                     await self.client.send(resp)
                     return
-                if (
-                    access is not RpcMethodAccess.ADMIN
-                    or msg.rpc_access_grant() is None
-                ):
-                    msg.set_rpc_access_grant(access)
+                if access is not RpcMethodAccess.ADMIN or msg.rpc_access is None:
+                    msg.rpc_access = access
                 # Check if we should delegate it or handle it ourself
-                if (cpath := self.__broker.client_on_path(path)) is None:
+                if (cpath := self.__broker.client_on_path(msg.path)) is None:
                     return await super()._message(msg)
                 # Propagate to some peer
-                msg.set_caller_ids(
-                    list(msg.caller_ids() or ()) + [self.__broker_client_id]
-                )
-                msg.set_shv_path(cpath[1])
+                msg.caller_ids = list(msg.caller_ids) + [self.__broker_client_id]
+                msg.path = cpath[1]
                 await cpath[0].client.send(msg)
 
-            if msg.is_response():
-                cids = list(msg.caller_ids() or ())
+            if msg.is_response:
+                cids = list(msg.caller_ids)
                 if not cids:  # no caller IDs means this is message for us
                     return await super()._message(msg)
                 cid = cids.pop()
-                msg.set_caller_ids(cids)
+                msg.caller_ids = cids
                 try:
                     peer = self.__broker.clients[cid]
                 except KeyError:
                     return
                 await peer.client.send(msg)
 
-            if msg.is_signal() and self.mount_point is not None:
-                msg.set_shv_path(self.mount_point + "/" + path)
+            if msg.is_signal and self.mount_point is not None:
+                msg.path = self.mount_point + "/" + msg.path
                 await self.__broker.signal(msg)
 
         async def _message_hello(self, msg: RpcMessage) -> RpcMessage:
             resp = msg.make_response()
-            if msg.is_request() and msg.method() == "hello":
+            if msg.is_request and msg.method == "hello":
                 self.state = self.State.HELLO
                 resp = msg.make_response()
-                resp.set_result({"nonce": self._nonce})
+                resp.result = {"nonce": self._nonce}
             else:
-                resp.set_shverror(
-                    RpcErrorCode.INVALID_REQUEST, "Only 'hello' is allowed"
+                resp.rpc_error = RpcError(
+                    "Only 'hello' is allowed", RpcErrorCode.INVALID_REQUEST
                 )
             return resp
 
         async def _message_login(self, msg: RpcMessage) -> RpcMessage:
             resp = msg.make_response()
-            if not msg.is_request() or msg.method() != "login":
-                resp.set_shverror(
-                    RpcErrorCode.INVALID_REQUEST, "Only 'login' is allowed"
+            if not msg.is_request or msg.method != "login":
+                resp.rpc_error = RpcError(
+                    "Only 'login' is allowed", RpcErrorCode.INVALID_REQUEST
                 )
                 return resp
-            param = msg.param()
+            param = msg.param
             resp = msg.make_response()
             if isinstance(param, collections.abc.Mapping):
                 self.user = self.broker.config.login(
-                    shvget(param, ("login", "user"), "", str),
-                    shvget(param, ("login", "password"), "", str),
+                    shvget(param, ("login", "user"), str, ""),
+                    shvget(param, ("login", "password"), str, ""),
                     self._nonce,
                     RpcLoginType(
-                        shvget(param, ("login", "type"), RpcLoginType.SHA1.value, str)
+                        shvget(param, ("login", "type"), str, RpcLoginType.SHA1.value)
                     ),
                 )
                 if self.user is None:
-                    resp.set_shverror(
-                        RpcErrorCode.METHOD_CALL_EXCEPTION, "Invalid login"
+                    resp.rpc_error = RpcError(
+                        "Invalid login", RpcErrorCode.METHOD_CALL_EXCEPTION
                     )
                     return resp
                 mount_point = shvget(
-                    param, ("options", "device", "mountPoint"), "", str
+                    param, ("options", "device", "mountPoint"), str, ""
                 )
                 if self.broker.client_on_path(mount_point) is not None:
-                    resp.set_shverror(
-                        RpcErrorCode.METHOD_CALL_EXCEPTION,
+                    resp.rpc_error = RpcError(
                         "Mount point already mounted",
+                        RpcErrorCode.METHOD_CALL_EXCEPTION,
                     )
                     return resp
                 if mount_point:
@@ -378,15 +373,15 @@ class RpcBroker:
                     shvget(
                         param,
                         ("options", "idleWatchDogTimeOut"),
-                        self.IDLE_TIMEOUT,
                         int,
+                        self.IDLE_TIMEOUT,
                     )
                 )
-                resp.set_result({"clientId": self.broker_client_id})
+                resp.result = {"clientId": self.broker_client_id}
                 self.state = self.State.LOGIN
             else:
-                resp.set_shverror(
-                    RpcErrorCode.INVALID_PARAMS, "Invalid type of parameters"
+                resp.rpc_error = RpcError(
+                    "Invalid type of parameters", RpcErrorCode.INVALID_PARAMS
                 )
             return resp
 
@@ -487,8 +482,8 @@ class RpcBroker:
                         # rejectNotSubscribed doesn't work for invalid paths.
                         return True
                     if method == "rejectNotSubscribed":
-                        method = shvget(param, "method", "chng", str)
-                        path = shvget(param, "path", "", str)
+                        method = shvget(param, "method", str, "chng")
+                        path = shvget(param, "path", str, "")
                         match = {
                             sub
                             for sub in self.subscriptions

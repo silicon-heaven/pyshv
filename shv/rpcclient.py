@@ -15,7 +15,7 @@ import serial
 import serial_asyncio
 
 from .chainpack import ChainPack, ChainPackReader, ChainPackWriter
-from .cpon import Cpon, CponReader
+from .cpon import CponReader
 from .rpcmessage import RpcMessage
 from .rpcurl import RpcProtocol, RpcUrl
 from .value import SHVType
@@ -73,10 +73,8 @@ class RpcClient(abc.ABC):
 
         msg = RpcMessage(shvdata)
         logger.debug("==> REC: %s", msg.to_string())
-        if raise_error and msg.is_error():
-            error = msg.rpc_error()
-            assert error is not None
-            raise error
+        if raise_error and msg.is_error:
+            raise msg.rpc_error
         return msg
 
     @abc.abstractmethod

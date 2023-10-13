@@ -10,7 +10,6 @@ from shv import (
     RpcMessage,
     RpcMethodAccess,
     RpcMethodDesc,
-    RpcMethodFlags,
     RpcUrl,
     SHVType,
     SimpleClient,
@@ -49,23 +48,23 @@ class ExampleDevice(SimpleClient):
             yield RpcMethodDesc.setter(param="List[Int]", description="Set track")
 
     async def _method_call(
-        self, path: str, method: str, access: RpcMethodAccess, params: SHVType
+        self, path: str, method: str, access: RpcMethodAccess, param: SHVType
     ) -> SHVType:
         pth = path.split("/") if path else []
         if len(pth) == 2 and pth[1] in self.tracks:
             if method == "get" and access >= RpcMethodAccess.READ:
                 return self.tracks[pth[1]]
             if method == "set" and access >= RpcMethodAccess.WRITE:
-                if not isinstance(params, list) or not all(
-                    isinstance(v, int) for v in params
+                if not isinstance(param, list) or not all(
+                    isinstance(v, int) for v in param
                 ):
                     raise RpcInvalidParamsError("Only list of ints is accepted.")
                 old_track = self.tracks[pth[1]]
-                self.tracks[pth[1]] = params
-                if old_track != params:
-                    await self.client.send(RpcMessage.chng("track/" + pth[1], params))
+                self.tracks[pth[1]] = param
+                if old_track != param:
+                    await self.client.send(RpcMessage.chng("track/" + pth[1], param))
                 return True
-        return await super()._method_call(path, method, access, params)
+        return await super()._method_call(path, method, access, param)
 
 
 async def example_device(url: RpcUrl):

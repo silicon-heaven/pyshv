@@ -68,12 +68,10 @@ class RpcUrl:
         """Assemble login options for the SHV RPC broker from options here."""
         res: dict[str, SHVType] = {}
         if self.device_id:
-            res["device"] = res.get("device", {})
-            res["device"]["deviceId"] = self.device_id  # type: ignore
+            res["deviceId"] = self.device_id
         if self.device_mount_point:
-            res["device"] = res.get("device", {})
-            res["device"]["mountPoint"] = self.device_mount_point  # type: ignore
-        return res
+            res["mountPoint"] = self.device_mount_point
+        return {"device": res} if res else {}
 
     @classmethod
     def parse(cls, url: str) -> "RpcUrl":

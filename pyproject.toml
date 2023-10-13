@@ -41,6 +41,7 @@ lint = [
   "pydocstyle",
   "pylint",
   "mypy",
+  "types-pyserial",
   "types-python-dateutil",
 ]
 

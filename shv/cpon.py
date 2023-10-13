@@ -333,7 +333,7 @@ class CponWriter(commonpack.CommonWriter):
             self._writestr("\n")
             self._write(self.options.indent * self._nest_level)
 
-    def write_meta(self, meta: dict) -> None:
+    def write_meta(self, meta: SHVMetaType) -> None:
         self._writestr("<")
         self._write_map_content(meta)
         self._writestr(">")

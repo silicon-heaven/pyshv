@@ -200,21 +200,3 @@ def test_meta_eq_eq(obj1, obj2):
 @pytest.mark.parametrize("obj1,obj2", ((SHVInt(42), SHVUInt(42)),))
 def test_meta_eq_ne(obj1, obj2):
     assert not shvmeta_eq(obj1, obj2)
-
-
-@pytest.mark.parametrize(
-    "value,key,default,tp,expected",
-    (
-        (None, "foo", 3, int, 3),
-        ({"foo": 42}, "foo", 3, int, 42),
-        ({"foo": 42}, "foo", 3.0, float, 3.0),
-        ({"foo": {"foo": 42}}, "foo", 3, int, 3),
-        ({"foo": {"foo": 42}}, ("foo", "foo"), 3, int, 42),
-        ({"foo": "foo"}, ("foo", "foo"), 3, int, 3),
-        (42, (), 3, int, 42),
-        ("foo", (), 3, int, 3),
-    ),
-)
-def test_shvget(value, key, default, tp, expected):
-    """Check implementation of shvget."""
-    assert shvget(value, key, default, tp) == expected

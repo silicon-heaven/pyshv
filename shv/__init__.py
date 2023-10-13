@@ -1,7 +1,6 @@
 """Python implementation of Silicon Heaven."""
-from . import chainpack, cpon
-from .chainpack import ChainPackReader, ChainPackWriter
-from .cpon import CponReader, CponWriter
+from .chainpack import ChainPack, ChainPackReader, ChainPackWriter
+from .cpon import Cpon, CponReader, CponWriter
 from .rpcclient import (
     RpcClient,
     RpcClientDatagram,
@@ -53,19 +52,19 @@ from .value import (
     is_shvimap,
     is_shvmap,
     is_shvnull,
-    shvget,
     shvmeta,
     shvmeta_eq,
 )
+from .value_tools import SHVGetKey, shvget
 from .valueclient import ValueClient
 
 __all__ = [
     # cpon
-    "cpon",
+    "Cpon",
     "CponReader",
     "CponWriter",
     # chainpack
-    "chainpack",
+    "ChainPack",
     "ChainPackReader",
     "ChainPackWriter",
     # rpcclient
@@ -126,7 +125,6 @@ __all__ = [
     "SHVDict",
     "is_shvmap",
     "is_shvimap",
-    "shvget",
     "SHVType",
     "SHVNullType",
     "SHVBoolType",
@@ -134,6 +132,9 @@ __all__ = [
     "SHVMapType",
     "SHVIMapType",
     "SHVMetaType",
+    # value_tools
+    "shvget",
+    "SHVGetKey",
     # shvversion
     "SHV_VERSION_MAJOR",
     "SHV_VERSION_MINOR",

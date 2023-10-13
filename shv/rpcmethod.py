@@ -3,8 +3,10 @@ import collections.abc
 import dataclasses
 import enum
 import functools
+import typing
 
 from .value import SHVType
+from .value_tools import SHVGetKey, shvget
 
 
 class RpcMethodFlags(enum.IntFlag):
@@ -79,51 +81,35 @@ class RpcMethodDesc:
     access: RpcMethodAccess = RpcMethodAccess.BROWSE
     description: str = ""
 
-    def toimap(self) -> SHVType:
-        """Convert method description to SHV Map."""
-        res: dict[int, str | int] = {1: self.name, 2: self.flags}
+    def toshv(self, use_map: bool = False) -> SHVType:
+        """Convert to SHV RPC representation."""
+        res: dict[int | str, SHVType] = {
+            "name" if use_map else 1: self.name,
+            "flags" if use_map else 2: self.flags,
+        }
         if self.param != "Null":
-            res[3] = self.param
+            res["param" if use_map else 3] = self.param
         if self.result != "Null":
-            res[4] = self.result
-        res[5] = RpcMethodAccess.tostr(self.access)
-        return res
-
-    def tomap(self) -> SHVType:
-        """Convert method description to SHV Map."""
-        res: dict[str, str | int] = {"name": self.name, "flags": self.flags}
-        if self.param != "Null":
-            res["param"] = self.param
-        if self.result != "Null":
-            res["result"] = self.result
-        res["access"] = RpcMethodAccess.tostr(self.access)
-        if self.description:
+            res["result" if use_map else 4] = self.result
+        res["access" if use_map else 5] = RpcMethodAccess.tostr(self.access)
+        if self.description and use_map:
             res["description"] = self.description
-        return res
+        return typing.cast(SHVType, res)
 
     @classmethod
-    def fromSHV(cls, desc: SHVType) -> "RpcMethodDesc":
-        """Convert SHV method description to this object representation."""
-        if not isinstance(desc, collections.abc.Mapping):
-            raise ValueError(f"Not valid method description: {repr(desc)}")
-        rest: dict[str | int, SHVType] = {
-            k: v for k, v in desc.items() if isinstance(k, (int, str))
-        }
-        name = rest.pop(1, rest.pop("name", None))
-        flags = rest.pop(2, rest.pop("flags", 0))
-        param = rest.pop(3, rest.pop("param", "Null"))
-        result = rest.pop(4, rest.pop("result", "Null"))
-        access = rest.pop(5, rest.pop("access", "bws"))
-        description = rest.pop("description", "")
-        if not isinstance(name, str):
-            raise ValueError(f"Invalid method name format: {repr(name)}")
+    def fromshv(cls, value: SHVType) -> "RpcMethodDesc":
+        """Create from SHV RPC representation."""
+        if not isinstance(value, collections.abc.Mapping):
+            raise ValueError("Expected mapping.")
         return cls(
-            name=name,
-            flags=RpcMethodFlags(flags),
-            param=param,
-            result=result,
-            access=RpcMethodAccess.fromstr(access),
-            description=description,
+            name=shvget(value, SHVGetKey("name", 1), str, "UNSPECIFIED"),
+            flags=RpcMethodFlags(shvget(value, SHVGetKey("flags", 2), int, cls.flags)),
+            param=shvget(value, SHVGetKey("param", 3), str, cls.param),
+            result=shvget(value, SHVGetKey("result", 4), str, cls.result),
+            access=RpcMethodAccess.fromstr(
+                shvget(value, SHVGetKey("access", 5), str, cls.access.tostr())
+            ),
+            description=shvget(value, "description", str, cls.description),
         )
 
     @classmethod

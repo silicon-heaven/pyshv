@@ -12,6 +12,7 @@ pySHV now conforms with work in progress SHV standard 3.0!
 - `SimpleClient.dir_description` to get description of a single method
 
 ### Changed
+- `RpcMessage` API to now use proprties instead of methods
 - Removed unused argument `login_options` for `SimpleClient.connect`
 - `SimpleClient.dir_details` is now `SimpleClient.dir` and old `dir`
   implementation is removed

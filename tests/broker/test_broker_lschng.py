@@ -15,8 +15,8 @@ class LSClient(SimpleClient):
 
     async def _message(self, msg: RpcMessage) -> None:
         await super()._message(msg)
-        if msg.is_signal() and msg.method() == "lschng":
-            self.lschanges.append((msg.shv_path(), msg.param()))
+        if msg.is_signal and msg.method == "lschng":
+            self.lschanges.append((msg.path, msg.param))
 
     def poplschng(self):
         res = self.lschanges

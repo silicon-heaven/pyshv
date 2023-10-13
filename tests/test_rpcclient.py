@@ -8,14 +8,12 @@ import select
 import threading
 
 import pytest
-import serial
 
 from shv import (
     RpcClient,
     RpcClientDatagram,
     RpcClientSerial,
     RpcClientStream,
-    RpcErrorCode,
     RpcInvalidRequestError,
     RpcMessage,
     RpcServerDatagram,
@@ -38,13 +36,13 @@ class Link:
 
     async def test_error_receive(self, clients):
         msg = RpcMessage.request(".app", "dir").make_response()
-        msg.set_shverror(RpcErrorCode.INVALID_REQUEST, "Fake error")
+        msg.rpc_error = RpcInvalidRequestError("Fake error")
         await clients[0].send(msg)
         assert await clients[1].receive(False) == msg
 
     async def test_error_raise(self, clients):
         msg = RpcMessage.request(".app", "dir").make_response()
-        msg.set_shverror(RpcErrorCode.INVALID_REQUEST, "Fake error")
+        msg.rpc_error = RpcInvalidRequestError("Fake error")
         await clients[0].send(msg)
         with pytest.raises(RpcInvalidRequestError):
             await clients[1].receive(True)

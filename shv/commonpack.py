@@ -186,7 +186,7 @@ class CommonWriter(abc.ABC):
             raise ValueError(f"Invalid value for SHV: {repr(value)}")
 
     @abc.abstractmethod
-    def write_meta(self, meta: dict) -> None:
+    def write_meta(self, meta: SHVMetaType) -> None:
         """Write given meta to the stream."""
 
     @abc.abstractmethod
