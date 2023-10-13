@@ -29,7 +29,7 @@ class ExampleDevice(SimpleClient):
 
     APP_NAME = "pyshv-example_device"
 
-    def __init__(self, client: RpcClient):
+    def __init__(self, client: RpcClient) -> None:
         super().__init__(client)
         self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
 
@@ -67,13 +67,13 @@ class ExampleDevice(SimpleClient):
         return await super()._method_call(path, method, access, param)
 
 
-async def example_device(url: RpcUrl):
+async def example_device(url: RpcUrl) -> None:
     client = await ExampleDevice.connect(url)
     if client is not None:
         await client.task
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """Parse passed arguments and return result."""
     parser = argparse.ArgumentParser(
         "example_device", description="Silicon Heaven example device"

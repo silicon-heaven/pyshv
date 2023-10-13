@@ -56,7 +56,7 @@ class SHVMeta(abc.ABC):
         """Meta attributes for this SHV type."""
         if not hasattr(self, "_meta"):
             setattr(self, "_meta", {})
-        return getattr(self, "_meta")
+        return typing.cast(SHVMetaType, getattr(self, "_meta"))
 
     @staticmethod
     def new(value: typing.Any, meta: SHVMetaType | None = None) -> SHVType:
@@ -87,10 +87,12 @@ class SHVMeta(abc.ABC):
             res = SHVDatetime.fromtimestamp(value.timestamp(), value.tzinfo)
         elif isinstance(value, decimal.Decimal):
             res = SHVDecimal(value)
-        elif isinstance(value, list):
+        elif isinstance(value, collections.abc.Sequence):
             res = SHVList(value)
-        elif isinstance(value, dict):
-            res = SHVDict(value)
+        elif is_shvimap(value):
+            res = SHVIMap(value)
+        elif is_shvmap(value):
+            res = SHVMap(value)
         else:
             raise ValueError(f"Invalid SHV value: {repr(value)}")
         if meta:
@@ -126,7 +128,7 @@ def shvmeta_eq(v1: typing.Any, v2: typing.Any) -> bool:
             k in v1 and k in v2 and shvmeta_eq(v1[k], v2[k])
             for k in set(itertools.chain(v1.keys(), v2.keys()))
         )
-    return v1 == v2
+    return bool(v1 == v2)
 
 
 class SHVNull(SHVMeta):
@@ -135,7 +137,7 @@ class SHVNull(SHVMeta):
     def __bool__(self) -> bool:
         return False
 
-    def __eq__(self, value) -> bool:
+    def __eq__(self, value: typing.Any) -> bool:
         return value is None or isinstance(value, SHVNull)
 
     def __hash__(self) -> int:
@@ -156,7 +158,7 @@ class SHVBool(SHVMeta):
     def __bool__(self) -> bool:
         return self._value
 
-    def __eq__(self, value) -> bool:
+    def __eq__(self, value: typing.Any) -> bool:
         return bool(value) is self._value
 
     def __hash__(self) -> int:
@@ -223,7 +225,11 @@ class SHVList(list[SHVType], SHVMeta):
     """List of :class:`SHVMeta` values."""
 
 
-class SHVDict(dict[str | int, SHVType], SHVMeta):
+class SHVMap(dict[str, SHVType], SHVMeta):
+    """Dictionary with :class:`SHVMeta`."""
+
+
+class SHVIMap(dict[int, SHVType], SHVMeta):
     """Dictionary with :class:`SHVMeta`."""
 
 

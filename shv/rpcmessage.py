@@ -9,15 +9,7 @@ from .chainpack import ChainPackWriter
 from .cpon import CponWriter
 from .rpcerrors import RpcError, RpcErrorCode
 from .rpcmethod import RpcMethodAccess
-from .value import (
-    SHVDict,
-    SHVIMapType,
-    SHVMeta,
-    SHVType,
-    is_shvimap,
-    shvmeta,
-    shvmeta_eq,
-)
+from .value import SHVIMap, SHVIMapType, SHVType, is_shvimap, shvmeta_eq
 
 
 class RpcMessage:
@@ -36,10 +28,14 @@ class RpcMessage:
         cls.last_request_id += 1
         return cls.last_request_id
 
-    def __init__(self, rpc_val=None):
-        self.value = SHVMeta.new({}, {}) if rpc_val is None else rpc_val
+    def __init__(self, rpc_val: SHVIMapType | None = None) -> None:
+        if rpc_val is None:
+            rpc_val = SHVIMap()
+        if not isinstance(rpc_val, SHVIMap):
+            rpc_val = SHVIMap(rpc_val)
+        self.value: SHVIMap = rpc_val
 
-    def __eq__(self, other):
+    def __eq__(self, other: typing.Any) -> bool:
         return isinstance(other, RpcMessage) and shvmeta_eq(self.value, other.value)
 
     class Tag(enum.IntEnum):
@@ -49,7 +45,7 @@ class RpcMessage:
         PATH = 9
         METHOD = 10
         CALLER_IDS = 11
-        ACCESS_GRANT = 14
+        ACCESS = 14
 
     class Key(enum.IntEnum):
         """Keys in the toplevel IMap of the RPC message."""
@@ -67,7 +63,7 @@ class RpcMessage:
     def is_valid(self) -> bool:
         """Check if message is valid RPC message."""
         # TODO maybe do more work than just check basic type
-        return isinstance(self.value, SHVDict)
+        return isinstance(self.value, SHVIMap)
 
     @property
     def is_request(self) -> bool:
@@ -105,14 +101,14 @@ class RpcMessage:
     @property
     def has_request_id(self) -> bool:
         """Check if valid request ID was provided in this message."""
-        return self.Tag.REQUEST_ID in shvmeta(self.value) and isinstance(
-            shvmeta(self.value)[self.Tag.REQUEST_ID], int
+        return self.Tag.REQUEST_ID in self.value.meta and isinstance(
+            self.value.meta[self.Tag.REQUEST_ID], int
         )
 
     @property
     def request_id(self) -> int:
         """Request identificator of this message."""
-        res = shvmeta(self.value)[self.Tag.REQUEST_ID]
+        res = self.value.meta[self.Tag.REQUEST_ID]
         if not isinstance(res, int):
             raise ValueError(f"Invalid request ID type: {type(res)}")
         return res
@@ -121,14 +117,14 @@ class RpcMessage:
     def request_id(self, rqid: int | None) -> None:
         """Set given request identicator to this message."""
         if rqid is None:
-            shvmeta(self.value).pop(self.Tag.REQUEST_ID, None)
+            self.value.meta.pop(self.Tag.REQUEST_ID, None)
         else:
-            self.value = SHVMeta.new(self.value, {self.Tag.REQUEST_ID: rqid})
+            self.value.meta[self.Tag.REQUEST_ID] = rqid
 
     @property
     def path(self) -> str:
         """SHV path specified for this message or empty string."""
-        res = shvmeta(self.value).get(self.Tag.PATH, "")
+        res = self.value.meta.get(self.Tag.PATH, "")
         if not isinstance(res, str):
             raise ValueError(f"Invalid path type: {type(res)}")
         return res
@@ -136,22 +132,22 @@ class RpcMessage:
     @path.setter
     def path(self, path: str) -> None:
         """Set given path as SHV path for this message."""
-        if not path:
-            shvmeta(self.value).pop(self.Tag.PATH, None)
+        if path:
+            self.value.meta[self.Tag.PATH] = path
         else:
-            self.value = SHVMeta.new(self.value, {self.Tag.PATH: path})
+            self.value.meta.pop(self.Tag.PATH, None)
 
     @property
     def has_method(self) -> bool:
         """Check if valid method name was provided in this message."""
-        return self.Tag.METHOD in shvmeta(self.value) and isinstance(
-            shvmeta(self.value)[self.Tag.METHOD], str
+        return self.Tag.METHOD in self.value.meta and isinstance(
+            self.value.meta[self.Tag.METHOD], str
         )
 
     @property
     def method(self) -> str:
         """SHV method name for this message."""
-        res = shvmeta(self.value)[self.Tag.METHOD]
+        res = self.value.meta[self.Tag.METHOD]
         if not isinstance(res, str):
             raise ValueError(f"Invalid method type: {type(res)}")
         return res
@@ -159,15 +155,15 @@ class RpcMessage:
     @method.setter
     def method(self, method: str) -> None:
         """Set SHV method name for this message."""
-        if method is None:
-            shvmeta(self.value).pop(self.Tag.METHOD, None)
+        if method:
+            self.value.meta[self.Tag.METHOD] = method
         else:
-            self.value = SHVMeta.new(self.value, {self.Tag.METHOD: method})
+            self.value.meta.pop(self.Tag.METHOD, None)
 
     @property
     def caller_ids(self) -> collections.abc.Sequence[int]:
         """Caller idenfieiers associated with this message."""
-        res = shvmeta(self.value).get(self.Tag.CALLER_IDS, None)
+        res = self.value.meta.get(self.Tag.CALLER_IDS, None)
         if isinstance(res, int):
             return [res]
         if not isinstance(res, list):
@@ -179,17 +175,17 @@ class RpcMessage:
     def caller_ids(self, cids: collections.abc.Sequence[int]) -> None:
         """Set caller idenfieiers associated with this message."""
         if not cids:
-            shvmeta(self.value).pop(self.Tag.CALLER_IDS, None)
+            self.value.meta.pop(self.Tag.CALLER_IDS, None)
         else:
             some: SHVType = cids
             if len(cids) == 1:
                 some = cids[0]
-            self.value = SHVMeta.new(self.value, {self.Tag.CALLER_IDS: some})
+            self.value.meta[self.Tag.CALLER_IDS] = some
 
     @property
     def access(self) -> collections.abc.Sequence[str]:
         """Granted access sequence."""
-        res = shvmeta(self.value).get(self.Tag.ACCESS_GRANT, "")
+        res = self.value.meta.get(self.Tag.ACCESS, "")
         if isinstance(res, str):
             if res:
                 return res.split(",")
@@ -198,12 +194,10 @@ class RpcMessage:
     @access.setter
     def access(self, access: collections.abc.Sequence[str]) -> None:
         """Set granted access sequence."""
-        if not access:
-            shvmeta(self.value).pop(self.Tag.ACCESS_GRANT, None)
+        if access:
+            self.value.meta[self.Tag.ACCESS] = access
         else:
-            self.value = SHVMeta.new(
-                self.value, {self.Tag.ACCESS_GRANT: ",".join(access)}
-            )
+            self.value.meta.pop(self.Tag.ACCESS, None)
 
     @property
     def rpc_access(self) -> RpcMethodAccess | None:
@@ -217,12 +211,10 @@ class RpcMessage:
     @rpc_access.setter
     def rpc_access(self, access: RpcMethodAccess | None) -> None:
         """Set access level with :class:`shv.RpcMethodAccess`."""
-        if access is None:
-            shvmeta(self.value).pop(self.Tag.ACCESS_GRANT, None)
+        if access is not None:
+            self.value.meta[self.Tag.ACCESS] = RpcMethodAccess.tostr(access)
         else:
-            self.value = SHVMeta.new(
-                self.value, {self.Tag.ACCESS_GRANT: RpcMethodAccess.tostr(access)}
-            )
+            self.value.meta.pop(self.Tag.ACCESS, None)
 
     @property
     def param(self) -> SHVType:
@@ -351,7 +343,7 @@ class RpcMessage:
         return res
 
     @classmethod
-    def chng(cls, path, value) -> "RpcMessage":
+    def chng(cls, path: str, value: SHVType) -> "RpcMessage":
         """Create message for ``chng`` signal.
 
         :param path: SHV path for signal.

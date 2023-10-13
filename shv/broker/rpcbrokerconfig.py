@@ -108,7 +108,7 @@ class RpcBrokerConfig:
                 m.update(nonce.encode("utf-8"))
                 m.update(self.shapass.encode("utf-8"))
                 return m.hexdigest() == password
-            return False
+            return False  # type: ignore
 
     def __init__(self) -> None:
         self.listen: dict[str, RpcUrl] = {}

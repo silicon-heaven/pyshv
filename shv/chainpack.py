@@ -3,9 +3,19 @@ import collections.abc
 import datetime
 import decimal
 import struct
+import typing
 
 from . import commonpack
-from .value import SHVMeta, SHVMetaType, SHVType, SHVUInt, decimal_rexp
+from .value import (
+    SHVIMapType,
+    SHVListType,
+    SHVMapType,
+    SHVMeta,
+    SHVMetaType,
+    SHVType,
+    SHVUInt,
+    decimal_rexp,
+)
 
 
 class ChainPack:
@@ -83,9 +93,9 @@ class ChainPackReader(commonpack.CommonReader):
         elif packing_schema == ChainPack.CP_DateTime:
             value = self._read_datetime()
         elif packing_schema == ChainPack.CP_Map:
-            value = self._read_map()
+            value = typing.cast(SHVMapType, self._read_map())
         elif packing_schema == ChainPack.CP_IMap:
-            value = self._read_map()
+            value = typing.cast(SHVIMapType, self._read_map())
         elif packing_schema == ChainPack.CP_List:
             value = self._read_list()
         elif packing_schema == ChainPack.CP_Blob:
@@ -100,7 +110,7 @@ class ChainPackReader(commonpack.CommonReader):
             value = SHVMeta.new(value, meta)
         return value
 
-    def _read_uint_dataHelper(self):
+    def _read_uint_dataHelper(self) -> tuple[int, int]:
         num = 0
         bitlen = 0
         head = self._read_byte()
@@ -129,11 +139,11 @@ class ChainPackReader(commonpack.CommonReader):
             num = (num << 8) + r
         return num, bitlen
 
-    def read_uint_data(self):
+    def read_uint_data(self) -> int:
         num, _ = self._read_uint_dataHelper()
         return num
 
-    def _read_int_data(self):
+    def _read_int_data(self) -> int:
         num, bitlen = self._read_uint_dataHelper()
         sign_bit_mask = 1 << (bitlen - 1)
         neg = num & sign_bit_mask
@@ -145,14 +155,14 @@ class ChainPackReader(commonpack.CommonReader):
 
     def _read_double(self) -> float:
         res = struct.unpack("<d", self._read(8))  # little endian
-        return res[0]
+        return typing.cast(float, res[0])
 
-    def _read_decimal(self):
+    def _read_decimal(self) -> decimal.Decimal:
         mant = self._read_int_data()
         exp = self._read_int_data()
         return decimal.Decimal(f"{mant}e{exp}")
 
-    def _read_datetime(self):
+    def _read_datetime(self) -> datetime.datetime:
         d = self.read_uint_data()
         offset = 0
         has_tz_offset = d & 1
@@ -163,11 +173,10 @@ class ChainPackReader(commonpack.CommonReader):
             if offset >= 128:
                 offset -= 128  # sign extension
             d >>= 7
-        if not has_not_msec:
-            d /= 1000
-        d += ChainPack.SHV_EPOCH_SEC
+        f: float = d if has_not_msec else d / 1000
+        f += ChainPack.SHV_EPOCH_SEC
         tzone = datetime.timezone(datetime.timedelta(minutes=offset * 15))
-        return datetime.datetime.fromtimestamp(d, tzone)
+        return datetime.datetime.fromtimestamp(f, tzone)
 
     def _read_blob(self) -> bytes:
         dlen = self.read_uint_data()
@@ -197,7 +206,7 @@ class ChainPackReader(commonpack.CommonReader):
                 res += chr(b)
         return res
 
-    def _read_list(self):
+    def _read_list(self) -> SHVListType:
         lst = []
         while True:
             b = self._peek_byte()
@@ -207,14 +216,16 @@ class ChainPackReader(commonpack.CommonReader):
             lst.append(self.read())
         return lst
 
-    def _read_map(self):
-        mmap = {}
+    def _read_map(self) -> dict[str | int, SHVType]:
+        mmap: dict[str | int, SHVType] = {}
         while True:
             b = self._peek_byte()
             if b == ChainPack.CP_TERM:
                 self._read_byte()
                 break
             key = self.read()
+            if not isinstance(key, (str, int)):
+                raise ValueError(f"Invalid Map key: {type(key)}")
             val = self.read()
             mmap[key] = val
         return mmap
@@ -268,7 +279,7 @@ class ChainPackWriter(commonpack.CommonWriter):
         return cnt
 
     @classmethod
-    def _expand_bit_len(cls, bit_len):
+    def _expand_bit_len(cls, bit_len: int) -> int:
         byte_cnt = cls._bytes_needed(bit_len)
         if bit_len <= 28:
             ret = byte_cnt * (8 - 1) - 1
@@ -276,7 +287,7 @@ class ChainPackWriter(commonpack.CommonWriter):
             ret = (byte_cnt - 1) * 8 - 1
         return ret
 
-    def _write_uint_data_helper(self, num, bit_len):
+    def _write_uint_data_helper(self, num: int, bit_len: int) -> None:
         byte_cnt = self._bytes_needed(bit_len)
         data = bytearray(byte_cnt)
         for i in range(byte_cnt - 1, -1, -1):
@@ -298,7 +309,10 @@ class ChainPackWriter(commonpack.CommonWriter):
 
     def write_meta(self, meta: SHVMetaType) -> None:
         self._write(ChainPack.CP_MetaMap)
-        self._write_map_data(meta)
+        for k, v in meta.items():
+            self.write(k)
+            self.write(v)
+        self._write(ChainPack.CP_TERM)
 
     def write_null(self) -> None:
         self._write(ChainPack.CP_Null)
@@ -369,7 +383,9 @@ class ChainPackWriter(commonpack.CommonWriter):
             self.write(val)
         self._write(ChainPack.CP_TERM)
 
-    def _write_map_data(self, mmap):
+    def _write_map_data(
+        self, mmap: collections.abc.Mapping[str | int, SHVType]
+    ) -> None:
         for k, v in mmap.items():
             self.write(k)
             self.write(v)
@@ -377,11 +393,17 @@ class ChainPackWriter(commonpack.CommonWriter):
 
     def write_map(self, value: collections.abc.Mapping[str, SHVType]) -> None:
         self._write(ChainPack.CP_Map)
-        self._write_map_data(value)
+        for k, v in value.items():
+            self.write(k)
+            self.write(v)
+        self._write(ChainPack.CP_TERM)
 
     def write_imap(self, value: collections.abc.Mapping[int, SHVType]) -> None:
         self._write(ChainPack.CP_IMap)
-        self._write_map_data(value)
+        for k, v in value.items():
+            self.write(k)
+            self.write(v)
+        self._write(ChainPack.CP_TERM)
 
     def write_datetime(self, value: datetime.datetime) -> None:
         self._write(ChainPack.CP_DateTime)

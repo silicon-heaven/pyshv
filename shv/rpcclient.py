@@ -18,7 +18,7 @@ from .chainpack import ChainPack, ChainPackReader, ChainPackWriter
 from .cpon import CponReader
 from .rpcmessage import RpcMessage
 from .rpcurl import RpcProtocol, RpcUrl
-from .value import SHVType
+from .value import SHVIMap, SHVType
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class RpcClient(abc.ABC):
     """RPC connection to some SHV peer."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.last_send = time.monotonic()
         """Monotonic time when last message was sent on this connection.
 
@@ -68,7 +68,8 @@ class RpcClient(abc.ABC):
                 except ValueError:
                     pass
                 else:
-                    break
+                    if isinstance(shvdata, SHVIMap):
+                        break
             logger.debug("==> Invalid message received")
 
         msg = RpcMessage(shvdata)
@@ -239,15 +240,15 @@ class RpcClientDatagram(RpcClient):
         """Implementation of Asyncio datagram protocol to communicate over UDP."""
 
         def __init__(self) -> None:
-            self.queue: asyncio.Queue[bytes] = asyncio.Queue()
+            self.queue: asyncio.Queue[bytes | None] = asyncio.Queue()
 
-        def datagram_received(self, data: bytes, _) -> None:
+        def datagram_received(self, data: bytes, _: typing.Any) -> None:
             # Note: empty messages are ignored because they are commonly used to setup
             # the new connection on both sides.
             if data:
                 self.queue.put_nowait(data)
 
-        def connection_lost(self, exc):
+        def connection_lost(self, exc: Exception | None) -> None:
             self.queue.put_nowait(None)
 
     def __init__(
@@ -316,8 +317,8 @@ class RpcClientSerial(RpcClient):
     def __init__(
         self,
         serial_instance: serial.Serial,
-        loop=None,
-    ):
+        loop: None = None,  # TODO typehint asyncio type
+    ) -> None:
         super().__init__()
         self.serial = serial_instance
         self._loop = loop if loop is not None else asyncio.get_running_loop()

@@ -52,12 +52,12 @@ smv_branch_whitelist = r"^master$"
 smv_remote_whitelist = r"^.*$"
 
 
-def build_finished_gitignore(app, exception):
+def build_finished_gitignore(app, exception):  # type: ignore
     """Create .gitignore file when build is finished."""
     outpath = pathlib.Path(app.outdir)
     if exception is None and outpath.is_dir():
         (outpath / ".gitignore").write_text("**\n")
 
 
-def setup(app):
+def setup(app):  # type: ignore
     app.connect("build-finished", build_finished_gitignore)

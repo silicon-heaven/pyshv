@@ -17,7 +17,7 @@ log_levels = (
 )
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """Parse passed arguments and return result."""
     parser = argparse.ArgumentParser("pyshvbroker", description="Silicon Heaven broker")
     parser.add_argument(
