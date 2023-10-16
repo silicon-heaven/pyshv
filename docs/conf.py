@@ -26,7 +26,7 @@ templates_path = ["_templates"]
 exclude_patterns = ["_build"]
 
 html_logo = "_static/logo.svg"
-# html_favicon = "_static/favicon.ico"
+html_favicon = "_static/favicon.ico"
 html_copy_source = True
 html_show_sourcelink = True
 html_show_copyright = False
