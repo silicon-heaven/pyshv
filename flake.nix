@@ -21,8 +21,6 @@
 
       pypkgs-template-python = {
         buildPythonPackage,
-        pipBuildHook,
-        setuptools,
         pytestCheckHook,
         pythonPackages,
         sphinxHook,
@@ -63,9 +61,9 @@
       // eachDefaultSystem (system: let
         pkgs = nixpkgs.legacyPackages.${system}.extend self.overlays.default;
       in {
-        packages = rec {
+        packages = {
           inherit (pkgs.python3Packages) template-python;
-          default = template-python;
+          default = pkgs.python3Packages.template-python;
         };
         legacyPackages = pkgs;
 
