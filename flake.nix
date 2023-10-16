@@ -41,21 +41,13 @@
     in
       {
         overlays = {
-          template-python = final: prev: {
-            python3 = prev.python3.override (oldAttrs: let
-              prevOverride = oldAttrs.packageOverrides or (_: _: {});
-            in {
-              packageOverrides = composeExtensions prevOverride (
-                pyself: pysuper: {
-                  template-python = pyself.callPackage pypkgs-template-python {};
-                }
-              );
-            });
-            python3Packages = final.python3.pkgs;
+          pythonPackagesExtension = final: prev: {
+            template-python = final.callPackage pypkgs-template-python {};
           };
-          default = composeManyExtensions [
-            self.overlays.template-python
-          ];
+          noInherit = final: prev: {
+            pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [self.overlays.pythonPackagesExtension];
+          };
+          default = composeManyExtensions [self.overlays.noInherit];
         };
       }
       // eachDefaultSystem (system: let
