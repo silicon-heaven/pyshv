@@ -7,7 +7,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path("..").absolute()))
 
-project = "pySHV"
+project = "Silicon Heaven in Python"
 copyright = "SPDX-License-Identifier: MIT"
 author = "Elektroline a.s."
 
