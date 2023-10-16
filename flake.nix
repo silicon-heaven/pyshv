@@ -80,19 +80,18 @@
     in
       {
         overlays = {
-          pyshv = final: prev: {
-            python3 = prev.python3.override {
-              packageOverrides = pyfinal: pyprev: {
-                pyshv = pyfinal.callPackage pypkg-pyshv {};
-                sphinx-multiversion = pyfinal.callPackage pypkg-multiversion {};
-                types-pyserial = pyfinal.callPackage pypkg-types-serial {};
-              };
-            };
-            python3Packages = final.python3.pkgs;
+          pythonPackagesExtension = final: prev: {
+            template-python = final.callPackage pypkgs-template-python {};
+            pyshv = final.callPackage pypkg-pyshv {};
+            sphinx-multiversion = final.callPackage pypkg-multiversion {};
+            types-pyserial = final.callPackage pypkg-types-serial {};
+          };
+          noInherit = final: prev: {
+            pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [self.overlays.pythonPackagesExtension];
           };
           default = composeManyExtensions [
             libshv.overlays.default
-            self.overlays.pyshv
+            self.overlays.noInherit
           ];
         };
       }
