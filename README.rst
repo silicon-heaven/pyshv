@@ -1,6 +1,9 @@
 ============================================
 Pure Python implementation of Silicon Heaven
 ============================================
+.. image:: docs/_static/logo.svg
+   :align: right
+   :height: 128px
 
 The implementation of serialized and deserializer for CPON and Chainpack as well
 as implementation of `Silicon Heaven RPC

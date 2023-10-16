@@ -1,4 +1,8 @@
+============================================
+Pure Python implementation of Silicon Heaven
+============================================
 .. include:: ../README.rst
+   :start-line: 7
 
 Table of contents
 -----------------
