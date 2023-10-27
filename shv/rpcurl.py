@@ -1,10 +1,20 @@
 """SHV RPC URL for RpcClient and RpcServer."""
 import dataclasses
 import enum
+import functools
 import getpass
 import urllib.parse
 
 from .value import SHVType
+
+
+@functools.lru_cache
+def _get_user() -> str:
+    # getuser fails if there is no account assigned to the UID in the system
+    try:
+        return getpass.getuser()
+    except KeyError:
+        return "none"
 
 
 class RpcProtocol(enum.Enum):
@@ -49,7 +59,7 @@ class RpcUrl:
     """Port the SHV RPC server is listening on."""
     protocol: RpcProtocol = RpcProtocol.TCP
     """SHV RPC protocol used to communicate (This is scheme in URL therminology)"""
-    username: str = getpass.getuser()
+    username: str = _get_user()
     """User name used to login to the remote server."""
 
     # Options
