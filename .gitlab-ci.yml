@@ -80,7 +80,7 @@ mypy:
   extends: .lint
   script:
     - mkdir .mypy-cache
-    - nix develop --quiet -c mypy --cache-dir .mypy-cache --install-types --non-interactive .
+    - nix develop --quiet -c mypy --cache-dir .mypy-cache .
 
 ## Style stage #################################################################
 .style:
