@@ -124,3 +124,8 @@ async def test_sha_login(shvbroker, url):
     client = await SimpleClient.connect(nurl)
     assert await client.ls("") == [".broker", "test"]
     await client.disconnect()
+
+
+async def test_disconnect(client):
+    """This tests that multiple calls to disconnect is not an issue."""
+    await client.disconnect()

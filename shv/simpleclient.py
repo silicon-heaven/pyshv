@@ -80,8 +80,6 @@ class SimpleClient:
         The call to the disconnect when client is not connected is silently
         ignored.
         """
-        if not self.client.connected():
-            return
         await self.client.disconnect()
         await self.task
 
