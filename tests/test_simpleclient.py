@@ -104,7 +104,7 @@ async def test_ls(client, path, result):
         ),
     ),
 )
-async def test_dir_details(client, path, result):
+async def test_dir(client, path, result):
     """Verify that we can use dir method."""
     res = await client.dir(path)
     assert res == result

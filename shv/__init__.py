@@ -27,6 +27,7 @@ from .rpcsubscription import RpcSubscription
 from .rpcurl import RpcLoginType, RpcProtocol, RpcUrl
 from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
 from .simpleclient import SimpleClient
+from .simpledevice import SimpleDevice
 from .value import (
     SHVBool,
     SHVBoolType,
@@ -104,6 +105,8 @@ __all__ = [
     "RpcSubscription",
     # simpleclient
     "SimpleClient",
+    # simpledevice
+    "SimpleDevice",
     # valueclient
     "ValueClient",
     # value

@@ -92,7 +92,7 @@ async def fixture_value_client(shvbroker, url_test):
 
 @pytest.fixture(name="example_device")
 async def fixture_example_device(shvbroker, url_test_device):
-    """Run example device and provide socket to access it."""
+    """Run example device and provide instance to access it."""
     device = await ExampleDevice.connect(url_test_device)
     yield device
     await device.disconnect()
