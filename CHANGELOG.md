@@ -17,15 +17,20 @@ pySHV now conforms with work in progress SHV standard 3.0!
 - Removed unused argument `login_options` for `SimpleClient.connect`
 - `SimpleClient.dir_details` is now `SimpleClient.dir` and old `dir`
   implementation is removed
+- `RpcClientStream` is replaced with `RpcClientTCP` and `RpcClientUnix`
+- `RpcClientSerial` is repaced with `RpcClientTTY`
+- `RpcServerStream` is not replaced with `RpcServerTCP` and `RpcServerUnix`
 - Broker configuration now no longer contains `rules` sections and instead we
   specify `methods` in `roles` sections. Methods are combination of path and
   method that is used to identify methods this role is applied to.
+- `RpcClient.connected` is not property instead of plain method
 - Broker now allows all users browse access to the `.app` and read access to the
   `.app/broker/currentClient`.
 - Received invalid messages are now skipped instead of raising exception.
 
 ### Removed
 - `SimpleClient.ls_with_children` as that is now invalid with SHV 3.0
+- Support of UDP (not part of standard)
 
 
 ## [0.3.0] - 2023-09-19

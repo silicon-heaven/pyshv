@@ -64,14 +64,10 @@ class CommonReader(abc.ABC):
     def _read_byte(self) -> int:
         """Read a single byte and return it as int.
 
-        :return: Read byte. This also returns `0` when EOF is encountered. Make
-        sure that you use `0` to terminate what you are doing. If you expect `0`
-        to be received please use `_read` instead.
+        :return: Read byte.
+        :raise EOFError: in case EOF is encountered.
         """
-        try:
-            return self._read(1)[0]
-        except EOFError:
-            return 0
+        return self._read(1)[0]
 
     def _peek_byte(self) -> int:
         """Peek a single byte and return it as int.

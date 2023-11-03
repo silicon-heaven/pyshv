@@ -2,6 +2,7 @@
 import collections.abc
 import datetime
 import decimal
+import io
 import struct
 import typing
 
@@ -46,15 +47,49 @@ class ChainPack:
     SHV_EPOCH_SEC = 1517529600
     # ChainPack.INVALID_MIN_OFFSET_FROM_UTC = (-64 * 15)
 
-    @classmethod
-    def unpack(cls, data: bytes | str) -> SHVType:
+    @staticmethod
+    def unpack(data: bytes | str) -> SHVType:
         """Unpack single value from given data."""
         return ChainPackReader.unpack(data)
 
-    @classmethod
-    def pack(cls, value: SHVType) -> bytes:
+    @staticmethod
+    def pack(value: SHVType) -> bytes:
         """Pack given value and return bytes."""
         return ChainPackWriter.pack(value)
+
+    @staticmethod
+    def unpack_uint_data(data: bytes | bytearray) -> int:
+        """Unpack given value as unsigned int data.
+
+        The existence of this is pretty much just to support Stream transport
+        protocol for SHV RPC. You probably do not want to use this for anything
+        else.
+
+        :param data: Data that should contain unsigned integer in Chainpack
+          format. Unused bytes at the end are ignored.
+        :return: unpacked integer.
+        :raise ValueError: in case of invalid data.
+        """
+        try:
+            return ChainPackReader(data).read_uint_data()
+        except EOFError as exc:
+            raise ValueError from exc
+
+    @staticmethod
+    def pack_uint_data(value: int) -> bytes:
+        """Pack given value as unsigned int data.
+
+        The existence of this is pretty much just to support Stream transport
+        protocol for SHV RPC. You probably do not want to use this for anything
+        else.
+
+        :param value: Unsigned integer to be packed.
+        :return: bytes with unsigned integer.
+        """
+        bio = io.BytesIO()
+        writer = ChainPackWriter(bio)
+        writer.write_uint_data(value)
+        return bio.getvalue()
 
 
 class ChainPackReader(commonpack.CommonReader):
@@ -63,7 +98,7 @@ class ChainPackReader(commonpack.CommonReader):
     def read_meta(self) -> SHVMetaType | None:
         if self._peek_byte() != ChainPack.CP_MetaMap:
             return None
-        self._read_byte()
+        self._peek_drop()
         return self._read_map()
 
     def read(self) -> SHVType:

@@ -21,9 +21,19 @@ class RpcProtocol(enum.Enum):
     """Enum of supported RPC protocols by this Python implementation."""
 
     TCP = enum.auto()
-    UDP = enum.auto()
-    LOCAL_SOCKET = enum.auto()
+    """TCP/IP with messages transported using Stream transport layer."""
+    TCPS = enum.auto()
+    """TCP/IP with messages transported using Serial transport layer."""
+    SSL = enum.auto()
+    """TLS TCP/IP with messages transported using Stream transport layer."""
+    SSLS = enum.auto()
+    """TLS TCP/IP with messages transported using Serial transport layer."""
+    UNIX = enum.auto()
+    """Unix local domain named socket using Stream transport layer."""
+    UNIXS = enum.auto()
+    """Unix local domain named socket using Reliable Serial transport layer."""
     SERIAL = enum.auto()
+    """Serial transport layer."""
 
 
 class RpcLoginType(enum.Enum):
@@ -46,6 +56,9 @@ class RpcUrl:
     This is unified locator for SHV RPC connections that is used to specify
     connections. It is implemented as :func:`dataclasses.dataclass` and you
     can set properties directly or you can parse string URL.
+
+    The URL format is defined in `SHV standard
+    <https://silicon-heaven.github.io/shv-doc/rpcurl.html>`_.
     """
 
     # URL primary fields
@@ -55,7 +68,7 @@ class RpcUrl:
     .. versionchanged:: 0.3.0
        This attribute was named ``host`` in version 0.2.0.
     """
-    port: int = 3755
+    port: int = -1
     """Port the SHV RPC server is listening on."""
     protocol: RpcProtocol = RpcProtocol.TCP
     """SHV RPC protocol used to communicate (This is scheme in URL therminology)"""
@@ -74,6 +87,16 @@ class RpcUrl:
     baudrate: int = 115200
     """Baudrate used for some of the link protocols."""
 
+    def __post_init__(self) -> None:
+        """Deduce the correct value for port."""
+        if self.port == type(self).port:
+            self.port = {
+                RpcProtocol.TCP: 3755,
+                RpcProtocol.TCPS: 3765,
+                RpcProtocol.SSL: 3756,
+                RpcProtocol.SSLS: 3766,
+            }.get(self.protocol, self.port)
+
     def login_options(self) -> dict[str, SHVType]:
         """Assemble login options for the SHV RPC broker from options here."""
         res: dict[str, SHVType] = {}
@@ -90,17 +113,18 @@ class RpcUrl:
         :param url: URL in string format.
         :return: New :class:`RpcUrl` instance.
         """
-        sr = urllib.parse.urlsplit(url, scheme="localsocket", allow_fragments=False)
+        sr = urllib.parse.urlsplit(url, scheme="unix", allow_fragments=False)
         pqs = urllib.parse.parse_qs(sr.query)
 
         protocols = {
             "tcp": RpcProtocol.TCP,
-            "udp": RpcProtocol.UDP,
-            "localsocket": RpcProtocol.LOCAL_SOCKET,
-            "unix": RpcProtocol.LOCAL_SOCKET,
+            "tcps": RpcProtocol.TCPS,
+            "ssl": RpcProtocol.SSL,
+            "ssls": RpcProtocol.SSLS,
+            "unix": RpcProtocol.UNIX,
+            "unixs": RpcProtocol.UNIXS,
             "serial": RpcProtocol.SERIAL,
-            "serialport": RpcProtocol.SERIAL,
-            "rs232": RpcProtocol.SERIAL,
+            "tty": RpcProtocol.SERIAL,
         }
         if sr.scheme not in protocols:
             raise ValueError(f"Invalid scheme: {sr.scheme}")
@@ -109,16 +133,21 @@ class RpcUrl:
         res = cls("", protocol=protocol)
 
         res.username = sr.username or res.username
-        if protocol in (RpcProtocol.TCP, RpcProtocol.UDP):
+        if protocol in (
+            RpcProtocol.TCP,
+            RpcProtocol.TCPS,
+            RpcProtocol.SSL,
+            RpcProtocol.SSLS,
+        ):
             res.location = sr.hostname or ""
             if sr.port is not None:
                 res.port = int(sr.port)
             if sr.path:
                 raise ValueError(f"Path is not supported for {sr.scheme}: {sr.path}")
-        elif protocol in (RpcProtocol.LOCAL_SOCKET, RpcProtocol.SERIAL):
+        elif protocol in (RpcProtocol.UNIX, RpcProtocol.UNIXS, RpcProtocol.SERIAL):
             res.location = f"/{sr.netloc}{sr.path}" if sr.netloc else sr.path
         else:
-            raise NotImplementedError()  # pragma: no cover
+            raise NotImplementedError  # pragma: no cover
 
         # We prefer SHA1 password and thus discard plain if both are present
         if opts := pqs.pop("shapass", []):
@@ -136,7 +165,7 @@ class RpcUrl:
                 res.baudrate = int(opts[0])
 
         if pqs:
-            raise ValueError(f"Unsupported URL queries: {pqs.keys()}")
+            raise ValueError(f"Unsupported URL queries: {', '.join(pqs.keys())}")
 
         return res
 
@@ -144,10 +173,19 @@ class RpcUrl:
         """Convert to string URL."""
         protocols = {
             RpcProtocol.TCP: "tcp",
-            RpcProtocol.UDP: "udp",
-            RpcProtocol.LOCAL_SOCKET: "localsocket",
+            RpcProtocol.TCPS: "tcps",
+            RpcProtocol.SSL: "ssl",
+            RpcProtocol.SSLS: "ssls",
+            RpcProtocol.UNIX: "unix",
+            RpcProtocol.UNIXS: "unixs",
+            RpcProtocol.SERIAL: "serial",
         }
-        if self.protocol in (RpcProtocol.TCP, RpcProtocol.UDP):
+        if self.protocol in (
+            RpcProtocol.TCP,
+            RpcProtocol.TCPS,
+            RpcProtocol.SSL,
+            RpcProtocol.SSLS,
+        ):
             netloc = "//"
             if self.username and self.username != type(self).username:
                 netloc += f"{self.username}@"
@@ -156,10 +194,10 @@ class RpcUrl:
             else:
                 netloc += self.location
             netloc += f":{self.port}"
-        elif self.protocol is RpcProtocol.LOCAL_SOCKET:
+        elif self.protocol in (RpcProtocol.UNIX, RpcProtocol.UNIXS, RpcProtocol.SERIAL):
             netloc = self.location
         else:
-            raise NotImplementedError()  # pragma: no cover
+            raise NotImplementedError  # pragma: no cover
 
         opts: list[str] = []
         if self.device_id:

@@ -16,7 +16,7 @@ requires-python = ">=3.10"
 dependencies = [
   "python-dateutil",
   "pyserial",
-  "pyserial-asyncio",
+  "aioserial",
 ]
 
 [project.urls]

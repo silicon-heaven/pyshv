@@ -4,7 +4,7 @@ import dataclasses
 import pytest
 
 from shv import (
-    RpcClientStream,
+    RpcClientTCP,
     RpcInvalidParamsError,
     RpcInvalidRequestError,
     RpcMessage,
@@ -224,14 +224,14 @@ async def test_invalid_login(shvbroker, url):
 
 
 async def test_invalid_hello_seq(shvbroker, url):
-    client = await RpcClientStream.connect(url.location, url.port)
+    client = await RpcClientTCP.connect(url.location, url.port)
     await client.send(RpcMessage.request(None, "invalid"))
     with pytest.raises(RpcInvalidRequestError):
         await client.receive()
 
 
 async def test_invalid_login_seq(shvbroker, url):
-    client = await RpcClientStream.connect(url.location, url.port)
+    client = await RpcClientTCP.connect(url.location, url.port)
     await client.send(RpcMessage.request(None, "hello"))
     await client.receive()
     await client.send(RpcMessage.request(None, "invalid"))
@@ -240,7 +240,7 @@ async def test_invalid_login_seq(shvbroker, url):
 
 
 async def test_invalid_login_null(shvbroker, url):
-    client = await RpcClientStream.connect(url.location, url.port)
+    client = await RpcClientTCP.connect(url.location, url.port)
     await client.send(RpcMessage.request(None, "hello"))
     await client.receive()
     await client.send(RpcMessage.request(None, "login"))

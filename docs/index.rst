@@ -13,7 +13,6 @@ Table of contents
    valueclient
    device
    broker
-   url
    api/index
 
 :ref:`genindex`

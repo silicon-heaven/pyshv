@@ -19,6 +19,7 @@ async def example_client(url: RpcUrl) -> None:
     assert client is not None
     res = await client.call(".broker/app", "echo", 42)
     print(f"response received: {repr(res)}")
+    await client.disconnect()
 
 
 def parse_args() -> argparse.Namespace:

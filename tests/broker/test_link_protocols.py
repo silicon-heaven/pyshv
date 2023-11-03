@@ -1,11 +1,6 @@
 """Check different transport protocols between broker and client."""
-import asyncio
 import dataclasses
-import io
 import logging
-import os
-import pty
-import sys
 
 import pytest
 
@@ -46,14 +41,6 @@ class TestProtocolUnix(Protocol):
     def fixture_url(self, url, tmp_path):
         return dataclasses.replace(
             url,
-            protocol=RpcProtocol.LOCAL_SOCKET,
+            protocol=RpcProtocol.UNIX,
             location=str(tmp_path / "broker.sock"),
         )
-
-
-class TestProtocolUDP(Protocol):
-    """Check that we can work over UDP/IP transport protocol."""
-
-    @pytest.fixture(name="url")
-    def fixture_url(self, url):
-        return dataclasses.replace(url, protocol=RpcProtocol.UDP)

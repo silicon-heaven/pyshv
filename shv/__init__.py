@@ -3,9 +3,9 @@ from .chainpack import ChainPack, ChainPackReader, ChainPackWriter
 from .cpon import Cpon, CponReader, CponWriter
 from .rpcclient import (
     RpcClient,
-    RpcClientDatagram,
-    RpcClientSerial,
-    RpcClientStream,
+    RpcClientTCP,
+    RpcClientTTY,
+    RpcClientUnix,
     connect_rpc_client,
 )
 from .rpcerrors import (
@@ -22,7 +22,13 @@ from .rpcerrors import (
 )
 from .rpcmessage import RpcMessage
 from .rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodFlags
-from .rpcserver import RpcServer, RpcServerDatagram, RpcServerStream, create_rpc_server
+from .rpcprotocol import (
+    RpcProtocolSerial,
+    RpcProtocolSerialCRC,
+    RpcProtocolStream,
+    RpcTransportProtocol,
+)
+from .rpcserver import RpcServer, RpcServerTCP, RpcServerUnix, create_rpc_server
 from .rpcsubscription import RpcSubscription
 from .rpcurl import RpcLoginType, RpcProtocol, RpcUrl
 from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
@@ -72,14 +78,19 @@ __all__ = [
     # rpcclient
     "connect_rpc_client",
     "RpcClient",
-    "RpcClientStream",
-    "RpcClientDatagram",
-    "RpcClientSerial",
+    "RpcClientTCP",
+    "RpcClientUnix",
+    "RpcClientTTY",
+    # rpcprotocol
+    "RpcTransportProtocol",
+    "RpcProtocolStream",
+    "RpcProtocolSerial",
+    "RpcProtocolSerialCRC",
     # rpcserver
     "create_rpc_server",
     "RpcServer",
-    "RpcServerStream",
-    "RpcServerDatagram",
+    "RpcServerTCP",
+    "RpcServerUnix",
     # rpcurl
     "RpcProtocol",
     "RpcLoginType",

@@ -70,7 +70,7 @@ class SimpleClient:
         """
         client = await connect_rpc_client(url)
         await cls.urllogin(client, url)
-        if not client.connected():
+        if not client.connected:
             return None
         return cls(client)
 
@@ -79,8 +79,12 @@ class SimpleClient:
 
         The call to the disconnect when client is not connected is silently
         ignored.
+
+        This call blocks until disconnect is completed. You can use
+        ``x.client.disconnect()`` to only initialize disconnect without waiting
+        for it to take an effect.
         """
-        await self.client.disconnect()
+        self.client.disconnect()
         await self.task
 
     @classmethod
@@ -108,8 +112,6 @@ class SimpleClient:
         # it is not defined in any SHV design document as it seems.
         await client.send(RpcMessage.request("", "hello"))
         resp = await client.receive()
-        if resp is None:
-            return None
         nonce = shvget(resp.result, "nonce", str, "")
         if login_type is RpcLoginType.SHA1:
             assert isinstance(nonce, str)
@@ -127,9 +129,7 @@ class SimpleClient:
 
         logger.debug("LOGGING IN")
         await client.send(RpcMessage.request("", "login", param))
-        resp = await client.receive()
-        if resp is None:
-            return None
+        await client.receive()
         logger.debug("LOGGED IN")
 
     @classmethod
@@ -155,8 +155,11 @@ class SimpleClient:
     async def _loop(self) -> None:
         """Loop run in asyncio task to receive messages."""
         activity_task = asyncio.create_task(self._activity_loop())
-        while msg := await self.client.receive(raise_error=False):
-            asyncio.create_task(self._message(msg))
+        try:
+            while msg := await self.client.receive(raise_error=False):
+                asyncio.create_task(self._message(msg))
+        except EOFError:
+            pass
         activity_task.cancel()
         try:
             await activity_task
@@ -166,7 +169,7 @@ class SimpleClient:
     async def _activity_loop(self) -> None:
         """Loop run alongside with :meth:`_loop` to send pings to the broker when idling."""
         idlet = self.IDLE_TIMEOUT / 2
-        while self.client.connected():
+        while self.client.connected:
             t = time.monotonic() - self.client.last_send
             if t < idlet:
                 await asyncio.sleep(idlet - t)
@@ -368,16 +371,17 @@ class SimpleClient:
         if method == "dir":
             return self._method_call_dir(path, param)
         if path == ".app":
-            if method == "shvVersionMajor":
-                return SHV_VERSION_MAJOR
-            if method == "shvVersionMinor":
-                return SHV_VERSION_MINOR
-            if method == "name":
-                return self.APP_NAME
-            if method == "version":
-                return self.APP_VERSION
-            if method == "ping":
-                return None
+            match method:
+                case "shvVersionMajor":
+                    return SHV_VERSION_MAJOR
+                case "shvVersionMinor":
+                    return SHV_VERSION_MINOR
+                case "name":
+                    return self.APP_NAME
+                case "version":
+                    return self.APP_VERSION
+                case "ping":
+                    return None
         raise RpcMethodNotFoundError(
             f"No such path '{path}' or method '{method}' or access rights."
         )

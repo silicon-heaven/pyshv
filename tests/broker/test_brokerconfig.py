@@ -9,7 +9,7 @@ from shv import RpcLoginType, RpcMethodAccess, RpcUrl, broker
 def test_listen(config):
     assert config.listen == {
         "internet": RpcUrl.parse("tcp://localhost:3755"),
-        "unix": RpcUrl.parse("localsocket:shvbroker.sock"),
+        "unix": RpcUrl.parse("unix:shvbroker.sock"),
     }
 
 

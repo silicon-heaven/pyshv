@@ -2,23 +2,25 @@
 """
 import asyncio
 import io
+import logging
+import multiprocessing
 import os
 import pty
 import select
-import threading
 
 import pytest
 
 from shv import (
-    RpcClient,
-    RpcClientDatagram,
-    RpcClientSerial,
-    RpcClientStream,
+    RpcClientTCP,
+    RpcClientTTY,
+    RpcClientUnix,
     RpcInvalidRequestError,
     RpcMessage,
-    RpcServerDatagram,
-    RpcServerStream,
+    RpcServerTCP,
+    RpcServerUnix,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class Link:
@@ -47,54 +49,50 @@ class Link:
         with pytest.raises(RpcInvalidRequestError):
             await clients[1].receive(True)
 
-    async def test_eof(self, clients):
-        await clients[0].disconnect()
-        assert await clients[1].receive() is None
-
-    async def test_invalid_reset(self, clients):
-        await clients[0].disconnect()
-        with pytest.raises(
-            RuntimeError, match="^Reset can be called only on connected client.$"
-        ):
-            await clients[0].reset()
-
 
 class ServerLink(Link):
+    """Additional tests for server-client connections."""
+
     async def test_reset_client(self, clients, server):
         await clients[1].reset()
         server_client = await server[1].get()
         msg = RpcMessage.request("foo", "ls")
         await clients[1].send(msg)
         assert await server_client.receive() == msg
+        await server_client.wait_disconnect()
 
-
-class Stream(ServerLink):
     async def test_reset_server_client(self, clients):
-        await clients[0].reset()
-        assert not clients[0].connected()
+        assert not await clients[0].reset()
+        assert not clients[0].connected
+
+    @pytest.mark.parametrize("cdisc,crecv", ((0, 1), (1, 0)))
+    async def test_eof(self, clients, cdisc, crecv):
+        await clients[cdisc].wait_disconnect()
+        with pytest.raises(EOFError):
+            await clients[crecv].receive()
 
 
-class TestTCP(Stream):
+class TestTCP(ServerLink):
     """Check that TCP/IP transport protocol works."""
 
     @pytest.fixture(name="server")
     async def fixture_server(self, port):
         queue = asyncio.Queue()
-        server = await RpcServerStream.listen(queue.put, "localhost", port)
+        server = RpcServerTCP(queue.put, "localhost", port)
+        await server.listen()
         yield server, queue
-        server.close()
         await server.wait_closed()
 
     @pytest.fixture(name="clients")
     async def fixture_clients(self, server, port):
-        client = await RpcClientStream.connect("localhost", port)
+        client = await RpcClientTCP.connect("localhost", port)
         server_client = await server[1].get()
         yield server_client, client
-        await server_client.disconnect()
-        await client.disconnect()
+        await client.wait_disconnect()
+        await server_client.wait_disconnect()
 
 
-class TestUnix(Stream):
+class TestUnix(ServerLink):
     """Check that Unix transport protocol works."""
 
     @pytest.fixture(name="sockpath")
@@ -104,43 +102,18 @@ class TestUnix(Stream):
     @pytest.fixture(name="server")
     async def fixture_server(self, sockpath):
         queue = asyncio.Queue()
-        server = await RpcServerStream.unix_listen(queue.put, sockpath)
+        server = RpcServerUnix(queue.put, sockpath)
+        await server.listen()
         yield server, queue
-        server.close()
         await server.wait_closed()
 
     @pytest.fixture(name="clients")
     async def fixture_clients(self, server, sockpath):
-        client = await RpcClientStream.unix_connect(sockpath)
+        client = await RpcClientUnix.connect(sockpath)
         server_client = await server[1].get()
         yield server_client, client
-        await server_client.disconnect()
-        await client.disconnect()
-
-
-class TestUDP(Link):
-    """Check that UDP/IP transport protocol works."""
-
-    @pytest.fixture(name="server")
-    async def fixture_server(self, port):
-        queue = asyncio.Queue()
-        server = await RpcServerDatagram.listen(queue.put, "localhost", port)
-        yield server, queue
-        server.close()
-        await server.wait_closed()
-
-    @pytest.fixture(name="clients")
-    async def fixture_clients(self, server, port):
-        client = await RpcClientDatagram.connect("localhost", port)
-        await client.reset()
-        res = await server[1].get()
-        yield res, client
-        await res.disconnect()
-        await client.disconnect()
-
-    @pytest.mark.skip("Disconnect can't be propagated over UDP")
-    async def test_eof(self, a: RpcClient, b: RpcClient):
-        pass
+        await server_client.wait_disconnect()
+        await client.wait_disconnect()
 
 
 class TestSerial(Link):
@@ -150,19 +123,22 @@ class TestSerial(Link):
     async def fixture_clients(self):
         pty1_master, pty1_slave = pty.openpty()
         pty2_master, pty2_slave = pty.openpty()
-        task = threading.Thread(target=self.ptycopy, args=(pty1_master, pty2_master))
-        task.start()
+        process = multiprocessing.Process(
+            target=self.ptycopy, args=(pty1_master, pty2_master)
+        )
+        process.start()
 
-        client1 = await RpcClientSerial.open(os.ttyname(pty1_slave))
+        client1 = await RpcClientTTY.open(os.ttyname(pty1_slave))
         os.close(pty1_slave)
-        client2 = await RpcClientSerial.open(os.ttyname(pty2_slave))
+        client2 = await RpcClientTTY.open(os.ttyname(pty2_slave))
         os.close(pty2_slave)
 
         yield client1, client2
 
-        await client1.disconnect()
-        await client2.disconnect()
-        task.join()
+        await client1.wait_disconnect()
+        await client2.wait_disconnect()
+        process.terminate()
+        process.join()
 
     def ptycopy(self, fd1, fd2):
         p = select.poll()
@@ -173,9 +149,8 @@ class TestSerial(Link):
                 if event & select.POLLIN:
                     data = os.read(fd, io.DEFAULT_BUFFER_SIZE)
                     os.write(fd1 if fd is fd2 else fd2, data)
-                if event & select.POLLHUP or event & select.POLLERR:
-                    os.close(fd1)
-                    os.close(fd2)
+                if event & select.POLLERR:
+                    logger.error("Error detected in ptycopy")
                     return
 
     async def test_escapes(self, clients):

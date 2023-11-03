@@ -261,7 +261,6 @@ class RpcBroker:
 
         async def _loop(self) -> None:
             await super()._loop()
-            logger.info("Client disconnected: %s", self.__broker_client_id)
             self.__broker.clients.pop(self.__broker_client_id, None)
             if self.__mount_point is not None:
                 path, node = self._lschng_path(self.__mount_point)
@@ -270,10 +269,12 @@ class RpcBroker:
                         path, "lschng", {node: False}, RpcMethodAccess.BROWSE
                     )
                 )
+            await self.client.wait_disconnect()
+            logger.info("Client disconnected: %s", self.__broker_client_id)
 
         async def _activity_loop(self) -> None:
             """Loop run alongside with :meth:`_loop` to disconnect inactive clients."""
-            while self.client.connected():
+            while self.client.connected:
                 t = time.monotonic() - self.client.last_receive
                 if t < self.IDLE_TIMEOUT:
                     await asyncio.sleep(self.IDLE_TIMEOUT - t)
