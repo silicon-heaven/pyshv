@@ -10,6 +10,7 @@ pySHV now conforms with work in progress SHV standard 3.0!
 ### Added
 - `SimpleClient.ls_has_child` to query if child node exists
 - `SimpleClient.dir_description` to get description of a single method
+- `SimpleClient` now supports multiple call attempts
 - `SimpleDevice` that should be used with devices
 
 ### Changed

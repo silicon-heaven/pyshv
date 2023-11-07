@@ -49,11 +49,20 @@ class SimpleClient:
     You should change this value in child class to report a correct number.
     """
 
-    def __init__(self, client: RpcClient):
+    def __init__(
+        self,
+        client: RpcClient,
+        call_attempts: int = 1,
+        call_timeout: float | None = 300.0,
+    ):
         self.client = client
         """The underlaying RPC client instance."""
         self.task = asyncio.create_task(self._loop())
         """Task running the message handling loop."""
+        self.call_attempts = call_attempts
+        """Number of attempts when no response is received before call is abandoned."""
+        self.call_timeout = call_timeout
+        """Timeout in seconds before call is attempted again or abandoned."""
         self._calls_event: dict[int, asyncio.Event] = {}
         self._calls_msg: dict[int, RpcMessage] = {}
         self.__peer_is_shv3: None | bool = None
@@ -225,17 +234,25 @@ class SimpleClient:
         :return: Return value on successful method call.
         :raise RpcError: The call result in error that is propagated by raising
             `RpcError` or its children based on the failure.
+        :raise TimeoutError: when response is not received before timeout with
+            all attempts depleted.
         """
         msg = RpcMessage.request(path, method, param)
         rid = msg.request_id
         event = asyncio.Event()
         self._calls_event[rid] = event
-        await self.client.send(msg)
-        await event.wait()
-        msg = self._calls_msg.pop(rid)
-        if msg.is_error:
-            raise msg.rpc_error
-        return msg.result
+        for _ in range(self.call_attempts):
+            await self.client.send(msg)
+            try:
+                async with asyncio.timeout(self.call_timeout):
+                    await event.wait()
+            except TimeoutError:
+                continue
+            msg = self._calls_msg.pop(rid)
+            if msg.is_error:
+                raise msg.rpc_error
+            return msg.result
+        raise TimeoutError
 
     async def signal(
         self,
