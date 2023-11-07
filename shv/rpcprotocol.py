@@ -138,7 +138,6 @@ class _RpcProtocolSerial(RpcTransportProtocol):
         await self.write(escmsg)
         await self.write(bytes((self.ETX,)))
         if self.use_crc:
-            # TODO validate the crc32 alhorithm
             await self.write(self.escape(binascii.crc32(escmsg).to_bytes(4, "big")))
 
     async def receive(self) -> bytes:
