@@ -47,6 +47,14 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+async def _broker_main(config: RpcBrokerConfig) -> None:
+    broker = RpcBroker(config)
+    try:
+        await broker.serve_forever()
+    finally:
+        await broker.terminate()
+
+
 def main() -> None:
     """Application's entrypoint."""
     args = parse_args()
@@ -60,9 +68,8 @@ def main() -> None:
     if args.config:
         config.read(args.config)
     brokerconf = RpcBrokerConfig.load(config)
-    broker = RpcBroker(brokerconf)
     try:
-        asyncio.run(broker.serve_forever())
+        asyncio.run(_broker_main(brokerconf))
     except KeyboardInterrupt:
         pass
 
