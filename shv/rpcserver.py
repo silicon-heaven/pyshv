@@ -89,11 +89,10 @@ class _RpcServerStream(RpcServer):
 
     async def wait_closed(self) -> None:
         if self._server is not None:
-            self.close()
             await self._server.wait_closed()
 
     class Client(RpcClient):
-        """RPC client for TCP/IP server connection."""
+        """RPC client for Asyncio's stream server connection."""
 
         def __init__(
             self,
@@ -126,7 +125,6 @@ class _RpcServerStream(RpcServer):
             self._writer.close()
 
         async def wait_disconnect(self) -> None:
-            self.disconnect()
             await self._writer.wait_closed()
 
 
@@ -152,14 +150,15 @@ class RpcServerTCP(_RpcServerStream):
         )
 
     async def listen(self) -> None:
+        was_listening = self.is_serving()
         await super().listen()
-        assert self._server is not None
-        if not self._server.is_serving():
+        if not was_listening:
             logger.debug("Listening for clients: (TCP) %s:%d", self.location, self.port)
 
     def close(self) -> None:
+        was_listening = self.is_serving()
         super().close()
-        if self._server is not None and self._server.is_serving():
+        if was_listening and (self._server is None or not self._server.is_serving()):
             logger.debug(
                 "No longer listening for clients: (TCP) %s:%d", self.location, self.port
             )
@@ -196,14 +195,15 @@ class RpcServerUnix(_RpcServerStream):
         return await asyncio.start_unix_server(self._client_connect, path=self.location)
 
     async def listen(self) -> None:
+        was_listening = self.is_serving()
         await super().listen()
-        assert self._server is not None
-        if not self._server.is_serving():
+        if not was_listening:
             logger.debug("Listening for clients: (Unix) %s", self.location)
 
     def close(self) -> None:
+        was_listening = self.is_serving()
         super().close()
-        if self._server is not None and self._server.is_serving():
+        if was_listening and (self._server is None or self._server.is_serving()):
             logger.debug("No longer listening for clients: (Unix) %s", self.location)
 
     async def _client_connect(

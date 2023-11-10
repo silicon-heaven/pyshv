@@ -59,6 +59,7 @@ class ServerLink(Link):
         msg = RpcMessage.request("foo", "ls")
         await clients[1].send(msg)
         assert await server_client.receive() == msg
+        server_client.disconnect()
         await server_client.wait_disconnect()
 
     async def test_reset_server_client(self, clients):
@@ -67,6 +68,7 @@ class ServerLink(Link):
 
     @pytest.mark.parametrize("cdisc,crecv", ((0, 1), (1, 0)))
     async def test_eof(self, clients, cdisc, crecv):
+        clients[cdisc].disconnect()
         await clients[cdisc].wait_disconnect()
         with pytest.raises(EOFError):
             await clients[crecv].receive()
@@ -81,6 +83,7 @@ class TestTCP(ServerLink):
         server = RpcServerTCP(queue.put, "localhost", port)
         await server.listen()
         yield server, queue
+        server.close()
         await server.wait_closed()
 
     @pytest.fixture(name="clients")
@@ -88,6 +91,8 @@ class TestTCP(ServerLink):
         client = await RpcClientTCP.connect("localhost", port)
         server_client = await server[1].get()
         yield server_client, client
+        client.disconnect()
+        server_client.disconnect()
         await client.wait_disconnect()
         await server_client.wait_disconnect()
 
@@ -105,6 +110,7 @@ class TestUnix(ServerLink):
         server = RpcServerUnix(queue.put, sockpath)
         await server.listen()
         yield server, queue
+        server.close()
         await server.wait_closed()
 
     @pytest.fixture(name="clients")
@@ -112,6 +118,8 @@ class TestUnix(ServerLink):
         client = await RpcClientUnix.connect(sockpath)
         server_client = await server[1].get()
         yield server_client, client
+        server_client.disconnect()
+        client.disconnect()
         await server_client.wait_disconnect()
         await client.wait_disconnect()
 
@@ -135,6 +143,8 @@ class TestSerial(Link):
 
         yield client1, client2
 
+        client1.disconnect()
+        client2.disconnect()
         await client1.wait_disconnect()
         await client2.wait_disconnect()
         process.terminate()

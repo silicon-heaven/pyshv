@@ -269,6 +269,7 @@ class RpcBroker:
                         path, "lschng", {node: False}, RpcMethodAccess.BROWSE
                     )
                 )
+            self.client.disconnect()
             await self.client.wait_disconnect()
             logger.info("Client disconnected: %s", self.__broker_client_id)
 

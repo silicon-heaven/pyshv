@@ -123,7 +123,6 @@ class RpcClient(abc.ABC):
 
     async def wait_disconnect(self) -> None:
         """Close the connection."""
-        self.disconnect()
 
 
 class _RpcClientStream(RpcClient):
@@ -158,7 +157,6 @@ class _RpcClientStream(RpcClient):
 
     async def wait_disconnect(self) -> None:
         if self._writer is not None:
-            self.disconnect()
             await self._writer.wait_closed()
 
 

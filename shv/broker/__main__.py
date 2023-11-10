@@ -47,8 +47,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-async def async_main() -> None:
-    """Application's entrypoint coroutine."""
+def main() -> None:
+    """Application's entrypoint."""
     args = parse_args()
 
     logging.basicConfig(
@@ -61,12 +61,10 @@ async def async_main() -> None:
         config.read(args.config)
     brokerconf = RpcBrokerConfig.load(config)
     broker = RpcBroker(brokerconf)
-    await broker.serve_forever()
-
-
-def main() -> None:
-    """Application's entrypoint."""
-    asyncio.run(async_main())
+    try:
+        asyncio.run(broker.serve_forever())
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":
