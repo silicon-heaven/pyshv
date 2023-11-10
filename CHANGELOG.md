@@ -28,6 +28,8 @@ pySHV now conforms with work in progress SHV standard 3.0!
 - Broker now allows all users browse access to the `.app` and read access to the
   `.app/broker/currentClient`.
 - Received invalid messages are now skipped instead of raising exception.
+- `SimpleClient.login` and `SimpleClient.urllogin` renamed and moved to
+  `rpclogin` and `rpclogin_url` respectively
 
 ### Removed
 - `SimpleClient.ls_with_children` as that is now invalid with SHV 3.0

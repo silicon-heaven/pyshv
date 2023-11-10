@@ -20,6 +20,7 @@ from .rpcerrors import (
     RpcMethodNotFoundError,
     RpcParseError,
 )
+from .rpclogin import rpclogin, rpclogin_url
 from .rpcmessage import RpcMessage
 from .rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodFlags
 from .rpcprotocol import (
@@ -112,6 +113,9 @@ __all__ = [
     "RpcMethodCallTimeoutError",
     "RpcMethodNotFoundError",
     "RpcParseError",
+    # rpclogin
+    "rpclogin",
+    "rpclogin_url",
     # rpcsubscription
     "RpcSubscription",
     # simpleclient

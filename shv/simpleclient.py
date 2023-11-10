@@ -1,7 +1,6 @@
 """RPC client manager that provides facitility to simply connect to the broker."""
 import asyncio
 import collections.abc
-import hashlib
 import logging
 import time
 import traceback
@@ -14,13 +13,13 @@ from .rpcerrors import (
     RpcMethodCallExceptionError,
     RpcMethodNotFoundError,
 )
+from .rpclogin import rpclogin_url
 from .rpcmessage import RpcMessage
 from .rpcmethod import RpcMethodAccess, RpcMethodDesc
 from .rpcsubscription import RpcSubscription
-from .rpcurl import RpcLoginType, RpcUrl
+from .rpcurl import RpcUrl
 from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
 from .value import SHVType, is_shvbool, is_shvnull
-from .value_tools import shvget
 
 logger = logging.getLogger(__name__)
 
@@ -71,16 +70,14 @@ class SimpleClient:
     async def connect(
         cls,
         url: RpcUrl,
-    ) -> typing.Union["SimpleClient", None]:
+    ) -> "SimpleClient":
         """Connect and login to the SHV broker.
 
         :param url: SHV RPC URL to the broker
         :return: Connected instance.
         """
         client = await connect_rpc_client(url)
-        await cls.urllogin(client, url)
-        if not client.connected:
-            return None
+        await rpclogin_url(client, url, {"idleWatchDogTimeOut": int(cls.IDLE_TIMEOUT)})
         return cls(client)
 
     async def disconnect(self) -> None:
@@ -95,71 +92,6 @@ class SimpleClient:
         """
         self.client.disconnect()
         await self.task
-
-    @classmethod
-    async def login(
-        cls,
-        client: RpcClient,
-        username: str | None,
-        password: str | None,
-        login_type: RpcLoginType,
-        login_options: dict[str, SHVType] | None,
-    ) -> None:
-        """Perform login to the broker.
-
-        The login need to be performed only once right after the connection is
-        established.
-
-        :param: client: Connected client the login should be performed on.
-        :param username: User's name used to login.
-        :param password: Password used to authenticate the user.
-        :param login_type: The password format and login process selection.
-        :param login_options: Login options.
-        """
-        # Note: The implementation here expects that broker won't sent any other
-        # messages until login is actually performed. That is what happens but
-        # it is not defined in any SHV design document as it seems.
-        await client.send(RpcMessage.request("", "hello"))
-        resp = await client.receive()
-        nonce = shvget(resp.result, "nonce", str, "")
-        if login_type is RpcLoginType.SHA1:
-            assert isinstance(nonce, str)
-            m = hashlib.sha1()
-            m.update(nonce.encode("utf-8"))
-            m.update((password or "").encode("utf-8"))
-            password = m.hexdigest()
-        param: SHVType = {
-            "login": {"password": password, "type": login_type.value, "user": username},
-            "options": {
-                "idleWatchDogTimeOut": int(cls.IDLE_TIMEOUT),
-                **(login_options if login_options else {}),  # type: ignore
-            },
-        }
-
-        logger.debug("LOGGING IN")
-        await client.send(RpcMessage.request("", "login", param))
-        await client.receive()
-        logger.debug("LOGGED IN")
-
-    @classmethod
-    async def urllogin(
-        cls,
-        client: RpcClient,
-        url: RpcUrl,
-        login_options: dict[str, SHVType] | None = None,
-    ) -> None:
-        """Variation of :meth:`login` that takes arguments from RPC URL.
-
-        :param: client: Connected client the login should be performed on.
-        :param url: RPC URL with login info.
-        :param login_options: Additional custom login options that are not supported by
-            RPC URL.
-        :return: Client ID assigned by broker or `None` in case none was assigned.
-        """
-        options = url.login_options()
-        if login_options:
-            options.update(login_options)
-        await cls.login(client, url.username, url.password, url.login_type, options)
 
     async def _loop(self) -> None:
         """Loop run in asyncio task to receive messages."""
