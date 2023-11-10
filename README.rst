@@ -1,7 +1,7 @@
 ============================================
 Pure Python implementation of Silicon Heaven
 ============================================
-.. image:: docs/_static/logo.svg
+.. image:: https://gitlab.com/elektroline-predator/pyshv/-/raw/master/docs/_static/logo.svg
    :align: right
    :height: 128px
 
