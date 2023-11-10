@@ -132,6 +132,7 @@ class _RpcClientStream(RpcClient):
         self,
         protocol_factory: typing.Type[RpcTransportProtocol] = RpcProtocolStream,
     ) -> None:
+        super().__init__()
         self._reader: None | asyncio.StreamReader = None
         self._writer: None | asyncio.StreamWriter = None
         self._protocol: RpcTransportProtocol | None = None
