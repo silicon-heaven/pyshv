@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.0] - 2023-11-10
 pySHV now conforms with work in progress SHV standard 3.0!
 
 ### Added
@@ -14,12 +14,12 @@ pySHV now conforms with work in progress SHV standard 3.0!
 - `SimpleDevice` that should be used with devices
 
 ### Changed
-- `RpcMessage` API to now use proprties instead of methods
+- `RpcMessage` API to now use properties instead of methods
 - Removed unused argument `login_options` for `SimpleClient.connect`
 - `SimpleClient.dir_details` is now `SimpleClient.dir` and old `dir`
   implementation is removed
 - `RpcClientStream` is replaced with `RpcClientTCP` and `RpcClientUnix`
-- `RpcClientSerial` is repaced with `RpcClientTTY`
+- `RpcClientSerial` is replaced with `RpcClientTTY`
 - `RpcServerStream` is not replaced with `RpcServerTCP` and `RpcServerUnix`
 - Broker configuration now no longer contains `rules` sections and instead we
   specify `methods` in `roles` sections. Methods are combination of path and
