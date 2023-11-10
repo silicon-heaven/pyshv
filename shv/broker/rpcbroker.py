@@ -258,6 +258,12 @@ class RpcBroker:
                     )
             if lschng is not None:
                 await self.__broker.signal(lschng)
+            if value:
+                logger.info(
+                    "Client with ID %d is now mounted on: %s",
+                    self.__broker_client_id,
+                    value,
+                )
 
         async def _loop(self) -> None:
             await super()._loop()
@@ -400,8 +406,11 @@ class RpcBroker:
             else:
                 for client in self.broker.clients.values():
                     mnt = client.mount_point
-                    if mnt is not None and mnt.startswith(path + ("/" if path else "")):
-                        yield mnt[len(path) :].split("/", maxsplit=1)[0]
+                    if mnt is not None:
+                        if path == "":
+                            yield mnt.split("/", maxsplit=1)[0]
+                        elif mnt.startswith(path + "/"):
+                            yield mnt[len(path) + 1 :].split("/", maxsplit=1)[0]
 
         def _dir(self, path: str) -> typing.Iterator[RpcMethodDesc]:
             yield from super()._dir(path)
