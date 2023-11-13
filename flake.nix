@@ -19,7 +19,7 @@
         attrList p pyproject.project.optional-dependencies.lint
         ++ [p.build p.twine];
 
-      pypkgs-template-python = {
+      pypkg-template-python = {
         buildPythonPackage,
         pytestCheckHook,
         pythonPackages,
@@ -42,7 +42,7 @@
       {
         overlays = {
           pythonPackagesExtension = final: prev: {
-            template-python = final.callPackage pypkgs-template-python {};
+            template-python = final.callPackage pypkg-template-python {};
           };
           noInherit = final: prev: {
             pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [self.overlays.pythonPackagesExtension];
