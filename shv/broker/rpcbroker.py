@@ -61,7 +61,7 @@ class RpcBroker:
         """
         cid = self.next_caller_id()
         self.clients[cid] = self.Client(client, self, cid)
-        logger.info("Client registered to broker with ID: %s", cid)
+        logger.info("Client registered to broker with ID %d", cid)
         return self.clients[cid]
 
     def get_client(self, cid: int | str) -> typing.Union["RpcBroker.Client", None]:
@@ -277,7 +277,7 @@ class RpcBroker:
                 )
             self.client.disconnect()
             await self.client.wait_disconnect()
-            logger.info("Client disconnected: %s", self.__broker_client_id)
+            logger.info("Client with ID %d disconnected", self.__broker_client_id)
 
         async def _activity_loop(self) -> None:
             """Loop run alongside with :meth:`_loop` to disconnect inactive clients."""
@@ -366,6 +366,11 @@ class RpcBroker:
                         "Invalid login", RpcErrorCode.METHOD_CALL_EXCEPTION
                     )
                     return resp
+                logger.info(
+                    "Client with ID %d logged in as user: %s",
+                    self.__broker_client_id,
+                    self.user.name,
+                )
                 mount_point = shvget(
                     param, ("options", "device", "mountPoint"), str, ""
                 )
@@ -547,6 +552,6 @@ class RpcBroker:
             return [{"method": s.method, "path": s.path} for s in self.subscriptions]
 
         async def disconnect(self) -> None:
-            logger.info("Disconnecting client: %d", self.broker_client_id)
+            logger.info("Disconnecting client with ID %d", self.broker_client_id)
             self.broker.clients.pop(self.broker_client_id, None)
             await super().disconnect()
