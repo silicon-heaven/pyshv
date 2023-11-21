@@ -102,7 +102,11 @@ class RpcBrokerConfig:
         ) -> bool:
             """Check if given password is correct."""
             if login_type is RpcLoginType.PLAIN:
-                return self.password == password
+                if self.login_type is RpcLoginType.PLAIN:
+                    return self.password == password
+                if self.login_type is RpcLoginType.SHA1:
+                    hpass = hashlib.sha1(password.encode("utf-8")).hexdigest()
+                    return self.shapass == hpass
             if login_type is RpcLoginType.SHA1:
                 m = hashlib.sha1()
                 m.update(nonce.encode("utf-8"))
