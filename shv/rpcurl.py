@@ -76,9 +76,9 @@ class RpcUrl:
     """User name used to login to the remote server."""
 
     # Options
-    password: str | None = None
+    password: str = ""
     """Password used to login to the server."""
-    login_type: RpcLoginType = RpcLoginType.SHA1
+    login_type: RpcLoginType = RpcLoginType.PLAIN
     """Type of the login to be used (specifies format of the password)."""
     device_id: str | None = None
     """Device identifier sent to the server with login."""
