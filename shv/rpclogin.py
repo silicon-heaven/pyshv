@@ -14,10 +14,11 @@ logger = logging.getLogger(__name__)
 
 async def rpclogin(
     client: RpcClient,
-    username: str | None,
-    password: str | None,
-    login_type: RpcLoginType,
-    login_options: collections.abc.Mapping[str, SHVType] | None,
+    username: str,
+    password: str = "",
+    login_type: RpcLoginType = RpcLoginType.PLAIN,
+    login_options: collections.abc.Mapping[str, SHVType] | None = None,
+    force_plain: bool = False,
 ) -> None:
     """Perform login to the broker.
 
@@ -29,6 +30,10 @@ async def rpclogin(
     :param password: Password used to authenticate the user.
     :param login_type: The password format and login process selection.
     :param login_options: Login options.
+    :param force_plain: The default behavior is to never use ``PLAIN`` login
+      type but if you need it for what ever reason this allows you to use it
+      anyway. Any ``PLAIN`` *login_type* is elevated to ``SHA1`` by hashing the
+      provided password.
     """
     # Note: The implementation here expects that broker won't sent any other
     # messages until login is actually performed. That is what happens but
@@ -36,6 +41,9 @@ async def rpclogin(
     await client.send(RpcMessage.request("", "hello"))
     resp = await client.receive()
     nonce = shvget(resp.result, "nonce", str, "")
+    if login_type is RpcLoginType.PLAIN and not force_plain:
+        login_type = RpcLoginType.SHA1
+        password = hashlib.sha1(password.encode("utf-8")).hexdigest()
     if login_type is RpcLoginType.SHA1:
         assert isinstance(nonce, str)
         m = hashlib.sha1()
