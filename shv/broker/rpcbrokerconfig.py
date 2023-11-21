@@ -178,11 +178,14 @@ class RpcBrokerConfig:
         self, user: str, password: str, nonce: str, login_type: RpcLoginType
     ) -> typing.Optional["RpcBrokerConfig.User"]:
         """Check the login and provide user if login is correct."""
-        if user not in self._users or not self._users[user].validate_password(
-            password, nonce, login_type
-        ):
-            return None
-        return self.user(user)
+        try:
+            u = self.user(user)
+        except KeyError:
+            pass
+        else:
+            if u.validate_password(password, nonce, login_type):
+                return u
+        return None
 
     @classmethod
     def load(cls, config: configparser.ConfigParser) -> "RpcBrokerConfig":
