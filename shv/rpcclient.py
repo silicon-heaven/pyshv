@@ -325,5 +325,5 @@ async def connect_rpc_client(url: RpcUrl) -> RpcClient:
     if url.protocol is RpcProtocol.UNIXS:
         return await RpcClientUnix.connect(url.location, RpcProtocolSerial)
     if url.protocol is RpcProtocol.SERIAL:
-        return await RpcClientTTY.open(url.location, url.baudrate, RpcProtocolSerial)
+        return await RpcClientTTY.open(url.location, url.baudrate, RpcProtocolSerialCRC)
     raise NotImplementedError(f"Unimplemented protocol: {url.protocol}")

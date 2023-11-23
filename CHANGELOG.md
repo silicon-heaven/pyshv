@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   value.
 - `rpclogin` replaces `PLAIN` login with `SHA1` for increased security. The new
   parameter `force_plain` was added to actually use `PLAIN` anyway.
+- `connect_rpc_client` now uses `RpcProtocolSerialCRC` instead of
+  `RpcProtocolSerial` for `RpcProtocol.SERIAL`.
 
 ### Fixed
 - Login to RPC Broker with PLAIN password when server has SHA1 configured for
