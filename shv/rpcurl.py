@@ -151,6 +151,8 @@ class RpcUrl:
 
         # We prefer SHA1 password and thus discard plain if both are present
         if opts := pqs.pop("shapass", []):
+            if len(opts[0]) != 40:
+                raise ValueError("SHA1 password must have 40 characters.")
             res.password = opts[0]
             res.login_type = RpcLoginType.SHA1
         elif opts := pqs.pop("password", []):

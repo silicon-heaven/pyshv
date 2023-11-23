@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   parameter `force_plain` was added to actually use `PLAIN` anyway.
 - `connect_rpc_client` now uses `RpcProtocolSerialCRC` instead of
   `RpcProtocolSerial` for `RpcProtocol.SERIAL`.
+- `RpcUrl.parse` now enforces that `shapass` must have 40 characters.
 
 ### Fixed
 - Login to RPC Broker with PLAIN password when server has SHA1 configured for

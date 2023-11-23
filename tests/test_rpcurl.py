@@ -28,11 +28,11 @@ DATA = [
         ),
     ),
     (
-        "tcp://localhost:4242?devid=foo&devmount=/dev/null&shapass=xxxxxxxx",
+        "tcp://localhost:4242?devid=foo&devmount=/dev/null&shapass=" + ("x" * 40),
         RpcUrl(
             "localhost",
             port=4242,
-            password="xxxxxxxx",
+            password="x" * 40,
             login_type=RpcLoginType.SHA1,
             device_id="foo",
             device_mount_point="/dev/null",
