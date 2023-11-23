@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import abc
 import asyncio
+import functools
 import logging
+import os
 import time
 import typing
 
@@ -101,7 +103,6 @@ class RpcClient(abc.ABC):
             it is not.
         """
 
-    @abc.abstractmethod
     async def reset(self) -> bool:
         """Reset the connection.
 
@@ -116,6 +117,8 @@ class RpcClient(abc.ABC):
 
         :return: ``True`` if client is connected after reset and ``False`` otherwise.
         """
+        self.disconnect()
+        return False
 
     @abc.abstractmethod
     def disconnect(self) -> None:
@@ -175,6 +178,7 @@ class RpcClientTCP(_RpcClientStream):
         self.port = port
 
     async def reset(self) -> bool:
+        await super().reset()
         self.disconnect()
         self._reader, self._writer = await asyncio.open_connection(
             self.location, self.port
@@ -214,8 +218,7 @@ class RpcClientUnix(_RpcClientStream):
         self.location = location
 
     async def reset(self) -> bool:
-        if self.connected:
-            self.disconnect()
+        await super().reset()
         self._reader, self._writer = await asyncio.open_unix_connection(self.location)
         self._protocol = rpcprotocol.protocol_for_asyncio_stream(
             self.protocol_factory, self._reader, self._writer
@@ -237,6 +240,66 @@ class RpcClientUnix(_RpcClientStream):
         res = cls(location, protocol_factory)
         await res.reset()
         return res
+
+
+class RpcClientPipe(_RpcClientStream):
+    """RPC connection to some SHV peer over Unix pipes."""
+
+    def __init__(
+        self,
+        reader: asyncio.StreamReader,
+        writer: asyncio.StreamWriter,
+        protocol_factory: typing.Type[RpcTransportProtocol] = RpcProtocolSerial,
+    ) -> None:
+        super().__init__(protocol_factory)
+        self._reader = reader
+        self._writer = writer
+        self._protocol = rpcprotocol.protocol_for_asyncio_stream(
+            protocol_factory, reader, writer
+        )
+
+    @classmethod
+    async def fdopen(
+        cls,
+        rpipe: int | typing.IO,
+        wpipe: int | typing.IO,
+        protocol_factory: typing.Type[RpcTransportProtocol] = RpcProtocolSerial,
+    ) -> RpcClientPipe:
+        """Create RPC client from existing Unix pipes."""
+        if isinstance(rpipe, int):
+            rpipe = os.fdopen(rpipe, mode="r")
+        reader = asyncio.StreamReader()
+        protocol = asyncio.StreamReaderProtocol(reader)
+        await asyncio.get_running_loop().connect_read_pipe(lambda: protocol, rpipe)
+
+        if isinstance(wpipe, int):
+            wpipe = os.fdopen(wpipe, mode="w")
+        wtransport, _ = await asyncio.get_running_loop().connect_write_pipe(
+            lambda: protocol, wpipe
+        )
+        writer = asyncio.StreamWriter(
+            wtransport, protocol, None, asyncio.get_running_loop()
+        )
+
+        return cls(reader, writer, protocol_factory)
+
+    @classmethod
+    async def open_pair(
+        cls,
+        protocol_factory: typing.Type[RpcTransportProtocol] = RpcProtocolSerial,
+        flags: int = 0,
+    ) -> tuple[RpcClientPipe, RpcClientPipe]:
+        """Create pair of clients that are interconncted over the pipe.
+
+        :param protocol_factory: The protocol factory to be used.
+        :param flags: Flags passed to :meth:`os.pipe2`.
+        :return: Pair of clients that are interconnected over Unix pipes.
+        """
+        pr1, pw1 = os.pipe2(flags)
+        pr2, pw2 = os.pipe2(flags)
+        client1 = await cls.fdopen(pr1, pw2, protocol_factory)
+        client2 = await cls.fdopen(pr2, pw1, protocol_factory)
+        return client1, client2
 
 
 class RpcClientTTY(RpcClient):
@@ -269,7 +332,7 @@ class RpcClientTTY(RpcClient):
         return self.serial is not None and self.serial.is_open
 
     async def reset(self) -> bool:
-        self.disconnect()
+        await super().reset()
         self.serial = aioserial.AioSerial(
             port=self.port,
             baudrate=self.baudrate,

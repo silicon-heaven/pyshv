@@ -3,6 +3,7 @@ from .chainpack import ChainPack, ChainPackReader, ChainPackWriter
 from .cpon import Cpon, CponReader, CponWriter
 from .rpcclient import (
     RpcClient,
+    RpcClientPipe,
     RpcClientTCP,
     RpcClientTTY,
     RpcClientUnix,
@@ -81,6 +82,7 @@ __all__ = [
     "RpcClient",
     "RpcClientTCP",
     "RpcClientUnix",
+    "RpcClientPipe",
     "RpcClientTTY",
     # rpcprotocol
     "RpcTransportProtocol",

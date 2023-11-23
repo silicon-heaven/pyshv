@@ -11,6 +11,7 @@ import select
 import pytest
 
 from shv import (
+    RpcClientPipe,
     RpcClientTCP,
     RpcClientTTY,
     RpcClientUnix,
@@ -122,6 +123,19 @@ class TestUnix(ServerLink):
         client.disconnect()
         await server_client.wait_disconnect()
         await client.wait_disconnect()
+
+
+class TestPipe(Link):
+    """Check that we can work over Unix pipe pair."""
+
+    @pytest.fixture(name="clients")
+    async def fixture_clients(self):
+        client1, client2 = await RpcClientPipe.open_pair()
+        yield client1, client2
+        client1.disconnect()
+        client2.disconnect()
+        await client1.wait_disconnect()
+        await client2.wait_disconnect()
 
 
 class TestSerial(Link):
