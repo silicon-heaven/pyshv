@@ -3,6 +3,7 @@ import collections.abc
 import dataclasses
 import datetime
 import decimal
+import io
 import typing
 
 import dateutil.parser
@@ -30,9 +31,14 @@ class Cpon:
         return CponReader.unpack(data)
 
     @classmethod
-    def pack(cls, value: SHVType) -> bytes:
-        """Pack given value and return bytes."""
-        return CponWriter.pack(value)
+    def pack(
+        cls, value: SHVType, options: typing.Optional["CponWriter.Options"] = None
+    ) -> str:
+        """Pack given value and return string."""
+        stream = io.BytesIO()
+        self = CponWriter(stream, options)
+        self.write(value)
+        return stream.getvalue().decode("utf-8")
 
 
 class CponReader(commonpack.CommonReader):
