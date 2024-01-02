@@ -42,7 +42,7 @@ this:
 
 This configuration file specifies that broker should listen on all IP addresses
 for TCP/IP connection on port 3755 and on local socket ``shvbroker.sock``. It
-also declares one user that is admin and has highest access level.
+also declares one user that is admin and has super-service access level.
 
 :listen:
   This section specifies URLs where server should listen for the new
@@ -77,7 +77,17 @@ also declares one user that is admin and has highest access level.
   :access: Access level granted to the user with this role for matching methods.
     Note that access level of the first role that has at least one matching rule
     is used. The ordering of the roles can be used to specify complex access
-    rules.
+    rules. The following levels are allowed:
+    :bws: The lowest level that commonly allows only nodes discovery.
+    :rd: Allows reading basic property values as well as node discovery.
+    :wr: Allows all that ``rd`` does plus changing basic property values.
+    :cmd: Allows all that ``wr`` does plus command operations.
+    :cfg: Allows all that ``cmd`` does plus configuration operations.
+    :srv: Allows all that ``cfg`` does plus service operations.
+    :ssrv: Allows all that ``srv`` with additional service operations.
+    :dev: Allows pretty much all operations and is intended for developer
+      access.
+    :su: Super user access that allows everything.
   :roles: Space separated list of other roles. This allows combination of the
     roles and thus higher versatility in the way roles are structured. All rules
     from these roles are considered to be part of the role specifying this

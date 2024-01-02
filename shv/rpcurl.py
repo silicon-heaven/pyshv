@@ -112,6 +112,7 @@ class RpcUrl:
 
         :param url: URL in string format.
         :return: New :class:`RpcUrl` instance.
+        :raise ValueError: when invalid URL is passed.
         """
         sr = urllib.parse.urlsplit(url, scheme="unix", allow_fragments=False)
         pqs = urllib.parse.parse_qs(sr.query)

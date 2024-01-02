@@ -1,5 +1,5 @@
-Reading values in SHV
-=====================
+Client communication in SHV
+===========================
 
 The most basic operation on SHV network is calling methods and reading some
 values. Dedicated class is provided for this purpose in form of

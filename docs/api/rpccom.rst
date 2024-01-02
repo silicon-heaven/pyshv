@@ -11,14 +11,33 @@ URL and connection parameters
 Client
 ------
 
+These are implementations if clients that connect to server or over some
+connection to some other client.
+
 .. autoclass:: shv.RpcClient
-.. autoclass:: shv.RpcClientStream
-.. autoclass:: shv.RpcClientDatagram
+.. autoclass:: shv.RpcClientTCP
+.. autoclass:: shv.RpcClientUnix
+.. autoclass:: shv.RpcClientPipe
+.. autoclass:: shv.RpcClientTTY
 
 Server
 ------
 
+Servers are waiting for clients connection and provides you with client on the
+sever side to communicate with newly connected peer.
+
 .. automethod:: shv.rpcserver.create_rpc_server
 .. autoclass:: shv.RpcServer
-.. autoclass:: shv.RpcServerStream
-.. autoclass:: shv.RpcServerDatagram
+.. autoclass:: shv.RpcServerTCP
+.. autoclass:: shv.RpcServerUnix
+
+Transport protocols
+-------------------
+
+SHV RPC is based on messages and these protocols are for sending these messages
+over data stream. Please do not confuse this with :class:`shv.RpcProtocol`.
+
+.. autoclass:: shv.RpcProtocolStream
+.. autoclass:: shv.RpcProtocolSerial
+.. autoclass:: shv.RpcProtocolSerialCRC
+.. autoclass:: shv.RpcTransportProtocol

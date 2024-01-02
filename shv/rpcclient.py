@@ -289,7 +289,7 @@ class RpcClientPipe(_RpcClientStream):
         protocol_factory: typing.Type[RpcTransportProtocol] = RpcProtocolSerial,
         flags: int = 0,
     ) -> tuple[RpcClientPipe, RpcClientPipe]:
-        """Create pair of clients that are interconncted over the pipe.
+        """Create pair of clients that are interconnected over the pipe.
 
         :param protocol_factory: The protocol factory to be used.
         :param flags: Flags passed to :meth:`os.pipe2`.
