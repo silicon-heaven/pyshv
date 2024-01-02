@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import abc
 import asyncio
-import functools
 import logging
 import os
 import time

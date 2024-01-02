@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- Broker now has ability to establish connection on its own instead of just
+  listening for them
 - `RpcClientPipe` that supports working with Unix pipes
 
 ### Changed

@@ -1,7 +1,7 @@
 """Check our implementation of fnmatch."""
 import pytest
 
-from shv.rpcsubscription import path_match, tail_pattern
+from shv.rpcsubscription import RpcSubscription, path_match, tail_pattern
 
 
 @pytest.mark.parametrize(
@@ -52,3 +52,32 @@ def test_path_match_invalid(pattern, path):
 )
 def test_tail_pattern(pattern, path, result):
     assert tail_pattern(path, pattern) == result
+
+
+@pytest.mark.parametrize(
+    "sub,path,res",
+    (
+        (RpcSubscription(), "", RpcSubscription()),
+        (RpcSubscription("test/some"), "", RpcSubscription("test/some")),
+        (RpcSubscription("test/some"), "test", RpcSubscription("some")),
+        (RpcSubscription("test/some"), "test/", RpcSubscription("some")),
+        (RpcSubscription("test/some"), "test/some", RpcSubscription("")),
+        (RpcSubscription("test/some"), "test/some/", RpcSubscription("")),
+        (RpcSubscription("test/some"), "test/som", None),
+        (RpcSubscription(paths="test/some/*"), "test/some", RpcSubscription(paths="*")),
+        (RpcSubscription(paths="test/some/*"), "test", RpcSubscription(paths="some/*")),
+        (RpcSubscription(paths="test/some/*"), "tes", None),
+        (
+            RpcSubscription(paths="**/some/*"),
+            "test/it/some",
+            RpcSubscription(paths="*"),
+        ),
+        (
+            RpcSubscription(paths="**/some/*"),
+            "test/it",
+            RpcSubscription(paths="**/some/*"),
+        ),
+    ),
+)
+def test_relative_to(sub, path, res):
+    assert sub.relative_to(path) == res

@@ -24,9 +24,6 @@ from .value import SHVType, is_shvbool, is_shvnull
 logger = logging.getLogger(__name__)
 
 
-TSimpleClient = typing.TypeVar("TSimpleClient", bound="SimpleClient")
-
-
 class SimpleClient:
     """SHV client made simple to use.
 
@@ -72,19 +69,27 @@ class SimpleClient:
         self._calls_msg: dict[int, RpcMessage] = {}
         self.__peer_is_shv3: None | bool = None
 
+    # TODO solve type hinting in this method. It seems that right now it is not
+    # possible to correctly type hint the args and kwargs to copy Self # params.
+    # https://discuss.python.org/t/how-to-properly-hint-a-class-factory-with-paramspec/27941/3
     @classmethod
     async def connect(
-        cls: type[TSimpleClient],
+        cls: type[typing.Self],
         url: RpcUrl,
-    ) -> TSimpleClient:
+        *args: typing.Any,
+        **kwargs: typing.Any,
+    ) -> typing.Self:
         """Connect and login to the SHV broker.
+
+        Any additional parameters after ``url`` are passed to class
+        initialization.
 
         :param url: SHV RPC URL to the broker
         :return: Connected instance.
         """
         client = await connect_rpc_client(url)
         await rpclogin_url(client, url, {"idleWatchDogTimeOut": int(cls.IDLE_TIMEOUT)})
-        return cls(client)
+        return cls(client, *args, **kwargs)
 
     async def disconnect(self) -> None:
         """Disconnect an existing connection.

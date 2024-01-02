@@ -13,6 +13,12 @@ def test_listen(config):
     }
 
 
+def test_listen_sub(subconfig):
+    assert subconfig.listen == {
+        "unix": RpcUrl.parse("unix:shvsubbroker.sock"),
+    }
+
+
 ROLE_ADMIN = broker.RpcBrokerConfig.Role(
     "admin",
     RpcMethodAccess.DEVEL,
@@ -39,10 +45,15 @@ ROLES = {
     ROLE_TESTER,
     ROLE_BROWSE,
 }
+SUBROLES = {ROLE_ADMIN}
 
 
 def test_roles(config):
     assert set(config.roles()) == ROLES
+
+
+def test_roles_sub(subconfig):
+    assert set(subconfig.roles()) == SUBROLES
 
 
 USER_ADMIN = broker.RpcBrokerConfig.User(
@@ -72,13 +83,33 @@ USERS = {
     USER_NOBODY,
 }
 
+SUBUSER_ADMIN = broker.RpcBrokerConfig.User(
+    "admin", "admin!234", RpcLoginType.PLAIN, frozenset({ROLE_ADMIN})
+)
+SUBUSER_UPPER = broker.RpcBrokerConfig.User("upper", "", None, frozenset({ROLE_ADMIN}))
+SUBUSERS = {SUBUSER_ADMIN, SUBUSER_UPPER}
+
 
 def test_users(config):
     assert set(config.users()) == USERS
 
 
+def test_subusers(subconfig):
+    assert set(subconfig.users()) == SUBUSERS
+
+
 def test_user(config):
     assert config.user("admin") == USER_ADMIN
+
+
+def test_connect_sub(subconfig):
+    assert list(subconfig.connections()) == [
+        broker.RpcBrokerConfig.Connection(
+            "broker",
+            RpcUrl.parse("tcp://test@localhost:3755?password=test&devmount=subbroker"),
+            SUBUSER_UPPER,
+        )
+    ]
 
 
 def test_default_config():

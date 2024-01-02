@@ -49,6 +49,16 @@ also declares one user that is admin and has super-service access level.
   connections. The option names are only informative and used for identification
   purpose (feel free to name them as ever you want).
 
+:connect.:
+  These are sections that define connection to some other SHV broker. They all
+  have to start with ``connect.`` where rest of the section is connection
+  identifier that is used only in logs but must be unique per connection. The
+  following options needs to be specified in this section:
+
+  :url: Where to connect including the login information.
+  :user: User that connected client gets assigned to. This is used of this
+    broker (not the remote one).
+
 :users.:
   These are sections that define different users. They all have to start with
   ``users.`` where the rest of the section name is the user's name. The allowed

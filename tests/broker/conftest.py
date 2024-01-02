@@ -1,21 +1,24 @@
 import configparser
+import dataclasses
 import pathlib
 
 import pytest
 
-from shv import broker
+from shv import RpcUrl, broker
 
 
-@pytest.fixture(name="parsed_config", scope="module")
-def fixture_parsed_config():
+@pytest.fixture(name="config", scope="module")
+def fixture_config():
     config = configparser.ConfigParser()
     config.read(pathlib.Path(__file__).parent / "pyshvbroker.ini")
-    return config
+    return broker.RpcBrokerConfig.load(config)
 
 
-@pytest.fixture(name="config")
-def fixture_config(parsed_config):
-    return broker.RpcBrokerConfig.load(parsed_config)
+@pytest.fixture(name="subconfig", scope="module")
+def fixture_subconfig():
+    config = configparser.ConfigParser()
+    config.read(pathlib.Path(__file__).parent / "pyshvsubbroker.ini")
+    return broker.RpcBrokerConfig.load(config)
 
 
 @pytest.fixture(name="shvbroker")

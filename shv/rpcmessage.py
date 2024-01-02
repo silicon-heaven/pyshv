@@ -38,6 +38,9 @@ class RpcMessage:
     def __eq__(self, other: typing.Any) -> bool:
         return isinstance(other, RpcMessage) and shvmeta_eq(self.value, other.value)
 
+    def __repr__(self) -> str:
+        return f"<RpcMessage {self.value.meta!r}: {self.value!r}>"
+
     class Tag(enum.IntEnum):
         """Tags in Meta for RPC message."""
 

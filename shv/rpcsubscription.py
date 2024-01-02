@@ -1,4 +1,6 @@
 """Abstraction on top of a single subscription."""
+from __future__ import annotations
+
 import collections.abc
 import dataclasses
 import fnmatch
@@ -50,6 +52,28 @@ class RpcSubscription:
         else:
             method_matches = not self.method or method == self.method
         return path_matches and method_matches
+
+    def relative_to(self, path: str) -> RpcSubscription | None:
+        """Get subscription that is relative to the given path.
+
+        This is used to pass subscription to sub-brokers. It updates
+        :param:`path` and/or :param:`paths` in such a way that it is applied
+        relative to that path. ``None`` is returned if this subscription doesn't
+        apply it.
+
+        :param path: Path this sunscription should be fixed to.
+        :return: New subscription that is relative to the given *path* or
+          ``None``.
+        """
+        if self.paths is not None:
+            if pat := tail_pattern(path, self.paths):
+                return dataclasses.replace(self, paths=pat)
+            return None
+        p = path.rstrip("/") + ("/" if path else "")
+        sp = self.path.rstrip("/") + ("/" if self.path else "")
+        if sp.startswith(p):
+            return dataclasses.replace(self, path=sp[len(p) : -1])
+        return None
 
     @classmethod
     def fromSHV(cls, value: SHVType) -> "RpcSubscription":

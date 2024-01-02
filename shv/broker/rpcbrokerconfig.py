@@ -1,10 +1,14 @@
 """Configuration of the broker."""
+from __future__ import annotations
+
+import collections.abc
 import configparser
 import dataclasses
 import hashlib
 import typing
 
 from ..rpcmethod import RpcMethodAccess
+from ..rpcsubscription import RpcSubscription
 from ..rpcurl import RpcLoginType, RpcUrl
 
 
@@ -60,7 +64,7 @@ class RpcBrokerConfig:
 
         name: str
         password: str
-        login_type: RpcLoginType = RpcLoginType.SHA1
+        login_type: RpcLoginType | None = RpcLoginType.SHA1
         roles: frozenset["RpcBrokerConfig.Role"] = dataclasses.field(
             default_factory=frozenset
         )
@@ -84,6 +88,28 @@ class RpcBrokerConfig:
             if path in (".app", ".app/broker"):
                 return RpcMethodAccess.BROWSE
             return None
+
+        def could_receive_signal(
+            self, subscription: RpcSubscription, path: str = ""
+        ) -> bool:
+            """Check if this user could even receive signal based on this subscription.
+
+            This is used to optimize subscriptions for sub-brokers. There is no
+            need to propagate subscription if it couldn't be received by the
+            user anyway.
+
+            Real access level of the signals is known only when received and
+            thus this only checks if there is at least browse access level.
+
+            The regular check when signal is actually received can be done with
+            :meth:`access_level` as for any other message.
+
+            :param subscription: The subscription to use for check.
+            :param path: Path to limit the subscription application.
+            :return: ``True`` if signal might be deliverable to this user and
+              ``False`` if user just doesn't have rights to get any such signal.
+            """
+            return True  # TODO
 
         @property
         def shapass(self) -> str:
@@ -112,13 +138,44 @@ class RpcBrokerConfig:
                 m.update(nonce.encode("utf-8"))
                 m.update(self.shapass.encode("utf-8"))
                 return m.hexdigest() == password
-            return False  # type: ignore
+            return False
+
+    @dataclasses.dataclass(frozen=True)
+    class Connection:
+        """Connection to some other RPC broker."""
+
+        name: str
+        url: RpcUrl
+        user: RpcBrokerConfig.User
 
     def __init__(self) -> None:
         self.listen: dict[str, RpcUrl] = {}
         """URLs the broker should listen on."""
-        self._users: dict[str, "RpcBrokerConfig.User"] = {}
-        self._roles: dict[str, "RpcBrokerConfig.Role"] = {}
+        self._connect: dict[str, RpcBrokerConfig.Connection] = {}
+        self._users: dict[str, RpcBrokerConfig.User] = {}
+        self._roles: dict[str, RpcBrokerConfig.Role] = {}
+
+    def add_connection(self, connection: Connection) -> None:
+        """Add or replace connection.
+
+        :param connection: Connection definition.
+        :raise ValueError: in case it specifies unknown user.
+        """
+        if connection.user is not self._users.get(connection.user.name, None):
+            raise ValueError(f"Invalid user: '{connection.user.name}'")
+        self._connect[connection.name] = connection
+
+    def connection(self, name: str) -> Connection:
+        """Get connection for given name.
+
+        :param name: Name of the connection.
+        :raise KeyError: when there is no such connection.
+        """
+        return self._connect[name]
+
+    def connections(self) -> collections.abc.Iterator[Connection]:
+        """Iterate over all connections."""
+        yield from self._connect.values()
 
     def add_user(self, info: User) -> None:
         """Add or replace user.
@@ -139,7 +196,7 @@ class RpcBrokerConfig:
         """
         return self._users[name]
 
-    def users(self) -> typing.Iterator[User]:
+    def users(self) -> collections.abc.Iterator[User]:
         """Iterate over all users."""
         yield from self._users.values()
 
@@ -174,7 +231,7 @@ class RpcBrokerConfig:
         """
         return self._roles[name]
 
-    def roles(self) -> typing.Iterator[Role]:
+    def roles(self) -> collections.abc.Iterator[Role]:
         """Iterate over all roles."""
         yield from self._roles.values()
 
@@ -193,7 +250,14 @@ class RpcBrokerConfig:
 
     @classmethod
     def load(cls, config: configparser.ConfigParser) -> "RpcBrokerConfig":
-        """Load configuration from ConfigParser."""
+        """Load configuration from ConfigParser.
+
+        :param config: Configuration to be loaded.
+        :return: Broker configuration instance.
+        :raise ValueError: When there is an issue in the configuration.
+        :raise KeyError: When referencing non-existent user or role.
+        """
+        # TODO do not ignore uknown options and sections
         res = cls()
         if "listen" in config:
             for name, url in config["listen"].items():
@@ -220,12 +284,16 @@ class RpcBrokerConfig:
                     )
                 )
         for secname, sec in filter(lambda v: v[0].startswith("users."), config.items()):
+            login_type: RpcLoginType | None
             if "password" in sec:
                 password = sec["password"]
                 login_type = RpcLoginType.PLAIN
-            else:
-                password = sec.get("sha1pass", "")
+            elif "sha1pass" in sec:
+                password = sec["sha1pass"]
                 login_type = RpcLoginType.SHA1
+            else:
+                password = ""
+                login_type = None
             res.add_user(
                 cls.User(
                     secname[6:],
@@ -237,4 +305,16 @@ class RpcBrokerConfig:
                     ),
                 )
             )
+        for secname, sec in filter(
+            lambda v: v[0].startswith("connect."), config.items()
+        ):
+            if "url" not in sec:
+                raise ValueError(f"Connect requires 'url' option in {secname}")
+            if "user" not in sec:
+                raise ValueError(f"Connect requires 'user' option in {secname}")
+            name = secname[8:]
+            res.add_connection(
+                cls.Connection(name, RpcUrl.parse(sec["url"]), res.user(sec["user"]))
+            )
+
         return res

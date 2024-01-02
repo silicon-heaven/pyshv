@@ -7,7 +7,6 @@ import typing
 from shv import (
     RpcClient,
     RpcInvalidParamsError,
-    RpcMessage,
     RpcMethodAccess,
     RpcMethodDesc,
     RpcUrl,
@@ -35,10 +34,11 @@ class ExampleDevice(SimpleClient):
 
     def _ls(self, path: str) -> typing.Iterator[str]:
         yield from super()._ls(path)
-        if path == "":
-            yield "track"
-        elif path == "track":
-            yield from self.tracks.keys()
+        match path:
+            case "":
+                yield "track"
+            case "track":
+                yield from self.tracks.keys()
 
     def _dir(self, path: str) -> typing.Iterator[RpcMethodDesc]:
         yield from super()._dir(path)
@@ -62,7 +62,7 @@ class ExampleDevice(SimpleClient):
                 old_track = self.tracks[pth[1]]
                 self.tracks[pth[1]] = param
                 if old_track != param:
-                    await self.client.send(RpcMessage.chng("track/" + pth[1], param))
+                    await self.signal(f"track/{pth[1]}", param=param)
                 return True
         return await super()._method_call(path, method, access, param)
 
@@ -71,6 +71,7 @@ async def example_device(url: RpcUrl) -> None:
     client = await ExampleDevice.connect(url)
     if client is not None:
         await client.task
+        await client.disconnect()
 
 
 def parse_args() -> argparse.Namespace:
