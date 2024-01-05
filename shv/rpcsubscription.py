@@ -15,7 +15,7 @@ class RpcSubscription:
     """SHV Path the subscription is applied on."""
     method: str = "chng"
     """Method name subscription is applied on."""
-    pattern: str | None = None
+    paths: str | None = None
     """Pattern that replaces the **path** match. Compared to the **path** the patter
     must match exactly and thus it can be used to subscribed only on a signle node.
 
@@ -36,8 +36,8 @@ class RpcSubscription:
           and method.
         """
         path_matches: bool
-        if self.pattern is not None:
-            path_matches = path_match(path, self.pattern)
+        if self.paths is not None:
+            path_matches = path_match(path, self.paths)
         else:
             path_matches = (
                 not self.path
@@ -60,22 +60,22 @@ class RpcSubscription:
         # We ignore unknown keys here intentionally
         path = value.get("path", cls.path)
         method = value.get("method", cls.method)
-        pattern = value.get("pattern", cls.pattern)
+        paths = value.get("paths", cls.paths)
         methods = value.get("methods", cls.methods)
         if (
             not isinstance(path, str)
             or not isinstance(method, str)
-            or not isinstance(pattern, (str, type(None)))
+            or not isinstance(paths, (str, type(None)))
             or not isinstance(methods, (str, type(None)))
         ):
             raise ValueError("Invalid type")
-        return cls(path, method, pattern, methods)
+        return cls(path, method, paths, methods)
 
     def toSHV(self) -> SHVType:
         """Convert to representation used in SHV RPC communication."""
         res: dict[str, SHVType] = {}
-        if self.pattern is not None:
-            res["pattern"] = self.pattern
+        if self.paths is not None:
+            res["paths"] = self.paths
         elif self.path:
             res["path"] = self.path
         if self.methods is not None:

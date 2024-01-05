@@ -17,10 +17,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `connect_rpc_client` now uses `RpcProtocolSerialCRC` instead of
   `RpcProtocolSerial` for `RpcProtocol.SERIAL`.
 - `RpcUrl.parse` now enforces that `shapass` must have 40 characters.
+- `.app/broker:mountPoints` renamed to `.app/bnroker:mounts` according to the
+  standard update.
+- All methods working with subscription in `.app/broker/currentClient` now use
+  keyword `paths` instead of `pattern` (change in SHV standard)
+- Methods in `.app/broker` now have access level Super-Service according to the
+  SHV standard
+- Methods in `.app/broker/currentClient` are now reported with Browse access
+  level but on access the level is not verified at all and thus access is not
+  limited
 
 ### Fixed
 - Login to RPC Broker with PLAIN password when server has SHA1 configured for
   that user
+- `.app/broker:mountedClientInfo` is now reported by `.app/broker:dir`
 
 
 ## [0.4.0] - 2023-11-10

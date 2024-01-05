@@ -420,16 +420,29 @@ class RpcBroker:
         def _dir(self, path: str) -> typing.Iterator[RpcMethodDesc]:
             yield from super()._dir(path)
             if path == ".app/broker":
-                yield RpcMethodDesc("clientInfo", access=RpcMethodAccess.SERVICE)
-                yield RpcMethodDesc.getter("clients", access=RpcMethodAccess.SERVICE)
-                yield RpcMethodDesc("disconnectClient", access=RpcMethodAccess.SERVICE)
-                yield RpcMethodDesc.getter("mountPoints")
+                yield RpcMethodDesc("clientInfo", access=RpcMethodAccess.SUPER_SERVICE)
+                yield RpcMethodDesc(
+                    "mountedClientInfo", access=RpcMethodAccess.SUPER_SERVICE
+                )
+                yield RpcMethodDesc.getter(
+                    "clients", access=RpcMethodAccess.SUPER_SERVICE
+                )
+                yield RpcMethodDesc.getter(
+                    "mounts", access=RpcMethodAccess.SUPER_SERVICE
+                )
+                yield RpcMethodDesc(
+                    "disconnectClient", access=RpcMethodAccess.SUPER_SERVICE
+                )
             elif path == ".app/broker/currentClient":
                 yield RpcMethodDesc.getter("info", access=RpcMethodAccess.BROWSE)
-                yield RpcMethodDesc("subscribe", access=RpcMethodAccess.READ)
-                yield RpcMethodDesc("unsubscribe", access=RpcMethodAccess.READ)
-                yield RpcMethodDesc("rejectNotSubscribed", access=RpcMethodAccess.READ)
-                yield RpcMethodDesc.getter("subscriptions")
+                yield RpcMethodDesc("subscribe", access=RpcMethodAccess.BROWSE)
+                yield RpcMethodDesc("unsubscribe", access=RpcMethodAccess.BROWSE)
+                yield RpcMethodDesc(
+                    "rejectNotSubscribed", access=RpcMethodAccess.BROWSE
+                )
+                yield RpcMethodDesc.getter(
+                    "subscriptions", access=RpcMethodAccess.BROWSE
+                )
             elif (
                 path.startswith(".app/broker/clientInfo/")
                 and self.broker.get_client(path[23:]) is not None
@@ -437,57 +450,58 @@ class RpcBroker:
                 yield RpcMethodDesc.getter("userName", "String")
                 yield RpcMethodDesc.getter("mountPoint", "String")
                 yield RpcMethodDesc.getter("subscriptions")
-                yield RpcMethodDesc("dropClient", access=RpcMethodAccess.SERVICE)
+                yield RpcMethodDesc("dropClient", access=RpcMethodAccess.SUPER_SERVICE)
                 yield RpcMethodDesc.getter("idleTime")
                 yield RpcMethodDesc.getter("idleTimeMax")
 
         async def _method_call(
             self, path: str, method: str, access: RpcMethodAccess, param: SHVType
         ) -> SHVType:
-            if path == ".app/broker":
-                if method == "clientInfo" and access >= RpcMethodAccess.SERVICE:
-                    if not isinstance(param, int):
-                        raise RpcInvalidParamsError("Use Int")
-                    client = self.broker.get_client(param)
-                    return client.infomap() if client is not None else None
-                if method == "mountedClientInfo" and access >= RpcMethodAccess.SERVICE:
-                    if not isinstance(param, str):
-                        raise RpcInvalidParamsError("Use String with SHV path")
-                    client_pth = self.broker.client_on_path(param)
-                    if client_pth is not None:
-                        return client_pth[0].infomap()
-                    return None
-                if method == "clients" and access >= RpcMethodAccess.SERVICE:
-                    return list(self.broker.clients.keys())
-                if method == "disconnectClient" and access >= RpcMethodAccess.SERVICE:
-                    if not isinstance(param, int):
-                        raise RpcInvalidParamsError("Use Int")
-                    client = self.broker.get_client(param)
-                    if client is None:
-                        raise RpcMethodCallExceptionError(
-                            f"No such client with ID: {param}"
-                        )
-                    await client.disconnect()
-                    return None
-                if method == "mountPoints" and access >= RpcMethodAccess.READ:
-                    return [
-                        "/".join(c.mount_point)
-                        for c in self.broker.clients.values()
-                        if c.mount_point
-                    ]
+            if path == ".app/broker" and access >= RpcMethodAccess.SUPER_SERVICE:
+                match method:
+                    case "clientInfo":
+                        if not isinstance(param, int):
+                            raise RpcInvalidParamsError("Use Int")
+                        client = self.broker.get_client(param)
+                        return client.infomap() if client is not None else None
+                    case "mountedClientInfo":
+                        if not isinstance(param, str):
+                            raise RpcInvalidParamsError("Use String with SHV path")
+                        client_pth = self.broker.client_on_path(param)
+                        if client_pth is not None:
+                            return client_pth[0].infomap()
+                        return None
+                    case "clients":
+                        return list(self.broker.clients.keys())
+                    case "mounts":
+                        return [
+                            "/".join(c.mount_point)
+                            for c in self.broker.clients.values()
+                            if c.mount_point
+                        ]
+                    case "disconnectClient":
+                        if not isinstance(param, int):
+                            raise RpcInvalidParamsError("Use Int")
+                        client = self.broker.get_client(param)
+                        if client is None:
+                            raise RpcMethodCallExceptionError(
+                                f"No such client with ID: {param}"
+                            )
+                        await client.disconnect()
+                        return None
             elif path == ".app/broker/currentClient":
-                if method == "info":
-                    return self.infomap()
-                if access >= RpcMethodAccess.READ:
-                    if method == "subscriptions":
+                match method:
+                    case "info":
+                        return self.infomap()
+                    case "subscriptions":
                         return self.subslist()
-                    if method == "subscribe":
+                    case "subscribe":
                         assert self.user is not None
                         sub = RpcSubscription.fromSHV(param)
                         self.subscriptions.add(sub)
                         # TODO support subscription to the subbroker
                         return None
-                    if method == "unsubscribe":
+                    case "unsubscribe":
                         sub = RpcSubscription.fromSHV(param)
                         try:
                             self.subscriptions.remove(sub)
@@ -497,7 +511,7 @@ class RpcBroker:
                         # that no longer matches some of ours because
                         # rejectNotSubscribed doesn't work for invalid paths.
                         return True
-                    if method == "rejectNotSubscribed":
+                    case "rejectNotSubscribed":
                         method = shvget(param, "method", str, "chng")
                         path = shvget(param, "path", str, "")
                         match = {
@@ -512,22 +526,25 @@ class RpcBroker:
             elif (
                 path.startswith(".app/broker/clientInfo/")
                 and (client := self.broker.get_client(path[23:])) is not None
-                and access >= RpcMethodAccess.SERVICE
+                and access >= RpcMethodAccess.SUPER_SERVICE
             ):
-                if method == "userName":
-                    assert client.user is not None
-                    return client.user.name
-                if method == "mountPoint":
-                    return "/".join(self.mount_point) if self.mount_point else None
-                if method == "subscriptions":
-                    return client.subslist()
-                if method == "dropClient":
-                    await client.disconnect()
-                    return None
-                if method == "idleTime":
-                    return int((time.monotonic() - client.client.last_receive) * 1000)
-                if method == "idleTimeMax":
-                    return int(self.IDLE_TIMEOUT * 1000)
+                match method:
+                    case "userName":
+                        assert client.user is not None
+                        return client.user.name
+                    case "mountPoint":
+                        return "/".join(self.mount_point) if self.mount_point else None
+                    case "subscriptions":
+                        return client.subslist()
+                    case "dropClient":
+                        await client.disconnect()
+                        return None
+                    case "idleTime":
+                        return int(
+                            (time.monotonic() - client.client.last_receive) * 1000
+                        )
+                    case "idleTimeMax":
+                        return int(self.IDLE_TIMEOUT * 1000)
             return await super()._method_call(path, method, access, param)
 
         def infomap(self) -> SHVType:

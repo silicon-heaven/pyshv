@@ -77,10 +77,13 @@ async def test_empty_ls_invalid(client, path):
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
                 RpcMethodDesc.stdlschng(),
-                RpcMethodDesc("clientInfo", access=RpcMethodAccess.SERVICE),
-                RpcMethodDesc.getter("clients", access=RpcMethodAccess.SERVICE),
-                RpcMethodDesc("disconnectClient", access=RpcMethodAccess.SERVICE),
-                RpcMethodDesc.getter("mountPoints", access=RpcMethodAccess.READ),
+                RpcMethodDesc("clientInfo", access=RpcMethodAccess.SUPER_SERVICE),
+                RpcMethodDesc(
+                    "mountedClientInfo", access=RpcMethodAccess.SUPER_SERVICE
+                ),
+                RpcMethodDesc.getter("clients", access=RpcMethodAccess.SUPER_SERVICE),
+                RpcMethodDesc.getter("mounts", access=RpcMethodAccess.SUPER_SERVICE),
+                RpcMethodDesc("disconnectClient", access=RpcMethodAccess.SUPER_SERVICE),
             ],
         ),
         (
@@ -90,10 +93,10 @@ async def test_empty_ls_invalid(client, path):
                 RpcMethodDesc.stdls(),
                 RpcMethodDesc.stdlschng(),
                 RpcMethodDesc.getter("info", access=RpcMethodAccess.BROWSE),
-                RpcMethodDesc("subscribe", access=RpcMethodAccess.READ),
-                RpcMethodDesc("unsubscribe", access=RpcMethodAccess.READ),
-                RpcMethodDesc("rejectNotSubscribed", access=RpcMethodAccess.READ),
-                RpcMethodDesc.getter("subscriptions", access=RpcMethodAccess.READ),
+                RpcMethodDesc("subscribe", access=RpcMethodAccess.BROWSE),
+                RpcMethodDesc("unsubscribe", access=RpcMethodAccess.BROWSE),
+                RpcMethodDesc("rejectNotSubscribed", access=RpcMethodAccess.BROWSE),
+                RpcMethodDesc.getter("subscriptions", access=RpcMethodAccess.BROWSE),
             ],
         ),
         (
@@ -109,7 +112,7 @@ async def test_empty_ls_invalid(client, path):
                 RpcMethodDesc.getter("userName", "String"),
                 RpcMethodDesc.getter("mountPoint", "String"),
                 RpcMethodDesc.getter("subscriptions"),
-                RpcMethodDesc("dropClient", access=RpcMethodAccess.SERVICE),
+                RpcMethodDesc("dropClient", access=RpcMethodAccess.SUPER_SERVICE),
                 RpcMethodDesc.getter("idleTime"),
                 RpcMethodDesc.getter("idleTimeMax"),
             ],
@@ -124,8 +127,8 @@ async def test_empty_dir(client, path, methods):
 @pytest.mark.parametrize(
     "path,method,param,result",
     (
-        (".app/broker", "mountPoints", None, []),
         (".app/broker", "clients", None, [0]),
+        (".app/broker", "mounts", None, []),
         (
             ".app/broker",
             "clientInfo",
