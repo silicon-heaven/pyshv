@@ -175,6 +175,16 @@ class RpcBroker:
         except importlib.metadata.PackageNotFoundError:
             APP_VERSION = "unknown"
 
+        IDLE_TIMEOUT: float = 5
+        """Number of seconds before we are disconnected from the broker automatically.
+
+        The broker client has in default way shorter timeout which is increased after
+        login. If you are creating this client as if it is already connected you should
+        increase this timeout for sure to something more reasonable.
+        """
+        DEFAULT_IDLE_TIMEOUT: float = SimpleClient.IDLE_TIMEOUT
+        """The default value for :param:`IDLE_TIMEOUT` after login."""
+
         class State(enum.Enum):
             """State of the client."""
 
@@ -281,8 +291,6 @@ class RpcBroker:
             logger.info("Client with ID %d disconnected", self.__broker_client_id)
 
         async def _message(self, msg: RpcMessage) -> None:
-            # TODO we should start with much smaller IDLE_TIMEOUT and increase it on
-            # successful login
             if self.state == self.State.CONNECTED:
                 return await self.client.send(await self._message_hello(msg))
             if self.state == self.State.HELLO:
@@ -381,7 +389,7 @@ class RpcBroker:
                         param,
                         ("options", "idleWatchDogTimeOut"),
                         int,
-                        self.IDLE_TIMEOUT,
+                        self.DEFAULT_IDLE_TIMEOUT,
                     )
                 )
                 resp.result = {"clientId": self.broker_client_id}
