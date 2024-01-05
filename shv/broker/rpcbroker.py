@@ -100,7 +100,7 @@ class RpcBroker:
         return None
 
     async def start_serving(self) -> None:
-        """Start accepting connectons on all configured servers."""
+        """Start accepting connections on all configured servers."""
 
         def add(client: RpcClient) -> None:
             self.add_client(client)
@@ -189,6 +189,7 @@ class RpcBroker:
             broker_client_id: int,
         ):
             super().__init__(client)
+            self.idle_disconnect = True
             self.subscriptions: set[RpcSubscription] = set()
             """Set of all subscriptions."""
             self.state = self.State.CONNECTED
@@ -279,16 +280,9 @@ class RpcBroker:
             await self.client.wait_disconnect()
             logger.info("Client with ID %d disconnected", self.__broker_client_id)
 
-        async def _activity_loop(self) -> None:
-            """Loop run alongside with :meth:`_loop` to disconnect inactive clients."""
-            while self.client.connected:
-                t = time.monotonic() - self.client.last_receive
-                if t < self.IDLE_TIMEOUT:
-                    await asyncio.sleep(self.IDLE_TIMEOUT - t)
-                else:
-                    await self.disconnect()
-
         async def _message(self, msg: RpcMessage) -> None:
+            # TODO we should start with much smaller IDLE_TIMEOUT and increase it on
+            # successful login
             if self.state == self.State.CONNECTED:
                 return await self.client.send(await self._message_hello(msg))
             if self.state == self.State.HELLO:

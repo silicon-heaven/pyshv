@@ -53,6 +53,7 @@ class SimpleClient:
         client: RpcClient,
         call_attempts: int = 1,
         call_timeout: float | None = 300.0,
+        idle_disconnect: bool = False,
     ):
         self.client = client
         """The underlaying RPC client instance."""
@@ -62,6 +63,8 @@ class SimpleClient:
         """Number of attempts when no response is received before call is abandoned."""
         self.call_timeout = call_timeout
         """Timeout in seconds before call is attempted again or abandoned."""
+        self.idle_disconnect = idle_disconnect
+        """If client should be disconnected on IDLE_TIMEOUT instead of ping."""
         self._calls_event: dict[int, asyncio.Event] = {}
         self._calls_msg: dict[int, RpcMessage] = {}
         self.__peer_is_shv3: None | bool = None
@@ -108,21 +111,31 @@ class SimpleClient:
             pass
 
     async def _activity_loop(self) -> None:
-        """Loop run alongside with :meth:`_loop` to send pings to the broker when idling."""
-        idlet = self.IDLE_TIMEOUT / 2
+        """Loop run alongside with :meth:`_loop`.
+
+        It either sends pings to the other side or it disconnects other side when
+        idling. The operation is based on :param:`idle_disconnect`.
+        """
         while self.client.connected:
-            t = time.monotonic() - self.client.last_send
-            if t < idlet:
-                await asyncio.sleep(idlet - t)
+            if self.idle_disconnect:
+                t = time.monotonic() - self.client.last_receive
+                if t < self.IDLE_TIMEOUT:
+                    await asyncio.sleep(self.IDLE_TIMEOUT - t)
+                else:
+                    await self.disconnect()
             else:
-                await self.client.send(
-                    RpcMessage.request(
-                        ".app"
-                        if await self._peer_is_shv3()
-                        else ".broker/currentClient",
-                        "ping",
+                t = time.monotonic() - self.client.last_send
+                if t < (self.IDLE_TIMEOUT / 2):
+                    await asyncio.sleep(self.IDLE_TIMEOUT / 2 - t)
+                else:
+                    await self.client.send(
+                        RpcMessage.request(
+                            ".app"
+                            if await self._peer_is_shv3()
+                            else ".broker/currentClient",
+                            "ping",
+                        )
                     )
-                )
 
     async def _message(self, msg: RpcMessage) -> None:
         """Handle every received message."""
