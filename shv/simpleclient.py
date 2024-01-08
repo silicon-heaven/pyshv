@@ -24,6 +24,9 @@ from .value import SHVType, is_shvbool, is_shvnull
 logger = logging.getLogger(__name__)
 
 
+TSimpleClient = typing.TypeVar("TSimpleClient", bound="SimpleClient")
+
+
 class SimpleClient:
     """SHV client made simple to use.
 
@@ -71,9 +74,9 @@ class SimpleClient:
 
     @classmethod
     async def connect(
-        cls,
+        cls: type[TSimpleClient],
         url: RpcUrl,
-    ) -> "SimpleClient":
+    ) -> TSimpleClient:
         """Connect and login to the SHV broker.
 
         :param url: SHV RPC URL to the broker
