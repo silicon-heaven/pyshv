@@ -128,6 +128,7 @@ class RpcBroker:
                 lschng = RpcMessage.signal(
                     path, "lschng", {node: False}, RpcMethodAccess.BROWSE
                 )
+            was_mounted = self.__mount_point is not None
             # Perform mount point change
             self.__mount_point = value
             if value is not None:
@@ -147,7 +148,7 @@ class RpcBroker:
             assert lschng is not None
             await self.__broker.signal(lschng)
             # Now remove old subscriptions and add new ones
-            await self.maintain_subscriptions()
+            await self.maintain_subscriptions(cleanup=was_mounted)
             if value:
                 logger.info(
                     "Client with ID %d is now mounted on: %s",
@@ -182,8 +183,8 @@ class RpcBroker:
         async def _message(self, msg: RpcMessage) -> None:
             if self.user is None:
                 if self._nonce is None:
-                    return await self.client.send(await self._message_hello(msg))
-                return await self.client.send(await self._message_login(msg))
+                    return await self.client.send(self._message_hello(msg))
+                return await self.client.send(self._message_login(msg))
 
             if msg.is_request:
                 # Set access granted to the level allowed by user
@@ -221,7 +222,7 @@ class RpcBroker:
                 msg.path = self.mount_point + "/" + msg.path
                 await self.__broker.signal(msg)
 
-        async def _message_hello(self, msg: RpcMessage) -> RpcMessage:
+        def _message_hello(self, msg: RpcMessage) -> RpcMessage:
             resp = msg.make_response()
             if msg.is_request and msg.method == "hello":
                 self._nonce = "".join(
@@ -235,7 +236,7 @@ class RpcBroker:
                 )
             return resp
 
-        async def _message_login(self, msg: RpcMessage) -> RpcMessage:
+        def _message_login(self, msg: RpcMessage) -> RpcMessage:
             assert self._nonce is not None
             resp = msg.make_response()
             if not msg.is_request or msg.method != "login":
@@ -274,7 +275,7 @@ class RpcBroker:
                     )
                     return resp
                 if mount_point:
-                    await self.set_mount_point(mount_point)
+                    asyncio.create_task(self.set_mount_point(mount_point))
                 self.IDLE_TIMEOUT = float(
                     shvget(
                         param,
@@ -468,10 +469,13 @@ class RpcBroker:
             """
             return [{"method": s.method, "path": s.path} for s in self.subscriptions]
 
-        async def maintain_subscriptions(self) -> None:
+        async def maintain_subscriptions(self, cleanup: bool = True) -> None:
             """Remove no longer valid subscriptions and add missing ones.
 
             This does nothing if peer of this client is not sub-broker.
+
+            :param cleanup: If cleanup should be performed or if it is enough to
+            just push all subscriptions.
             """
             assert self.user is not None
             if not await self.peer_is_broker():
@@ -479,11 +483,15 @@ class RpcBroker:
             # We lock here because we do multiple calls and we must be sure that nobody
             # is going to be doing the same as us.
             async with self.__maintain_subscriptions_lock:
-                rsubs = await self.call(".app/broker/currentClient", "subscriptions")
-                # TODO error instead of assert
-                assert isinstance(rsubs, collections.abc.Sequence)
-                present = {RpcSubscription.fromSHV(sub) for sub in rsubs}
+                present: set[RpcSubscription] = set()
                 required: set[RpcSubscription] = set()
+                if cleanup:
+                    rsubs = await self.call(
+                        ".app/broker/currentClient", "subscriptions"
+                    )
+                    # TODO error instead of assert
+                    assert isinstance(rsubs, collections.abc.Sequence)
+                    present = {RpcSubscription.fromSHV(sub) for sub in rsubs}
                 if self.mount_point is not None:
                     for client in self.broker.clients.values():
                         if client.user is None:

@@ -327,8 +327,6 @@ class SimpleClient:
     ) -> SHVType:
         """Handle request in the provided message.
 
-        You have to set some RpcMessage that is sent back as a response.
-
         :param path: SHV path to the node the method is associated with.
         :param method: method requested to be called.
         :param access: access level of the client specified in the request.
