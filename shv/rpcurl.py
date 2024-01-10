@@ -106,6 +106,9 @@ class RpcUrl:
             res["mountPoint"] = self.device_mount_point
         return {"device": res} if res else {}
 
+    def __str__(self) -> str:
+        return self.to_url()
+
     @classmethod
     def parse(cls, url: str) -> "RpcUrl":
         """Parse string URL to the object representation.
@@ -150,12 +153,15 @@ class RpcUrl:
         else:
             raise NotImplementedError  # pragma: no cover
 
-        # We prefer SHA1 password and thus discard plain if both are present
+        if opts := pqs.pop("user", []):
+            res.username = opts[0]
         if opts := pqs.pop("shapass", []):
             if len(opts[0]) != 40:
                 raise ValueError("SHA1 password must have 40 characters.")
             res.password = opts[0]
             res.login_type = RpcLoginType.SHA1
+            # We prefer SHA1 password and thus discard plain if both are present
+            pqs.pop("password", [])
         elif opts := pqs.pop("password", []):
             res.password = opts[0]
             res.login_type = RpcLoginType.PLAIN
@@ -183,6 +189,7 @@ class RpcUrl:
             RpcProtocol.UNIXS: "unixs",
             RpcProtocol.SERIAL: "serial",
         }
+        user_added = not self.username or self.username == type(self).username
         if self.protocol in (
             RpcProtocol.TCP,
             RpcProtocol.TCPS,
@@ -190,8 +197,9 @@ class RpcUrl:
             RpcProtocol.SSLS,
         ):
             netloc = "//"
-            if self.username and self.username != type(self).username:
+            if not user_added:
                 netloc += f"{self.username}@"
+                user_added = True
             if ":" in self.location:
                 netloc += f"[{self.location}]"
             else:
@@ -203,16 +211,18 @@ class RpcUrl:
             raise NotImplementedError  # pragma: no cover
 
         opts: list[str] = []
+        if not user_added:
+            opts.append(f"user={urllib.parse.quote(self.username)}")
+            user_added = True
         if self.device_id:
-            opts.append(f"devid={self.device_id}")
+            opts.append(f"devid={urllib.parse.quote(self.device_id)}")
         if self.device_mount_point:
-            opts.append(f"devmount={self.device_mount_point}")
+            opts.append(f"devmount={urllib.parse.quote(self.device_mount_point)}")
         if self.password:
             if self.login_type is RpcLoginType.SHA1:
-                # TODO escape password string?
                 opts.append(f"shapass={self.password}")
             elif self.login_type is RpcLoginType.PLAIN:
-                opts.append(f"password={self.password}")
+                opts.append(f"password={urllib.parse.quote(self.password)}")
             else:
                 raise NotImplementedError()  # pragma: no cover
         if self.baudrate != type(self).baudrate:

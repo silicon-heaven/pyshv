@@ -7,6 +7,21 @@ from shv import RpcLoginType, RpcProtocol, RpcUrl
 
 DATA = [
     ("unix:/dev/null", RpcUrl("/dev/null", protocol=RpcProtocol.UNIX)),
+    (
+        "unixs:/dev/null?user=test&password=foo",
+        RpcUrl(
+            "/dev/null", protocol=RpcProtocol.UNIXS, username="test", password="foo"
+        ),
+    ),
+    (
+        "serial:/dev/null?user=test%40example.com&password=a%C4%8D%C5%A1f",
+        RpcUrl(
+            "/dev/null",
+            protocol=RpcProtocol.SERIAL,
+            username="test@example.com",
+            password="ačšf",
+        ),
+    ),
     ("tcp://test@localhost:4242", RpcUrl("localhost", username="test", port=4242)),
     (
         "ssl://test@localhost:4242",

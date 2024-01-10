@@ -33,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Login to RPC Broker with PLAIN password when server has SHA1 configured for
   that user
 - `.app/broker:mountedClientInfo` is now reported by `.app/broker:dir`
+- `RpcUrl` now correctly escapes options when converting to URL string and
+  supports `user` option
 
 
 ## [0.4.0] - 2023-11-10
