@@ -103,7 +103,7 @@ class TestUnix(ServerLink):
 
     @pytest.fixture(name="sockpath")
     def fixture_sockpath(self, tmp_path):
-        return tmp_path / "shv.sock"
+        return tmp_path / "s"
 
     @pytest.fixture(name="server")
     async def fixture_server(self, sockpath):

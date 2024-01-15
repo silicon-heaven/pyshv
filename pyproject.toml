@@ -1,8 +1,8 @@
 [project]
 name = "pyshv"
-version = "0.4.0"
 description = "Pure Python SHV implementation"
 readme = "README.rst"
+dynamic = ["version"]
 license = {file = "LICENSE"}
 authors = [
   { name="Elektroline a.s." },
@@ -59,10 +59,12 @@ pyshvbroker = "shv.broker.__main__:main"
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.dynamic]
+version = {file = "shv/version"}
 [tool.setuptools.packages.find]
 exclude = ["docs", "tests*"]
 [tool.setuptools.package-data]
-"*" = ["py.typed"]
+"*" = ["version", "py.typed"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

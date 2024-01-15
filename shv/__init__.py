@@ -68,6 +68,11 @@ from .value import (
 from .value_tools import SHVGetKey, shvget
 from .valueclient import ValueClient
 
+VERSION = (
+    (__import__("pathlib").Path(__file__).parent / "version").read_text("utf-8").strip()
+)
+
+
 __all__ = [
     # cpon
     "Cpon",

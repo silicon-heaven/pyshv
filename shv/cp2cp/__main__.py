@@ -2,7 +2,7 @@ import argparse
 import functools
 import sys
 
-from .. import cpon
+from .. import VERSION, cpon
 from .cp2cp import CPFormat, convert
 
 
@@ -10,6 +10,11 @@ def parse_args() -> argparse.Namespace:
     """Parse passed arguments and return result."""
     parser = argparse.ArgumentParser(
         "pycp2cp2", description="Chainpack to Cpon and vice versa converter"
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {VERSION}",
     )
     igroup = parser.add_mutually_exclusive_group()
     ogroup = parser.add_mutually_exclusive_group()

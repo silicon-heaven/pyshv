@@ -55,12 +55,12 @@ tests:
 nix-build:
   extends: .test
   script:
-    - nix build
+    - nix build --log-lines 1000
 
 nix-check:
   extends: .test
   script:
-    - nix flake check
+    - nix flake check --log-lines 1000
 
 include:
   - template: Security/Secret-Detection.gitlab-ci.yml
@@ -80,7 +80,7 @@ mypy:
   extends: .lint
   script:
     - mkdir .mypy-cache
-    - nix develop --quiet -c mypy --cache-dir .mypy-cache --install-types --non-interactive .
+    - nix develop --quiet -c mypy --cache-dir .mypy-cache .
 
 ## Style stage #################################################################
 .style:

@@ -10,6 +10,7 @@ import random
 import time
 import typing
 
+from .. import VERSION
 from ..rpcclient import RpcClient
 from ..rpcerrors import (
     RpcError,
@@ -42,12 +43,8 @@ class RpcBroker:
 
         APP_NAME = "pyshvbroker"
         """Name reported as application name for pySHVBroker."""
-        try:
-            APP_VERSION = importlib.metadata.version("pyshv")
-            """pySHVBroker version."""
-        except importlib.metadata.PackageNotFoundError:
-            APP_VERSION = "unknown"
-            """pySHVBroker version but when we can't query for it."""
+        APP_VERSION = VERSION
+        """pySHVBroker version."""
 
         IDLE_TIMEOUT_LOGIN: float = 5
         """:param:`IDLE_TIMEOUT` set for clients without user.

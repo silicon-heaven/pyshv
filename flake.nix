@@ -34,7 +34,7 @@
       }:
         buildPythonPackage {
           pname = pyproject.project.name;
-          inherit (pyproject.project) version;
+          version = fileContents ./shv/version;
           format = "pyproject";
           src = builtins.path {
             path = ./.;
@@ -82,7 +82,6 @@
       {
         overlays = {
           pythonPackagesExtension = final: prev: {
-            template-python = final.callPackage pypkgs-template-python {};
             pyshv = final.callPackage pypkg-pyshv {};
             sphinx-multiversion = final.callPackage pypkg-multiversion {};
             types-pyserial = final.callPackage pypkg-types-serial {};
@@ -99,10 +98,7 @@
       // eachDefaultSystem (system: let
         pkgs = nixpkgs.legacyPackages.${system}.extend self.overlays.default;
       in {
-        packages = {
-          inherit (pkgs.python3Packages) pyshv;
-          default = self.packages.${system}.pyshv;
-        };
+        packages.default = pkgs.python3Packages.pyshv;
         legacyPackages = pkgs;
 
         devShells = filterPackages system {
@@ -120,6 +116,18 @@
                   requires-dev
                 ]))
             ];
+          };
+        };
+
+        apps = {
+          default = self.apps.${system}.pyshvbroker;
+          pycp2cp = {
+            type = "app";
+            program = "${self.packages.${system}.default}/bin/pycp2cp";
+          };
+          pyshvbroker = {
+            type = "app";
+            program = "${self.packages.${system}.default}/bin/pyshvbroker";
           };
         };
 
