@@ -1,8 +1,8 @@
 [project]
 name = "template-python"
-version = "0.0.0"
 description = "Project Template Python"
 readme = "README.rst"
+dynamic = ["version"]
 authors = [
   { name="Elektroline a.s." },
 ]
@@ -10,7 +10,7 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Operating System :: OS Independent",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = []
 
 [project.urls]
@@ -41,10 +41,12 @@ foo = "foo.__main__:main"
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.dynamic]
+version = {file = "foo/version"}
 [tool.setuptools.packages.find]
 exclude = ["docs", "tests*"]
 [tool.setuptools.package-data]
-"*" = ["py.typed"]
+"*" = ["version", "py.typed"]
 
 [tool.coverage.run]
 branch = true

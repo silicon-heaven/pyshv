@@ -23,11 +23,12 @@
         buildPythonPackage,
         pytestCheckHook,
         pythonPackages,
+        setuptools,
         sphinxHook,
       }:
         buildPythonPackage {
           pname = pyproject.project.name;
-          inherit (pyproject.project) version;
+          version = fileContents ./foo/version;
           format = "pyproject";
           src = builtins.path {
             path = ./.;
@@ -35,8 +36,8 @@
           };
           outputs = ["out" "doc"];
           propagatedBuildInputs = requires pythonPackages;
-          nativeBuildInputs = requires-docs pythonPackages ++ [sphinxHook];
-          nativeCheckInputs = requires-test pythonPackages ++ [pytestCheckHook];
+          nativeBuildInputs = [setuptools sphinxHook] ++ requires-docs pythonPackages;
+          nativeCheckInputs = [pytestCheckHook] ++ requires-test pythonPackages;
         };
     in
       {
@@ -53,10 +54,7 @@
       // eachDefaultSystem (system: let
         pkgs = nixpkgs.legacyPackages.${system}.extend self.overlays.default;
       in {
-        packages = {
-          inherit (pkgs.python3Packages) template-python;
-          default = pkgs.python3Packages.template-python;
-        };
+        packages.default = pkgs.python3Packages.template-python;
         legacyPackages = pkgs;
 
         devShells = filterPackages system {
@@ -75,6 +73,12 @@
             ];
           };
         };
+
+        apps.default = {
+          type = "app";
+          program = "${self.packages.${system}.default}/bin/foo";
+        };
+
 
         checks.default = self.packages.${system}.default;
 
