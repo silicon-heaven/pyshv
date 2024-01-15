@@ -27,6 +27,7 @@
       pypkg-pyshv = {
         buildPythonPackage,
         pythonPackages,
+        setuptools,
         sphinxHook,
         pytestCheckHook,
         libshv,
@@ -41,7 +42,7 @@
           };
           outputs = ["out" "doc"];
           propagatedBuildInputs = requires pythonPackages;
-          nativeBuildInputs = [sphinxHook] ++ requires-docs pythonPackages;
+          nativeBuildInputs = [setuptools sphinxHook] ++ requires-docs pythonPackages;
           nativeCheckInputs = [pytestCheckHook libshv] ++ requires-test pythonPackages;
         };
 
