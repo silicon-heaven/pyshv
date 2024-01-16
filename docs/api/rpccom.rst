@@ -30,6 +30,7 @@ sever side to communicate with newly connected peer.
 .. autoclass:: shv.RpcServer
 .. autoclass:: shv.RpcServerTCP
 .. autoclass:: shv.RpcServerUnix
+.. autoclass:: shv.RpcServerTTY
 
 Transport protocols
 -------------------

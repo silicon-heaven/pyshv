@@ -5,11 +5,19 @@ import abc
 import asyncio
 import collections.abc
 import logging
+import pathlib
 import typing
 
+import asyncinotify
+
 from . import rpcprotocol
-from .rpcclient import RpcClient
-from .rpcprotocol import RpcProtocolSerial, RpcProtocolStream, RpcTransportProtocol
+from .rpcclient import RpcClient, RpcClientTTY
+from .rpcprotocol import (
+    RpcProtocolSerial,
+    RpcProtocolSerialCRC,
+    RpcProtocolStream,
+    RpcTransportProtocol,
+)
 from .rpcurl import RpcProtocol, RpcUrl
 
 logger = logging.getLogger(__name__)
@@ -217,6 +225,69 @@ class RpcServerUnix(_RpcServerStream):
         await super()._client_connect(reader, writer)
 
 
+class RpcServerTTY(RpcServer):
+    """RPC server waiting for TTY to appear.
+
+    This actually only maintains a single client as there can't be more than one
+    client on single TTY.
+    """
+
+    def __init__(
+        self,
+        client_connected_cb: typing.Callable[
+            [RpcClient], None | collections.abc.Awaitable[None]
+        ],
+        port: str,
+        baudrate: int = 115200,
+        protocol_factory: typing.Type[RpcTransportProtocol] = RpcProtocolSerialCRC,
+    ):
+        self.client_connected_cb = client_connected_cb
+        """Callbact that is called when new client is connected."""
+        self.client = RpcClientTTY(port, baudrate, protocol_factory)
+        """The :class:`RpcClientTTY` instance."""
+        self._task: asyncio.Task | None = None
+
+    async def _loop(self) -> None:
+        while True:
+            try:
+                await self.client.reset()
+            except OSError as exc:
+                logger.debug("Waiting for accessible TTY device: %s", exc)
+            else:
+                res = self.client_connected_cb(self.client)
+                if isinstance(res, collections.abc.Awaitable):
+                    await res
+                await self.client.wait_disconnect()
+                continue
+            with asyncinotify.Inotify() as inotify:
+                pth = pathlib.Path(self.client.port)
+                inotify.add_watch(
+                    pth.parent, asyncinotify.Mask.CREATE | asyncinotify.Mask.ATTRIB
+                )
+                async for event in inotify:
+                    if str(pth.name) == str(event.name):
+                        break
+
+    def is_serving(self) -> bool:
+        return self._task is not None and not self._task.done()
+
+    async def listen(self) -> None:
+        if not self.is_serving():
+            self._task = asyncio.create_task(self._loop())
+
+    async def listen_forewer(self) -> None:
+        await self.listen()
+        await self.wait_closed()
+
+    def close(self) -> None:
+        if self._task is not None:
+            self._task.cancel()
+
+    async def wait_closed(self) -> None:
+        if self._task is not None:
+            await self._task
+
+
 async def create_rpc_server(
     client_connected_cb: typing.Callable[
         [RpcClient], None | collections.abc.Awaitable[None]
@@ -241,6 +312,10 @@ async def create_rpc_server(
         res = RpcServerUnix(client_connected_cb, url.location, RpcProtocolStream)
     elif url.protocol is RpcProtocol.UNIXS:
         res = RpcServerUnix(client_connected_cb, url.location, RpcProtocolSerial)
+    elif url.protocol is RpcProtocol.SERIAL:
+        res = RpcServerTTY(
+            client_connected_cb, url.location, url.baudrate, RpcProtocolSerialCRC
+        )
     else:
         raise NotImplementedError(f"Unimplemented protocol: {url.protocol}")
     await res.listen()

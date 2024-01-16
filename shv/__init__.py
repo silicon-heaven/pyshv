@@ -30,7 +30,13 @@ from .rpcprotocol import (
     RpcProtocolStream,
     RpcTransportProtocol,
 )
-from .rpcserver import RpcServer, RpcServerTCP, RpcServerUnix, create_rpc_server
+from .rpcserver import (
+    RpcServer,
+    RpcServerTCP,
+    RpcServerTTY,
+    RpcServerUnix,
+    create_rpc_server,
+)
 from .rpcsubscription import RpcSubscription
 from .rpcurl import RpcLoginType, RpcProtocol, RpcUrl
 from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
@@ -99,6 +105,7 @@ __all__ = [
     "RpcServer",
     "RpcServerTCP",
     "RpcServerUnix",
+    "RpcServerTTY",
     # rpcurl
     "RpcProtocol",
     "RpcLoginType",

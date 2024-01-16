@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Broker now has ability to establish connection on its own instead of just
   listening for them
 - `RpcClientPipe` that supports working with Unix pipes
+- `RpcServerTTY` that waits for TTY to appear
 
 ### Changed
 - `RpcUrl.password` is now expected to be only string and default value is empty

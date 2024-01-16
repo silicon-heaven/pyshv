@@ -316,6 +316,8 @@ class RpcClientTTY(RpcClient):
         self.protocol_factory = protocol_factory
         self.serial: None | aioserial.AioSerial = None
         self._protocol: None | RpcTransportProtocol = None
+        self._eof = asyncio.Event()
+        self._eof.set()
 
     async def _send(self, msg: bytes) -> None:
         if self._protocol is not None:
@@ -342,6 +344,7 @@ class RpcClientTTY(RpcClient):
         self._protocol = self.protocol_factory(
             self._read_exactly, self.serial.write_async
         )
+        self._eof.clear()
         logger.debug("Connected to: (TTY) %s", self.port)
         return True
 
@@ -352,13 +355,18 @@ class RpcClientTTY(RpcClient):
             try:
                 res += await self.serial.read_async(n - len(res))
             except aioserial.SerialException as exc:
+                self._eof.set()
                 raise EOFError from exc
         return res
 
     def disconnect(self) -> None:
         if self.serial is not None and self.serial.is_open:
             self.serial.close()
+            self._eof.set()
             logger.debug("Disconnecting from: (TTY) %s", self.port)
+
+    async def wait_disconnect(self) -> None:
+        await self._eof.wait()
 
     @classmethod
     async def open(
