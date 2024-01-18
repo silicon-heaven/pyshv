@@ -26,7 +26,7 @@
         "narHash": "sha256-zsNZZGTGnMOf9YpHKJqMSsa0dXbfmxeoJ7xHlrt+xmY=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "1ef2e671c3b0c19053962c07dbda38332dcebf26",
+        "rev": "ff7b65b44d01cf9ba6a71320833626af21126384",
         "type": "github"
       },
       "original": {
@@ -40,11 +40,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1704892530,
-        "narHash": "sha256-sUs/yddB+UXjxAvMiXVgoy4UidLHqPOiUlbeg0cr+Ao=",
+        "lastModified": 1705505951,
+        "narHash": "sha256-9AK1KZr0enr02k6OLfb3qODxKzkEKpNePwGrYrSiyIw=",
         "ref": "refs/heads/master",
-        "rev": "fc7d59911023c4cdc7d6af7e39047367e8e2b883",
-        "revCount": 2395,
+        "rev": "a2a4ffd904113d3e2208843efe06f2d8914d81c0",
+        "revCount": 2399,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/silicon-heaven/libshv.git"
@@ -71,11 +71,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1705242415,
-        "narHash": "sha256-a8DRYrNrzTudvO7XHUPNJD89Wbf1ZZT0VbwCsPnHWaE=",
+        "lastModified": 1705566941,
+        "narHash": "sha256-CLNtVRDA8eUPk+bxsCCZtRO0Cp+SpHdn1nNOLoFypLs=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "ea780f3de2d169f982564128804841500e85e373",
+        "rev": "b06ff4bf8f4ad900fe0c2a61fc2946edc3a84be7",
         "type": "github"
       },
       "original": {
