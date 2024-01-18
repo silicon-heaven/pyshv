@@ -7,7 +7,7 @@ if ! grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$' <<<"$version"; then
 	exit 1
 fi
 
-if [[ "$(tomlq -r '.project.version' pyproject.toml)" != "$version" ]]; then
+if [[ "$(cat ./*/version)" != "$version" ]]; then
 	echo "Version file does not contain the correct version!" >&2
 	exit 1
 fi
