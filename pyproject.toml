@@ -23,7 +23,7 @@ dependencies = [
   "python-dateutil",
   "pyserial",
   "aioserial",
-  "asyncinotify",
+  "asyncinotify; sys_platform == \"linux\"",
 ]
 
 [project.urls]

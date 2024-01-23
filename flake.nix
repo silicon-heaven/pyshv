@@ -15,13 +15,21 @@
     with flake-utils.lib;
     with nixpkgs.lib; let
       pyproject = trivial.importTOML ./pyproject.toml;
-      attrList = attr: list: attrValues (getAttrs list attr);
 
-      requires = p: attrList p pyproject.project.dependencies;
-      requires-docs = p: attrList p pyproject.project.optional-dependencies.docs;
-      requires-test = p: attrList p pyproject.project.optional-dependencies.test;
+      pypy2nix_map = {};
+      list2attr = list: attr: attrValues (getAttrs list attr);
+      pypi2nix = list:
+        list2attr (map (n: let
+          nn = elemAt (match "([^ ;]*).*" n) 0;
+        in
+          pypy2nix_map.${nn} or nn)
+        list);
+
+      requires = pypi2nix pyproject.project.dependencies;
+      requires-docs = pypi2nix pyproject.project.optional-dependencies.docs;
+      requires-test = pypi2nix pyproject.project.optional-dependencies.test;
       requires-dev = p:
-        attrList p pyproject.project.optional-dependencies.lint
+        pypi2nix pyproject.project.optional-dependencies.lint p
         ++ [p.build p.twine];
 
       pypkg-pyshv = {

@@ -8,7 +8,10 @@ import logging
 import pathlib
 import typing
 
-import asyncinotify
+try:
+    import asyncinotify
+except (ImportError, TypeError):
+    asyncinotify = None  # type: ignore
 
 from . import rpcprotocol
 from .rpcclient import RpcClient, RpcClientTTY
@@ -259,14 +262,17 @@ class RpcServerTTY(RpcServer):
                     await res
                 await self.client.wait_disconnect()
                 continue
-            with asyncinotify.Inotify() as inotify:
-                pth = pathlib.Path(self.client.port)
-                inotify.add_watch(
-                    pth.parent, asyncinotify.Mask.CREATE | asyncinotify.Mask.ATTRIB
-                )
-                async for event in inotify:
-                    if str(pth.name) == str(event.name):
-                        break
+            if asyncinotify is not None:
+                with asyncinotify.Inotify() as inotify:
+                    pth = pathlib.Path(self.client.port)
+                    inotify.add_watch(
+                        pth.parent, asyncinotify.Mask.CREATE | asyncinotify.Mask.ATTRIB
+                    )
+                    async for event in inotify:
+                        if str(pth.name) == str(event.name):
+                            break
+            else:
+                await asyncio.sleep(5)  # type: ignore
 
     def is_serving(self) -> bool:
         return self._task is not None and not self._task.done()
