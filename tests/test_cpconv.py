@@ -1,7 +1,7 @@
 """Check usability of our stream conversion."""
 import pytest
 
-from shv.cp2cp import CPFormat, convert
+from shv.cpconv import CPFormat, convert
 
 DATA = [
     ("true", b"\xfe"),
@@ -10,7 +10,7 @@ DATA = [
 
 
 @pytest.mark.parametrize("cpon,chainpack", DATA)
-def test_cp2cpon(cpon, chainpack):
+def test_cpconv(cpon, chainpack):
     assert (
         convert(chainpack, CPFormat.CHAINPACK, None, CPFormat.CPON).decode("utf-8")
         == cpon

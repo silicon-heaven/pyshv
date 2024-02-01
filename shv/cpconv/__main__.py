@@ -3,7 +3,7 @@ import functools
 import sys
 
 from .. import VERSION, cpon
-from .cp2cp import CPFormat, convert
+from .cpconv import CPFormat, convert
 
 
 def parse_args() -> argparse.Namespace:
