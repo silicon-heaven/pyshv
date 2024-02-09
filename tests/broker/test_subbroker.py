@@ -5,7 +5,15 @@ import dataclasses
 import pytest
 
 from example_device import ExampleDevice
-from shv import RpcLoginType, RpcMessage, RpcSubscription, RpcUrl, SimpleClient, broker
+from shv import (
+    RpcLogin,
+    RpcLoginType,
+    RpcMessage,
+    RpcSubscription,
+    RpcUrl,
+    SimpleClient,
+    broker,
+)
 
 
 @pytest.fixture(name="suburl")
@@ -14,9 +22,11 @@ async def fixture_suburl(unused_tcp_port_factory):
     return RpcUrl(
         location="localhost",
         port=unused_tcp_port_factory(),
-        username="admin",
-        password="admin!234",
-        login_type=RpcLoginType.PLAIN,
+        login=RpcLogin(
+            username="admin",
+            password="admin!234",
+            login_type=RpcLoginType.PLAIN,
+        ),
     )
 
 
@@ -33,7 +43,13 @@ async def fixture_shvsubbroker(subconfig, suburl, port, shvbroker):
 @pytest.fixture(name="url_subdevice")
 def fixture_url_subdevice(suburl):
     return dataclasses.replace(
-        suburl, username="admin", password="admin!234", device_mount_point="device"
+        suburl,
+        login=dataclasses.replace(
+            suburl.login,
+            username="admin",
+            password="admin!234",
+            opt_device_mount_point="device",
+        ),
     )
 
 
@@ -69,7 +85,7 @@ class NotifClient(SimpleClient):
 
 
 async def test_signal(shvbroker, subdevice, url):
-    """Check that we propagate signals trough subbroker."""
+    """Check that we propagate signals through subbroker."""
     client = await NotifClient.connect(url)
 
     await client.subscribe(RpcSubscription("subbroker/device/track"))

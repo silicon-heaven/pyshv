@@ -1,5 +1,5 @@
 """RPC client that represents device in a physical sense."""
-import typing
+import collections.abc
 
 from .rpcmethod import RpcMethodAccess, RpcMethodDesc
 from .simpleclient import SimpleClient
@@ -8,6 +8,8 @@ from .value import SHVType
 
 class SimpleDevice(SimpleClient):
     """SHV client that represents a physical device."""
+
+    APP_NAME: str = "pyshv-device"
 
     DEVICE_NAME: str = "unknown"
     """String identifier for the physical device."""
@@ -31,13 +33,13 @@ class SimpleDevice(SimpleClient):
                     return self.DEVICE_SERIAL_NUMBER
         return await super()._method_call(path, method, access, param)
 
-    def _ls(self, path: str) -> typing.Iterator[str]:
+    def _ls(self, path: str) -> collections.abc.Iterator[str]:
         yield from super()._ls(path)
         # Parent already yield .app
         if path == ".app":
             yield "device"
 
-    def _dir(self, path: str) -> typing.Iterator[RpcMethodDesc]:
+    def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:
         yield from super()._dir(path)
         if path == ".app/device":
             yield RpcMethodDesc.getter(
@@ -49,3 +51,21 @@ class SimpleDevice(SimpleClient):
             yield RpcMethodDesc.getter(
                 "serialNumber", "Null", "OptionalString", access=RpcMethodAccess.BROWSE
             )
+
+    async def _lschng(
+        self, path: str, nodes: collections.abc.Mapping[str, bool]
+    ) -> None:
+        """Report change in the ls method.
+
+        This provides implementation for "lschng" signal that must be used when
+        you are changing the nodes tree to signal clients about that. The
+        argument specifies top level nodes added or removed (based on the
+        mapping value).
+
+        :param path: SHV path to the valid node which children were added or
+          removed.
+        :param nodes: Map where key is node name of the node that is top level
+          node, that was either added (for value ``True``) or removed (for value
+          ``False``).
+        """
+        await self.signal(path, "lschng", nodes, RpcMethodAccess.BROWSE)

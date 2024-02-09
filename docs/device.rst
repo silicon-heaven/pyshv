@@ -7,16 +7,26 @@ discover device's nodes and methods. This requires ``ls`` and ``dir`` methods
 implemnetation for every node.
 
 The device implementation should be a new Python class based on
-:class:`shv.SimpleClient`.
+:class:`shv.SimpleBase` or :class:`shv.SimpleDevice` (for physical devices).
+
+.. warning::
+   There are two concepts of "device" in SHV. One is RPC Device which is client
+   mounted in SHV RPC Broker. The second is the physical device representation.
+   This document talks about the first concept not the second one and thus you
+   should use :class:`shv.SimpleBase` and not :class:`shvSimpleDevice`, unless
+   you really have physical interface that this client controls.
+
+.. tip::
+   Devices can be more easilly implemented with
+   `SHVTree <https://elektroline-predator.gitlab.io/shvtree/>`_.
 
 
 Listing nodes
 -------------
 
-This is implementation of ``ls`` method. In :class:`shv.SimpleClient` you need
-to override :meth:`shv.SimpleClient._ls` method and implement it. It needs to
-return iterator over child nodes. Do not forget to also yield base
-implementation.
+This is implementation of ``ls`` method. In :class:`shv.BaseClient` you need to
+override :meth:`shv.BaseClient._ls` method and implement it. It needs to return
+iterator over child nodes. Do not forget to also yield base implementation.
 
 The simple example for tree like this follows::
 
@@ -40,9 +50,9 @@ The simple example for tree like this follows::
 Listing methods
 ---------------
 
-To implement ``dir`` method you need to override :meth:`shv.SimpleClient._dir`
+To implement ``dir`` method you need to override :meth:`shv.SimpleBase._dir`
 method and implement generator providing method descriptions. This method is
-called only if :meth:`shv.SimpleClient._ls` reports this node as existing one.
+called only if :meth:`shv.SimpleBase._ls` reports this node as existing one.
 
 .. sourcecode::
 
@@ -62,11 +72,11 @@ Methods implementation
 
 Now when clients can discover our SHV tree and our methods we need to actually
 implement them. This is done by overriding method
-:meth:`shv.SimpleClient._method_call`.
+:meth:`shv.SimpleBase._method_call`.
 
 The implementation is pretty strait forward. You get SHV path and method name as
 arguments alongside parameters and you need to return result or raise exception
-(preferrably one of :class:`shv.RpcError` children).
+(preferably one of :class:`shv.RpcError` children).
 
 For an example see the next section.
 

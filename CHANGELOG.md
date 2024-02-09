@@ -5,11 +5,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Automatic reconnects for `SimpleClient`
+- `init_rpc_client` that only initializes `RpcClient` without connecting it
+- `RpcMessage.make_response` now accepts result as argument so you can use it as
+  initializator
+
 ### Changed
+- `RpcUrl` login specific options were moved to `RpcLogin`
+- `SimpleClient` has now new base `SimpleBase`
+- `RpcClient.reset` no longer disconnects and instead sends reset signal to
+  peer. The `RpcClient.receive` now receives not only messages but also these
+  control signals.
 - Command `pycp2cp` renamed to more appropriate `pycpconv`
 
 ### Fixed
 - Failing import on Windows
+
+### Removed
+- `rpc_login` and `rpc_login_url` in favor of `RpcLogin`
 
 
 ## [0.5.0] - 2024-01-18

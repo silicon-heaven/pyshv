@@ -18,7 +18,7 @@ class SHVGetKey(typing.NamedTuple):
 def shvget(
     value: SHVType,
     key: str | int | SHVGetKey | collections.abc.Sequence[str | int | SHVGetKey],
-    tp: typing.Type[SHVT],
+    tp: type[SHVT],
     default: SHVT,
     raise_invalid: bool = False,
 ) -> SHVT:
@@ -31,6 +31,10 @@ def shvget(
     :param key: Key or list of keys that should be recursively applied to the value.
     :param default: Default value used if value is not present or is of invalid type.
     :param tp: Type of the expected value.
+    :param raise_invalid: Instead of returing default it raises
+      :class:`ValueError`.
+    :return: extracted value or default.
+    :raise ValueError: if the value is not present and *raise_invalid* is set.
     """
     keys = [key] if isinstance(key, (str, int, SHVGetKey)) else key
     for k, has_next in tools.lookahead(keys):

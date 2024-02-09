@@ -5,7 +5,6 @@ import logging
 import typing
 
 from shv import (
-    RpcClient,
     RpcInvalidParamsError,
     RpcMethodAccess,
     RpcMethodDesc,
@@ -28,8 +27,8 @@ class ExampleDevice(SimpleClient):
 
     APP_NAME = "pyshv-example_device"
 
-    def __init__(self, client: RpcClient) -> None:
-        super().__init__(client)
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        super().__init__(*args, **kwargs)
         self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
 
     def _ls(self, path: str) -> typing.Iterator[str]:
@@ -101,9 +100,9 @@ def parse_args() -> argparse.Namespace:
 
 
 if __name__ == "__main__":
-    args = parse_args()
+    pargs = parse_args()
     logging.basicConfig(
-        level=log_levels[sorted([1 - args.v + args.q, 0, len(log_levels) - 1])[1]],
+        level=log_levels[sorted([1 - pargs.v + pargs.q, 0, len(log_levels) - 1])[1]],
         format="[%(asctime)s] [%(levelname)s] - %(message)s",
     )
-    asyncio.run(example_device(RpcUrl.parse(args.URL)))
+    asyncio.run(example_device(RpcUrl.parse(pargs.URL)))

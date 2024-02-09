@@ -6,7 +6,7 @@ import pytest
 from shv import (
     RpcClientTCP,
     RpcInvalidParamsError,
-    RpcInvalidRequestError,
+    RpcLoginRequiredError,
     RpcMessage,
     RpcMethodAccess,
     RpcMethodCallExceptionError,
@@ -153,7 +153,7 @@ async def test_empty_dir(client, path, methods):
             },
         ),
         (".app/broker/currentClient", "subscriptions", None, []),
-        (".app/broker/client/0/.app", "name", None, "pyshv"),
+        (".app/broker/client/0/.app", "name", None, "pyshv-client"),
         (".app/broker/clientInfo/0", "userName", None, "admin"),
         (".app/broker/clientInfo/0", "mountPoint", None, None),
         (".app/broker/clientInfo/0", "subscriptions", None, []),
@@ -222,15 +222,17 @@ async def test_unauthorized_access(shvbroker, value_client):
 
 
 async def test_invalid_login(shvbroker, url):
-    nurl = dataclasses.replace(url, password="invalid")
-    with pytest.raises(RpcMethodCallExceptionError):
+    nurl = dataclasses.replace(
+        url, login=dataclasses.replace(url.login, password="invalid")
+    )
+    with pytest.raises(RpcMethodCallExceptionError, match="Invalid login"):
         await SimpleClient.connect(nurl)
 
 
 async def test_invalid_hello_seq(shvbroker, url):
     client = await RpcClientTCP.connect(url.location, url.port)
     await client.send(RpcMessage.request(None, "invalid"))
-    with pytest.raises(RpcInvalidRequestError):
+    with pytest.raises(RpcLoginRequiredError, match=r"Use hello method"):
         await client.receive()
 
 
@@ -239,7 +241,7 @@ async def test_invalid_login_seq(shvbroker, url):
     await client.send(RpcMessage.request(None, "hello"))
     await client.receive()
     await client.send(RpcMessage.request(None, "invalid"))
-    with pytest.raises(RpcInvalidRequestError):
+    with pytest.raises(RpcLoginRequiredError, match=r"Use hello and login methods"):
         await client.receive()
 
 
@@ -253,21 +255,48 @@ async def test_invalid_login_null(shvbroker, url):
 
 
 async def test_double_mount(shvbroker, url):
-    nurl = dataclasses.replace(url, device_mount_point="test/client")
-    await SimpleClient.connect(nurl)
+    nurl = dataclasses.replace(
+        url, login=dataclasses.replace(url.login, opt_device_mount_point="test/client")
+    )
+    c = await SimpleClient.connect(nurl)
     with pytest.raises(RpcMethodCallExceptionError):
         await SimpleClient.connect(nurl)
+    await c.disconnect()
 
 
 async def test_sub_mount(shvbroker, url):
-    nurl1 = dataclasses.replace(url, device_mount_point="test/client")
-    nurl2 = dataclasses.replace(url, device_mount_point="test/client/under")
-    await SimpleClient.connect(nurl1)
+    nurl1 = dataclasses.replace(
+        url, login=dataclasses.replace(url.login, opt_device_mount_point="test/client")
+    )
+    nurl2 = dataclasses.replace(
+        url,
+        login=dataclasses.replace(
+            url.login, opt_device_mount_point="test/client/under"
+        ),
+    )
+    c = await SimpleClient.connect(nurl1)
     with pytest.raises(RpcMethodCallExceptionError):
         await SimpleClient.connect(nurl2)
+    await c.disconnect()
+
+
+async def test_client_reset(client):
+    """Check that client can reset its connection and login again.
+
+    After reconnection client must always have unique ID and thus we deteect
+    only that.
+    """
+    cid = await client.call(".app/broker/currentClient", "info")
+    await client.reset()
+    assert (await client.call(".app/broker/currentClient", "info"))["clientId"] != cid[
+        "clientId"
+    ]
 
 
 async def test_broker_client(example_device, shvbroker):
     """Check that we can use broker's clients as clients as well."""
     client = shvbroker.clients[0]
     assert await client.call(".app", "name") == "pyshv-example_device"
+
+
+# TODO test clients disconnect on idle

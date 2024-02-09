@@ -4,10 +4,9 @@ API reference
 .. toctree::
    :maxdepth: 4
 
-   simpleclient
-   rpcmessage
    value
+   rpcmessage
    rpccom
+   simpleclient
    broker
-   cpon
-   chainpack
+   cp

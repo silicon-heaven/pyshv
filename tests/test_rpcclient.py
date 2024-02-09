@@ -11,6 +11,7 @@ import select
 import pytest
 
 from shv import (
+    RpcClient,
     RpcClientPipe,
     RpcClientTCP,
     RpcClientTTY,
@@ -50,11 +51,35 @@ class Link:
         with pytest.raises(RpcInvalidRequestError):
             await clients[1].receive(True)
 
+    @pytest.mark.parametrize("a,b", ((0, 1), (1, 0)))
+    async def test_reset(self, clients, a, b):
+        await clients[a].reset()
+        assert await clients[b].receive() == RpcClient.Control.RESET
+
 
 class ServerLink(Link):
     """Additional tests for server-client connections."""
 
-    async def test_reset_client(self, clients, server):
+    @pytest.mark.parametrize("cdisc,crecv", ((0, 1), (1, 0)))
+    async def test_eof_receive(self, clients, cdisc, crecv):
+        clients[cdisc].disconnect()
+        await clients[cdisc].wait_disconnect()
+        assert not clients[cdisc].connected
+        with pytest.raises(EOFError):
+            await clients[crecv].receive()
+        assert not clients[crecv].connected
+
+    @pytest.mark.parametrize("cdisc,crecv", ((0, 1), (1, 0)))
+    async def test_eof_send(self, clients, cdisc, crecv):
+        clients[cdisc].disconnect()
+        await clients[cdisc].wait_disconnect()
+        with pytest.raises(EOFError):
+            await clients[crecv].send(RpcMessage.request(".app", "ping"))
+        assert not clients[crecv].connected
+
+    async def test_reconnect(self, clients, server):
+        clients[1].disconnect()
+        await clients[1].wait_disconnect()
         await clients[1].reset()
         server_client = await server[1].get()
         msg = RpcMessage.request("foo", "ls")
@@ -62,17 +87,6 @@ class ServerLink(Link):
         assert await server_client.receive() == msg
         server_client.disconnect()
         await server_client.wait_disconnect()
-
-    async def test_reset_server_client(self, clients):
-        assert not await clients[0].reset()
-        assert not clients[0].connected
-
-    @pytest.mark.parametrize("cdisc,crecv", ((0, 1), (1, 0)))
-    async def test_eof(self, clients, cdisc, crecv):
-        clients[cdisc].disconnect()
-        await clients[cdisc].wait_disconnect()
-        with pytest.raises(EOFError):
-            await clients[crecv].receive()
 
 
 class TestTCP(ServerLink):
@@ -96,6 +110,15 @@ class TestTCP(ServerLink):
         server_client.disconnect()
         await client.wait_disconnect()
         await server_client.wait_disconnect()
+
+    async def test_before_connect(self, port) -> None:
+        client = RpcClientTCP("localhost", port)
+        with pytest.raises(EOFError):
+            await client.receive()
+        with pytest.raises(EOFError):
+            await client.send(RpcMessage.request(".app", "ping"))
+        client.disconnect()
+        await client.wait_disconnect()
 
 
 class TestUnix(ServerLink):
@@ -150,10 +173,12 @@ class TestSerial(Link):
         )
         process.start()
 
-        client1 = await RpcClientTTY.open(os.ttyname(pty1_slave))
+        client1 = await RpcClientTTY.connect(os.ttyname(pty1_slave))
         os.close(pty1_slave)
-        client2 = await RpcClientTTY.open(os.ttyname(pty2_slave))
+        client2 = await RpcClientTTY.connect(os.ttyname(pty2_slave))
         os.close(pty2_slave)
+        # Flush reset sent by client2
+        assert await client1.receive() is RpcClient.Control.RESET
 
         yield client1, client2
 
@@ -179,14 +204,5 @@ class TestSerial(Link):
 
     async def test_escapes(self, clients):
         msg = RpcMessage.request("prop", "set", b"1\xa2\xa3\xa4\xa5\xaa2")
-        await clients[0].send(msg)
-        assert await clients[1].receive() == msg
-
-    async def test_reset_client(self, clients):
-        # Note: both sides are the same so we can test only from one side to the other
-        msg = RpcMessage.request("foo", "ls")
-        await clients[0].send(msg)
-        assert await clients[1].receive() == msg
-        await clients[0].reset()
         await clients[0].send(msg)
         assert await clients[1].receive() == msg

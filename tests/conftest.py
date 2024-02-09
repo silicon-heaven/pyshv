@@ -7,7 +7,7 @@ import time
 import pytest
 
 from example_device import ExampleDevice
-from shv import RpcLoginType, RpcUrl, SimpleClient, ValueClient
+from shv import RpcLogin, RpcLoginType, RpcUrl, SimpleClient, ValueClient
 
 
 @pytest.fixture(name="port", scope="module")
@@ -28,20 +28,29 @@ def fixture_url(port):
     return RpcUrl(
         location="localhost",
         port=port,
-        username="admin",
-        password="admin!123",
-        login_type=RpcLoginType.PLAIN,
+        login=RpcLogin(
+            username="admin",
+            password="admin!123",
+            login_type=RpcLoginType.PLAIN,
+        ),
     )
 
 
 @pytest.fixture(name="url_test", scope="module")
 def fixture_url_test(url):
-    return dataclasses.replace(url, username="test", password="test")
+    return dataclasses.replace(
+        url, login=dataclasses.replace(url.login, username="test", password="test")
+    )
 
 
 @pytest.fixture(name="url_test_device", scope="module")
 def fixture_url_test_device(url_test):
-    return dataclasses.replace(url_test, device_mount_point="test/device")
+    return dataclasses.replace(
+        url_test,
+        login=dataclasses.replace(
+            url_test.login, options={"device": {"mountPoint": "test/device"}}
+        ),
+    )
 
 
 @pytest.fixture(name="shvbroker", scope="module")

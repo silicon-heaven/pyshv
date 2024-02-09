@@ -1,4 +1,5 @@
 """Python implementation of Silicon Heaven."""
+from .__version__ import __version__
 from .chainpack import ChainPack, ChainPackReader, ChainPackWriter
 from .cpon import Cpon, CponReader, CponWriter
 from .rpcclient import (
@@ -8,6 +9,7 @@ from .rpcclient import (
     RpcClientTTY,
     RpcClientUnix,
     connect_rpc_client,
+    init_rpc_client,
 )
 from .rpcerrors import (
     RpcError,
@@ -15,13 +17,14 @@ from .rpcerrors import (
     RpcInternalError,
     RpcInvalidParamsError,
     RpcInvalidRequestError,
+    RpcLoginRequiredError,
     RpcMethodCallCancelledError,
     RpcMethodCallExceptionError,
     RpcMethodCallTimeoutError,
     RpcMethodNotFoundError,
     RpcParseError,
 )
-from .rpclogin import rpclogin, rpclogin_url
+from .rpclogin import RpcLogin, RpcLoginType
 from .rpcmessage import RpcMessage
 from .rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodFlags
 from .rpcprotocol import (
@@ -38,8 +41,9 @@ from .rpcserver import (
     create_rpc_server,
 )
 from .rpcsubscription import RpcSubscription
-from .rpcurl import RpcLoginType, RpcProtocol, RpcUrl
+from .rpcurl import RpcProtocol, RpcUrl
 from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
+from .simplebase import SimpleBase
 from .simpleclient import SimpleClient
 from .simpledevice import SimpleDevice
 from .value import (
@@ -74,11 +78,6 @@ from .value import (
 from .value_tools import SHVGetKey, shvget
 from .valueclient import ValueClient
 
-VERSION = (
-    (__import__("pathlib").Path(__file__).parent / "version").read_text("utf-8").strip()
-)
-
-
 __all__ = [
     # cpon
     "Cpon",
@@ -89,6 +88,7 @@ __all__ = [
     "ChainPackReader",
     "ChainPackWriter",
     # rpcclient
+    "init_rpc_client",
     "connect_rpc_client",
     "RpcClient",
     "RpcClientTCP",
@@ -127,11 +127,14 @@ __all__ = [
     "RpcMethodCallTimeoutError",
     "RpcMethodNotFoundError",
     "RpcParseError",
+    "RpcLoginRequiredError",
     # rpclogin
-    "rpclogin",
-    "rpclogin_url",
+    "RpcLogin",
+    "RpcLoginType",
     # rpcsubscription
     "RpcSubscription",
+    # simplebase
+    "SimpleBase",
     # simpleclient
     "SimpleClient",
     # simpledevice

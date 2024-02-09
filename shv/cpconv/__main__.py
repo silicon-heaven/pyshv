@@ -2,7 +2,8 @@ import argparse
 import functools
 import sys
 
-from .. import VERSION, cpon
+from .. import cpon
+from ..__version__ import __version__
 from .cpconv import CPFormat, convert
 
 
@@ -14,7 +15,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--version",
         action="version",
-        version=f"%(prog)s {VERSION}",
+        version=f"%(prog)s {__version__}",
     )
     igroup = parser.add_mutually_exclusive_group()
     ogroup = parser.add_mutually_exclusive_group()

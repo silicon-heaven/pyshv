@@ -13,79 +13,79 @@ logger = logging.getLogger(__name__)
 class RpcTransportProtocol(abc.ABC):
     """Base for the implementations of RPC transport protocols."""
 
-    def __init__(
-        self,
-        read: collections.abc.Callable[[int], collections.abc.Awaitable[bytes]],
-        write: collections.abc.Callable[[bytes], collections.abc.Awaitable[None]],
-    ) -> None:
-        self.read = read
-        self.write = write
-
+    @classmethod
     @abc.abstractmethod
-    async def send(self, msg: bytes) -> None:
+    async def send(
+        cls,
+        write: collections.abc.Callable[[bytes], collections.abc.Awaitable[None]],
+        msg: bytes,
+    ) -> None:
         """Send message.
 
         :param msg: Bytes of a complete message to be sent.
         """
 
+    @classmethod
     @abc.abstractmethod
-    async def receive(self) -> bytes:
+    async def receive(
+        cls,
+        read: collections.abc.Callable[[int], collections.abc.Awaitable[bytes]],
+    ) -> bytes:
         """Receive message.
 
         :return: Bytes of complete message.
         :raise EOFError: when EOF is encountered.
         """
 
+    @classmethod
+    async def asyncio_send(cls, writer: asyncio.StreamWriter, msg: bytes) -> None:
+        """Variation on :meth:`send` that uses :class:`asyncio.StreamWriter`."""
 
-def protocol_for_asyncio_stream(
-    protocol_factory: collections.abc.Callable[
-        [
-            collections.abc.Callable[[int], collections.abc.Awaitable[bytes]],
-            collections.abc.Callable[[bytes], collections.abc.Awaitable[None]],
-        ],
-        RpcTransportProtocol,
-    ],
-    reader: asyncio.StreamReader,
-    writer: asyncio.StreamWriter,
-) -> RpcTransportProtocol:
-    """Initialize :class:`RpcTransportProtocol` from Asyncio's streams.
+        async def write(d: bytes) -> None:
+            writer.write(d)
+            await writer.drain()
 
-    :param protocol_factory: Callable that initializes protocol.
-    :param reader: Asyncio's stream reader.
-    :param writer: Asyncio's stream writer.
-    :return: Transport protocol instance that uses provided streams.
-    """
+        await cls.send(write, msg)
 
-    async def read(n: int) -> bytes:
-        try:
-            return await reader.readexactly(n)
-        except (asyncio.IncompleteReadError, ConnectionError) as exc:
-            raise EOFError from exc
+    @classmethod
+    async def asyncio_receive(cls, reader: asyncio.StreamReader) -> bytes:
+        """Variation on :meth:`receive` that uses :class:`asyncio.StreamReader`."""
 
-    async def write(d: bytes) -> None:
-        writer.write(d)
-        await writer.drain()
+        async def read(n: int) -> bytes:
+            try:
+                return await reader.readexactly(n)
+            except (asyncio.IncompleteReadError, ConnectionError) as exc:
+                raise EOFError from exc
 
-    return protocol_factory(read, write)
+        return await cls.receive(read)
 
 
 class RpcProtocolStream(RpcTransportProtocol):
     """SHV RPC Stream protocol."""
 
-    async def send(self, msg: bytes) -> None:
-        await self.write(ChainPack.pack_uint_data(len(msg)))
-        await self.write(msg)
+    @classmethod
+    async def send(
+        cls,
+        write: collections.abc.Callable[[bytes], collections.abc.Awaitable[None]],
+        msg: bytes,
+    ) -> None:
+        await write(ChainPack.pack_uint_data(len(msg)))
+        await write(msg)
 
-    async def receive(self) -> bytes:
+    @classmethod
+    async def receive(
+        cls,
+        read: collections.abc.Callable[[int], collections.abc.Awaitable[bytes]],
+    ) -> bytes:
         sdata = bytearray()
         while True:
-            sdata += await self.read(1)
+            sdata += await read(1)
             try:
                 size = ChainPack.unpack_uint_data(sdata)
             except ValueError:
                 pass
             else:
-                return await self.read(size)
+                return await read(size)
 
 
 class _RpcProtocolSerial(RpcTransportProtocol):
@@ -97,6 +97,20 @@ class _RpcProtocolSerial(RpcTransportProtocol):
     ESC = 0xAA
     ESCMAP = {0x02: STX, 0x03: ETX, 0x04: ATX, 0x0A: ESC}
     ESCRMAP = {v: k for k, v in ESCMAP.items()}
+
+    @classmethod
+    async def _send(
+        cls,
+        write: collections.abc.Callable[[bytes], collections.abc.Awaitable[None]],
+        msg: bytes,
+        use_crc: bool,
+    ) -> None:
+        await write(bytes((cls.STX,)))
+        escmsg = cls.escape(msg)
+        await write(escmsg)
+        await write(bytes((cls.ETX,)))
+        if use_crc:
+            await write(cls.escape(binascii.crc32(escmsg).to_bytes(4, "big")))
 
     @classmethod
     def escape(cls, data: bytes) -> bytes:
@@ -113,6 +127,29 @@ class _RpcProtocolSerial(RpcTransportProtocol):
         return data
 
     @classmethod
+    async def _receive(
+        cls,
+        read: collections.abc.Callable[[int], collections.abc.Awaitable[bytes]],
+        use_crc: bool,
+    ) -> bytes:
+        while True:
+            while (await read(1))[0] != cls.STX:
+                pass
+            data = bytearray()
+            while (b := (await read(1))[0]) not in (cls.ETX, cls.ATX):
+                data += bytes((b,))
+            if b == cls.ATX:
+                continue
+            if use_crc:
+                crc32_br = bytearray()
+                while len(crc32_br) < (siz := 4 + crc32_br.count(bytes((cls.ESC,)))):
+                    crc32_br += await read(siz - len(crc32_br))
+                crc32_b = cls.deescape(crc32_br)
+                if int.from_bytes(crc32_b, "big") != binascii.crc32(data):
+                    continue
+            return cls.deescape(data)
+
+    @classmethod
     def deescape(cls, data: bytes) -> bytes:
         """Reverse escape operation on bytes as defined for serial protocol.
 
@@ -124,52 +161,40 @@ class _RpcProtocolSerial(RpcTransportProtocol):
             data = data.replace(bytes((cls.ESC, cls.ESCRMAP[b])), bytes((b,)))
         return data
 
-    def __init__(
-        self,
-        read: collections.abc.Callable[[int], collections.abc.Awaitable[bytes]],
-        write: collections.abc.Callable[[bytes], collections.abc.Awaitable[None]],
-    ) -> None:
-        super().__init__(read, write)
-        self.use_crc = False
-
-    async def send(self, msg: bytes) -> None:
-        await self.write(bytes((self.STX,)))
-        escmsg = self.escape(msg)
-        await self.write(escmsg)
-        await self.write(bytes((self.ETX,)))
-        if self.use_crc:
-            await self.write(self.escape(binascii.crc32(escmsg).to_bytes(4, "big")))
-
-    async def receive(self) -> bytes:
-        while True:
-            while (await self.read(1))[0] != self.STX:
-                pass
-            data = bytearray()
-            while (b := (await self.read(1))[0]) not in (self.ETX, self.ATX):
-                data += bytes((b,))
-            if b != self.ETX:
-                continue
-            if self.use_crc:
-                crc32_br = bytearray()
-                while len(crc32_br) < (siz := 4 + crc32_br.count(bytes((self.ESC,)))):
-                    crc32_br += await self.read(siz - len(crc32_br))
-                crc32_b = self.deescape(crc32_br)
-                if int.from_bytes(crc32_b, "big") != binascii.crc32(data):
-                    continue
-            return self.deescape(data)
-
 
 class RpcProtocolSerial(_RpcProtocolSerial):
     """SHV RPC Serial protocol."""
+
+    @classmethod
+    async def send(
+        cls,
+        write: collections.abc.Callable[[bytes], collections.abc.Awaitable[None]],
+        msg: bytes,
+    ) -> None:
+        await cls._send(write, msg, False)
+
+    @classmethod
+    async def receive(
+        cls,
+        read: collections.abc.Callable[[int], collections.abc.Awaitable[bytes]],
+    ) -> bytes:
+        return await cls._receive(read, False)
 
 
 class RpcProtocolSerialCRC(_RpcProtocolSerial):
     """SHV RPC Serial protocol with CRC32 message validation."""
 
-    def __init__(
-        self,
-        read: collections.abc.Callable[[int], collections.abc.Awaitable[bytes]],
+    @classmethod
+    async def send(
+        cls,
         write: collections.abc.Callable[[bytes], collections.abc.Awaitable[None]],
+        msg: bytes,
     ) -> None:
-        super().__init__(read, write)
-        self.use_crc = True
+        await cls._send(write, msg, True)
+
+    @classmethod
+    async def receive(
+        cls,
+        read: collections.abc.Callable[[int], collections.abc.Awaitable[bytes]],
+    ) -> bytes:
+        return await cls._receive(read, True)

@@ -5,7 +5,7 @@ import functools
 import getpass
 import urllib.parse
 
-from .value import SHVType
+from .rpclogin import RpcLogin, RpcLoginType
 
 
 @functools.lru_cache
@@ -36,19 +36,6 @@ class RpcProtocol(enum.Enum):
     """Serial transport layer."""
 
 
-class RpcLoginType(enum.Enum):
-    """Enum specifying which login type should be used.
-
-    The string values are the exact string representation used in SHV RPC
-    protocol identifying these login types.
-    """
-
-    PLAIN = "PLAIN"
-    """Plain login format should be used."""
-    SHA1 = "SHA1"
-    """Use hash algorithm SHA1 (preferred and common default)."""
-
-
 @dataclasses.dataclass
 class RpcUrl:
     """SHV RPC URL specifier.
@@ -72,18 +59,10 @@ class RpcUrl:
     """Port the SHV RPC server is listening on."""
     protocol: RpcProtocol = RpcProtocol.TCP
     """SHV RPC protocol used to communicate (This is scheme in URL therminology)"""
-    username: str = _get_user()
-    """User name used to login to the remote server."""
+    login: RpcLogin = dataclasses.field(default_factory=RpcLogin)
+    """Parameters for RPC Broker login."""
 
-    # Options
-    password: str = ""
-    """Password used to login to the server."""
-    login_type: RpcLoginType = RpcLoginType.PLAIN
-    """Type of the login to be used (specifies format of the password)."""
-    device_id: str | None = None
-    """Device identifier sent to the server with login."""
-    device_mount_point: str | None = None
-    """Request for mounting of connected device to the specified mount point."""
+    # TTY
     baudrate: int = 115200
     """Baudrate used for some of the link protocols."""
 
@@ -96,15 +75,6 @@ class RpcUrl:
                 RpcProtocol.SSL: 3756,
                 RpcProtocol.SSLS: 3766,
             }.get(self.protocol, self.port)
-
-    def login_options(self) -> dict[str, SHVType]:
-        """Assemble login options for the SHV RPC broker from options here."""
-        res: dict[str, SHVType] = {}
-        if self.device_id:
-            res["deviceId"] = self.device_id
-        if self.device_mount_point:
-            res["mountPoint"] = self.device_mount_point
-        return {"device": res} if res else {}
 
     def __str__(self) -> str:
         return self.to_url()
@@ -136,7 +106,7 @@ class RpcUrl:
 
         res = cls("", protocol=protocol)
 
-        res.username = sr.username or res.username
+        res.login.username = sr.username or res.login.username
         if protocol in (
             RpcProtocol.TCP,
             RpcProtocol.TCPS,
@@ -154,21 +124,21 @@ class RpcUrl:
             raise NotImplementedError  # pragma: no cover
 
         if opts := pqs.pop("user", []):
-            res.username = opts[0]
+            res.login.username = opts[0]
         if opts := pqs.pop("shapass", []):
             if len(opts[0]) != 40:
                 raise ValueError("SHA1 password must have 40 characters.")
-            res.password = opts[0]
-            res.login_type = RpcLoginType.SHA1
+            res.login.password = opts[0]
+            res.login.login_type = RpcLoginType.SHA1
             # We prefer SHA1 password and thus discard plain if both are present
             pqs.pop("password", [])
         elif opts := pqs.pop("password", []):
-            res.password = opts[0]
-            res.login_type = RpcLoginType.PLAIN
+            res.login.password = opts[0]
+            res.login.login_type = RpcLoginType.PLAIN
         if opts := pqs.pop("devid", []):
-            res.device_id = opts[0]
+            res.login.device_id = opts[0]
         if opts := pqs.pop("devmount", []):
-            res.device_mount_point = opts[0]
+            res.login.device_mount_point = opts[0]
         if protocol is RpcProtocol.SERIAL:
             if opts := pqs.pop("baudrate", []):
                 res.baudrate = int(opts[0])
@@ -189,7 +159,7 @@ class RpcUrl:
             RpcProtocol.UNIXS: "unixs",
             RpcProtocol.SERIAL: "serial",
         }
-        user_added = not self.username or self.username == type(self).username
+        user_added = not self.login.username or self.login.username == RpcLogin.username
         if self.protocol in (
             RpcProtocol.TCP,
             RpcProtocol.TCPS,
@@ -198,7 +168,7 @@ class RpcUrl:
         ):
             netloc = "//"
             if not user_added:
-                netloc += f"{self.username}@"
+                netloc += f"{self.login.username}@"
                 user_added = True
             if ":" in self.location:
                 netloc += f"[{self.location}]"
@@ -212,17 +182,17 @@ class RpcUrl:
 
         opts: list[str] = []
         if not user_added:
-            opts.append(f"user={urllib.parse.quote(self.username)}")
+            opts.append(f"user={urllib.parse.quote(self.login.username)}")
             user_added = True
-        if self.device_id:
-            opts.append(f"devid={urllib.parse.quote(self.device_id)}")
-        if self.device_mount_point:
-            opts.append(f"devmount={urllib.parse.quote(self.device_mount_point)}")
-        if self.password:
-            if self.login_type is RpcLoginType.SHA1:
-                opts.append(f"shapass={self.password}")
-            elif self.login_type is RpcLoginType.PLAIN:
-                opts.append(f"password={urllib.parse.quote(self.password)}")
+        if self.login.device_id:
+            opts.append(f"devid={urllib.parse.quote(self.login.device_id)}")
+        if self.login.device_mount_point:
+            opts.append(f"devmount={urllib.parse.quote(self.login.device_mount_point)}")
+        if self.login.password:
+            if self.login.login_type is RpcLoginType.SHA1:
+                opts.append(f"shapass={self.login.password}")
+            elif self.login.login_type is RpcLoginType.PLAIN:
+                opts.append(f"password={urllib.parse.quote(self.login.password)}")
             else:
                 raise NotImplementedError()  # pragma: no cover
         if self.baudrate != type(self).baudrate:

@@ -1,5 +1,5 @@
-API reference for SHV RPC Broker
-================================
+SHV RPC Broker API
+==================
 
 .. autoclass:: shv.broker.RpcBroker
 .. autoclass:: shv.broker.RpcBrokerConfig

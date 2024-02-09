@@ -5,7 +5,6 @@ import datetime
 import time
 import typing
 
-from .rpcclient import RpcClient
 from .rpcerrors import RpcMethodCallExceptionError, RpcMethodNotFoundError
 from .rpcsubscription import RpcSubscription
 from .simpleclient import SimpleClient
@@ -23,9 +22,8 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
     To access subscribed value you can index this object with SHV path to it.
     """
 
-    def __init__(self, client: RpcClient):
-        super().__init__(client)
-        self._subscribes: set[RpcSubscription] = set()
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any):
+        super().__init__(*args, **kwargs)
         self._cache: dict[str, tuple[float, SHVType]] = {}
         self._handlers: dict[
             str, typing.Callable[[ValueClient, str, SHVType], None]
@@ -200,10 +198,6 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         self._futures[path].append(future)
         return await future
 
-    async def subscribe(self, sub: RpcSubscription) -> None:
-        await super().subscribe(sub)
-        self._subscribes.add(sub)
-
     async def unsubscribe(self, sub: RpcSubscription, clean_cache: bool = True) -> bool:
         """Perform unsubscribe for signals on given path.
 
@@ -214,10 +208,8 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         :return: ``True`` in case such subscribe was located and ``False`` otherwise.
         """
         res = await super().unsubscribe(sub)
-        if res:
-            self._subscribes.remove(sub)
-            if clean_cache:
-                self.clean_cache()
+        if res and clean_cache:
+            self.clean_cache()
         return res
 
     def is_subscribed(self, path: str, method: str = "chng") -> bool:

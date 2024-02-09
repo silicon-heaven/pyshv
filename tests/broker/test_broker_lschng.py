@@ -42,7 +42,12 @@ async def test_lschng_with_device(shvbroker, lsclient, example_device, url_test_
     """Device keeps test path valid and thus we must report it relative to it."""
     await lsclient.subscribe(RpcSubscription("", "lschng"))
 
-    nurl = dataclasses.replace(url_test_device, device_mount_point="test/foo/device")
+    nurl = dataclasses.replace(
+        url_test_device,
+        login=dataclasses.replace(
+            url_test_device.login, opt_device_mount_point="test/foo/device"
+        ),
+    )
     device = await ExampleDevice.connect(nurl)
     assert await lsclient.lschngs.get() == ("test", {"foo": True})
     lsclient.lschngs.task_done()

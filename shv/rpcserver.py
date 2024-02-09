@@ -4,13 +4,14 @@ from __future__ import annotations
 import abc
 import asyncio
 import collections.abc
+import contextlib
 import logging
 import pathlib
 import typing
 
 try:
     import asyncinotify
-except (ImportError, TypeError):
+except (ImportError, TypeError):  # pragma: no cover
     asyncinotify = None  # type: ignore
 
 from . import rpcprotocol
@@ -58,12 +59,12 @@ class _RpcServerStream(RpcServer):
         client_connected_cb: typing.Callable[
             [RpcClient], None | collections.abc.Awaitable[None]
         ],
-        protocol_factory: typing.Type[RpcTransportProtocol] = RpcProtocolStream,
+        protocol: type[RpcTransportProtocol] = RpcProtocolStream,
     ):
         self.client_connected_cb = client_connected_cb
         """Callbact that is called when new client is connected."""
-        self.protocol_factory = protocol_factory
-        """Protocol factory used to create protocol for new clients."""
+        self.protocol = protocol
+        """Stream communication protocol."""
         self.clients: list[_RpcServerStream.Client] = []
         """List of clients used for termination of the server."""
         self._server: asyncio.Server | None = None
@@ -114,29 +115,32 @@ class _RpcServerStream(RpcServer):
             super().__init__()
             self._reader = reader
             self._writer = writer
-            self._protocol = rpcprotocol.protocol_for_asyncio_stream(
-                server.protocol_factory, reader, writer
-            )
+            self.protocol = server.protocol
+            """Stream communication protocol."""
 
         async def _send(self, msg: bytes) -> None:
-            await self._protocol.send(msg)
+            try:
+                await self.protocol.asyncio_send(self._writer, msg)
+            except ConnectionError as exc:
+                raise EOFError from exc
 
         async def _receive(self) -> bytes:
-            return await self._protocol.receive()
+            try:
+                return await self.protocol.asyncio_receive(self._reader)
+            except EOFError:
+                self._writer.close()
+                raise
 
         @property
         def connected(self) -> bool:
             return not self._writer.is_closing()
 
-        async def reset(self) -> bool:
-            self.disconnect()
-            return False
-
         def disconnect(self) -> None:
             self._writer.close()
 
         async def wait_disconnect(self) -> None:
-            await self._writer.wait_closed()
+            with contextlib.suppress(ConnectionError):
+                await self._writer.wait_closed()
 
 
 class RpcServerTCP(_RpcServerStream):
@@ -149,9 +153,9 @@ class RpcServerTCP(_RpcServerStream):
         ],
         location: str | None = None,
         port: int = 3755,
-        protocol_factory: typing.Type[RpcTransportProtocol] = RpcProtocolStream,
+        protocol: type[RpcTransportProtocol] = RpcProtocolStream,
     ):
-        super().__init__(client_connected_cb, protocol_factory)
+        super().__init__(client_connected_cb, protocol)
         self.location = location
         self.port = port
 
@@ -197,9 +201,9 @@ class RpcServerUnix(_RpcServerStream):
             [RpcClient], None | collections.abc.Awaitable[None]
         ],
         location: str = "shv.sock",
-        protocol_factory: typing.Type[RpcTransportProtocol] = RpcProtocolStream,
+        protocol: type[RpcTransportProtocol] = RpcProtocolSerial,
     ):
-        super().__init__(client_connected_cb, protocol_factory)
+        super().__init__(client_connected_cb, protocol)
         self.location = location
 
     async def _create_server(self) -> asyncio.Server:
@@ -242,11 +246,11 @@ class RpcServerTTY(RpcServer):
         ],
         port: str,
         baudrate: int = 115200,
-        protocol_factory: typing.Type[RpcTransportProtocol] = RpcProtocolSerialCRC,
+        protocol: type[RpcTransportProtocol] = RpcProtocolSerialCRC,
     ):
         self.client_connected_cb = client_connected_cb
         """Callbact that is called when new client is connected."""
-        self.client = RpcClientTTY(port, baudrate, protocol_factory)
+        self.client = RpcClientTTY(port, baudrate, protocol)
         """The :class:`RpcClientTTY` instance."""
         self._task: asyncio.Task | None = None
 

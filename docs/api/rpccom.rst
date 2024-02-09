@@ -1,12 +1,13 @@
-API reference for RPC communication
-===================================
+RPC communication
+=================
 
 URL and connection parameters
 -----------------------------
 
-.. autoclass:: shv.RpcProtocol
-.. autoclass:: shv.RpcLoginType
 .. autoclass:: shv.RpcUrl
+.. autoclass:: shv.RpcProtocol
+.. autoclass:: shv.RpcLogin
+.. autoclass:: shv.RpcLoginType
 
 Client
 ------
@@ -14,6 +15,8 @@ Client
 These are implementations if clients that connect to server or over some
 connection to some other client.
 
+.. automethod:: shv.init_rpc_client
+.. automethod:: shv.connect_rpc_client
 .. autoclass:: shv.RpcClient
 .. autoclass:: shv.RpcClientTCP
 .. autoclass:: shv.RpcClientUnix

@@ -3,14 +3,16 @@ import re
 
 import pytest
 
-from shv import RpcLoginType, RpcProtocol, RpcUrl
+from shv import RpcLogin, RpcLoginType, RpcProtocol, RpcUrl
 
 DATA = [
     ("unix:/dev/null", RpcUrl("/dev/null", protocol=RpcProtocol.UNIX)),
     (
         "unixs:/dev/null?user=test&password=foo",
         RpcUrl(
-            "/dev/null", protocol=RpcProtocol.UNIXS, username="test", password="foo"
+            "/dev/null",
+            protocol=RpcProtocol.UNIXS,
+            login=RpcLogin(username="test", password="foo"),
         ),
     ),
     (
@@ -18,28 +20,42 @@ DATA = [
         RpcUrl(
             "/dev/null",
             protocol=RpcProtocol.SERIAL,
-            username="test@example.com",
-            password="ačšf",
+            login=RpcLogin(username="test@example.com", password="ačšf"),
         ),
     ),
-    ("tcp://test@localhost:4242", RpcUrl("localhost", username="test", port=4242)),
+    (
+        "tcp://test@localhost:4242",
+        RpcUrl("localhost", port=4242, login=RpcLogin(username="test")),
+    ),
     (
         "ssl://test@localhost:4242",
-        RpcUrl("localhost", protocol=RpcProtocol.SSL, username="test", port=4242),
+        RpcUrl(
+            "localhost",
+            protocol=RpcProtocol.SSL,
+            port=4242,
+            login=RpcLogin(username="test"),
+        ),
     ),
     (
         "tcp://localhost:4242?devid=foo&devmount=/dev/null",
-        RpcUrl("localhost", port=4242, device_id="foo", device_mount_point="/dev/null"),
+        RpcUrl(
+            "localhost",
+            port=4242,
+            login=RpcLogin(
+                options={"device": {"deviceId": "foo", "mountPoint": "/dev/null"}}
+            ),
+        ),
     ),
     (
         "tcp://localhost:4242?devid=foo&devmount=/dev/null&password=test",
         RpcUrl(
             "localhost",
             port=4242,
-            password="test",
-            login_type=RpcLoginType.PLAIN,
-            device_id="foo",
-            device_mount_point="/dev/null",
+            login=RpcLogin(
+                password="test",
+                login_type=RpcLoginType.PLAIN,
+                options={"device": {"deviceId": "foo", "mountPoint": "/dev/null"}},
+            ),
         ),
     ),
     (
@@ -47,10 +63,11 @@ DATA = [
         RpcUrl(
             "localhost",
             port=4242,
-            password="x" * 40,
-            login_type=RpcLoginType.SHA1,
-            device_id="foo",
-            device_mount_point="/dev/null",
+            login=RpcLogin(
+                password="x" * 40,
+                login_type=RpcLoginType.SHA1,
+                options={"device": {"deviceId": "foo", "mountPoint": "/dev/null"}},
+            ),
         ),
     ),
     ("tcp://[::]:4242", RpcUrl("::", port=4242)),
@@ -83,8 +100,16 @@ def test_to_url(url, rpcurl):
         ("tcps://localhost", RpcUrl("localhost", port=3765, protocol=RpcProtocol.TCPS)),
         ("ssl://localhost", RpcUrl("localhost", port=3756, protocol=RpcProtocol.SSL)),
         ("ssls://localhost", RpcUrl("localhost", port=3766, protocol=RpcProtocol.SSLS)),
-        ("tcp://test@localhost:4242", RpcUrl("localhost", username="test", port=4242)),
-        ("tcp://localhost?devid=foo", RpcUrl("localhost", device_id="foo")),
+        (
+            "tcp://test@localhost:4242",
+            RpcUrl("localhost", port=4242, login=RpcLogin(username="test")),
+        ),
+        (
+            "tcp://localhost?devid=foo",
+            RpcUrl(
+                "localhost", login=RpcLogin(options={"device": {"deviceId": "foo"}})
+            ),
+        ),
     ],
 )
 def test_parse(url, rpcurl):

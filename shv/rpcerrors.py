@@ -18,6 +18,7 @@ class RpcErrorCode(enum.IntEnum):
     METHOD_CALL_CANCELLED = 7
     METHOD_CALL_EXCEPTION = 8
     UNKNOWN = 9
+    LOGIN_REQUIRED = 10
     USER_CODE = 32
 
 
@@ -104,6 +105,10 @@ class RpcMethodCallExceptionError(RpcError):
     shv_error_code = RpcErrorCode.METHOD_CALL_EXCEPTION
 
 
+class RpcLoginRequiredError(RpcError):
+    """Login sequence must be performed before anything else."""
+
+
 RpcError.shv_error_map = {
     e.shv_error_code: e
     for e in (
@@ -115,5 +120,6 @@ RpcError.shv_error_map = {
         RpcMethodCallTimeoutError,
         RpcMethodCallCancelledError,
         RpcMethodCallExceptionError,
+        RpcLoginRequiredError,
     )
 }

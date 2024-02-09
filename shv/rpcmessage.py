@@ -92,13 +92,26 @@ class RpcMessage:
         """Check if message is a signal."""
         return bool(not self.has_request_id and self.has_method)
 
-    def make_response(self) -> RpcMessage:
-        """Create new message that is response to this one."""
+    def make_response(
+        self, result: SHVType = None, error: RpcError | SHVType = None
+    ) -> RpcMessage:
+        """Create new message that is response to this one.
+
+        :param result: The result value to be set in the response.
+        :param error: The error to be set to the response message. You should
+          use either *result* or *error* not both.
+        :return: The new message that is response to this one.
+        """
         if not self.is_request:
             raise ValueError("Response can be created from request only.")
         resp = RpcMessage()
         resp.request_id = self.request_id
         resp.caller_ids = self.caller_ids
+        resp.result = result
+        if isinstance(error, RpcError):
+            resp.rpc_error = error
+        else:
+            resp.error = error
         return resp
 
     @property

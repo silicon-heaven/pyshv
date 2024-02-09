@@ -1,7 +1,16 @@
 """Check implementation of SimpleDevice."""
 import pytest
 
-from shv import RpcMethodAccess, RpcMethodDesc, SimpleDevice, shvmeta_eq
+from shv import (
+    SHV_VERSION_MAJOR,
+    SHV_VERSION_MINOR,
+    RpcMethodAccess,
+    RpcMethodDesc,
+    RpcMethodNotFoundError,
+    SimpleDevice,
+    __version__,
+    shvmeta_eq,
+)
 
 
 class Device(SimpleDevice):
@@ -20,6 +29,11 @@ async def fixture_device(shvbroker, url_test_device):
 @pytest.mark.parametrize(
     "path,method,result",
     (
+        ("test/device/.app", "shvVersionMajor", SHV_VERSION_MAJOR),
+        ("test/device/.app", "shvVersionMinor", SHV_VERSION_MINOR),
+        ("test/device/.app", "name", "pyshv-device"),
+        ("test/device/.app", "version", __version__),
+        ("test/device/.app", "ping", None),
         ("test/device/.app/device", "name", "testdev"),
         ("test/device/.app/device", "version", "0.0.x"),
         ("test/device/.app/device", "serialNumber", None),
@@ -29,6 +43,11 @@ async def test_call(client, device, path, method, result):
     """Check that we can call various methods using blocking call."""
     res = await client.call(path, method)
     assert shvmeta_eq(res, result)
+
+
+async def test_invalid_call(client):
+    with pytest.raises(RpcMethodNotFoundError):
+        await client.call(".app", "someInvalid")
 
 
 @pytest.mark.parametrize(
