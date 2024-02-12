@@ -137,15 +137,18 @@ class RpcBroker:
                             error=RpcError("No access", RpcErrorCode.METHOD_NOT_FOUND)
                         )
                     )
-                if access is not RpcMethodAccess.ADMIN or msg.rpc_access is None:
-                    msg.rpc_access = access
+                msg.rpc_access = (
+                    access
+                    if msg.rpc_access is None or msg.rpc_access > access
+                    else msg.rpc_access
+                )
                 # Check if we should delegate it or handle it ourself
                 if (cpath := self.__broker.client_on_path(msg.path)) is None:
                     return await super()._message(msg)
                 # Propagate to some peer
-                msg.caller_ids = list(msg.caller_ids) + [self.__broker_client_id]
+                msg.caller_ids = [*msg.caller_ids, self.__broker_client_id]
                 msg.path = cpath[1]
-                await cpath[0].client.send(msg)
+                await cpath[0].send(msg)
 
             elif msg.is_response:
                 cids = list(msg.caller_ids)

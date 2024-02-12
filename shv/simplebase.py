@@ -90,15 +90,6 @@ class SimpleBase:
                 else:
                     asyncio.create_task(self._message(msg))
 
-    async def _send(self, msg: RpcMessage) -> None:
-        """Send message.
-
-        :class:`SimpleBase` implementation should be using this method instead
-        of ``self.client.send`` to ensure that send can be correctly overwritten
-        and optionally postponed or blocked by child implementations.
-        """
-        await self.client.send(msg)
-
     async def _message(self, msg: RpcMessage) -> None:
         """Handle every received message."""
         if msg.is_request:
@@ -118,7 +109,7 @@ class SimpleBase:
                 resp.rpc_error = RpcMethodCallExceptionError(
                     "".join(traceback.format_exception(exc))
                 )
-            await self._send(resp)
+            await self.send(resp)
         elif msg.is_response:
             rid = msg.request_id
             assert rid is not None
@@ -143,6 +134,19 @@ class SimpleBase:
         """
         await self.client.reset()
         self._reset()
+
+    async def send(self, msg: RpcMessage) -> None:
+        """Send message.
+
+        Use this only if you want send a generic message (such as when you are
+        passing message along). :meth:`call` or :meth:`signal` should be
+        prefered when ever possible.
+
+        You should be using this method instead of ``self.client.send`` to
+        ensure that send can be correctly overwritten and optionally postponed
+        or blocked by child implementations.
+        """
+        await self.client.send(msg)
 
     async def call(
         self,
@@ -184,7 +188,7 @@ class SimpleBase:
         attempt = 0
         while call_attempts < 1 or attempt < call_attempts:
             attempt += 1
-            await self._send(msg)
+            await self.send(msg)
             try:
                 async with asyncio.timeout(call_timeout):
                     await event.wait()
@@ -216,7 +220,7 @@ class SimpleBase:
         :param param: Parameter that is the signaled value.
         :param access: Minimal access level needed to get the signal.
         """
-        await self._send(RpcMessage.signal(path, method, param, access))
+        await self.send(RpcMessage.signal(path, method, param, access))
 
     async def ping(self) -> None:
         """Ping the peer to check the connection."""

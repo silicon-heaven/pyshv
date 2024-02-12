@@ -49,6 +49,7 @@ class RpcMessage:
         METHOD = 10
         CALLER_IDS = 11
         ACCESS = 14
+        ACCESS_LEVEL = 17
 
     class Key(enum.IntEnum):
         """Keys in the toplevel IMap of the RPC message."""
@@ -229,6 +230,7 @@ class RpcMessage:
         """Set access level with :class:`shv.RpcMethodAccess`."""
         if access is not None:
             self.value.meta[self.Tag.ACCESS] = RpcMethodAccess.tostr(access)
+            self.value.meta[self.Tag.ACCESS_LEVEL] = access.value
         else:
             self.value.meta.pop(self.Tag.ACCESS, None)
 
@@ -307,11 +309,11 @@ class RpcMessage:
 
     def to_cpon(self) -> bytes:
         """Convert message to Cpon."""
-        return CponWriter.pack(self.value) if self.is_valid() else b""
+        return CponWriter.pack(self.value)
 
     def to_chainpack(self) -> bytes:
         """Convert message to Chainpack."""
-        return ChainPackWriter.pack(self.value) if self.is_valid() else b""
+        return ChainPackWriter.pack(self.value)
 
     @classmethod
     def request(

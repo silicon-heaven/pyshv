@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `init_rpc_client` that only initializes `RpcClient` without connecting it
 - `RpcMessage.make_response` now accepts result as argument so you can use it as
   initializator
+- Support for Access Level for RPC messages
 
 ### Changed
 - `RpcUrl` login specific options were moved to `RpcLogin`
@@ -17,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RpcClient.reset` no longer disconnects and instead sends reset signal to
   peer. The `RpcClient.receive` now receives not only messages but also these
   control signals.
+- `RpcBroker` now lowers access level instead of overwriting it
 - Command `pycp2cp` renamed to more appropriate `pycpconv`
 
 ### Fixed
