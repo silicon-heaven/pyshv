@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Failing import on Windows
+- Subscription are now compared case sensitive (as it should have been)
 
 ### Removed
 - `rpc_login` and `rpc_login_url` in favor of `RpcLogin`

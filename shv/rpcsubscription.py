@@ -48,7 +48,7 @@ class RpcSubscription:
             )
         method_matches: bool
         if self.methods is not None:
-            method_matches = fnmatch.fnmatch(method, self.methods)
+            method_matches = fnmatch.fnmatchcase(method, self.methods)
         else:
             method_matches = not self.method or method == self.method
         return path_matches and method_matches
@@ -119,10 +119,10 @@ def __match(path: str, pattern: list[str]) -> int | None:
                 return i + 1  # Matches everything so just return
             if pattern[i + 1] == "**":
                 i += 1
-            elif fnmatch.fnmatch(node, pattern[i + 1]):
+            elif fnmatch.fnmatchcase(node, pattern[i + 1]):
                 i += 2
             continue
-        if not fnmatch.fnmatch(node, pattern[i]):
+        if not fnmatch.fnmatchcase(node, pattern[i]):
             return None
         i += 1
     return i
