@@ -280,26 +280,6 @@ class ChainPackWriter(commonpack.CommonWriter):
     #                                         n == 14 -> 18 bytes number
     #                                         n == 15 -> for future (number of bytes will be specified in next byte)
 
-    @staticmethod
-    def _significant_bits_part_length(num: int) -> int:
-        length = 0
-        if num & 0xFFFFFFFF00000000:
-            length += 32
-            num >>= 32
-        if num & 0xFFFF0000:
-            length += 16
-            num >>= 16
-        if num & 0xFF00:
-            length += 8
-            num >>= 8
-        if num & 0xF0:
-            length += 4
-            num >>= 4
-        # see https://en.wikipedia.org/wiki/Find_first_set#CLZ
-        sig_table_4bit = [0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4]
-        length += sig_table_4bit[num]
-        return max(length, 1)
-
     @classmethod
     def _bytes_needed(cls, bit_len: int) -> int:
         """Calculate needed maximum number of bytes.
@@ -311,7 +291,7 @@ class ChainPackWriter(commonpack.CommonWriter):
             cnt = ((bit_len - 1) // 7) + 1
         else:
             cnt = ((bit_len - 1) // 8) + 2
-        return cnt
+        return cnt or 1  # Always at least one byte is needed
 
     @classmethod
     def _expand_bit_len(cls, bit_len: int) -> int:
@@ -326,8 +306,7 @@ class ChainPackWriter(commonpack.CommonWriter):
         byte_cnt = self._bytes_needed(bit_len)
         data = bytearray(byte_cnt)
         for i in range(byte_cnt - 1, -1, -1):
-            r = num & 255
-            data[i] = r
+            data[i] = num & 0xFF
             num = num >> 8
 
         if bit_len <= 28:
@@ -339,8 +318,7 @@ class ChainPackWriter(commonpack.CommonWriter):
             data[0] = 0xF0 | (byte_cnt - 5)
 
         for i in range(0, byte_cnt):
-            r = data[i]
-            self._write(r)
+            self._write(data[i])
 
     def write_meta(self, meta: SHVMetaType) -> None:
         self._write(ChainPack.CP_MetaMap)
@@ -380,7 +358,7 @@ class ChainPackWriter(commonpack.CommonWriter):
             self.write_uint_data(value)
 
     def write_uint_data(self, value: int) -> None:
-        bitcnt = self._significant_bits_part_length(value)
+        bitcnt = value.bit_length()
         self._write_uint_data_helper(value, bitcnt)
 
     def write_int(self, value: int) -> None:
@@ -391,10 +369,10 @@ class ChainPackWriter(commonpack.CommonWriter):
             self.write_int_data(value)
 
     def write_int_data(self, value: int) -> None:
-        num = -value if value < 0 else value
-        neg = value < 0
+        num: int = abs(value)
+        neg: bool = value < 0
 
-        bitlen = self._significant_bits_part_length(num)
+        bitlen = num.bit_length()
         bitlen += 1  # add sign bit
         if neg:
             sign_pos = self._expand_bit_len(bitlen)
