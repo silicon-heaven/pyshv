@@ -44,12 +44,21 @@ This configuration file specifies that broker should listen on all IP addresses
 for TCP/IP connection on port 3755 and on local socket ``shvbroker.sock``. It
 also declares one user that is admin and has super-service access level.
 
+:config:
+  This section contains generic configurations for Broker. The following options
+  can be specified in this section:
+
+  :name: The name of the broker. This is used when constructing ClientID to
+    identify this broker. In default this is empty and thus only user's name is
+    appended but if you specify it then user name will be prefixed with this
+    name (forming ``localhost:foo`` for ``name = localhost`` and user ``foo``).
+
 :listen:
   This section specifies URLs where server should listen for the new
   connections. The option names are only informative and used for identification
   purpose (feel free to name them as ever you want).
 
-:connect.:
+:connect.*:
   These are sections that define connection to some other SHV broker. They all
   have to start with ``connect.`` where rest of the section is connection
   identifier that is used only in logs but must be unique per connection. The
@@ -59,7 +68,7 @@ also declares one user that is admin and has super-service access level.
   :user: User that connected client gets assigned to. This is used of this
     broker (not the remote one).
 
-:users.:
+:users.*:
   These are sections that define different users. They all have to start with
   ``users.`` where the rest of the section name is the user's name. The allowed
   options are:
@@ -73,7 +82,7 @@ also declares one user that is admin and has super-service access level.
     advantage that password is not stored in plain text on server.
   :roles: Space separated list of roles assigned to the user.
 
-:roles.:
+:roles.*:
   Roles are groupings of rules that are assigned to the users. They provide
   versatility in the configuration. The role sections need to start with
   ``roles.`` and the rest of the section name is name of the role. The allowed

@@ -14,7 +14,6 @@ try:
 except (ImportError, TypeError):  # pragma: no cover
     asyncinotify = None  # type: ignore
 
-from . import rpcprotocol
 from .rpcclient import RpcClient, RpcClientTTY
 from .rpcprotocol import (
     RpcProtocolSerial,

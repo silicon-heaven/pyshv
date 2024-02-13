@@ -12,7 +12,6 @@ import typing
 
 import aioserial
 
-from . import rpcprotocol
 from .chainpack import ChainPack
 from .rpcmessage import RpcMessage
 from .rpcprotocol import (

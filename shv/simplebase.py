@@ -1,6 +1,5 @@
 """The base for the various high level SHV RPC interfaces."""
 import asyncio
-import collections.abc
 import contextlib
 import logging
 import traceback
@@ -13,6 +12,7 @@ from .rpcerrors import (
     RpcInvalidParamsError,
     RpcMethodCallExceptionError,
     RpcMethodNotFoundError,
+    RpcUserIDRequiredError,
 )
 from .rpcmessage import RpcMessage
 from .rpcmethod import RpcMethodAccess, RpcMethodDesc
@@ -100,8 +100,9 @@ class SimpleBase:
                 resp.result = await self._method_call(
                     msg.path,
                     method,
-                    msg.rpc_access or RpcMethodAccess.BROWSE,
                     msg.param,
+                    msg.rpc_access or RpcMethodAccess.BROWSE,
+                    msg.user_id,
                 )
             except RpcError as exp:
                 resp.rpc_error = exp
@@ -155,6 +156,7 @@ class SimpleBase:
         param: SHVType = None,
         call_attempts: int | None = None,
         call_timeout: float | None = None,
+        user_id: str | None = None,
     ) -> SHVType:
         """Call given method on given path with given parameter.
 
@@ -171,6 +173,14 @@ class SimpleBase:
         :param param: Parameter passed to the called method.
         :param call_attempts: Allows override of the object setting.
         :param call_timeout: Allows override of the object setting.
+        :param user_id: UserID added to the method call request. This is required
+          by some RPC methods to identify the user and they will respond with
+          :class:`RpcUserIDRequiredError` if it is missing. This is caught by
+          this method and request will be attempted again (not counting in
+          ``call_attempts``) with User ID ``""``. If you know that method needs
+          User ID then you can prevent this round trip by setting this argument
+          to ``""``. On the other hand sending all requests with User ID wastes
+          with bandwidth.
         :return: Return value on successful method call.
         :raise RpcError: The call result in error that is propagated by raising
             `RpcError` or its children based on the failure.
@@ -181,26 +191,32 @@ class SimpleBase:
         """
         call_attempts = self.call_attempts if call_attempts is None else call_attempts
         call_timeout = self.call_timeout if call_timeout is None else call_timeout
-        msg = RpcMessage.request(path, method, param)
-        rid = msg.request_id
+        request = RpcMessage.request(path, method, param, user_id=user_id)
         event = asyncio.Event()
-        self._calls_event[rid] = event
+        self._calls_event[request.request_id] = event
         attempt = 0
         while call_attempts < 1 or attempt < call_attempts:
             attempt += 1
-            await self.send(msg)
+            await self.send(request)
             try:
                 async with asyncio.timeout(call_timeout):
                     await event.wait()
             except TimeoutError:
                 continue
-            if rid not in self._calls_msg:
-                self._calls_event[rid].clear()
+            if request.request_id not in self._calls_msg:
+                self._calls_event[request.request_id].clear()
                 continue
-            msg = self._calls_msg.pop(rid)
-            if msg.is_error:
-                raise msg.rpc_error
-            return msg.result
+            response = self._calls_msg.pop(request.request_id)
+            if response.is_error:
+                rpc_error = response.rpc_error
+                if not isinstance(rpc_error, RpcUserIDRequiredError):
+                    raise response.rpc_error
+                attempt -= 1  # Annul this attempt
+                request.user_id = ""
+                event.clear()
+                self._calls_event[request.new_request_id()] = event
+                continue
+            return response.result
         raise TimeoutError
 
     async def signal(
@@ -293,40 +309,47 @@ class SimpleBase:
         return self.__peer_is_shv3
 
     async def _method_call(
-        self, path: str, method: str, access: RpcMethodAccess, param: SHVType
+        self,
+        path: str,
+        method: str,
+        param: SHVType,
+        access: RpcMethodAccess,
+        user_id: str | None,
     ) -> SHVType:
         """Handle request in the provided message.
 
         :param path: SHV path to the node the method is associated with.
         :param method: method requested to be called.
-        :param access: access level of the client specified in the request.
         :param param: Parameter to be passed to the called method.
+        :param access: access level of the client specified in the request.
+        :param client_id: The client's ID collected as message was passed
+          around. This can be ``None`` when request message contained no ID. You
+          can raise :class:`RpcUserIDRequiredError` if you need it.
         :return: result of the method call. To report error you should raise
             :exc:`RpcError`.
         """
-        if method == "ls":
-            return self._method_call_ls(path, param)
-        if method == "dir":
-            return self._method_call_dir(path, param)
-        if path == ".app":
-            match method:
-                case "shvVersionMajor":
-                    return SHV_VERSION_MAJOR
-                case "shvVersionMinor":
-                    return SHV_VERSION_MINOR
-                case "name":
-                    return self.APP_NAME
-                case "version":
-                    return self.APP_VERSION
-                case "ping":
-                    return None
+        match path, method:
+            case _, "ls":
+                return self._method_call_ls(path, param)
+            case _, "dir":
+                return self._method_call_dir(path, param)
+            case ".app", "shvVersionMajor":
+                return SHV_VERSION_MAJOR
+            case ".app", "shvVersionMinor":
+                return SHV_VERSION_MINOR
+            case ".app", "name":
+                return self.APP_NAME
+            case ".app", "version":
+                return self.APP_VERSION
+            case ".app", "ping":
+                return None
         raise RpcMethodNotFoundError(
             f"No such path '{path}' or method '{method}' or access rights."
         )
 
     def _method_call_ls(self, path: str, param: SHVType) -> SHVType:
         """Implement ``ls`` method call functionality."""
-        # TODO list is backward compatibility
+        # Note: list is backward compatibility
         if is_shvnull(param) or isinstance(param, list):
             res = []
             for v in self._ls(path):

@@ -11,8 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RpcMessage.make_response` now accepts result as argument so you can use it as
   initializator
 - Support for Access Level for RPC messages
+- Support for Client's ID in `SimpleBase` as well as in `RpcBroker`.
+- New RPC error `RpcUserIDRequiredError`
+- RPC Broker configuration option `config.name`
 
 ### Changed
+- `SimpleBase` and thus `SimpleClient` method `_method_call` has new argument
+  `user_id` and order of old arguments changes. Please update your code!
 - `RpcUrl` login specific options were moved to `RpcLogin`
 - `SimpleClient` has now new base `SimpleBase`
 - `RpcClient.reset` no longer disconnects and instead sends reset signal to

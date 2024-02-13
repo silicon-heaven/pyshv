@@ -21,17 +21,21 @@ class SimpleDevice(SimpleClient):
     """Serial number of the physical device."""
 
     async def _method_call(
-        self, path: str, method: str, access: RpcMethodAccess, param: SHVType
+        self,
+        path: str,
+        method: str,
+        param: SHVType,
+        access: RpcMethodAccess,
+        user_id: str | None,
     ) -> SHVType:
-        if path == ".app/device":
-            match method:
-                case "name":
-                    return self.DEVICE_NAME
-                case "version":
-                    return self.DEVICE_VERSION
-                case "serialNumber":
-                    return self.DEVICE_SERIAL_NUMBER
-        return await super()._method_call(path, method, access, param)
+        match path, method:
+            case ".app/device", "name":
+                return self.DEVICE_NAME
+            case ".app/device", "version":
+                return self.DEVICE_VERSION
+            case ".app/device", "serialNumber" if access >= RpcMethodAccess.READ:
+                return self.DEVICE_SERIAL_NUMBER
+        return await super()._method_call(path, method, param, access, user_id)
 
     def _ls(self, path: str) -> collections.abc.Iterator[str]:
         yield from super()._ls(path)

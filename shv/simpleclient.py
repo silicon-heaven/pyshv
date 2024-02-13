@@ -165,6 +165,7 @@ class SimpleClient(SimpleBase):
         param: SHVType = None,
         call_attempts: int | None = None,
         call_timeout: float | None = None,
+        user_id: str | None = None,
     ) -> SHVType:
         timeout = self.call_timeout if call_timeout is None else call_timeout
         if timeout is not None:
@@ -173,7 +174,7 @@ class SimpleClient(SimpleBase):
             while True:
                 with contextlib.suppress(EOFError):
                     return await super().call(
-                        path, method, param, call_attempts, call_timeout
+                        path, method, param, call_attempts, call_timeout, user_id
                     )
                 await asyncio.sleep(0)  # Let loop detect disconnect
                 await self._connected.wait()

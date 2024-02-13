@@ -13,19 +13,22 @@ The device implementation should be a new Python class based on
    There are two concepts of "device" in SHV. One is RPC Device which is client
    mounted in SHV RPC Broker. The second is the physical device representation.
    This document talks about the first concept not the second one and thus you
-   should use :class:`shv.SimpleBase` and not :class:`shvSimpleDevice`, unless
+   should use :class:`shv.SimpleBase` and not :class:`shv.SimpleDevice`, unless
    you really have physical interface that this client controls.
 
 .. tip::
-   Devices can be more easilly implemented with
-   `SHVTree <https://elektroline-predator.gitlab.io/shvtree/>`_.
+   Devices can be more easilly implemented with `SHVTree
+   <https://elektroline-predator.gitlab.io/shvtree/>`_. That removes common
+   errors where :meth:`shv.SimpleBase._dir` and
+   :meth:`shv.SimpleBase._method_call` implementations are not in synch and thus
+   method is described as being different than actually is.
 
 
 Listing nodes
 -------------
 
-This is implementation of ``ls`` method. In :class:`shv.BaseClient` you need to
-override :meth:`shv.BaseClient._ls` method and implement it. It needs to return
+This is implementation of ``ls`` method. In :class:`shv.SimpleBase` you need to
+override :meth:`shv.SimpleBase._ls` method and implement it. It needs to return
 iterator over child nodes. Do not forget to also yield base implementation.
 
 The simple example for tree like this follows::

@@ -151,6 +151,8 @@ class RpcBrokerConfig:
     def __init__(self) -> None:
         self.listen: dict[str, RpcUrl] = {}
         """URLs the broker should listen on."""
+        self.name: str = ""
+        """Name of the broker used to identify broker in UserID."""
         self._connect: dict[str, RpcBrokerConfig.Connection] = {}
         self._users: dict[str, RpcBrokerConfig.User] = {}
         self._roles: dict[str, RpcBrokerConfig.Role] = {}
@@ -259,6 +261,8 @@ class RpcBrokerConfig:
         """
         # TODO do not ignore uknown options and sections
         res = cls()
+        if "config" in config:
+            res.name = config["config"].get("name", "")
         if "listen" in config:
             for name, url in config["listen"].items():
                 res.listen[name] = RpcUrl.parse(url)

@@ -142,6 +142,12 @@ class RpcBroker:
                     if msg.rpc_access is None or msg.rpc_access > access
                     else msg.rpc_access
                 )
+                # Append user ID
+                if msg.user_id is not None:
+                    bname = self.broker.config.name
+                    msg.user_id += (
+                        "," if msg.user_id else ""
+                    ) + f"{bname}{':' if bname else ''}{self.user.name}"
                 # Check if we should delegate it or handle it ourself
                 if (cpath := self.__broker.client_on_path(msg.path)) is None:
                     return await super()._message(msg)
@@ -237,101 +243,123 @@ class RpcBroker:
                     yield RpcMethodDesc.getter("idleTimeMax")
 
         async def _method_call(
-            self, path: str, method: str, access: RpcMethodAccess, param: SHVType
+            self,
+            path: str,
+            method: str,
+            param: SHVType,
+            access: RpcMethodAccess,
+            user_id: str | None,
         ) -> SHVType:
             assert self.user is not None  # Otherwise handled in _message
-            if path == ".app/broker" and access >= RpcMethodAccess.SUPER_SERVICE:
-                match method:
-                    case "clientInfo":
-                        if not isinstance(param, int):
-                            raise RpcInvalidParamsError("Use Int")
-                        client = self.broker.get_client(param)
-                        return client.infomap() if client is not None else None
-                    case "mountedClientInfo":
-                        if not isinstance(param, str):
-                            raise RpcInvalidParamsError("Use String with SHV path")
-                        client_pth = self.broker.client_on_path(param)
-                        if client_pth is not None:
-                            return client_pth[0].infomap()
-                        return None
-                    case "clients":
-                        return list(self.broker.clients.keys())
-                    case "mounts":
-                        return [
-                            "/".join(c.mount_point)
-                            for c in self.broker.clients.values()
-                            if c.mount_point
-                        ]
-                    case "disconnectClient":
-                        if not isinstance(param, int):
-                            raise RpcInvalidParamsError("Use Int")
-                        client = self.broker.get_client(param)
-                        if client is None:
-                            raise RpcMethodCallExceptionError(
-                                f"No such client with ID: {param}"
-                            )
-                        await client.disconnect()
-                        return None
-            elif path == ".app/broker/currentClient":
-                match method:
-                    case "info":
-                        return self.infomap()
-                    case "subscriptions":
-                        return [s.toSHV() for s in self.subs]
-                    case "subscribe":
-                        sub = RpcSubscription.fromSHV(param)
-                        self.subs.add(sub)
-                        async for subb in self.broker.subbrokers():
-                            assert subb.mount_point is not None
-                            if self.user.could_receive_signal(sub, subb.mount_point):
-                                if subsub := sub.relative_to(subb.mount_point):
-                                    await subb.call(
-                                        ".app/broker/currentClient"
-                                        if await self._peer_is_shv3()
-                                        else ".broker/app",
-                                        "subscribe",
-                                        subsub.toSHV(),
-                                    )
-                        return None
-                    case "unsubscribe":
-                        sub = RpcSubscription.fromSHV(param)
-                        try:
-                            self.subs.remove(sub)
-                        except KeyError:
-                            return False
-                        async for subb in self.broker.subbrokers():
-                            await subb.maintain_subscriptions()
-                        return True
-                    case "rejectNotSubscribed":
-                        method = shvget(param, "method", str, "chng")
-                        path = shvget(param, "path", str, "")
-                        match = {sub for sub in self.subs if sub.applies(path, method)}
-                        self.subs -= match
-                        return [
-                            {"method": sub.method, "path": sub.path} for sub in match
-                        ]
-            elif (
-                path.startswith(".app/broker/clientInfo/")
-                and (client := self.broker.get_client(path[23:])) is not None
-                and access >= RpcMethodAccess.SUPER_SERVICE
-            ):
-                match method:
-                    case "userName":
-                        return client.user.name if client.user is not None else None
-                    case "mountPoint":
-                        return "/".join(self.mount_point) if self.mount_point else None
-                    case "subscriptions":
-                        return [s.toSHV() for s in self.subs]
-                    case "dropClient":
-                        await client.disconnect()
-                        return None
-                    case "idleTime":
-                        return int(
-                            (time.monotonic() - client.client.last_receive) * 1000
-                        )
-                    case "idleTimeMax":
-                        return int(self.IDLE_TIMEOUT * 1000)
-            return await super()._method_call(path, method, access, param)
+            match path.split("/"):
+                case [".app", "broker"] if access >= RpcMethodAccess.SUPER_SERVICE:
+                    match method:
+                        case "clientInfo":
+                            if not isinstance(param, int):
+                                raise RpcInvalidParamsError("Use Int")
+                            client = self.broker.get_client(param)
+                            return client.infomap() if client is not None else None
+                        case "mountedClientInfo":
+                            if not isinstance(param, str):
+                                raise RpcInvalidParamsError("Use String with SHV path")
+                            client_pth = self.broker.client_on_path(param)
+                            if client_pth is not None:
+                                return client_pth[0].infomap()
+                            return None
+                        case "clients":
+                            return list(self.broker.clients.keys())
+                        case "mounts":
+                            return [
+                                "/".join(c.mount_point)
+                                for c in self.broker.clients.values()
+                                if c.mount_point
+                            ]
+                        case "disconnectClient":
+                            if not isinstance(param, int):
+                                raise RpcInvalidParamsError("Use Int")
+                            client = self.broker.get_client(param)
+                            if client is None:
+                                raise RpcMethodCallExceptionError(
+                                    f"No such client with ID: {param}"
+                                )
+                            await client.disconnect()
+                            return None
+                case [".app", "broker", "currentClient"]:
+                    match method:
+                        case "info":
+                            return self.infomap()
+                        case "subscriptions":
+                            return [s.toSHV() for s in self.subs]
+                        case "subscribe":
+                            sub = RpcSubscription.fromSHV(param)
+                            self.subs.add(sub)
+                            async for subb in self.broker.subbrokers():
+                                assert subb.mount_point is not None
+                                if self.user.could_receive_signal(
+                                    sub, subb.mount_point
+                                ):
+                                    if subsub := sub.relative_to(subb.mount_point):
+                                        await subb.call(
+                                            ".app/broker/currentClient"
+                                            if await self._peer_is_shv3()
+                                            else ".broker/app",
+                                            "subscribe",
+                                            subsub.toSHV(),
+                                        )
+                            return None
+                        case "unsubscribe":
+                            sub = RpcSubscription.fromSHV(param)
+                            try:
+                                self.subs.remove(sub)
+                            except KeyError:
+                                return False
+                            async for subb in self.broker.subbrokers():
+                                await subb.maintain_subscriptions()
+                            return True
+                        case "rejectNotSubscribed":
+                            method = shvget(param, "method", str, "chng")
+                            path = shvget(param, "path", str, "")
+                            match = {
+                                sub for sub in self.subs if sub.applies(path, method)
+                            }
+                            self.subs -= match
+                            return [
+                                {"method": sub.method, "path": sub.path}
+                                for sub in match
+                            ]
+                case [
+                    ".app",
+                    "broker",
+                    "clientInfo",
+                    cid,
+                ] if access >= RpcMethodAccess.SUPER_SERVICE:
+                    if (client := self.broker.get_client(cid)) is not None:
+                        match method:
+                            case "userName":
+                                return (
+                                    client.user.name
+                                    if client.user is not None
+                                    else None
+                                )
+                            case "mountPoint":
+                                return (
+                                    "/".join(self.mount_point)
+                                    if self.mount_point
+                                    else None
+                                )
+                            case "subscriptions":
+                                return [s.toSHV() for s in self.subs]
+                            case "dropClient":
+                                await client.disconnect()
+                                return None
+                            case "idleTime":
+                                return int(
+                                    (time.monotonic() - client.client.last_receive)
+                                    * 1000
+                                )
+                            case "idleTimeMax":
+                                return int(self.IDLE_TIMEOUT * 1000)
+            return await super()._method_call(path, method, param, access, user_id)
 
         def infomap(self) -> SHVType:
             """Produce Map with client's info.

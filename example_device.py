@@ -8,7 +8,9 @@ from shv import (
     RpcInvalidParamsError,
     RpcMethodAccess,
     RpcMethodDesc,
+    RpcMethodFlags,
     RpcUrl,
+    RpcUserIDRequiredError,
     SHVType,
     SimpleClient,
 )
@@ -30,6 +32,7 @@ class ExampleDevice(SimpleClient):
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init__(*args, **kwargs)
         self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
+        self.last_reset_user: None | str = None
 
     def _ls(self, path: str) -> typing.Iterator[str]:
         yield from super()._ls(path)
@@ -41,29 +44,56 @@ class ExampleDevice(SimpleClient):
 
     def _dir(self, path: str) -> typing.Iterator[RpcMethodDesc]:
         yield from super()._dir(path)
-        pth = path.split("/") if path else []
-        if len(pth) == 2 and pth[0] == "track" and pth[1] in self.tracks:
-            yield RpcMethodDesc.getter(result="List[Int]", description="List of tracks")
-            yield RpcMethodDesc.setter(param="List[Int]", description="Set track")
+        match path.split("/"):
+            case ["track"]:
+                yield RpcMethodDesc(
+                    "reset",
+                    RpcMethodFlags.CLIENT_ID_REQUIRED,
+                    access=RpcMethodAccess.COMMAND,
+                    description="Reset all tracks to their initial state",
+                )
+                yield RpcMethodDesc.getter("lastResetUser", result="StringOrNull")
+            case ["track", track] if track in self.tracks:
+                yield RpcMethodDesc.getter(
+                    result="List[Int]", description="List of tracks"
+                )
+                yield RpcMethodDesc.setter(param="List[Int]", description="Set track")
 
     async def _method_call(
-        self, path: str, method: str, access: RpcMethodAccess, param: SHVType
+        self,
+        path: str,
+        method: str,
+        param: SHVType,
+        access: RpcMethodAccess,
+        user_id: str | None,
     ) -> SHVType:
-        pth = path.split("/") if path else []
-        if len(pth) == 2 and pth[1] in self.tracks:
-            if method == "get" and access >= RpcMethodAccess.READ:
-                return self.tracks[pth[1]]
-            if method == "set" and access >= RpcMethodAccess.WRITE:
-                if not isinstance(param, list) or not all(
-                    isinstance(v, int) for v in param
-                ):
-                    raise RpcInvalidParamsError("Only list of ints is accepted.")
-                old_track = self.tracks[pth[1]]
-                self.tracks[pth[1]] = param
-                if old_track != param:
-                    await self.signal(f"track/{pth[1]}", param=param)
-                return True
-        return await super()._method_call(path, method, access, param)
+        match path.split("/"), method:
+            case ["track"], "reset" if access >= RpcMethodAccess.COMMAND:
+                if user_id is None:
+                    raise RpcUserIDRequiredError
+                self.last_reset_user = user_id
+                old = self.tracks
+                self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
+                for k in old:
+                    if old[k] != self.tracks[k]:
+                        await self.signal(f"track/{k}", param=self.tracks[k])
+                return None
+            case ["track"], "lastResetUser" if access >= RpcMethodAccess.READ:
+                return self.last_reset_user
+            case ["track", track], _ if track in self.tracks:
+                if method == "get" and access >= RpcMethodAccess.READ:
+                    return self.tracks[track]
+                if method == "set" and access >= RpcMethodAccess.WRITE:
+                    if not isinstance(param, list) or not all(
+                        isinstance(v, int) for v in param
+                    ):
+                        raise RpcInvalidParamsError("Only list of ints is accepted.")
+                    old_track = self.tracks[track]
+                    self.tracks[track] = param
+                    if old_track != param:
+                        await self.signal(f"track/{track}", param=param)
+                    return None
+        return await super()._method_call(path, method, param, access, user_id)
 
 
 async def example_device(url: RpcUrl) -> None:

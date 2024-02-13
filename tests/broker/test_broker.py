@@ -215,6 +215,12 @@ async def test_with_example_set(example_device, value_client):
     assert value_client["test/device/track/1"] == [1, 2]
 
 
+async def test_with_example_reset(example_device, client):
+    """Perform reset on example device to check user's ID."""
+    await client.call("test/device/track", "reset")
+    assert await client.call("test/device/track", "lastResetUser") == "testbroker:admin"
+
+
 async def test_unauthorized_access(shvbroker, value_client):
     """Check that we are not allowed to access node we do not have access to."""
     with pytest.raises(RpcMethodNotFoundError):

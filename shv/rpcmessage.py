@@ -49,6 +49,7 @@ class RpcMessage:
         METHOD = 10
         CALLER_IDS = 11
         ACCESS = 14
+        USER_ID = 16
         ACCESS_LEVEL = 17
 
     class Key(enum.IntEnum):
@@ -137,6 +138,14 @@ class RpcMessage:
             self.value.meta.pop(self.Tag.REQUEST_ID, None)
         else:
             self.value.meta[self.Tag.REQUEST_ID] = rqid
+
+    def new_request_id(self) -> int:
+        """Set new request ID.
+
+        :return: The new request ID.
+        """
+        self.request_id = self.next_request_id()
+        return self.request_id
 
     @property
     def path(self) -> str:
@@ -235,6 +244,24 @@ class RpcMessage:
             self.value.meta.pop(self.Tag.ACCESS, None)
 
     @property
+    def user_id(self) -> str | None:
+        """User's ID caried by message."""
+        res = self.value.meta.get(self.Tag.USER_ID, None)
+        if isinstance(res, dict):  # Note: backward compatibility
+            res = f"{res.get('brokerId')}:{res.get('shvUser')}"
+        if res is not None and not isinstance(res, str):
+            raise ValueError(f"Invalid UserID type: {type(res)} {res!r}")
+        return res
+
+    @user_id.setter
+    def user_id(self, value: str | None) -> None:
+        """Set User's ID."""
+        if value is not None:
+            self.value.meta[self.Tag.USER_ID] = value
+        else:
+            self.value.meta.pop(self.Tag.USER_ID, None)
+
+    @property
     def param(self) -> SHVType:
         """SHV parameters for the method call."""
         return self.value.get(self.Key.PARAMS, None) if is_shvimap(self.value) else None
@@ -322,6 +349,7 @@ class RpcMessage:
         method: str,
         param: SHVType = None,
         rid: int | None = None,
+        user_id: str | None = None,
     ) -> "RpcMessage":
         """Create request message.
 
@@ -330,12 +358,14 @@ class RpcMessage:
         :param param: Parameters passed to the method.
         :param rid: Request identifier for this message. It is automatically assigned if
           ``None`` is passed.
+        :param user_id: User's ID to be caried with request message.
         """
         res = cls()
         res.request_id = rid or cls.next_request_id()
         res.method = method
         res.path = path
         res.param = param
+        res.user_id = user_id
         return res
 
     @classmethod

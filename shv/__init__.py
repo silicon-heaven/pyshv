@@ -23,6 +23,7 @@ from .rpcerrors import (
     RpcMethodCallTimeoutError,
     RpcMethodNotFoundError,
     RpcParseError,
+    RpcUserIDRequiredError,
 )
 from .rpclogin import RpcLogin, RpcLoginType
 from .rpcmessage import RpcMessage
@@ -128,6 +129,7 @@ __all__ = [
     "RpcMethodNotFoundError",
     "RpcParseError",
     "RpcLoginRequiredError",
+    "RpcUserIDRequiredError",
     # rpclogin
     "RpcLogin",
     "RpcLoginType",

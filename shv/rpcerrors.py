@@ -19,6 +19,7 @@ class RpcErrorCode(enum.IntEnum):
     METHOD_CALL_EXCEPTION = 8
     UNKNOWN = 9
     LOGIN_REQUIRED = 10
+    USER_ID_REQUIRED = 11
     USER_CODE = 32
 
 
@@ -37,17 +38,22 @@ class RpcError(RuntimeError):
     shv_error_code: RpcErrorCode = RpcErrorCode.UNKNOWN
     shv_error_map: dict[int, typing.Type[RpcError]] = {}
 
-    def __new__(cls, msg: str, code: RpcErrorCode | None = None) -> "RpcError":
+    def __new__(
+        cls, msg: str | None = None, code: RpcErrorCode | None = None
+    ) -> "RpcError":
         ncls = cls.shv_error_map.get(cls.shv_error_code if code is None else code, cls)
         return super(RpcError, cls).__new__(ncls)
 
-    def __init__(self, msg: str, code: RpcErrorCode | None = None) -> None:
+    def __init__(
+        self, msg: str | None = None, code: RpcErrorCode | None = None
+    ) -> None:
         super().__init__(str(msg), self.shv_error_code if code is None else code)
 
     @property
-    def message(self) -> str:
+    def message(self) -> str | None:
         """Provides access to the SHV RPC message."""
-        assert isinstance(self.args[0], str)
+        if not isinstance(self.args[0], str) and self.args[0] is not None:
+            raise ValueError(f"Must be string or None but is: {type(self.args[0])}")
         return self.args[0]
 
     @property
@@ -108,6 +114,14 @@ class RpcMethodCallExceptionError(RpcError):
 class RpcLoginRequiredError(RpcError):
     """Login sequence must be performed before anything else."""
 
+    shv_error_code = RpcErrorCode.LOGIN_REQUIRED
+
+
+class RpcUserIDRequiredError(RpcError):
+    """Request must be sent with UserID field."""
+
+    shv_error_code = RpcErrorCode.USER_ID_REQUIRED
+
 
 RpcError.shv_error_map = {
     e.shv_error_code: e
@@ -121,5 +135,6 @@ RpcError.shv_error_map = {
         RpcMethodCallCancelledError,
         RpcMethodCallExceptionError,
         RpcLoginRequiredError,
+        RpcUserIDRequiredError,
     )
 }
