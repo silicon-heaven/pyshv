@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   control signals.
 - `RpcBroker` now lowers access level instead of overwriting it
 - Command `pycp2cp` renamed to more appropriate `pycpconv`
+- `RpcBroker.Client` and `RpcBroker` API changed to center mount point
+  management in `RpcBroker`.
 
 ### Fixed
 - Failing import on Windows
@@ -35,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - `rpc_login` and `rpc_login_url` in favor of `RpcLogin`
+- Broker now longer provides `.app/broker/clientInfo`
+- Broker now longer provides method
+  `.app/broker/currentClient:rejectNotSubscribed`
 
 
 ## [0.5.0] - 2024-01-18

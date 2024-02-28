@@ -23,12 +23,10 @@ from shv import (
     (
         ("", [".app"]),
         (".app", ["broker"]),
-        (".app/broker", ["currentClient", "client", "clientInfo"]),
+        (".app/broker", ["currentClient", "client"]),
         (".app/broker/currentClient", []),
         (".app/broker/client", ["0"]),  # only connection is us
         (".app/broker/client/0", [".app"]),
-        (".app/broker/clientInfo", ["0"]),  # only connection is us
-        (".app/broker/clientInfo/0", []),
     ),
 )
 async def test_empty_ls(client, path, nodes):
@@ -95,27 +93,12 @@ async def test_empty_ls_invalid(client, path):
                 RpcMethodDesc.getter("info", access=RpcMethodAccess.BROWSE),
                 RpcMethodDesc("subscribe", access=RpcMethodAccess.BROWSE),
                 RpcMethodDesc("unsubscribe", access=RpcMethodAccess.BROWSE),
-                RpcMethodDesc("rejectNotSubscribed", access=RpcMethodAccess.BROWSE),
                 RpcMethodDesc.getter("subscriptions", access=RpcMethodAccess.BROWSE),
             ],
         ),
         (
             ".app/broker/client",
             [RpcMethodDesc.stddir(), RpcMethodDesc.stdls(), RpcMethodDesc.stdlschng()],
-        ),
-        (
-            ".app/broker/clientInfo/0",
-            [
-                RpcMethodDesc.stddir(),
-                RpcMethodDesc.stdls(),
-                RpcMethodDesc.stdlschng(),
-                RpcMethodDesc.getter("userName", "String"),
-                RpcMethodDesc.getter("mountPoint", "String"),
-                RpcMethodDesc.getter("subscriptions"),
-                RpcMethodDesc("dropClient", access=RpcMethodAccess.SUPER_SERVICE),
-                RpcMethodDesc.getter("idleTime"),
-                RpcMethodDesc.getter("idleTimeMax"),
-            ],
         ),
     ),
 )
@@ -138,6 +121,8 @@ async def test_empty_dir(client, path, methods):
                 "mountPoint": None,
                 "subscriptions": [],
                 "userName": "admin",
+                "idleTime": 0,
+                "idleTimeMax": 180000,
             },
         ),
         (".app/broker", "mountedClientInfo", "test", None),
@@ -150,15 +135,12 @@ async def test_empty_dir(client, path, methods):
                 "mountPoint": None,
                 "subscriptions": [],
                 "userName": "admin",
+                "idleTime": 0,
+                "idleTimeMax": 180000,
             },
         ),
         (".app/broker/currentClient", "subscriptions", None, []),
         (".app/broker/client/0/.app", "name", None, "pyshv-client"),
-        (".app/broker/clientInfo/0", "userName", None, "admin"),
-        (".app/broker/clientInfo/0", "mountPoint", None, None),
-        (".app/broker/clientInfo/0", "subscriptions", None, []),
-        (".app/broker/clientInfo/0", "idleTime", None, 0),  # we are the one asking
-        (".app/broker/clientInfo/0", "idleTimeMax", None, 180000),
     ),
 )
 async def test_empty_call(client, path, method, param, result):
@@ -180,6 +162,40 @@ async def test_with_example_ls(client, example_device, path, nodes):
     assert await client.ls(path) == nodes
 
 
+@pytest.mark.parametrize(
+    "param,result",
+    (
+        (
+            "test/device",
+            {
+                "clientId": 1,
+                "mountPoint": "test/device",
+                "subscriptions": [],
+                "userName": "test",
+                "idleTime": 42,
+                "idleTimeMax": 180000,
+            },
+        ),
+        (
+            "test/device/track",
+            {
+                "clientId": 1,
+                "mountPoint": "test/device",
+                "subscriptions": [],
+                "userName": "test",
+                "idleTime": 42,
+                "idleTimeMax": 180000,
+            },
+        ),
+    ),
+)
+async def test_mountedClientInfo(client, example_device, param, result):
+    res = await client.call(".app/broker", "mountedClientInfo", param)
+    assert res["idleTime"] >= 0
+    res["idleTime"] = 42
+    assert shvmeta_eq(res, result)
+
+
 async def test_subscribe(client, example_device):
     await client.subscribe(RpcSubscription("test/device/track"))
     assert await client.call(".app/broker/currentClient", "subscriptions") == [
@@ -188,23 +204,6 @@ async def test_subscribe(client, example_device):
     assert await client.unsubscribe(RpcSubscription("test/device/track")) is True
     assert await client.call(".app/broker/currentClient", "subscriptions") == []
     assert await client.unsubscribe(RpcSubscription("test/device/track")) is False
-
-
-async def test_reject_not_subscribed(client, example_device):
-    await client.subscribe(RpcSubscription("test/device/track"))
-    assert (
-        await client.call(
-            ".app/broker/currentClient",
-            "rejectNotSubscribed",
-            {"path": "no/such/node"},
-        )
-        == []
-    )
-    assert await client.call(
-        ".app/broker/currentClient",
-        "rejectNotSubscribed",
-        {"path": "test/device/track/1", "method": "chng"},
-    ) == [{"path": "test/device/track", "method": "chng"}]
 
 
 async def test_with_example_set(example_device, value_client):
@@ -301,7 +300,7 @@ async def test_client_reset(client):
 
 async def test_broker_client(example_device, shvbroker):
     """Check that we can use broker's clients as clients as well."""
-    client = shvbroker.clients[0]
+    client = next(shvbroker.clients())
     assert await client.call(".app", "name") == "pyshv-example_device"
 
 

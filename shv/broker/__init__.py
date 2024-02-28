@@ -1,6 +1,6 @@
 """Implementation of SHV RPC broker."""
-from .rpcbroker import RpcBroker
-from .rpcbrokerconfig import RpcBrokerConfig
+from .broker import RpcBroker
+from .config import RpcBrokerConfig
 
 __all__ = [
     "RpcBroker",

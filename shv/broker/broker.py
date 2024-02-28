@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import collections
 import collections.abc
 import contextlib
 import logging
@@ -28,7 +29,7 @@ from ..simplebase import SimpleBase
 from ..simpleclient import SimpleClient
 from ..value import SHVType
 from ..value_tools import shvget
-from .rpcbrokerconfig import RpcBrokerConfig
+from .config import RpcBrokerConfig
 
 logger = logging.getLogger(__name__)
 
@@ -42,11 +43,6 @@ class RpcBroker:
 
     class Client(SimpleBase):
         """Single client connected to the broker."""
-
-        APP_NAME = "pyshvbroker"
-        """Name reported as application name for pySHVBroker."""
-        APP_VERSION = __version__
-        """pySHVBroker version."""
 
         IDLE_TIMEOUT_LOGIN: float = 5
         """:param:`IDLE_TIMEOUT` set for clients without user.
@@ -64,16 +60,11 @@ class RpcBroker:
             **kwargs: typing.Any,
         ):
             super().__init__(client, *args, **kwargs)
-            self.subs: set[RpcSubscription] = set()
-            """Set of all subscriptions client requested."""
             self.user: RpcBrokerConfig.User | None = user
             """Local user used to deduce access rights."""
             self.__broker = broker
-            self.__broker_client_id = broker.next_caller_id()
-            self.__mount_point: str | None = None
+            self.__broker_client_id = broker._register_client(self)
             self.__peer_is_broker: bool | None = None
-            self.__maintain_subscriptions_lock = asyncio.Lock()
-            broker.clients[self.__broker_client_id] = self
             logger.info(
                 "Client registered to broker with ID %d", self.__broker_client_id
             )
@@ -89,11 +80,6 @@ class RpcBroker:
             return self.__broker_client_id
 
         @property
-        def mount_point(self) -> str | None:
-            """Mount point of this client, if any."""
-            return self.__mount_point
-
-        @property
         def active(self) -> bool:
             """Check if given client is actively communicating.
 
@@ -101,21 +87,6 @@ class RpcBroker:
             the middle of reset, or waiting for login.
             """
             return self.user is not None and self.client.connected
-
-        async def set_mount_point(self, value: str | None) -> None:
-            if value is not None:
-                # We remove trailing slash because otherwise we could fail when we
-                # compare this string against path of exactly this node.
-                value = value.rstrip("/")
-            changes = [m for m in (self.__mount_point, value) if m is not None]
-            self.__mount_point = value
-            await self.__broker.signal_mount_point_change(*changes)
-            if value:
-                logger.info(
-                    "Client with ID %d is now mounted on: %s",
-                    self.__broker_client_id,
-                    value,
-                )
 
         async def peer_is_broker(self) -> bool:
             """Identify if peer this client is handle for is broker."""
@@ -128,6 +99,7 @@ class RpcBroker:
 
         async def _message(self, msg: RpcMessage) -> None:
             assert self.user is not None
+
             if msg.is_request:
                 # Set access granted to the level allowed by user
                 access = self.user.access_level(msg.path, msg.method)
@@ -162,23 +134,17 @@ class RpcBroker:
                     return await super()._message(msg)
                 cid = cids.pop()
                 msg.caller_ids = cids
-                try:
-                    peer = self.__broker.clients[cid]
-                except KeyError:
-                    return
-                await peer.client.send(msg)
+                if (peer := self.__broker.get_client(cid)) is not None:
+                    await peer.client.send(msg)
 
-            elif msg.is_signal and self.mount_point is not None:
-                msg.path = self.mount_point + "/" + msg.path
-                await self.__broker.signal(msg)
+            elif msg.is_signal:
+                await self.__broker.signal_from(msg, self)
 
         def _reset(self) -> None:
-            self.subs = set()
-            self.__broker.clients.pop(self.__broker_client_id, None)
-            self.__broker_client_id = self.__broker.next_caller_id()
-            self.__broker.clients[self.__broker_client_id] = self
+            self.__broker._unregister_client(self)  # pylint: disable=protected-access
             self.__peer_is_broker = None
-            asyncio.create_task(self.set_mount_point(None))
+            # pylint: disable=protected-access
+            self.__broker_client_id = self.__broker._register_client(self)
 
         def _ls(self, path: str) -> typing.Iterator[str]:
             yield from super()._ls(path)
@@ -188,17 +154,16 @@ class RpcBroker:
                 case ".app/broker":
                     yield "currentClient"
                     yield "client"
-                    yield "clientInfo"
-                case ".app/broker/clientInfo" | ".app/broker/client":
-                    yield from map(str, self.broker.clients.keys())
+                case ".app/broker/client":
+                    yield from (
+                        str(c.broker_client_id) for c in self.__broker.clients()
+                    )
                 case _:
-                    for client in self.broker.clients.values():
-                        mnt = client.mount_point
-                        if mnt is not None:
-                            if path == "":
-                                yield mnt.split("/", maxsplit=1)[0]
-                            elif mnt.startswith(path + "/"):
-                                yield mnt[len(path) + 1 :].split("/", maxsplit=1)[0]
+                    for mnt, _ in self.broker.mounted_clients():
+                        if path == "":
+                            yield mnt.split("/", maxsplit=1)[0]
+                        elif mnt.startswith(path + "/"):
+                            yield mnt[len(path) + 1 :].split("/", maxsplit=1)[0]
 
         def _dir(self, path: str) -> typing.Iterator[RpcMethodDesc]:
             yield from super()._dir(path)
@@ -223,24 +188,9 @@ class RpcBroker:
                     yield RpcMethodDesc.getter("info", access=RpcMethodAccess.BROWSE)
                     yield RpcMethodDesc("subscribe", access=RpcMethodAccess.BROWSE)
                     yield RpcMethodDesc("unsubscribe", access=RpcMethodAccess.BROWSE)
-                    yield RpcMethodDesc(
-                        "rejectNotSubscribed", access=RpcMethodAccess.BROWSE
-                    )
                     yield RpcMethodDesc.getter(
                         "subscriptions", access=RpcMethodAccess.BROWSE
                     )
-                case _ if (
-                    path.startswith(".app/broker/clientInfo/")
-                    and self.broker.get_client(path[23:]) is not None
-                ):
-                    yield RpcMethodDesc.getter("userName", "String")
-                    yield RpcMethodDesc.getter("mountPoint", "String")
-                    yield RpcMethodDesc.getter("subscriptions")
-                    yield RpcMethodDesc(
-                        "dropClient", access=RpcMethodAccess.SUPER_SERVICE
-                    )
-                    yield RpcMethodDesc.getter("idleTime")
-                    yield RpcMethodDesc.getter("idleTimeMax")
 
         async def _method_call(
             self,
@@ -267,13 +217,11 @@ class RpcBroker:
                                 return client_pth[0].infomap()
                             return None
                         case "clients":
-                            return list(self.broker.clients.keys())
+                            return list(
+                                c.broker_client_id for c in self.broker.clients()
+                            )
                         case "mounts":
-                            return [
-                                "/".join(c.mount_point)
-                                for c in self.broker.clients.values()
-                                if c.mount_point
-                            ]
+                            return [mnt for mnt, _ in self.broker.mounted_clients()]
                         case "disconnectClient":
                             if not isinstance(param, int):
                                 raise RpcInvalidParamsError("Use Int")
@@ -289,76 +237,15 @@ class RpcBroker:
                         case "info":
                             return self.infomap()
                         case "subscriptions":
-                            return [s.toSHV() for s in self.subs]
+                            return [
+                                s.toSHV() for s in self.__broker.subscriptions(self)
+                            ]
                         case "subscribe":
                             sub = RpcSubscription.fromSHV(param)
-                            self.subs.add(sub)
-                            async for subb in self.broker.subbrokers():
-                                assert subb.mount_point is not None
-                                if self.user.could_receive_signal(
-                                    sub, subb.mount_point
-                                ):
-                                    if subsub := sub.relative_to(subb.mount_point):
-                                        await subb.call(
-                                            ".app/broker/currentClient"
-                                            if await self._peer_is_shv3()
-                                            else ".broker/app",
-                                            "subscribe",
-                                            subsub.toSHV(),
-                                        )
-                            return None
+                            return await self.__broker.subscribe(sub, self)
                         case "unsubscribe":
                             sub = RpcSubscription.fromSHV(param)
-                            try:
-                                self.subs.remove(sub)
-                            except KeyError:
-                                return False
-                            async for subb in self.broker.subbrokers():
-                                await subb.maintain_subscriptions()
-                            return True
-                        case "rejectNotSubscribed":
-                            method = shvget(param, "method", str, "chng")
-                            path = shvget(param, "path", str, "")
-                            match = {
-                                sub for sub in self.subs if sub.applies(path, method)
-                            }
-                            self.subs -= match
-                            return [
-                                {"method": sub.method, "path": sub.path}
-                                for sub in match
-                            ]
-                case [
-                    ".app",
-                    "broker",
-                    "clientInfo",
-                    cid,
-                ] if access >= RpcMethodAccess.SUPER_SERVICE:
-                    if (client := self.broker.get_client(cid)) is not None:
-                        match method:
-                            case "userName":
-                                return (
-                                    client.user.name
-                                    if client.user is not None
-                                    else None
-                                )
-                            case "mountPoint":
-                                return (
-                                    "/".join(self.mount_point)
-                                    if self.mount_point
-                                    else None
-                                )
-                            case "subscriptions":
-                                return [s.toSHV() for s in self.subs]
-                            case "dropClient":
-                                await client.disconnect()
-                                return None
-                            case "idleTime":
-                                return int(
-                                    (time.monotonic() - client.client.last_receive)
-                                    * 1000
-                                )
-                            case "idleTimeMax":
-                                return int(self.IDLE_TIMEOUT * 1000)
+                            return await self.__broker.unsubscribe(sub, self)
             return await super()._method_call(path, method, param, access, user_id)
 
         def infomap(self) -> SHVType:
@@ -370,65 +257,22 @@ class RpcBroker:
             return {
                 "clientId": self.broker_client_id,
                 "userName": self.user.name if self.user is not None else None,
-                "mountPoint": self.mount_point,
-                "subscriptions": [s.toSHV() for s in self.subs],
+                "mountPoint": self.__broker.client_mountpoint(self),
+                "subscriptions": [s.toSHV() for s in self.__broker.subscriptions(self)],
+                "idleTime": int((time.monotonic() - self.client.last_receive) * 1000),
+                "idleTimeMax": int(self.IDLE_TIMEOUT * 1000),
             }
-
-        async def maintain_subscriptions(self, cleanup: bool = True) -> None:
-            """Remove no longer valid subscriptions and add missing ones.
-
-            This does nothing if peer of this client is not sub-broker.
-
-            :param cleanup: If cleanup should be performed or if it is enough to
-            just push all subscriptions.
-            """
-            assert self.user is not None
-            if not await self.peer_is_broker():
-                return
-            # We lock here because we do multiple calls and we must be sure that nobody
-            # is going to be doing the same as us.
-            async with self.__maintain_subscriptions_lock:
-                present: set[RpcSubscription] = set()
-                required: set[RpcSubscription] = set()
-                if cleanup:
-                    rsubs = await self.call(
-                        ".app/broker/currentClient", "subscriptions"
-                    )
-                    # TODO error instead of assert
-                    assert isinstance(rsubs, collections.abc.Sequence)
-                    present = {RpcSubscription.fromSHV(sub) for sub in rsubs}
-                if self.mount_point is not None:
-                    for client in self.broker.clients.values():
-                        if client.user is None:
-                            continue
-                        for sub in client.subs:
-                            if client.user.could_receive_signal(sub, self.mount_point):
-                                if subsub := sub.relative_to(self.mount_point):
-                                    required.add(subsub)
-                for sub in present - required:
-                    await self.call(
-                        ".app/broker/currentClient"
-                        if await self._peer_is_shv3()
-                        else ".broker/app",
-                        "unsubscribe",
-                        sub.toSHV(),
-                    )
-                for sub in required - present:
-                    await self.call(
-                        ".app/broker/currentClient"
-                        if await self._peer_is_shv3()
-                        else ".broker/app",
-                        "subscribe",
-                        sub.toSHV(),
-                    )
 
         async def disconnect(self) -> None:
             logger.info("Disconnecting client with ID %d", self.broker_client_id)
-            self.broker.clients.pop(self.broker_client_id, None)
+            self.__broker._unregister_client(self)  # pylint: disable=protected-access
             await super().disconnect()
 
     class LoginClient(Client):
         """Broker's client that expects login from client."""
+
+        APP_NAME = "pyshvbroker"
+        """Name reported as application name for pyshvbroker."""
 
         def __init__(self, *args: typing.Any, **kwargs: typing.Any):
             super().__init__(*args, **kwargs)
@@ -442,8 +286,7 @@ class RpcBroker:
             with contextlib.suppress(asyncio.exceptions.CancelledError):
                 await activity_task
 
-            self.broker.clients.pop(self.broker_client_id, None)
-            await self.set_mount_point(None)
+            self.broker._unregister_client(self)  # pylint: disable=protected-access
             self.client.disconnect()
             await self.client.wait_disconnect()
             logger.info("Client with ID %d disconnected", self.broker_client_id)
@@ -508,7 +351,7 @@ class RpcBroker:
                             )
                         )
                     if mount_point:
-                        asyncio.create_task(self.set_mount_point(mount_point))
+                        self.broker.mount_client(self, mount_point)
                     self.IDLE_TIMEOUT = float(
                         shvget(
                             param,
@@ -532,6 +375,9 @@ class RpcBroker:
     class ConnectClient(SimpleClient, Client):
         """Broker client that activelly connects to some other peer."""
 
+        APP_NAME = "pyshvbroker-client"
+        """Name reported as application name for pyshvbroker connection."""
+
         def __init__(
             self,
             *args: typing.Any,
@@ -543,27 +389,38 @@ class RpcBroker:
 
         async def _login(self) -> None:
             await super()._login()
-            await self.set_mount_point(self.target_mount_point)
+            self.broker.mount_client(self, self.target_mount_point)
 
-        # TODO possibly add info about where it is connect to the infomap
+        # TODO possibly add info about where it is connect to the infomap but we
+        # must not disclouse login information
 
     def __init__(self, config: RpcBrokerConfig) -> None:
-        self.clients: dict[int, RpcBroker.Client] = {}
-        """Mapping from client IDs to client objects."""
         self.config = config
         """Configuration of the RPC Broker."""
         self.servers: dict[str, RpcServer] = {}
         """All servers managed by Broker where keys are their configured names."""
+        self._clients: dict[int, RpcBroker.Client] = {}
+        self._subs: dict[RpcSubscription, set[int]] = {}
+        self._mounts: dict[str, int] = {}
+        self._subsubs: dict[str, collections.Counter[RpcSubscription]] = {}
         self.__last_caller_id = -1
 
-    def next_caller_id(self) -> int:
-        """Allocate new caller ID."""
+    def _register_client(self, client: Client) -> int:
+        """Register client that is called by :class:`Client` initialization."""
         # TODO try to reuse older caller IDs to send smaller messages but we
         # need to do it only after some given delay. We can safe time of client
         # disconnect to the self.clients and use that to identify when we can
         # reuse caller id.
         self.__last_caller_id += 1
+        self._clients[self.__last_caller_id] = client
         return self.__last_caller_id
+
+    def _unregister_client(self, client: Client) -> None:
+        """Unregister client that is called by :class:`Client` reset and teardown."""
+        self.mount_client(client, None)
+        for subs in self._subs.values():
+            subs.discard(client.broker_client_id)
+        self._clients.pop(client.broker_client_id, None)
 
     def get_client(self, cid: int | str) -> Client | None:
         """Lookup client with given ID.
@@ -573,7 +430,7 @@ class RpcBroker:
             otherwise.
         """
         try:
-            return self.clients[cid if isinstance(cid, int) else int(cid, 10)]
+            return self._clients[cid if isinstance(cid, int) else int(cid, 10)]
         except (ValueError, KeyError):
             return None
 
@@ -590,29 +447,160 @@ class RpcBroker:
 
         # Note: we do not allow recursive mount points and thus first match is the
         # correct and the only client.
-        for c in self.clients.values():
-            mp = c.mount_point
-            if (
-                mp
-                and path.startswith(mp)
-                and (len(path) == len(mp) or path[len(mp)] == "/")
-            ):
-                return c, path[len(c.mount_point or "") + 1 :]
+        for mnt, cid in self._mounts.items():
+            if path.startswith(mnt + "/") or path == mnt:
+                return self._clients[cid], path[len(mnt) + 1 :]
         return None
 
-    def mounted_clients(self) -> collections.abc.Iterator[Client]:
-        """Goes through all active clients and provides those mounted."""
+    def clients(self) -> collections.abc.Iterator[Client]:
+        """Iterate over all clients of the broker."""
+        yield from self._clients.values()
+
+    def mounted_clients(self) -> collections.abc.Iterator[tuple[str, Client]]:
+        """Goes through all clients and provides those active and mounted."""
         return (
-            c for c in self.clients.values() if c.active and c.mount_point is not None
+            (mnt, self._clients[cid])
+            for mnt, cid in self._mounts.items()
+            if self._clients[cid].active
         )
 
-    async def subbrokers(self) -> collections.abc.AsyncIterator[Client]:
-        """Iterate over all mounted clients that are brokers."""
-        for client in self.clients.values():
-            if client.user is None:
-                continue  # Ignore unlogged clients
-            if client.mount_point is not None and await client.peer_is_broker():
-                yield client
+    def mount_client(self, client: Client, mount_point: str | None) -> asyncio.Task:
+        """Mount given client on given mount point.
+
+        :param client: The client ID or object that should be mounted.
+        :param mount_point: The mount point where client should be mounted.
+        :return: Asyncio task you can await to make sure that mount is fully
+          propagated.
+        """
+        cid = client.broker_client_id
+        if mount_point is not None:
+            mount_point = mount_point.rstrip("/")
+        if mount_point and any(
+            mnt.startswith(mount_point + "/")
+            for mnt, mntcid in self._mounts.items()
+            if mntcid != cid
+        ):
+            raise ValueError("Path already mounted")
+        oldmnt = self.client_mountpoint(client)
+        if oldmnt:
+            self._mounts.pop(oldmnt, None)
+            logger.info("Client with ID %d is no longer mounted on: %s", cid, oldmnt)
+        if mount_point:
+            self._mounts[mount_point] = cid
+            logger.info("Client with ID %d is now mounted on: %s", cid, mount_point)
+        return asyncio.create_task(self.__mount_client(client, oldmnt, mount_point))
+
+    async def __mount_client(
+        self, client: Client, oldmnt: str | None, newmnt: str | None
+    ) -> None:
+        prev = set(self._subsubs.pop(oldmnt, {}).keys()) if oldmnt else set()
+        if client.active and await client.peer_is_broker():
+            if newmnt:
+                self._subsubs[newmnt] = collections.Counter(
+                    (s for sub in self._subs if (s := sub.relative_to(newmnt)))
+                )
+                for s in self._subsubs[newmnt]:
+                    if s in prev:
+                        prev.discard(s)
+                    else:
+                        await client.call(
+                            ".app/broker/currentClient"
+                            if await client.peer_is_shv3()
+                            else ".broker/app",
+                            "subscribe",
+                            s.toSHV(),
+                        )
+            for s in prev:
+                await client.call(
+                    ".app/broker/currentClient"
+                    if await client.peer_is_shv3()
+                    else ".broker/app",
+                    "unsubscribe",
+                    s.toSHV(),
+                )
+
+        await self._signal_mount_point_change(*(mnt for mnt in (oldmnt, newmnt) if mnt))
+
+    def client_mountpoint(self, client: Client) -> str | None:
+        """Get mount point for this client.
+
+        :param client: The client ID or object that mount point should be
+          received for.
+        :return: The mount point of the client or ``None`` in case there is
+          none.
+        """
+        try:
+            return next(
+                mnt
+                for mnt, cid in self._mounts.items()
+                if cid == client.broker_client_id
+            )
+        except StopIteration:
+            return None
+
+    def subscriptions(
+        self, client: Client | None = None
+    ) -> collections.abc.Iterator[RpcSubscription]:
+        """Iterate over subscriptions this broker manages.
+
+        :param client: The optional filtering over client's subscriptions.
+        :return: Iterator over subscriptions.
+        """
+        yield from (
+            s
+            for s, v in self._subs.items()
+            if client is None or client.broker_client_id in v
+        )
+
+    async def subscribe(self, subscription: RpcSubscription, client: Client) -> bool:
+        """Add given subscription as being requested by given client."""
+        assert client.user is not None
+        if subscription in self._subs:
+            self._subs[subscription].add(client.broker_client_id)
+            return False
+        self._subs[subscription] = {client.broker_client_id}
+        # Propagate subscription to the sub-brokers
+        for mnt, subc in self.mounted_clients():
+            if not await subc.peer_is_broker():
+                continue
+            if sub := subscription.relative_to(mnt):
+                if mnt not in self._subsubs:
+                    self._subsubs[mnt] = collections.Counter()
+                self._subsubs[mnt][sub] += 1
+                if self._subsubs[mnt][sub] == 1:
+                    await subc.call(
+                        ".app/broker/currentClient"
+                        if await subc.peer_is_shv3()
+                        else ".broker/app",
+                        "subscribe",
+                        sub.toSHV(),
+                    )
+        return True
+
+    async def unsubscribe(self, subscription: RpcSubscription, client: Client) -> bool:
+        """Remove given subscription as being requested by given client."""
+        if subscription not in self._subs:
+            return False
+        self._subs[subscription].discard(client.broker_client_id)
+        if self._subs[subscription]:
+            return True
+        del self._subs[subscription]
+        # Propagate unsubscribe to the sub-brokers
+        for mnt, subc in self.mounted_clients():
+            if not await subc.peer_is_broker():
+                continue
+            if sub := subscription.relative_to(mnt):
+                self._subsubs[mnt][sub] -= 1
+                if self._subsubs[mnt][sub] == 0:
+                    del self._subsubs[mnt][sub]
+                    await subc.call(
+                        ".app/broker/currentClient"
+                        if await subc.peer_is_shv3()
+                        else ".broker/app",
+                        "unsubscribe",
+                        sub.toSHV(),
+                    )
+        return True
 
     async def signal(self, msg: RpcMessage) -> None:
         """Send signal to the broker's clients.
@@ -620,18 +608,30 @@ class RpcBroker:
         :param msg: Signal message to be sent.
         """
         msgaccess = msg.rpc_access or RpcMethodAccess.READ
-        for client in self.clients.values():
-            if client.user is None:
+        for sub, clients in self._subs.items():
+            if not sub.applies(msg.path, msg.method):
                 continue
-            access = client.user.access_level(msg.path, msg.method)
-            if (
-                access is not None
-                and access >= msgaccess
-                and any(s.applies(msg.path, msg.method) for s in client.subs)
-            ):
+            for cid in clients:
+                client = self._clients[cid]
+                if not client.active:
+                    continue
+                assert client.user is not None
+                access = client.user.access_level(msg.path, msg.method)
+                if access is None or access < msgaccess:
+                    continue
                 await client.client.send(msg)
 
-    async def signal_mount_point_change(self, *path: str) -> None:
+    async def signal_from(self, msg: RpcMessage, client: Client) -> None:
+        """Send signal to the broker's client as comming from given client.
+
+        :param msg: Signal message to be sent.
+        :param client: Client ID or object signal should be propagated from.
+        """
+        if mnt := self.client_mountpoint(client):
+            msg.path = mnt + ("/" if msg.path else "") + msg.path
+            await self.signal(msg)
+
+    async def _signal_mount_point_change(self, *path: str) -> None:
         """Send lschng signal for node changes for given mount points.
 
         The state of the mount point can be deduced from the current list of
@@ -641,17 +641,14 @@ class RpcBroker:
         It is used by broker's clients to inform all peers about mount point
         changes. Think about before you use this in your application!
         """
-        mounts = set(c.mount_point for c in self.mounted_clients())
+        mounts = set(self._mounts)
         constmounts = mounts.difference(path)
         changes: dict[str, dict[str, bool]] = {}
         for mp in path:
             ggi = enumerate(zip(mp, *constmounts))
             gi = (i for i, ch in ggi if ch[0] not in ch[1:])
-            i: int | None = mp.find("/", next(gi, 0))
-            if i == -1:
-                i = None
-            # TODO this might not work all the time when names are close
-            pth, _, name = mp[:i].rpartition("/")
+            i = mp.find("/", next(gi, 0))
+            pth, _, name = mp[: i if i >= 0 else None].rpartition("/")
             if pth not in changes:
                 changes[pth] = {}
             changes[pth][name] = mp in mounts
@@ -730,8 +727,8 @@ class RpcBroker:
             try:
                 await client.disconnect()
             except Exception as exc:
-                logger.error("Disconnect failed with: %s", exc)
+                logger.error("Disconnect failed", exc_info=exc)
 
         self.close()
         await self.wait_closed()
-        await asyncio.gather(*(client_disconnect(c) for c in self.clients.values()))
+        await asyncio.gather(*(client_disconnect(c) for c in self._clients.values()))

@@ -1,5 +1,6 @@
 """The base for the various high level SHV RPC interfaces."""
 import asyncio
+import collections.abc
 import contextlib
 import logging
 import traceback
@@ -118,8 +119,7 @@ class SimpleBase:
                 self._calls_msg[rid] = msg
                 self._calls_event.pop(rid).set()
         elif msg.is_signal:
-            if msg.method == "chng":
-                await self._value_update(msg.path, msg.param)
+            await self._signal(msg.path, msg.method, msg.param)
 
     def _reset(self) -> None:
         """Handle peer's reset request."""
@@ -241,7 +241,7 @@ class SimpleBase:
     async def ping(self) -> None:
         """Ping the peer to check the connection."""
         await self.call(
-            ".app" if await self._peer_is_shv3() else ".broker/currentClient",
+            ".app" if await self.peer_is_shv3() else ".broker/currentClient",
             "ping",
         )
 
@@ -298,7 +298,7 @@ class SimpleBase:
             return None
         return RpcMethodDesc.fromshv(res)
 
-    async def _peer_is_shv3(self) -> bool:
+    async def peer_is_shv3(self) -> bool:
         """Check if peer supports at least SHV 3.0."""
         if self.__peer_is_shv3 is None:
             try:
@@ -316,7 +316,7 @@ class SimpleBase:
         access: RpcMethodAccess,
         user_id: str | None,
     ) -> SHVType:
-        """Handle request in the provided message.
+        """Handle request.
 
         :param path: SHV path to the node the method is associated with.
         :param method: method requested to be called.
@@ -362,7 +362,7 @@ class SimpleBase:
             return any(v == param for v in self._ls(path))
         raise RpcInvalidParamsError("Use Null or String with node name")
 
-    def _ls(self, path: str) -> typing.Iterator[str]:
+    def _ls(self, path: str) -> collections.abc.Iterator[str]:
         """Implement ``ls`` method for all nodes.
 
         The default implementation supports `.app` path. Your implementation
@@ -405,7 +405,7 @@ class SimpleBase:
             return None
         raise RpcInvalidParamsError("Use Null or Bool or String with node name")
 
-    def _dir(self, path: str) -> typing.Iterator[RpcMethodDesc]:
+    def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:
         """Implement ``dir`` method for all nodes.
 
         This implementation is called only for valid paths (:meth:`_valid_path`).
@@ -425,6 +425,16 @@ class SimpleBase:
             yield RpcMethodDesc.getter("name", "Null", "String")
             yield RpcMethodDesc.getter("version", "Null", "String")
             yield RpcMethodDesc("ping")
+
+    async def _signal(self, path: str, method: str, value: SHVType) -> None:
+        """Handle signal.
+
+        :param path: SHV path to the node the signal is associated with.
+        :param method: signal method name.
+        :param value: The value caried by signal.
+        """
+        if method == "chng":
+            await self._value_update(path, value)
 
     async def _value_update(self, path: str, value: SHVType) -> None:
         """Handle value change (`chng` method)."""

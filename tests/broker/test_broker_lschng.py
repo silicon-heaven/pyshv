@@ -53,7 +53,7 @@ async def test_lschng_with_device(shvbroker, lsclient, example_device, url_test_
     lsclient.lschngs.task_done()
 
     cid = (await device.call(".app/broker/currentClient", "info"))["clientId"]
-    await shvbroker.clients[cid].set_mount_point("test/other")
+    await shvbroker.mount_client(shvbroker.get_client(cid), "test/other")
     assert await lsclient.lschngs.get() == ("test", {"foo": False, "other": True})
     lsclient.lschngs.task_done()
 

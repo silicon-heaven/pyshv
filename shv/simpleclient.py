@@ -192,9 +192,7 @@ class SimpleClient(SimpleBase):
 
     async def __subscribe(self, sub: RpcSubscription) -> None:
         await self.call(
-            ".app/broker/currentClient"
-            if await self._peer_is_shv3()
-            else ".broker/app",
+            ".app/broker/currentClient" if await self.peer_is_shv3() else ".broker/app",
             "subscribe",
             sub.toSHV(),
         )
@@ -206,9 +204,7 @@ class SimpleClient(SimpleBase):
         :return: ``True`` in case such subscribe was located and ``False`` otherwise.
         """
         resp = await self.call(
-            ".app/broker/currentClient"
-            if await self._peer_is_shv3()
-            else ".broker/app",
+            ".app/broker/currentClient" if await self.peer_is_shv3() else ".broker/app",
             "unsubscribe",
             sub.toSHV(),
         )

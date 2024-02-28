@@ -13,7 +13,7 @@ from ..rpcurl import RpcLoginType, RpcUrl
 
 
 class RpcBrokerConfig:
-    """Generic store of broker configuration."""
+    """SHV RPC Broker configuration."""
 
     @dataclasses.dataclass(frozen=True)
     class Method:
@@ -25,7 +25,7 @@ class RpcBrokerConfig:
         """Method name that should be matched. Empty matches all methods."""
 
         @classmethod
-        def fromstr(cls, string: str) -> "RpcBrokerConfig.Method":
+        def fromstr(cls, string: str) -> RpcBrokerConfig.Method:
             """Parse :class:`RpcBrokerConfig.Method` from string."""
             if ":" not in string:
                 raise ValueError(f"Invalid specification of method: {string}")
@@ -45,11 +45,11 @@ class RpcBrokerConfig:
         """Name of the role."""
         access: RpcMethodAccess = RpcMethodAccess.BROWSE
         """Access level granted to the user by this role."""
-        methods: frozenset["RpcBrokerConfig.Method"] = dataclasses.field(
+        methods: frozenset[RpcBrokerConfig.Method] = dataclasses.field(
             default_factory=frozenset
         )
         """Methods used to check if this role should apply."""
-        roles: frozenset["RpcBrokerConfig.Role"] = dataclasses.field(
+        roles: frozenset[RpcBrokerConfig.Role] = dataclasses.field(
             default_factory=frozenset
         )
         """Additional roles to applied after this role."""
@@ -65,11 +65,11 @@ class RpcBrokerConfig:
         name: str
         password: str
         login_type: RpcLoginType | None = RpcLoginType.SHA1
-        roles: frozenset["RpcBrokerConfig.Role"] = dataclasses.field(
+        roles: frozenset[RpcBrokerConfig.Role] = dataclasses.field(
             default_factory=frozenset
         )
 
-        def all_roles(self) -> typing.Iterator["RpcBrokerConfig.Role"]:
+        def all_roles(self) -> typing.Iterator[RpcBrokerConfig.Role]:
             """Iterate over all roles assigned to this user."""
             rlst = list(self.roles)
             while rlst:
@@ -239,7 +239,7 @@ class RpcBrokerConfig:
 
     def login(
         self, user: str, password: str, nonce: str, login_type: RpcLoginType
-    ) -> typing.Optional["RpcBrokerConfig.User"]:
+    ) -> typing.Optional[RpcBrokerConfig.User]:
         """Check the login and provide user if login is correct."""
         try:
             u = self.user(user)
@@ -251,7 +251,7 @@ class RpcBrokerConfig:
         return None
 
     @classmethod
-    def load(cls, config: configparser.ConfigParser) -> "RpcBrokerConfig":
+    def load(cls, config: configparser.ConfigParser) -> RpcBrokerConfig:
         """Load configuration from ConfigParser.
 
         :param config: Configuration to be loaded.

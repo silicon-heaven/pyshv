@@ -4,8 +4,8 @@ import asyncio
 import configparser
 import logging
 
-from .rpcbroker import RpcBroker
-from .rpcbrokerconfig import RpcBrokerConfig
+from .broker import RpcBroker
+from .config import RpcBrokerConfig
 
 logger = logging.getLogger(__name__)
 log_levels = (
@@ -41,7 +41,7 @@ def parse_args() -> argparse.Namespace:
         "-c",
         "--config",
         action="store",
-        default="",
+        default="/etc/pyshvbroker.ini",
         help="Configuration file",
     )
     return parser.parse_args()
@@ -65,8 +65,7 @@ def main() -> None:
     )
 
     config = configparser.ConfigParser()
-    if args.config:
-        config.read(args.config)
+    config.read(args.config)
     brokerconf = RpcBrokerConfig.load(config)
     try:
         asyncio.run(_broker_main(brokerconf))

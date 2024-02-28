@@ -1,4 +1,6 @@
 """Types used in SHV RPC method description."""
+from __future__ import annotations
+
 import collections.abc
 import dataclasses
 import enum
@@ -35,7 +37,7 @@ class RpcMethodAccess(enum.IntEnum):
 
     @classmethod
     @functools.cache
-    def strmap(cls) -> dict[str, "RpcMethodAccess"]:
+    def strmap(cls) -> dict[str, RpcMethodAccess]:
         return {
             "bws": cls.BROWSE,
             "rd": cls.READ,
@@ -58,7 +60,7 @@ class RpcMethodAccess(enum.IntEnum):
         return self.strrmap().get(self.value, "bws")
 
     @classmethod
-    def fromstr(cls, access: str) -> "RpcMethodAccess":
+    def fromstr(cls, access: str) -> RpcMethodAccess:
         """Convert to string representation."""
         return cls.strmap().get(access, cls.BROWSE)
 
@@ -122,7 +124,7 @@ class RpcMethodDesc:
         result: str = "Any",
         access: RpcMethodAccess = RpcMethodAccess.READ,
         description: str = "",
-    ) -> "RpcMethodDesc":
+    ) -> RpcMethodDesc:
         """New getter method description.
 
         :param name: Name of the method.
@@ -141,7 +143,7 @@ class RpcMethodDesc:
         result: str = "Null",
         access: RpcMethodAccess = RpcMethodAccess.WRITE,
         description: str = "",
-    ) -> "RpcMethodDesc":
+    ) -> RpcMethodDesc:
         """New setter method description.
 
         :param name: Name of the method.
@@ -159,7 +161,7 @@ class RpcMethodDesc:
         param: str = "Any",
         access: RpcMethodAccess = RpcMethodAccess.READ,
         description: str = "",
-    ) -> "RpcMethodDesc":
+    ) -> RpcMethodDesc:
         """New signal method description.
 
         :param name: Name of the method.
@@ -171,18 +173,18 @@ class RpcMethodDesc:
 
     @classmethod
     @functools.lru_cache(maxsize=1)
-    def stddir(cls) -> "RpcMethodDesc":
+    def stddir(cls) -> RpcMethodDesc:
         """Get description of standard 'dir' method."""
         return cls("dir", param="idir", result="odir")
 
     @classmethod
     @functools.lru_cache(maxsize=1)
-    def stdls(cls) -> "RpcMethodDesc":
+    def stdls(cls) -> RpcMethodDesc:
         """Get description of standard 'ls' method."""
         return cls("ls", param="ils", result="ols")
 
     @classmethod
     @functools.lru_cache(maxsize=1)
-    def stdlschng(cls) -> "RpcMethodDesc":
+    def stdlschng(cls) -> RpcMethodDesc:
         """Get description of standard 'lschng' signal method."""
         return cls.signal("lschng", "olschng", RpcMethodAccess.BROWSE)
