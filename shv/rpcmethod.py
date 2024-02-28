@@ -19,7 +19,7 @@ class RpcMethodFlags(enum.IntFlag):
     SETTER = 1 << 2
     LARGE_RESULT_HINT = 1 << 3
     NOT_IDEMPOTENT = 1 << 4
-    CLIENT_ID_REQUIRED = 1 << 5
+    USER_ID_REQUIRED = 1 << 5
 
 
 class RpcMethodAccess(enum.IntEnum):

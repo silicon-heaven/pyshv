@@ -48,7 +48,7 @@ class ExampleDevice(SimpleClient):
             case ["track"]:
                 yield RpcMethodDesc(
                     "reset",
-                    RpcMethodFlags.CLIENT_ID_REQUIRED,
+                    RpcMethodFlags.USER_ID_REQUIRED,
                     access=RpcMethodAccess.COMMAND,
                     description="Reset all tracks to their initial state",
                 )
