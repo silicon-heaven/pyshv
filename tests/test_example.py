@@ -27,7 +27,7 @@ async def test_ls(example_device, client, path, result):
             [
                 {1: "dir", 2: 0, 3: "idir", 4: "odir", 5: "bws"},
                 {1: "ls", 2: 0, 3: "ils", 4: "ols", 5: "bws"},
-                {1: "lschng", 2: 1, 4: "olschng", 5: "bws"},
+                {1: "lsmod", 2: 1, 4: "olsmod", 5: "bws", 6: "ls"},
             ],
         ),
         (
@@ -35,7 +35,7 @@ async def test_ls(example_device, client, path, result):
             [
                 {1: "dir", 2: 0, 3: "idir", 4: "odir", 5: "bws"},
                 {1: "ls", 2: 0, 3: "ils", 4: "ols", 5: "bws"},
-                {1: "lschng", 2: 1, 4: "olschng", 5: "bws"},
+                {1: "lsmod", 2: 1, 4: "olsmod", 5: "bws", 6: "ls"},
                 {1: "shvVersionMajor", 2: 2, 4: "Int", 5: "rd"},
                 {1: "shvVersionMinor", 2: 2, 4: "Int", 5: "rd"},
                 {1: "name", 2: 2, 4: "String", 5: "rd"},
@@ -48,7 +48,7 @@ async def test_ls(example_device, client, path, result):
             [
                 {1: "dir", 2: 0, 3: "idir", 4: "odir", 5: "bws"},
                 {1: "ls", 2: 0, 3: "ils", 4: "ols", 5: "bws"},
-                {1: "lschng", 2: 1, 4: "olschng", 5: "bws"},
+                {1: "lsmod", 2: 1, 4: "olsmod", 5: "bws", 6: "ls"},
                 {1: "reset", 2: 32, 5: "cmd"},
                 {1: "lastResetUser", 2: 2, 3: "Int", 4: "StringOrNull", 5: "rd"},
             ],
@@ -58,7 +58,7 @@ async def test_ls(example_device, client, path, result):
             [
                 {1: "dir", 2: 0, 3: "idir", 4: "odir", 5: "bws"},
                 {1: "ls", 2: 0, 3: "ils", 4: "ols", 5: "bws"},
-                {1: "lschng", 2: 1, 4: "olschng", 5: "bws"},
+                {1: "lsmod", 2: 1, 4: "olsmod", 5: "bws", 6: "ls"},
                 {1: "get", 2: 2, 3: "Int", 4: "List[Int]", 5: "rd"},
                 {1: "set", 2: 4, 3: "List[Int]", 5: "wr"},
             ],
@@ -85,7 +85,7 @@ async def test_set(example_device, client):
 
 async def test_reset(example_device, value_client):
     await value_client.prop_set("test/device/track/2", [42] * 8)
-    await value_client.subscribe(RpcSubscription("test/device"))
+    await value_client.subscribe(RpcSubscription("test/device/**"))
     assert await value_client.call("test/device/track", "reset") is None
     # Reset should send update on track 2 because it was changed
     assert value_client["test/device/track/2"] == [0, 1]

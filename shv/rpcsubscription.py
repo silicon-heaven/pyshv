@@ -13,45 +13,27 @@ from .value import SHVMapType, SHVType
 class RpcSubscription:
     """Single SHV RPC subscription."""
 
-    path: str = ""
-    """SHV Path the subscription is applied on."""
-    method: str = "chng"
-    """Method name subscription is applied on."""
-    paths: str | None = None
-    """Pattern that replaces the **path** match. Compared to the **path** the patter
-    must match exactly and thus it can be used to subscribed only on a signle node.
+    paths: str = "**"
+    """Pattern for SHV path matching."""
+    signal: str = "*"
+    """Pattern for signal name subscription is applied on."""
+    source: str = "*"
+    """Pattern for method name signal must be associated with."""
 
-    **path** is ignored if this is not ``None``.
-    """
-    methods: str | None = None
-    """Pattern that replaces **method**. It must match method exactly to apply.
-
-    **method** is ignored if this is not ``None``.
-    """
-
-    def applies(self, path: str, method: str) -> bool:
+    def applies(self, path: str, signal: str, source: str) -> bool:
         """Check if given subscription applies to this combination.
 
         :param path: SHV Path.
-        :param method: Method name.
+        :param signal: Signal name.
+        :param source: Source method name.
         :return: Boolean depending on the way this subscription applies on given path
           and method.
         """
-        path_matches: bool
-        if self.paths is not None:
-            path_matches = path_match(path, self.paths)
-        else:
-            path_matches = (
-                not self.path
-                or path.startswith(self.path)
-                and (len(path) == len(self.path) or path[len(self.path)] == "/")
-            )
-        method_matches: bool
-        if self.methods is not None:
-            method_matches = fnmatch.fnmatchcase(method, self.methods)
-        else:
-            method_matches = not self.method or method == self.method
-        return path_matches and method_matches
+        return (
+            path_match(path, self.paths)
+            and fnmatch.fnmatchcase(signal, self.signal)
+            and fnmatch.fnmatchcase(source, self.source)
+        )
 
     def relative_to(self, path: str) -> RpcSubscription | None:
         """Get subscription that is relative to the given path.
@@ -65,48 +47,79 @@ class RpcSubscription:
         :return: New subscription that is relative to the given *path* or
           ``None``.
         """
-        if self.paths is not None:
-            if pat := tail_pattern(path, self.paths):
-                return dataclasses.replace(self, paths=pat)
-            return None
-        p = path.rstrip("/") + ("/" if path else "")
-        sp = self.path.rstrip("/") + ("/" if self.path else "")
-        if sp.startswith(p):
-            return dataclasses.replace(self, path=sp[len(p) : -1])
+        if not path:
+            return self  # Relative to root
+        if (pat := tail_pattern(path.rstrip("/"), self.paths)) is not None:
+            return dataclasses.replace(self, paths=pat)
         return None
 
     @classmethod
-    def fromSHV(cls, value: SHVType) -> "RpcSubscription":
+    def fromSHV(cls, value: SHVType) -> RpcSubscription:
         """Create subscription from SHV type representation."""
         if not isinstance(value, collections.abc.Mapping):
             raise ValueError("Expected Map")
         value = typing.cast(SHVMapType, value)
         # We ignore unknown keys here intentionally
-        path = value.get("path", cls.path)
-        method = value.get("method", cls.method)
-        paths = value.get("paths", cls.paths)
-        methods = value.get("methods", cls.methods)
+        paths: SHVType = cls.paths
+        if (path := value.get("path", None)) is not None:
+            paths = f"{path}/**" if path else "**"
+        paths = value.get("paths", paths)
+        signal = value.get(
+            "methods", value.get("method", value.get("signal", cls.signal))
+        )
+        source = value.get("source", cls.source)
         if (
-            not isinstance(path, str)
-            or not isinstance(method, str)
-            or not isinstance(paths, (str, type(None)))
-            or not isinstance(methods, (str, type(None)))
+            not isinstance(paths, str)
+            or not isinstance(signal, str)
+            or not isinstance(source, str)
         ):
             raise ValueError("Invalid type")
-        return cls(path, method, paths, methods)
+        return cls(paths, signal, source)
 
-    def toSHV(self) -> SHVType:
+    def toSHV(self, compatible: bool = False) -> SHVType:
         """Convert to representation used in SHV RPC communication."""
         res: dict[str, SHVType] = {}
-        if self.paths is not None:
-            res["paths"] = self.paths
-        elif self.path:
-            res["path"] = self.path
-        if self.methods is not None:
-            res["methods"] = self.methods
+        if compatible:
+            pth, _, tail = self.paths.rpartition("/")
+            if "*" in pth or tail != "**":
+                res["paths"] = self.paths
+            else:
+                res["path"] = pth
+            if "*" in self.signal:
+                res["methods"] = self.signal
+            else:
+                res["method"] = self.signal
         else:
-            res["method"] = self.method
+            if self.paths != "**":
+                res["paths"] = self.paths
+            if self.signal != "*":
+                res["signal"] = self.signal
+        if self.source != "*":
+            res["source"] = self.source
         return res
+
+    @classmethod
+    def fromStr(cls, value: str) -> RpcSubscription:
+        """Create subscription from common string representation.
+
+        This representation is simply ``PATH:SIGNAL:SOURCE`` where everything
+        except ``PATH`` is optional. If you want to use default ``SIGNAL`` but
+        specify ``SOURCE`` then you can use ``PATH::SOURCE``
+
+        :param value: The string representation to be interpreted.
+        :return: New object representing this subscription.
+        """
+        p, _, ns = value.partition(":")
+        n, _, s = ns.partition(":")
+        return cls(p, n if n else cls.signal, s if s else cls.source)
+
+    def toStr(self) -> str:
+        """Convert to common string representation.
+
+        Please see :meth:`fromStr`.
+        """
+        # TODO do not add unnecessary fields
+        return f"{self.paths}:{self.signal}:${self.source}"
 
 
 def __match(path: str, pattern: list[str]) -> int | None:
@@ -141,14 +154,12 @@ def path_match(path: str, pattern: str) -> bool:
 
 
 def tail_pattern(path: str, pattern: str) -> str | None:
-    """Remove the longest pattern prefix that matches given path.
-
-    The tail can match more nodes if they would be added to the path.
+    """Remove the pattern prefix that matches given path.
 
     :param path: Path the pattern should match.
     :param pattern: Pattern to be split.
     :return: Returns tail that can be used to match nodes bellow path or ``None`` in
-      case pattern doesn't match the path.
+      case pattern doesn't match the path or matches it exactly.
     """
     ptn = pattern.split("/")
     res = __match(path, ptn)

@@ -4,7 +4,6 @@ import collections.abc
 import contextlib
 import logging
 import traceback
-import typing
 
 from .__version__ import __version__
 from .rpcclient import RpcClient
@@ -119,7 +118,7 @@ class SimpleBase:
                 self._calls_msg[rid] = msg
                 self._calls_event.pop(rid).set()
         elif msg.is_signal:
-            await self._signal(msg.path, msg.method, msg.param)
+            await self._signal(msg.path, msg.signal_name, msg.source, msg.param)
 
     def _reset(self) -> None:
         """Handle peer's reset request."""
@@ -222,21 +221,23 @@ class SimpleBase:
     async def signal(
         self,
         path: str,
-        method: str = "chng",
-        param: SHVType = None,
+        name: str = "chng",
+        source: str = "get",
+        value: SHVType = None,
         access: RpcMethodAccess = RpcMethodAccess.READ,
     ) -> None:
-        """Send signal from given path and method and with given parameter.
+        """Send signal from given path and method source and with given parameter.
 
         Note that this is coroutine and thus it is up to you if you await it or
         use asyncio tasks.
 
-        :param path: SHV path method is associated with.
-        :param method: SHV method name to be called.
-        :param param: Parameter that is the signaled value.
-        :param access: Minimal access level needed to get the signal.
+        :param path: SHV path signal is associated with.
+        :param name: Signal name to be raised.
+        :param source: Method name this signal is associated with.
+        :param value: Parameter that is the signaled value.
+        :param access: Minimal access level needed to access the signal.
         """
-        await self.send(RpcMessage.signal(path, method, param, access))
+        await self.send(RpcMessage.signal(path, name, source, value, access))
 
     async def ping(self) -> None:
         """Ping the peer to check the connection."""
@@ -280,7 +281,7 @@ class SimpleBase:
         """
         res = await self.call(path, "dir", True if details else None)
         if isinstance(res, list):  # pragma: no cover
-            return [RpcMethodDesc.fromshv(m) for m in res]
+            return [RpcMethodDesc.fromSHV(m) for m in res]
         raise RpcMethodCallExceptionError(f"Invalid result returned: {repr(res)}")
 
     async def dir_description(self, path: str, name: str) -> RpcMethodDesc | None:
@@ -296,7 +297,7 @@ class SimpleBase:
             res = res[0] if len(res) == 1 else None
         if is_shvnull(res):
             return None
-        return RpcMethodDesc.fromshv(res)
+        return RpcMethodDesc.fromSHV(res)
 
     async def peer_is_shv3(self) -> bool:
         """Check if peer supports at least SHV 3.0."""
@@ -397,11 +398,11 @@ class SimpleBase:
             raise RpcMethodNotFoundError(f"No such node: {path}")
         # Note: The list here is backward compatibility
         if is_shvnull(param) or is_shvbool(param) or isinstance(param, list):
-            return list(d.toshv(bool(param)) for d in self._dir(path))
+            return list(d.toSHV(bool(param)) for d in self._dir(path))
         if isinstance(param, str):
             for d in self._dir(path):
                 if d.name == param:
-                    return d.toshv()
+                    return d.toSHV()
             return None
         raise RpcInvalidParamsError("Use Null or Bool or String with node name")
 
@@ -418,7 +419,7 @@ class SimpleBase:
         """
         yield RpcMethodDesc.stddir()
         yield RpcMethodDesc.stdls()
-        yield RpcMethodDesc.stdlschng()
+        yield RpcMethodDesc.stdlsmod()
         if path == ".app":
             yield RpcMethodDesc.getter("shvVersionMajor", "Null", "Int")
             yield RpcMethodDesc.getter("shvVersionMinor", "Null", "Int")
@@ -426,15 +427,18 @@ class SimpleBase:
             yield RpcMethodDesc.getter("version", "Null", "String")
             yield RpcMethodDesc("ping")
 
-    async def _signal(self, path: str, method: str, value: SHVType) -> None:
+    async def _signal(
+        self, path: str, signal: str, source: str, value: SHVType
+    ) -> None:
         """Handle signal.
 
         :param path: SHV path to the node the signal is associated with.
-        :param method: signal method name.
+        :param signal: Signal name.
+        :param source: Method name signal is associated with.
         :param value: The value caried by signal.
         """
-        if method == "chng":
+        if signal.endswith("chng") and source == "get":
             await self._value_update(path, value)
 
     async def _value_update(self, path: str, value: SHVType) -> None:
-        """Handle value change (`chng` method)."""
+        """Handle value change (``*chng`` signal associated with ``get`` method)."""

@@ -54,14 +54,14 @@ async def test_empty_ls_invalid(client, path):
     (
         (
             "",
-            [RpcMethodDesc.stddir(), RpcMethodDesc.stdls(), RpcMethodDesc.stdlschng()],
+            [RpcMethodDesc.stddir(), RpcMethodDesc.stdls(), RpcMethodDesc.stdlsmod()],
         ),
         (
             ".app",
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
-                RpcMethodDesc.stdlschng(),
+                RpcMethodDesc.stdlsmod(),
                 RpcMethodDesc.getter("shvVersionMajor", "Null", "Int"),
                 RpcMethodDesc.getter("shvVersionMinor", "Null", "Int"),
                 RpcMethodDesc.getter("name", "Null", "String"),
@@ -74,7 +74,7 @@ async def test_empty_ls_invalid(client, path):
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
-                RpcMethodDesc.stdlschng(),
+                RpcMethodDesc.stdlsmod(),
                 RpcMethodDesc("clientInfo", access=RpcMethodAccess.SUPER_SERVICE),
                 RpcMethodDesc(
                     "mountedClientInfo", access=RpcMethodAccess.SUPER_SERVICE
@@ -89,7 +89,7 @@ async def test_empty_ls_invalid(client, path):
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
-                RpcMethodDesc.stdlschng(),
+                RpcMethodDesc.stdlsmod(),
                 RpcMethodDesc.getter("info", access=RpcMethodAccess.BROWSE),
                 RpcMethodDesc("subscribe", access=RpcMethodAccess.BROWSE),
                 RpcMethodDesc("unsubscribe", access=RpcMethodAccess.BROWSE),
@@ -98,7 +98,7 @@ async def test_empty_ls_invalid(client, path):
         ),
         (
             ".app/broker/client",
-            [RpcMethodDesc.stddir(), RpcMethodDesc.stdls(), RpcMethodDesc.stdlschng()],
+            [RpcMethodDesc.stddir(), RpcMethodDesc.stdls(), RpcMethodDesc.stdlsmod()],
         ),
     ),
 )
@@ -197,18 +197,20 @@ async def test_mountedClientInfo(client, example_device, param, result):
 
 
 async def test_subscribe(client, example_device):
-    await client.subscribe(RpcSubscription("test/device/track"))
+    sub = RpcSubscription("test/device/track/**")
+    assert await client.subscribe(sub) is True
+    assert await client.subscribe(sub) is False
     assert await client.call(".app/broker/currentClient", "subscriptions") == [
-        {"method": "chng", "path": "test/device/track"}
+        {"paths": "test/device/track/**"}
     ]
-    assert await client.unsubscribe(RpcSubscription("test/device/track")) is True
+    assert await client.unsubscribe(sub) is True
     assert await client.call(".app/broker/currentClient", "subscriptions") == []
-    assert await client.unsubscribe(RpcSubscription("test/device/track")) is False
+    assert await client.unsubscribe(sub) is False
 
 
 async def test_with_example_set(example_device, value_client):
     """Perform set to trigger also notifications."""
-    await value_client.subscribe(RpcSubscription("test/device/track"))
+    await value_client.subscribe(RpcSubscription("test/device/track/**"))
     await value_client.prop_set("test/device/track/1", [1, 2])
     assert await value_client.prop_get("test/device/track/1") == [1, 2]
     assert value_client["test/device/track/1"] == [1, 2]

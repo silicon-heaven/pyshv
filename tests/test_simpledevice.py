@@ -72,7 +72,7 @@ async def test_ls(client, device, path, result):
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
-                RpcMethodDesc.stdlschng(),
+                RpcMethodDesc.stdlsmod(),
                 RpcMethodDesc.getter(
                     "name", "Null", "String", access=RpcMethodAccess.BROWSE
                 ),

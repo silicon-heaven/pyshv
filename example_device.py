@@ -76,7 +76,7 @@ class ExampleDevice(SimpleClient):
                 self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
                 for k in old:
                     if old[k] != self.tracks[k]:
-                        await self.signal(f"track/{k}", param=self.tracks[k])
+                        await self.signal(f"track/{k}", value=self.tracks[k])
                 return None
             case ["track"], "lastResetUser" if access >= RpcMethodAccess.READ:
                 return self.last_reset_user
@@ -91,7 +91,7 @@ class ExampleDevice(SimpleClient):
                     old_track = self.tracks[track]
                     self.tracks[track] = param
                     if old_track != param:
-                        await self.signal(f"track/{track}", param=param)
+                        await self.signal(f"track/{track}", value=param)
                     return None
         return await super()._method_call(path, method, param, access, user_id)
 

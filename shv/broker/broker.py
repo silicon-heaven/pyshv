@@ -28,7 +28,7 @@ from ..rpcurl import RpcLoginType
 from ..simplebase import SimpleBase
 from ..simpleclient import SimpleClient
 from ..value import SHVType
-from ..value_tools import shvget
+from ..value_tools import shvgett
 from .config import RpcBrokerConfig
 
 logger = logging.getLogger(__name__)
@@ -322,11 +322,11 @@ class RpcBroker:
                             error=RpcInvalidParamsError("Invalid type of parameters")
                         )
                     self.user = self.broker.config.login(
-                        shvget(param, ("login", "user"), str, ""),
-                        shvget(param, ("login", "password"), str, ""),
+                        shvgett(param, ("login", "user"), str, ""),
+                        shvgett(param, ("login", "password"), str, ""),
                         self._nonce,
                         RpcLoginType(
-                            shvget(
+                            shvgett(
                                 param, ("login", "type"), str, RpcLoginType.SHA1.value
                             )
                         ),
@@ -340,7 +340,7 @@ class RpcBroker:
                         self.broker_client_id,
                         self.user.name,
                     )
-                    mount_point = shvget(
+                    mount_point = shvgett(
                         param, ("options", "device", "mountPoint"), str, ""
                     )
                     if self.broker.client_on_path(mount_point) is not None:
@@ -353,7 +353,7 @@ class RpcBroker:
                     if mount_point:
                         self.broker.mount_client(self, mount_point)
                     self.IDLE_TIMEOUT = float(
-                        shvget(
+                        shvgett(
                             param,
                             ("options", "idleWatchDogTimeOut"),
                             int,
@@ -508,7 +508,7 @@ class RpcBroker:
                             if await client.peer_is_shv3()
                             else ".broker/app",
                             "subscribe",
-                            s.toSHV(),
+                            s.toSHV(not await client.peer_is_shv3()),
                         )
             for s in prev:
                 await client.call(
@@ -516,7 +516,7 @@ class RpcBroker:
                     if await client.peer_is_shv3()
                     else ".broker/app",
                     "unsubscribe",
-                    s.toSHV(),
+                    s.toSHV(not await client.peer_is_shv3()),
                 )
 
         await self._signal_mount_point_change(*(mnt for mnt in (oldmnt, newmnt) if mnt))
@@ -609,7 +609,7 @@ class RpcBroker:
         """
         msgaccess = msg.rpc_access or RpcMethodAccess.READ
         for sub, clients in self._subs.items():
-            if not sub.applies(msg.path, msg.method):
+            if not sub.applies(msg.path, msg.signal_name, msg.source):
                 continue
             for cid in clients:
                 client = self._clients[cid]
@@ -632,7 +632,7 @@ class RpcBroker:
             await self.signal(msg)
 
     async def _signal_mount_point_change(self, *path: str) -> None:
-        """Send lschng signal for node changes for given mount points.
+        """Send lsmod signal for node changes for given mount points.
 
         The state of the mount point can be deduced from the current list of
         them.
@@ -654,7 +654,7 @@ class RpcBroker:
             changes[pth][name] = mp in mounts
         for pth, value in changes.items():
             await self.signal(
-                RpcMessage.signal(pth, "lschng", value, RpcMethodAccess.BROWSE)
+                RpcMessage.signal(pth, "lsmod", "ls", value, RpcMethodAccess.BROWSE)
             )
 
     async def start_serving(self, connect_timeout: float = 1.0) -> None:

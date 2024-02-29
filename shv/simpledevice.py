@@ -56,12 +56,12 @@ class SimpleDevice(SimpleClient):
                 "serialNumber", "Null", "OptionalString", access=RpcMethodAccess.BROWSE
             )
 
-    async def _lschng(
+    async def _lsmod(
         self, path: str, nodes: collections.abc.Mapping[str, bool]
     ) -> None:
         """Report change in the ls method.
 
-        This provides implementation for "lschng" signal that must be used when
+        This provides implementation for "lsmod" signal that must be used when
         you are changing the nodes tree to signal clients about that. The
         argument specifies top level nodes added or removed (based on the
         mapping value).
@@ -72,4 +72,4 @@ class SimpleDevice(SimpleClient):
           node, that was either added (for value ``True``) or removed (for value
           ``False``).
         """
-        await self.signal(path, "lschng", nodes, RpcMethodAccess.BROWSE)
+        await self.signal(path, "lsmod", "ls", nodes, RpcMethodAccess.BROWSE)

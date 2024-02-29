@@ -34,7 +34,7 @@ class Link:
         assert await clients[1].receive() == msg
 
     async def test_notify(self, clients):
-        msg = RpcMessage.chng(".app", None)
+        msg = RpcMessage.signal(".app")
         await clients[1].send(msg)
         assert await clients[0].receive() == msg
 

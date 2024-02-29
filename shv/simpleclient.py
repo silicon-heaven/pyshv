@@ -13,7 +13,7 @@ from .rpcsubscription import RpcSubscription
 from .rpcurl import RpcUrl
 from .simplebase import SimpleBase
 from .value import SHVType, is_shvbool
-from .value_tools import shvget
+from .value_tools import shvgett
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +148,7 @@ class SimpleClient(SimpleBase):
         Be aware when you are overwriting this as this is running in the
         """
         res = await self.call("", "hello")
-        nonce = shvget(res, "nonce", str, "")
+        nonce = shvgett(res, "nonce", str, "")
         await self.call(
             "",
             "login",
@@ -179,7 +179,7 @@ class SimpleClient(SimpleBase):
                 await asyncio.sleep(0)  # Let loop detect disconnect
                 await self._connected.wait()
 
-    async def subscribe(self, sub: RpcSubscription) -> None:
+    async def subscribe(self, sub: RpcSubscription) -> bool:
         """Perform subscribe for signals on given path.
 
         Subscribe is always performed on the node itself as well as all its
@@ -187,14 +187,19 @@ class SimpleClient(SimpleBase):
 
         :param sub: SHV RPC subscription to be added.
         """
-        await self.__subscribe(sub)
+        res = await self.__subscribe(sub)
         self._subscribes.add(sub)
+        return res
 
-    async def __subscribe(self, sub: RpcSubscription) -> None:
-        await self.call(
-            ".app/broker/currentClient" if await self.peer_is_shv3() else ".broker/app",
-            "subscribe",
-            sub.toSHV(),
+    async def __subscribe(self, sub: RpcSubscription) -> bool:
+        return bool(
+            await self.call(
+                ".app/broker/currentClient"
+                if await self.peer_is_shv3()
+                else ".broker/app",
+                "subscribe",
+                sub.toSHV(not await self.peer_is_shv3()),
+            )
         )
 
     async def unsubscribe(self, sub: RpcSubscription) -> bool:
@@ -206,7 +211,7 @@ class SimpleClient(SimpleBase):
         resp = await self.call(
             ".app/broker/currentClient" if await self.peer_is_shv3() else ".broker/app",
             "unsubscribe",
-            sub.toSHV(),
+            sub.toSHV(not await self.peer_is_shv3()),
         )
         assert is_shvbool(resp)
         if resp:

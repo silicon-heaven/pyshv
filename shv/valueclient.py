@@ -2,6 +2,7 @@
 import asyncio
 import collections.abc
 import datetime
+import logging
 import time
 import typing
 
@@ -9,6 +10,8 @@ from .rpcerrors import RpcMethodCallExceptionError, RpcMethodNotFoundError
 from .rpcsubscription import RpcSubscription
 from .simpleclient import SimpleClient
 from .value import SHVMapType, SHVType, shvmeta, shvmeta_eq
+
+logger = logging.getLogger(__name__)
 
 
 class ValueClient(SimpleClient, collections.abc.Mapping):
@@ -211,7 +214,9 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
             self.clean_cache()
         return res
 
-    def is_subscribed(self, path: str, method: str = "chng") -> bool:
+    def is_subscribed(
+        self, path: str, signal: str = "chng", source: str = "get"
+    ) -> bool:
         """Check if we are subscribed for given SHV path.
 
         Subscribed paths are cached and thus this also checks if this path would be
@@ -221,10 +226,11 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         subscriptions are still valid (not removed on the server).
 
         :param path: SHV path
-        :param method: Signal method
+        :param signal: Signal name
+        :param source: Method name signal is associated with.
         :return: ``True`` if subscribed for that path and ``False`` otherwise.
         """
-        return any(sub.applies(path, method) for sub in self._subscribes)
+        return any(sub.applies(path, signal, source) for sub in self._subscribes)
 
     def clean_cache(self) -> None:
         """Remove no longer subscribed paths from cache.
@@ -270,9 +276,10 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         This provides a way for you to initialize cache without logs. It
         iterates over SHV tree and calls any get method it encounters.
 
-        :param paths: Paths to be snapshoted. If none is provide the sunscriptions are
-            used instead.
-        :param update: If already cached values should be updated or just skipped.
+        :param paths: Paths to be snapshoted. If none is provide the
+          subscriptions are used instead.
+        :param update: If already cached values should be updated or just
+          skipped.
         """
         pths: list[str] = list(paths) if paths else [""]
         # TODO we can skip paths that are outside of our subscriptions
@@ -285,8 +292,6 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
             except (RpcMethodNotFoundError, RpcMethodCallExceptionError):
                 pass  # ls might not be present which is not an issue
             if not self.is_subscribed(pth) or (not update and pth in self._cache):
-                print(f"Ignoring {pth}")
                 continue
-            print(f"Getting {pth}")
             if await self.dir_description(pth, "get") is not None:
                 self._cache[pth] = (time.time(), await self.prop_get(pth))

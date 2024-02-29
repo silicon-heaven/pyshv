@@ -65,7 +65,7 @@ class RpcClient(abc.ABC):
         """
         await self._send(bytearray((ChainPack.ProtocolType,)) + msg.to_chainpack())
         self.last_send = time.monotonic()
-        logger.debug("<== SND: %s", msg.to_string())
+        logger.debug("%s => %s", str(self), msg.to_string())
 
     @abc.abstractmethod
     async def _send(self, msg: bytes) -> None:
@@ -92,14 +92,14 @@ class RpcClient(abc.ABC):
                     else:
                         if isinstance(shvdata, SHVIMap):
                             msg = RpcMessage(shvdata)
-                            logger.debug("==> REC: %s", msg.to_string())
+                            logger.debug("%s <= %s", self, msg.to_string())
                             if raise_error and msg.is_error:
                                 raise msg.rpc_error
                             return msg
             elif len(data) == 1 and data[0] == 0:
-                logger.debug("==> REC: Control message RESET")
+                logger.debug("%s <= Control message RESET", self)
                 return self.Control.RESET
-            logger.debug("==> Invalid message received: %s", data)
+            logger.debug("%s <= Invalid message received: %s", self, data)
 
     @abc.abstractmethod
     async def _receive(self) -> bytes:
@@ -205,6 +205,9 @@ class RpcClientTCP(_RpcClientStream):
         self.location = location
         self.port = port
 
+    def __str__(self) -> str:
+        return f"tcp:{self.location}:{self.port}"
+
     async def reset(self) -> None:
         if not self.connected:
             self._reader, self._writer = await asyncio.open_connection(
@@ -230,6 +233,9 @@ class RpcClientUnix(_RpcClientStream):
     ) -> None:
         super().__init__(protocol)
         self.location = location
+
+    def __str__(self) -> str:
+        return f"unix:{self.location}"
 
     async def reset(self) -> None:
         if not self.connected:
@@ -258,6 +264,9 @@ class RpcClientPipe(_RpcClientStream):
         super().__init__(protocol)
         self._reader = reader
         self._writer = writer
+
+    def __str__(self) -> str:
+        return "pipe"
 
     @classmethod
     async def fdopen(
@@ -319,6 +328,9 @@ class RpcClientTTY(RpcClient):
         self.serial: None | aioserial.AioSerial = None
         self._eof = asyncio.Event()
         self._eof.set()
+
+    def __str__(self) -> str:
+        return f"tty:{self.port}"
 
     async def _send(self, msg: bytes) -> None:
         await self.protocol.send(self._write_async, msg)

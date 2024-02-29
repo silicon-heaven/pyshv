@@ -76,7 +76,7 @@ from .value import (
     shvmeta,
     shvmeta_eq,
 )
-from .value_tools import SHVGetKey, shvget
+from .value_tools import SHVGetKey, shvarg, shvargt, shvget, shvgett
 from .valueclient import ValueClient
 
 __all__ = [
@@ -174,6 +174,9 @@ __all__ = [
     # value_tools
     "shvget",
     "SHVGetKey",
+    "shvgett",
+    "shvarg",
+    "shvargt",
     # shvversion
     "SHV_VERSION_MAJOR",
     "SHV_VERSION_MINOR",

@@ -47,10 +47,14 @@ class RpcMessage:
         REQUEST_ID = 8
         PATH = 9
         METHOD = 10
+        SIGNAL = 10
         CALLER_IDS = 11
+        RESP_CALLER_IDS = 13
         ACCESS = 14
         USER_ID = 16
         ACCESS_LEVEL = 17
+        PART = 18
+        SOURCE = 19
 
     class Key(enum.IntEnum):
         """Keys in the toplevel IMap of the RPC message."""
@@ -67,8 +71,7 @@ class RpcMessage:
 
     def is_valid(self) -> bool:
         """Check if message is valid RPC message."""
-        # TODO maybe do more work than just check basic type
-        return isinstance(self.value, SHVIMap)
+        return isinstance(self.value, SHVIMap) and bool(set(self.value) ^ set(self.Key))
 
     @property
     def is_request(self) -> bool:
@@ -92,7 +95,7 @@ class RpcMessage:
     @property
     def is_signal(self) -> bool:
         """Check if message is a signal."""
-        return bool(not self.has_request_id and self.has_method)
+        return not self.has_request_id
 
     def make_response(
         self, result: SHVType = None, error: RpcError | SHVType = None
@@ -185,6 +188,37 @@ class RpcMessage:
             self.value.meta[self.Tag.METHOD] = method
         else:
             self.value.meta.pop(self.Tag.METHOD, None)
+
+    @property
+    def signal_name(self) -> str:
+        """SHV signal name for this message."""
+        res = self.value.meta.get(self.Tag.METHOD, "chng")
+        if not isinstance(res, str):
+            raise ValueError(f"Invalid method type: {type(res)}")
+        return res
+
+    @signal_name.setter
+    def signal_name(self, signal: str) -> None:
+        """Set SHV signal name for this message."""
+        # Note: we always set it because old implementations were dropping
+        # messages without method name.
+        self.value.meta[self.Tag.SIGNAL] = signal
+
+    @property
+    def source(self) -> str:
+        """SHV signal source method name for this message."""
+        res = self.value.meta.get(self.Tag.SOURCE, "get")
+        if not isinstance(res, str):
+            raise ValueError(f"Invalid method type: {type(res)}")
+        return res
+
+    @source.setter
+    def source(self, source: str) -> None:
+        """Set SHV signal source method name for this message."""
+        if source and source != "get":
+            self.value.meta[self.Tag.SOURCE] = source
+        else:
+            self.value.meta.pop(self.Tag.SOURCE, None)
 
     @property
     def caller_ids(self) -> collections.abc.Sequence[int]:
@@ -372,29 +406,23 @@ class RpcMessage:
     def signal(
         cls,
         path: str,
-        method: str,
+        name: str = "chng",
+        source: str = "get",
         value: SHVType = None,
         access: RpcMethodAccess = RpcMethodAccess.READ,
     ) -> "RpcMessage":
         """Create signal message.
 
         :param path: SHV path for signal.
-        :param method: method name for signal.
+        :param name: Name of the signal.
+        :param source: Name of the method this signal is associated with.
         :param value: Value to be sent in the message.
         :param access: Minimal access level needed to get this signal.
         """
         res = cls()
-        res.method = method
+        res.signal_name = name
+        res.source = source
         res.path = path
         res.param = value
         res.rpc_access = access
         return res
-
-    @classmethod
-    def chng(cls, path: str, value: SHVType) -> "RpcMessage":
-        """Create message for ``chng`` signal.
-
-        :param path: SHV path for signal.
-        :param value: New value to be sent in the message.
-        """
-        return cls.signal(path, "chng", value)

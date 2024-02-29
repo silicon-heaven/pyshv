@@ -88,22 +88,24 @@ async def test_signal(shvbroker, subdevice, url):
     """Check that we propagate signals through subbroker."""
     client = await NotifClient.connect(url)
 
-    await client.subscribe(RpcSubscription("subbroker/device/track"))
+    assert await client.subscribe(RpcSubscription("subbroker/device/track/**", "*chng"))
 
     assert await client.call(".app/broker/currentClient", "subscriptions") == [
-        {"method": "chng", "path": "subbroker/device/track"}
+        {"signal": "*chng", "paths": "subbroker/device/track/**"}
     ]
     assert await client.call(
         "subbroker/.app/broker/currentClient", "subscriptions"
-    ) == [{"method": "chng", "path": "device/track"}]
+    ) == [{"signal": "*chng", "paths": "device/track/**"}]
 
     await client.call("subbroker/device/track/1", "set", [1])
-    assert await client.signals.get() == RpcMessage.chng(
-        "subbroker/device/track/1", [1]
+    assert await client.signals.get() == RpcMessage.signal(
+        "subbroker/device/track/1", value=[1]
     )
     client.signals.task_done()
 
-    await client.unsubscribe(RpcSubscription("subbroker/device/track"))
+    assert await client.unsubscribe(
+        RpcSubscription("subbroker/device/track/**", "*chng")
+    )
     assert (
         await client.call("subbroker/.app/broker/currentClient", "subscriptions") == []
     )

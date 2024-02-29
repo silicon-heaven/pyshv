@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for Client's ID in `SimpleBase` as well as in `RpcBroker`.
 - New RPC error `RpcUserIDRequiredError`
 - RPC Broker configuration option `config.name`
+- SHV value getting utilities for common parameter formats (`shvarg`, `shvgett`)
 
 ### Changed
 - `SimpleBase` and thus `SimpleClient` method `_method_call` has new argument
@@ -27,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Command `pycp2cp` renamed to more appropriate `pycpconv`
 - `RpcBroker.Client` and `RpcBroker` API changed to center mount point
   management in `RpcBroker`.
+- `RpcSubscription` has now different fields due to subscription changes
+- The format of logging changed to identify different clients from each other
+- Access level numerical values adjusted to match SHV standard
 
 ### Fixed
 - Failing import on Windows
@@ -40,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Broker now longer provides `.app/broker/clientInfo`
 - Broker now longer provides method
   `.app/broker/currentClient:rejectNotSubscribed`
+- `RpcMessage.chng` because that is now default for `RpcMessage.signal`
 
 
 ## [0.5.0] - 2024-01-18
