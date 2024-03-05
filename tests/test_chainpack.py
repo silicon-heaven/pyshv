@@ -2,7 +2,6 @@
 import datetime
 import decimal
 
-import dateutil.tz
 import pytest
 
 from shv import ChainPackReader, ChainPackWriter, SHVMeta, SHVUInt, shvmeta_eq
@@ -65,12 +64,19 @@ DATA: list = [
     (b"\x85\x06ab\xcd\t\r\n", b"ab\xcd\t\r\n"),
     (
         b"\x8d\x04",
-        datetime.datetime(2018, 2, 2, 0, 0, 0, 1000, tzinfo=dateutil.tz.tzutc()),
+        datetime.datetime(2018, 2, 2, 0, 0, 0, 1000, tzinfo=datetime.timezone.utc),
     ),
     (
         b"\x8d\x82\x11",
         datetime.datetime(
-            2018, 2, 2, 1, 0, 0, 1000, tzinfo=dateutil.tz.tzoffset(None, 3600)
+            2018,
+            2,
+            2,
+            1,
+            0,
+            0,
+            1000,
+            tzinfo=datetime.timezone(datetime.timedelta(hours=1)),
         ),
     ),
 ]

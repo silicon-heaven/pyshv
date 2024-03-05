@@ -2,7 +2,6 @@
 import datetime
 import decimal
 
-import dateutil.tz
 import pytest
 
 from shv import CponReader, CponWriter, SHVMeta, SHVUInt, shvmeta_eq
@@ -60,12 +59,19 @@ DATA: list = [
     ('b"ab\\cd\\t\\r\\n"', b"ab\xcd\t\r\n"),
     (
         'd"2018-02-02T00:00:00Z"',
-        datetime.datetime(2018, 2, 2, tzinfo=dateutil.tz.tzutc()),
+        datetime.datetime(2018, 2, 2, tzinfo=datetime.timezone.utc),
     ),
     (
         'd"2027-05-03T11:30:12.345+01"',
         datetime.datetime(
-            2027, 5, 3, 11, 30, 12, 345000, tzinfo=dateutil.tz.tzoffset(None, 3600)
+            2027,
+            5,
+            3,
+            11,
+            30,
+            12,
+            345000,
+            tzinfo=datetime.timezone(datetime.timedelta(hours=1)),
         ),
     ),
 ]
@@ -83,24 +89,38 @@ DATA: list = [
         ("<>1", 1),
         (
             'd"2017-05-03T18:30:00Z"',
-            datetime.datetime(2017, 5, 3, 18, 30, tzinfo=dateutil.tz.tzutc()),
+            datetime.datetime(2017, 5, 3, 18, 30, tzinfo=datetime.timezone.utc),
         ),
         (
             'd"2017-05-03T22:30:00+04"',
             datetime.datetime(
-                2017, 5, 3, 22, 30, tzinfo=dateutil.tz.tzoffset(None, 14400)
+                2017,
+                5,
+                3,
+                22,
+                30,
+                tzinfo=datetime.timezone(datetime.timedelta(seconds=14400)),
             ),
         ),
         (
             'd"2017-05-03T11:30:00-0700"',
             datetime.datetime(
-                2017, 5, 3, 11, 30, tzinfo=dateutil.tz.tzoffset(None, -25200)
+                2017,
+                5,
+                3,
+                11,
+                30,
+                tzinfo=datetime.timezone(datetime.timedelta(seconds=-25200)),
             ),
         ),
         (
             'd"2017-05-03T15:00:00-0330"',
             datetime.datetime(
-                2017, 5, 3, 15, tzinfo=dateutil.tz.tzoffset(None, -12600)
+                2017,
+                5,
+                3,
+                15,
+                tzinfo=datetime.timezone(datetime.timedelta(seconds=-12600)),
             ),
         ),
     ],

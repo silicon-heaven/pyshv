@@ -6,8 +6,6 @@ import decimal
 import io
 import typing
 
-import dateutil.parser
-
 from . import commonpack
 from .value import (
     SHVIMapType,
@@ -145,7 +143,7 @@ class CponReader(commonpack.CommonReader):
             if c == '"':
                 break
             date += c
-        return dateutil.parser.isoparse(date)
+        return datetime.datetime.fromisoformat(date)
 
     @staticmethod
     def _hexdigit_to_int(b: int) -> int:
@@ -423,24 +421,24 @@ class CponWriter(commonpack.CommonWriter):
         self._writestr(sval)
 
     def write_datetime(self, value: datetime.datetime) -> None:
-        # TODO possibly just use datetime iso format
+        # We perform here some modification to make the format more compact in
+        # some cases. This is not essentailly required but makes it more
+        # compatible with other implementations.
         self._writestr('d"')
-        DT_LEN = 19
-        dt_str = value.isoformat()
-        self._writestr(dt_str[:DT_LEN])
-        dt_str = dt_str[DT_LEN:]
-        if len(dt_str) > 0 and dt_str[0] == ".":
-            self._writestr(dt_str[:4])
-            dt_str = dt_str[7:]
-        if dt_str[:6] == "+00:00":
+        rstr = value.isoformat(
+            timespec="milliseconds" if value.microsecond else "seconds"
+        )
+        rlen = 23 if value.microsecond else 19
+        self._writestr(rstr[:rlen])
+        rstr = rstr[rlen:]
+        if rstr[:6] == "+00:00":
             self._writestr("Z")
-        elif dt_str[:1] == "Z":
-            self._writestr(dt_str)
-        elif dt_str[:1] == "+" or dt_str[:1] == "-":
-            self._writestr(dt_str[:3])
-            min_part = dt_str[4:6]
-            if min_part != "00":
-                self._writestr(min_part)
+        elif rstr[:1] == "Z":
+            self._writestr(rstr)
+        elif rstr[:1] == "+" or rstr[:1] == "-":
+            self._writestr(rstr[:3])
+            if (mpart := rstr[4:6]) != "00":
+                self._writestr(mpart)
         self._writestr('"')
 
     def write_list(self, value: collections.abc.Sequence[SHVType]) -> None:
