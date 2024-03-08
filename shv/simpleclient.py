@@ -125,11 +125,11 @@ class SimpleClient(SimpleBase):
             else:
                 await self.ping()
 
-    async def send(self, msg: RpcMessage) -> None:
+    async def _send(self, msg: RpcMessage) -> None:
         await self._connected.wait()
         if not msg.is_request or msg.path != "" or msg.method not in ("hello", "login"):
             await self._login_task
-        await super().send(msg)
+        await super()._send(msg)
 
     def _reset(self) -> None:
         super()._reset()

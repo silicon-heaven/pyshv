@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RpcSubscription` has now different fields due to subscription changes
 - The format of logging changed to identify different clients from each other
 - Access level numerical values adjusted to match SHV standard
+- `SimpleBase` and thus `SimpleClient` no longer provides public ability to send
+  messages and signals. Instead it is now implemented as protected methods and
+  implementations based on it must expose them appropriately if that is
+  required.
 
 ### Fixed
 - Failing import on Windows
@@ -41,8 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - `rpc_login` and `rpc_login_url` in favor of `RpcLogin`
-- Broker now longer provides `.app/broker/clientInfo`
-- Broker now longer provides method
+- Broker no longer provides `.app/broker/clientInfo`
+- Broker no longer provides method
   `.app/broker/currentClient:rejectNotSubscribed`
 - `RpcMessage.chng` because that is now default for `RpcMessage.signal`
 

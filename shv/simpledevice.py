@@ -72,4 +72,4 @@ class SimpleDevice(SimpleClient):
           node, that was either added (for value ``True``) or removed (for value
           ``False``).
         """
-        await self.signal(path, "lsmod", "ls", nodes, RpcMethodAccess.BROWSE)
+        await self._signal(path, "lsmod", "ls", nodes, RpcMethodAccess.BROWSE)

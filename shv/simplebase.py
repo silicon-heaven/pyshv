@@ -46,6 +46,15 @@ class SimpleBase:
     """Version of the application reported to the SHV.
 
     You should change this value in child class to report a correct number.
+
+    :param client: The RPC client instance to wrap and manage.
+    :param call_attempts: Number of attempts for :meth:`call` when no response
+      is received before call is abandoned. You can use zero (or negative
+      number) for unlimited number of attempts. The default is a single attempt
+      and this only regular one call.
+    :param call_timeout: Timeout in seconds before call is attempted again or
+      abandoned (if there was too much call attempts). This is time before we
+      consider response to be lost.
     """
 
     def __init__(
@@ -55,12 +64,16 @@ class SimpleBase:
         call_timeout: float | None = 300.0,
     ):
         self.client = client
-        """The underlaying RPC client instance."""
+        """The underlaying RPC client instance.
+
+        **Do not send messages by directly accessing this property. You must use
+        implementations provided by this class!**
+        """
         self.task = asyncio.create_task(self._loop())
-        """Task running the message handling loop."""
+        """Task running the message handling receive loop."""
         self.call_attempts = call_attempts
         """Number of attempts when no response is received before call is abandoned.
-        You can use zero or negative number to have unlimited attempts.
+        You can use zero for no  or negative number to have unlimited attempts.
         """
         self.call_timeout = call_timeout
         """Timeout in seconds before call is attempted again or abandoned."""
@@ -90,36 +103,6 @@ class SimpleBase:
                 else:
                     asyncio.create_task(self._message(msg))
 
-    async def _message(self, msg: RpcMessage) -> None:
-        """Handle every received message."""
-        if msg.is_request:
-            resp = msg.make_response()
-            method = msg.method
-            assert method  # is ensured by is_request but not detected by mypy
-            try:
-                resp.result = await self._method_call(
-                    msg.path,
-                    method,
-                    msg.param,
-                    msg.rpc_access or RpcMethodAccess.BROWSE,
-                    msg.user_id,
-                )
-            except RpcError as exp:
-                resp.rpc_error = exp
-            except Exception as exc:
-                resp.rpc_error = RpcMethodCallExceptionError(
-                    "".join(traceback.format_exception(exc))
-                )
-            await self.send(resp)
-        elif msg.is_response:
-            rid = msg.request_id
-            assert rid is not None
-            if rid in self._calls_event:
-                self._calls_msg[rid] = msg
-                self._calls_event.pop(rid).set()
-        elif msg.is_signal:
-            await self._signal(msg.path, msg.signal_name, msg.source, msg.param)
-
     def _reset(self) -> None:
         """Handle peer's reset request."""
         logger.info("Doing reset")
@@ -135,11 +118,11 @@ class SimpleBase:
         await self.client.reset()
         self._reset()
 
-    async def send(self, msg: RpcMessage) -> None:
+    async def _send(self, msg: RpcMessage) -> None:
         """Send message.
 
         Use this only if you want send a generic message (such as when you are
-        passing message along). :meth:`call` or :meth:`signal` should be
+        passing message along). :meth:`call` or :meth:`_signal` should be
         prefered when ever possible.
 
         You should be using this method instead of ``self.client.send`` to
@@ -196,7 +179,7 @@ class SimpleBase:
         attempt = 0
         while call_attempts < 1 or attempt < call_attempts:
             attempt += 1
-            await self.send(request)
+            await self._send(request)
             try:
                 async with asyncio.timeout(call_timeout):
                     await event.wait()
@@ -217,27 +200,6 @@ class SimpleBase:
                 continue
             return response.result
         raise TimeoutError
-
-    async def signal(
-        self,
-        path: str,
-        name: str = "chng",
-        source: str = "get",
-        value: SHVType = None,
-        access: RpcMethodAccess = RpcMethodAccess.READ,
-    ) -> None:
-        """Send signal from given path and method source and with given parameter.
-
-        Note that this is coroutine and thus it is up to you if you await it or
-        use asyncio tasks.
-
-        :param path: SHV path signal is associated with.
-        :param name: Signal name to be raised.
-        :param source: Method name this signal is associated with.
-        :param value: Parameter that is the signaled value.
-        :param access: Minimal access level needed to access the signal.
-        """
-        await self.send(RpcMessage.signal(path, name, source, value, access))
 
     async def ping(self) -> None:
         """Ping the peer to check the connection."""
@@ -308,6 +270,63 @@ class SimpleBase:
             except RpcError:
                 self.__peer_is_shv3 = False
         return self.__peer_is_shv3
+
+    async def _signal(
+        self,
+        path: str,
+        name: str = "chng",
+        source: str = "get",
+        value: SHVType = None,
+        access: RpcMethodAccess = RpcMethodAccess.READ,
+    ) -> None:
+        """Send signal from given path and method source and with given parameter.
+
+        Note that this is coroutine and thus it is up to you if you await it or
+        use asyncio tasks.
+
+        This is intentionally marked as accessible only by class methods because
+        signals must be raised only for valid paths and methods and that is
+        something only class itself can ensure. Your implemntation should
+        provide public methods that protects against call with invalid path or
+        method.
+
+        :param path: SHV path signal is associated with.
+        :param name: Signal name to be raised.
+        :param source: Method name this signal is associated with.
+        :param value: Parameter that is the signaled value.
+        :param access: Minimal access level needed to access the signal.
+        """
+        await self._send(RpcMessage.signal(path, name, source, value, access))
+
+    async def _message(self, msg: RpcMessage) -> None:
+        """Handle every received message."""
+        if msg.is_request:
+            resp = msg.make_response()
+            method = msg.method
+            assert method  # is ensured by is_request but not detected by mypy
+            try:
+                resp.result = await self._method_call(
+                    msg.path,
+                    method,
+                    msg.param,
+                    msg.rpc_access or RpcMethodAccess.BROWSE,
+                    msg.user_id,
+                )
+            except RpcError as exp:
+                resp.rpc_error = exp
+            except Exception as exc:
+                resp.rpc_error = RpcMethodCallExceptionError(
+                    "".join(traceback.format_exception(exc))
+                )
+            await self._send(resp)
+        elif msg.is_response:
+            rid = msg.request_id
+            assert rid is not None
+            if rid in self._calls_event:
+                self._calls_msg[rid] = msg
+                self._calls_event.pop(rid).set()
+        elif msg.is_signal:
+            await self._got_signal(msg.path, msg.signal_name, msg.source, msg.param)
 
     async def _method_call(
         self,
@@ -387,10 +406,8 @@ class SimpleBase:
         """
         if not path:
             return True  # The root path always exists
-        if "/" in path:
-            index = path.rindex("/")
-            return any(path[index + 1 :] == v for v in self._ls(path[:index]))
-        return any(path == v for v in self._ls(""))
+        root, _, name = path.rpartition("/")
+        return any(name == v for v in self._ls(root))
 
     def _method_call_dir(self, path: str, param: SHVType) -> SHVType:
         """Implement ``dir`` method call functionality."""
@@ -427,7 +444,7 @@ class SimpleBase:
             yield RpcMethodDesc.getter("version", "Null", "String")
             yield RpcMethodDesc("ping")
 
-    async def _signal(
+    async def _got_signal(
         self, path: str, signal: str, source: str, value: SHVType
     ) -> None:
         """Handle signal.

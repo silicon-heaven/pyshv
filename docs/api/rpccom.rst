@@ -15,8 +15,8 @@ Client
 These are implementations if clients that connect to server or over some
 connection to some other client.
 
-.. automethod:: shv.init_rpc_client
-.. automethod:: shv.connect_rpc_client
+.. autofunction:: shv.init_rpc_client
+.. autofunction:: shv.connect_rpc_client
 .. autoclass:: shv.RpcClient
 .. autoclass:: shv.RpcClientTCP
 .. autoclass:: shv.RpcClientUnix

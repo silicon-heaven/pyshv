@@ -44,13 +44,6 @@ class RpcBroker:
     class Client(SimpleBase):
         """Single client connected to the broker."""
 
-        IDLE_TIMEOUT_LOGIN: float = 5
-        """:param:`IDLE_TIMEOUT` set for clients without user.
-
-        This is intentionally shorter to quickly disconnect inactive clients
-        that are not participating in SHV RPC.
-        """
-
         def __init__(
             self,
             client: RpcClient,
@@ -97,6 +90,17 @@ class RpcBroker:
                     self.__peer_is_broker = lsr if isinstance(lsr, bool) else False
             return self.__peer_is_broker
 
+        async def send(self, msg: RpcMessage) -> None:
+            """Propagate given message to this peer.
+
+            This is only wrapper around standard :meth:`_send`. We need to make
+            it public because in Broker peers are propagating messages from one
+            to another.
+
+            :param msg: Message to be sent.
+            """
+            await self._send(msg)
+
         async def _message(self, msg: RpcMessage) -> None:
             assert self.user is not None
 
@@ -104,7 +108,7 @@ class RpcBroker:
                 # Set access granted to the level allowed by user
                 access = self.user.access_level(msg.path, msg.method)
                 if access is None:
-                    return await self.client.send(
+                    return await self._send(
                         msg.make_response(
                             error=RpcError("No access", RpcErrorCode.METHOD_NOT_FOUND)
                         )
@@ -135,7 +139,7 @@ class RpcBroker:
                 cid = cids.pop()
                 msg.caller_ids = cids
                 if (peer := self.__broker.get_client(cid)) is not None:
-                    await peer.client.send(msg)
+                    await peer.send(msg)
 
             elif msg.is_signal:
                 await self.__broker.signal_from(msg, self)
@@ -274,6 +278,13 @@ class RpcBroker:
         APP_NAME = "pyshvbroker"
         """Name reported as application name for pyshvbroker."""
 
+        IDLE_TIMEOUT_LOGIN: float = 5
+        """:attr:`IDLE_TIMEOUT` set for clients without user.
+
+        This is intentionally shorter to quickly disconnect inactive clients
+        that are not participating in SHV RPC.
+        """
+
         def __init__(self, *args: typing.Any, **kwargs: typing.Any):
             super().__init__(*args, **kwargs)
             self.IDLE_TIMEOUT = self.IDLE_TIMEOUT_LOGIN
@@ -304,9 +315,10 @@ class RpcBroker:
                     await self.disconnect()
 
         async def _message(self, msg: RpcMessage) -> None:
+            # Login is required before we start handling messages as we would.
             if self.user is None:
                 if msg.is_request:
-                    await self.client.send(self._message_login(msg))
+                    await self._send(self._message_login(msg))
                 return
             await super()._message(msg)
 
@@ -619,7 +631,7 @@ class RpcBroker:
                 access = client.user.access_level(msg.path, msg.method)
                 if access is None or access < msgaccess:
                     continue
-                await client.client.send(msg)
+                await client.send(msg)
 
     async def signal_from(self, msg: RpcMessage, client: Client) -> None:
         """Send signal to the broker's client as comming from given client.

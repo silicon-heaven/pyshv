@@ -91,7 +91,7 @@ class ExampleDevice(SimpleClient):
                     old_track = self.tracks[track]
                     self.tracks[track] = param
                     if old_track != param:
-                        await self.signal(f"track/{track}", value=param)
+                        await self._signal(f"track/{track}", value=param)
                     return None
         return await super()._method_call(path, method, param, access, user_id)
 
