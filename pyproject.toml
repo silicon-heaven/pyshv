@@ -76,3 +76,6 @@ disable = [
 ]
 # https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html
 max-line-length = 88
+
+[tool.pydocstyle]
+ignore = ["D107"]
