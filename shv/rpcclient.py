@@ -69,7 +69,7 @@ class RpcClient(abc.ABC):
 
     @abc.abstractmethod
     async def _send(self, msg: bytes) -> None:
-        """Implementation of message sending."""
+        """Child's implementation of message sending."""
 
     async def receive(self, raise_error: bool = True) -> RpcMessage | Control:
         """Read next received RPC message or wait for next to be received.
@@ -124,7 +124,7 @@ class RpcClient(abc.ABC):
           or possible.
         """
         await self._send(bytes((0,)))
-        logger.debug("<== SND: Control message RESET")
+        logger.debug("%s => Control message RESET")
 
     @property
     @abc.abstractmethod
@@ -139,9 +139,15 @@ class RpcClient(abc.ABC):
             it is not.
         """
 
-    @abc.abstractmethod
     def disconnect(self) -> None:
         """Close the connection."""
+        if self.connected:
+            logger.debug("%s: Disconnecting", self)
+        self._disconnect()
+
+    @abc.abstractmethod
+    def _disconnect(self) -> None:
+        """Child's implementation of message sending."""
 
     async def wait_disconnect(self) -> None:
         """Close the connection."""
@@ -178,11 +184,24 @@ class _RpcClientStream(RpcClient):
                 self._writer.close()
             raise
 
+    async def reset(self) -> None:
+        if not self.connected:
+            self._reader, self._writer = await self._open_connection()
+            logger.debug("%s: Connected", self)
+        else:
+            await super().reset()
+
+    @abc.abstractmethod
+    async def _open_connection(
+        self,
+    ) -> tuple[asyncio.StreamReader, asyncio.StreamWriter]:
+        pass
+
     @property
     def connected(self) -> bool:
         return self._writer is not None and not self._writer.is_closing()
 
-    def disconnect(self) -> None:
+    def _disconnect(self) -> None:
         if self._writer is not None:
             self._writer.close()
 
@@ -206,21 +225,13 @@ class RpcClientTCP(_RpcClientStream):
         self.port = port
 
     def __str__(self) -> str:
-        return f"tcp:{self.location}:{self.port}"
+        location = f"[{self.location}]" if ":" in self.location else self.location
+        return f"tcp:{location}:{self.port}"
 
-    async def reset(self) -> None:
-        if not self.connected:
-            self._reader, self._writer = await asyncio.open_connection(
-                self.location, self.port
-            )
-            logger.debug("Connected to: (TCP) %s:%d", self.location, self.port)
-        else:
-            await super().reset()
-
-    def disconnect(self) -> None:
-        if self.connected:
-            logger.debug("Disconnecting from: (TCP) %s:%d", self.location, self.port)
-        super().disconnect()
+    async def _open_connection(
+        self,
+    ) -> tuple[asyncio.StreamReader, asyncio.StreamWriter]:
+        return await asyncio.open_connection(self.location, self.port)
 
 
 class RpcClientUnix(_RpcClientStream):
@@ -237,19 +248,10 @@ class RpcClientUnix(_RpcClientStream):
     def __str__(self) -> str:
         return f"unix:{self.location}"
 
-    async def reset(self) -> None:
-        if not self.connected:
-            self._reader, self._writer = await asyncio.open_unix_connection(
-                self.location
-            )
-            logger.debug("Connected to: (Unix) %s", self.location)
-        else:
-            await super().reset()
-
-    def disconnect(self) -> None:
-        if self.connected:
-            logger.debug("Disconnecting from: (Unix) %s", self.location)
-        super().disconnect()
+    async def _open_connection(
+        self,
+    ) -> tuple[asyncio.StreamReader, asyncio.StreamWriter]:
+        return await asyncio.open_unix_connection(self.location)
 
 
 class RpcClientPipe(_RpcClientStream):
@@ -267,6 +269,11 @@ class RpcClientPipe(_RpcClientStream):
 
     def __str__(self) -> str:
         return "pipe"
+
+    async def _open_connection(
+        self,
+    ) -> tuple[asyncio.StreamReader, asyncio.StreamWriter]:
+        raise ConnectionError("Pipes can't be reconnected")
 
     @classmethod
     async def fdopen(
@@ -352,7 +359,7 @@ class RpcClientTTY(RpcClient):
                 exclusive=True,
             )
             self._eof.clear()
-            logger.debug("Connected to: (TTY) %s", self.port)
+            logger.debug("%s: Connected", self)
         await super().reset()
 
     async def _write_async(self, data: bytes) -> None:
@@ -370,11 +377,11 @@ class RpcClientTTY(RpcClient):
                 raise EOFError from exc
         return res
 
-    def disconnect(self) -> None:
-        if self.serial is not None and self.serial.is_open:
+    def _disconnect(self) -> None:
+        if self.connected:
+            assert self.serial is not None
             self.serial.close()
             self._eof.set()
-            logger.debug("Disconnecting from: (TTY) %s", self.port)
 
     async def wait_disconnect(self) -> None:
         await self._eof.wait()

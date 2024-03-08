@@ -101,11 +101,14 @@ class SimpleBase:
                 if msg is RpcClient.Control.RESET:
                     self._reset()
                 else:
-                    asyncio.create_task(self._message(msg))
+                    if msg.is_valid():
+                        asyncio.create_task(self._message(msg))
+                    else:
+                        logger.info("%s: Dropped invalid message: %s", self.client, msg)
 
     def _reset(self) -> None:
         """Handle peer's reset request."""
-        logger.info("Doing reset")
+        logger.info("%s: Doing reset", self.client)
         for event in self._calls_event.values():
             event.set()
 

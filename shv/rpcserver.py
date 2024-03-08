@@ -134,7 +134,7 @@ class _RpcServerStream(RpcServer):
         def connected(self) -> bool:
             return not self._writer.is_closing()
 
-        def disconnect(self) -> None:
+        def _disconnect(self) -> None:
             self._writer.close()
 
         async def wait_disconnect(self) -> None:
@@ -158,6 +158,16 @@ class RpcServerTCP(_RpcServerStream):
         self.location = location
         self.port = port
 
+    def __str__(self) -> str:
+        location = (
+            "locahost"
+            if self.location is None
+            else f"[{self.location}]"
+            if ":" in self.location
+            else self.location
+        )
+        return f"server.tcp:{location}:{self.port}"
+
     async def _create_server(self) -> asyncio.Server:
         return await asyncio.start_server(
             self._client_connect, host=self.location, port=self.port
@@ -167,28 +177,27 @@ class RpcServerTCP(_RpcServerStream):
         was_listening = self.is_serving()
         await super().listen()
         if not was_listening:
-            logger.debug("Listening for clients: (TCP) %s:%d", self.location, self.port)
+            logger.debug("%s: Listening for clients", self)
 
     def close(self) -> None:
         was_listening = self.is_serving()
         super().close()
         if was_listening and (self._server is None or not self._server.is_serving()):
-            logger.debug(
-                "No longer listening for clients: (TCP) %s:%d", self.location, self.port
-            )
+            logger.debug("%s: No longer listening for clients", self)
 
     async def _client_connect(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
         peername = writer.get_extra_info("peername")
-        logger.debug(
-            "New client: (TCP) %s:%d: %s:%d",
-            self.location,
-            self.port,
-            peername[0],
-            peername[1],
-        )
+        location = f"[{peername[0]}]" if ":" in peername[0] else peername[0]
+        logger.debug("%s: New client %s:%d", self, location, peername[1])
         await super()._client_connect(reader, writer)
+
+    class Client(_RpcServerStream.Client):
+        def __str__(self) -> str:
+            peername = self._writer.get_extra_info("peername")
+            location = f"[{peername[0]}]" if ":" in peername[0] else peername[0]
+            return f"tcp:{location}:{peername[1]}"
 
 
 class RpcServerUnix(_RpcServerStream):
@@ -205,6 +214,9 @@ class RpcServerUnix(_RpcServerStream):
         super().__init__(client_connected_cb, protocol)
         self.location = location
 
+    def __str__(self) -> str:
+        return f"server.unix:{self.location}"
+
     async def _create_server(self) -> asyncio.Server:
         return await asyncio.start_unix_server(self._client_connect, path=self.location)
 
@@ -212,23 +224,23 @@ class RpcServerUnix(_RpcServerStream):
         was_listening = self.is_serving()
         await super().listen()
         if not was_listening:
-            logger.debug("Listening for clients: (Unix) %s", self.location)
+            logger.debug("%s: Listening for clients", self)
 
     def close(self) -> None:
         was_listening = self.is_serving()
         super().close()
         if was_listening and (self._server is None or self._server.is_serving()):
-            logger.debug("No longer listening for clients: (Unix) %s", self.location)
+            logger.debug("%s: No longer listening for clients", self)
 
     async def _client_connect(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
-        logger.debug(
-            "New client: (Unix) %s: %s",
-            self.location,
-            writer.get_extra_info("peername"),
-        )
+        logger.debug("%s: New client %s", self, writer.get_extra_info("peername"))
         await super()._client_connect(reader, writer)
+
+    class Client(_RpcServerStream.Client):
+        def __str__(self) -> str:
+            return f"unix:{self._writer.get_extra_info('peername')}"
 
 
 class RpcServerTTY(RpcServer):
@@ -253,12 +265,15 @@ class RpcServerTTY(RpcServer):
         """The :class:`RpcClientTTY` instance."""
         self._task: asyncio.Task | None = None
 
+    def __str__(self) -> str:
+        return f"tty:{self.client.port}"
+
     async def _loop(self) -> None:
         while True:
             try:
                 await self.client.reset()
             except OSError as exc:
-                logger.debug("Waiting for accessible TTY device: %s", exc)
+                logger.debug("%s: Waiting for accessible TTY device: %s", self, exc)
             else:
                 res = self.client_connected_cb(self.client)
                 if isinstance(res, collections.abc.Awaitable):

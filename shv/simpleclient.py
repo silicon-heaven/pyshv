@@ -110,7 +110,12 @@ class SimpleClient(SimpleBase):
                     await self.client.reset()
                 except Exception as exc:
                     timeout = max(60, 2**reconnect_attempt)
-                    logger.info("Connect failed (waiting %d secs): %s", timeout, exc)
+                    logger.info(
+                        "%s: Connect failed (waiting %d secs): %s",
+                        self.client,
+                        timeout,
+                        exc,
+                    )
                     await asyncio.sleep(timeout)
                 else:
                     self.__restart_login()

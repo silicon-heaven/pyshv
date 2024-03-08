@@ -145,7 +145,7 @@ def test_writer(cpon, data):
     res = CponWriter.pack(data)
     if isinstance(cpon, str):
         res = res.decode("utf-8")
-    assert shvmeta_eq(res, cpon)
+    assert res == cpon
 
 
 @pytest.mark.parametrize(

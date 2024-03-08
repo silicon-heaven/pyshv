@@ -71,7 +71,14 @@ class RpcMessage:
 
     def is_valid(self) -> bool:
         """Check if message is valid RPC message."""
-        return isinstance(self.value, SHVIMap) and bool(set(self.value) ^ set(self.Key))
+        return (
+            isinstance(self.value, SHVIMap)
+            and bool(set(self.value) ^ set(self.Key))
+            and (self.is_request or self.is_response or self.is_signal)
+            and isinstance(self._path, str)
+            and isinstance(self._signal_name, str)
+            and isinstance(self._source, str)
+        )
 
     @property
     def is_request(self) -> bool:
@@ -151,9 +158,13 @@ class RpcMessage:
         return self.request_id
 
     @property
+    def _path(self) -> SHVType:
+        return self.value.meta.get(self.Tag.PATH, "")
+
+    @property
     def path(self) -> str:
         """SHV path specified for this message or empty string."""
-        res = self.value.meta.get(self.Tag.PATH, "")
+        res = self._path
         if not isinstance(res, str):
             raise ValueError(f"Invalid path type: {type(res)}")
         return res
@@ -190,9 +201,13 @@ class RpcMessage:
             self.value.meta.pop(self.Tag.METHOD, None)
 
     @property
+    def _signal_name(self) -> SHVType:
+        return self.value.meta.get(self.Tag.METHOD, "chng")
+
+    @property
     def signal_name(self) -> str:
         """SHV signal name for this message."""
-        res = self.value.meta.get(self.Tag.METHOD, "chng")
+        res = self._signal_name
         if not isinstance(res, str):
             raise ValueError(f"Invalid method type: {type(res)}")
         return res
@@ -205,9 +220,13 @@ class RpcMessage:
         self.value.meta[self.Tag.SIGNAL] = signal
 
     @property
+    def _source(self) -> SHVType:
+        return self.value.meta.get(self.Tag.SOURCE, "get")
+
+    @property
     def source(self) -> str:
         """SHV signal source method name for this message."""
-        res = self.value.meta.get(self.Tag.SOURCE, "get")
+        res = self._source
         if not isinstance(res, str):
             raise ValueError(f"Invalid method type: {type(res)}")
         return res
@@ -228,8 +247,7 @@ class RpcMessage:
             return [res]
         if not isinstance(res, list):
             return []
-        filter(lambda v: isinstance(v, int), res)
-        return res
+        return list(filter(lambda v: isinstance(v, int), res))
 
     @caller_ids.setter
     def caller_ids(self, cids: collections.abc.Sequence[int]) -> None:
@@ -284,7 +302,7 @@ class RpcMessage:
         if isinstance(res, dict):  # Note: backward compatibility
             res = f"{res.get('brokerId')}:{res.get('shvUser')}"
         if res is not None and not isinstance(res, str):
-            raise ValueError(f"Invalid UserID type: {type(res)} {res!r}")
+            res = str(res)
         return res
 
     @user_id.setter
