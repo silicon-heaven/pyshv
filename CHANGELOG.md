@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   messages and signals. Instead it is now implemented as protected methods and
   implementations based on it must expose them appropriately if that is
   required.
+- `.app:date` SHV RPC method to `SimpleBase`
 
 ### Fixed
 - Failing import on Windows

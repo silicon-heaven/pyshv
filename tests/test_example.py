@@ -40,6 +40,7 @@ async def test_ls(example_device, client, path, result):
                 {1: "shvVersionMinor", 2: 2, 4: "Int", 5: "rd"},
                 {1: "name", 2: 2, 4: "String", 5: "rd"},
                 {1: "version", 2: 2, 4: "String", 5: "rd"},
+                {1: "date", 2: 2, 4: "DateTime", 5: "rd"},
                 {1: "ping", 2: 0, 5: "bws"},
             ],
         ),

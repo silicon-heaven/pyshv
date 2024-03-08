@@ -2,6 +2,7 @@
 import asyncio
 import collections.abc
 import contextlib
+import datetime
 import logging
 import traceback
 
@@ -364,6 +365,8 @@ class SimpleBase:
                 return self.APP_NAME
             case ".app", "version":
                 return self.APP_VERSION
+            case ".app", "date":
+                return datetime.datetime.now().astimezone()
             case ".app", "ping":
                 return None
         raise RpcMethodNotFoundError(
@@ -445,6 +448,7 @@ class SimpleBase:
             yield RpcMethodDesc.getter("shvVersionMinor", "Null", "Int")
             yield RpcMethodDesc.getter("name", "Null", "String")
             yield RpcMethodDesc.getter("version", "Null", "String")
+            yield RpcMethodDesc.getter("date", "Null", "DateTime")
             yield RpcMethodDesc("ping")
 
     async def _got_signal(

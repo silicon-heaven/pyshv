@@ -1,4 +1,6 @@
 """Check implementation of SimpleDevice."""
+import datetime
+
 import pytest
 
 from shv import (
@@ -43,6 +45,15 @@ async def test_call(client, device, path, method, result):
     """Check that we can call various methods using blocking call."""
     res = await client.call(path, method)
     assert shvmeta_eq(res, result)
+
+
+async def test_call_date(client, device):
+    """Check that we can call various methods using blocking call."""
+    res = await client.call("test/device/.app", "date")
+    assert isinstance(res, datetime.datetime)
+    assert res.tzinfo is not None
+    diff = datetime.datetime.now().astimezone() - res
+    assert datetime.timedelta() <= diff < datetime.timedelta(seconds=1)
 
 
 async def test_invalid_call(client):

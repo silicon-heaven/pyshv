@@ -66,6 +66,7 @@ async def test_empty_ls_invalid(client, path):
                 RpcMethodDesc.getter("shvVersionMinor", "Null", "Int"),
                 RpcMethodDesc.getter("name", "Null", "String"),
                 RpcMethodDesc.getter("version", "Null", "String"),
+                RpcMethodDesc.getter("date", "Null", "DateTime"),
                 RpcMethodDesc("ping"),
             ],
         ),
