@@ -7,8 +7,8 @@ import enum
 import functools
 import typing
 
+from .rpcparams import SHVGetKey, shvget, shvgett
 from .value import SHVType
-from .value_tools import SHVGetKey, shvget, shvgett
 
 
 class RpcMethodFlags(enum.IntFlag):

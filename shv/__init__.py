@@ -28,6 +28,7 @@ from .rpcerrors import (
 from .rpclogin import RpcLogin, RpcLoginType
 from .rpcmessage import RpcMessage
 from .rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodFlags
+from .rpcparams import SHVGetKey, shvarg, shvargt, shvget, shvgett, shvt
 from .rpcprotocol import (
     RpcProtocolSerial,
     RpcProtocolSerialCRC,
@@ -76,7 +77,6 @@ from .value import (
     shvmeta,
     shvmeta_eq,
 )
-from .value_tools import SHVGetKey, shvarg, shvargt, shvget, shvgett
 from .valueclient import ValueClient
 
 __all__ = [
@@ -171,7 +171,8 @@ __all__ = [
     "SHVMapType",
     "SHVIMapType",
     "SHVMetaType",
-    # value_tools
+    # rpcparams
+    "shvt",
     "shvget",
     "SHVGetKey",
     "shvgett",

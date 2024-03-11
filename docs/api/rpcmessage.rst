@@ -16,3 +16,9 @@ RPC Errors as Python exceptions
 -------------------------------
 
 .. automodule:: shv.rpcerrors
+
+
+Parameter parser helpers
+------------------------
+
+.. automodule:: shv.rpcparams

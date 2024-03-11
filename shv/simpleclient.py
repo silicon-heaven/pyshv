@@ -9,11 +9,11 @@ import typing
 from .rpcclient import RpcClient, connect_rpc_client
 from .rpclogin import RpcLogin
 from .rpcmessage import RpcMessage
+from .rpcparams import shvgett
 from .rpcsubscription import RpcSubscription
 from .rpcurl import RpcUrl
 from .simplebase import SimpleBase
 from .value import SHVType, is_shvbool
-from .value_tools import shvgett
 
 logger = logging.getLogger(__name__)
 

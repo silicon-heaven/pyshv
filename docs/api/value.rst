@@ -7,4 +7,3 @@ supported it was required to introduce additional types. These types are all
 based on :class:`shv.SHVMeta`.
 
 .. automodule:: shv.value
-.. automodule:: shv.value_tools

@@ -29,6 +29,8 @@ def test_shvget(value, key, default, expected):
         (None, 1, 3, 3),
         ([41, 42, 43], 1, 3, 42),
         ([41, None, 43], 1, 3, 3),
+        ([], 1, 3, 3),
+        ([41], 1, 3, 3),
     ),
 )
 def test_shvarg(value, index, default, expected):

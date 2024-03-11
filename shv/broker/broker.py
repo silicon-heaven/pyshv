@@ -22,13 +22,13 @@ from ..rpcerrors import (
 )
 from ..rpcmessage import RpcMessage
 from ..rpcmethod import RpcMethodAccess, RpcMethodDesc
+from ..rpcparams import shvgett
 from ..rpcserver import RpcServer, create_rpc_server
 from ..rpcsubscription import RpcSubscription
 from ..rpcurl import RpcLoginType
 from ..simplebase import SimpleBase
 from ..simpleclient import SimpleClient
 from ..value import SHVType
-from ..value_tools import shvgett
 from .config import RpcBrokerConfig
 
 logger = logging.getLogger(__name__)

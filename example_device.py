@@ -68,7 +68,7 @@ class ExampleDevice(SimpleClient):
         user_id: str | None,
     ) -> SHVType:
         match path.split("/"), method:
-            case ["track"], "reset" if access >= RpcMethodAccess.COMMAND:
+            case [["track"], "reset"] if access >= RpcMethodAccess.COMMAND:
                 if user_id is None:
                     raise RpcUserIDRequiredError
                 self.last_reset_user = user_id
@@ -76,11 +76,11 @@ class ExampleDevice(SimpleClient):
                 self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
                 for k in old:
                     if old[k] != self.tracks[k]:
-                        await self.signal(f"track/{k}", value=self.tracks[k])
+                        await self._signal(f"track/{k}", value=self.tracks[k])
                 return None
-            case ["track"], "lastResetUser" if access >= RpcMethodAccess.READ:
+            case [["track"], "lastResetUser"] if access >= RpcMethodAccess.READ:
                 return self.last_reset_user
-            case ["track", track], _ if track in self.tracks:
+            case [["track", track], _] if track in self.tracks:
                 if method == "get" and access >= RpcMethodAccess.READ:
                     return self.tracks[track]
                 if method == "set" and access >= RpcMethodAccess.WRITE:

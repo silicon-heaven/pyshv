@@ -59,7 +59,7 @@ class RpcSubscription:
         if not isinstance(value, collections.abc.Mapping):
             raise ValueError("Expected Map")
         value = typing.cast(SHVMapType, value)
-        # We ignore unknown keys here intentionally
+        # We intentionally ignore unknown keys here
         paths: SHVType = cls.paths
         if (path := value.get("path", None)) is not None:
             paths = f"{path}/**" if path else "**"
