@@ -1,4 +1,5 @@
 """Types used in SHV RPC method description."""
+
 from __future__ import annotations
 
 import collections.abc
@@ -38,6 +39,7 @@ class RpcMethodAccess(enum.IntEnum):
     @classmethod
     @functools.cache
     def strmap(cls) -> dict[str, RpcMethodAccess]:
+        """Map from string to this enum."""
         return {
             "bws": cls.BROWSE,
             "rd": cls.READ,
@@ -53,6 +55,7 @@ class RpcMethodAccess(enum.IntEnum):
     @classmethod
     @functools.cache
     def strrmap(cls) -> dict[int, str]:
+        """Map from this enum to string."""
         return {v.value: k for k, v in cls.strmap().items()}
 
     def tostr(self) -> str:

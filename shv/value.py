@@ -1,4 +1,5 @@
 """Values used in SHV communication."""
+
 import abc
 import collections.abc
 import datetime

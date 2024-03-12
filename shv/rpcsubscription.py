@@ -1,4 +1,5 @@
 """Abstraction on top of a single subscription."""
+
 from __future__ import annotations
 
 import collections.abc

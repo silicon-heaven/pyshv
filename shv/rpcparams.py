@@ -1,4 +1,5 @@
 """Tools to parse common SHV parameters."""
+
 from __future__ import annotations
 
 import collections.abc
@@ -29,6 +30,7 @@ class NoDefaultType:
     """Type for :data:`NO_DEFAULT` singleton."""
 
     def __new__(cls) -> NoDefaultType:
+        """Implement as singleton."""
         if not hasattr(cls, "instance"):
             cls.instance = super(NoDefaultType, cls).__new__(cls)
         return cls.instance

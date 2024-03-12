@@ -28,11 +28,8 @@
       requires = pypi2nix pyproject.project.dependencies;
       requires-docs = pypi2nix pyproject.project.optional-dependencies.docs;
       requires-test = pypi2nix pyproject.project.optional-dependencies.test;
-      requires-dev = p:
-        pypi2nix pyproject.project.optional-dependencies.lint p
-        ++ [p.build p.twine];
 
-      pypkg-pyshv = {
+      pyshv = {
         buildPythonPackage,
         pythonPackages,
         setuptools,
@@ -42,7 +39,7 @@
       }:
         buildPythonPackage {
           pname = pyproject.project.name;
-          version = fileContents ./shv/version;
+          inherit (pyproject.project) version;
           format = "pyproject";
           src = builtins.path {
             path = ./.;
@@ -54,7 +51,7 @@
           nativeCheckInputs = [pytestCheckHook libshv] ++ requires-test pythonPackages;
         };
 
-      pypkg-multiversion = {
+      multiversion = {
         buildPythonPackage,
         fetchFromGitHub,
         sphinx,
@@ -72,7 +69,7 @@
           doCheck = false;
         };
 
-      pypkg-types-serial = {
+      types-serial = {
         buildPythonPackage,
         fetchPypi,
       }:
@@ -90,9 +87,9 @@
       {
         overlays = {
           pythonPackagesExtension = final: prev: {
-            pyshv = final.callPackage pypkg-pyshv {};
-            sphinx-multiversion = final.callPackage pypkg-multiversion {};
-            types-pyserial = final.callPackage pypkg-types-serial {};
+            pyshv = final.callPackage pyshv {};
+            sphinx-multiversion = final.callPackage multiversion {};
+            types-pyserial = final.callPackage types-serial {};
           };
           noInherit = final: prev: {
             pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [self.overlays.pythonPackagesExtension];
@@ -114,14 +111,14 @@
             packages = with pkgs; [
               editorconfig-checker
               gitlint
+              ruff
               pkgs.libshv
               (python3.withPackages (p:
-                [p.sphinx-autobuild]
+                [p.build p.twine p.sphinx-autobuild p.mypy]
                 ++ foldl (prev: f: prev ++ f p) [] [
                   requires
                   requires-docs
                   requires-test
-                  requires-dev
                 ]))
             ];
           };

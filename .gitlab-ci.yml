@@ -71,10 +71,10 @@ include:
   extends: .nix
   needs: ["devenv"]
 
-pylint:
+lint:
   extends: .lint
   script:
-    - nix develop --quiet -c pylint --output-format=colorized .
+    - nix develop --quiet -c ruff check .
 
 mypy:
   extends: .lint
@@ -89,20 +89,11 @@ mypy:
   needs: ["devenv"]
   allow_failure: true
 
-black:
+format:
   extends: .style
   script:
-    - nix develop --quiet -c black --diff --check .
-
-isort:
-  extends: .style
-  script:
-    - nix develop --quiet -c isort --diff --check .
-
-pydocstyle:
-  extends: .style
-  script:
-    - nix develop --quiet -c pydocstyle --match='(?!tests/)*.py' .
+    - nix develop --quiet -c ruff format --diff .
+    - nix develop --quiet -c ruff check --diff .
 
 editorconfig-checker:
   extends: .style

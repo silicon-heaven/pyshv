@@ -1,4 +1,5 @@
 """RPC connection, that includes client and specific server connection."""
+
 from __future__ import annotations
 
 import abc
@@ -346,10 +347,10 @@ class RpcClientTTY(RpcClient):
         return await self.protocol.receive(self._read_exactly)
 
     @property
-    def connected(self) -> bool:
+    def connected(self) -> bool:  # noqa: D102
         return self.serial is not None and self.serial.is_open
 
-    async def reset(self) -> None:
+    async def reset(self) -> None:  # noqa: D102
         if not self.connected:
             self.serial = aioserial.AioSerial(
                 port=self.port,
@@ -383,7 +384,7 @@ class RpcClientTTY(RpcClient):
             self.serial.close()
             self._eof.set()
 
-    async def wait_disconnect(self) -> None:
+    async def wait_disconnect(self) -> None:  # noqa: D102
         await self._eof.wait()
 
 

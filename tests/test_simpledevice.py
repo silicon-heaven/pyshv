@@ -10,7 +10,7 @@ from shv import (
     RpcMethodDesc,
     RpcMethodNotFoundError,
     SimpleDevice,
-    __version__,
+    VERSION,
     shvmeta_eq,
 )
 
@@ -34,7 +34,7 @@ async def fixture_device(shvbroker, url_test_device):
         ("test/device/.app", "shvVersionMajor", SHV_VERSION_MAJOR),
         ("test/device/.app", "shvVersionMinor", SHV_VERSION_MINOR),
         ("test/device/.app", "name", "pyshv-device"),
-        ("test/device/.app", "version", __version__),
+        ("test/device/.app", "version", VERSION),
         ("test/device/.app", "ping", None),
         ("test/device/.app/device", "name", "testdev"),
         ("test/device/.app/device", "version", "0.0.x"),

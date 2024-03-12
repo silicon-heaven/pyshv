@@ -1,10 +1,11 @@
 """Implementation of CPON ChainPack conversion tool."""
+
 import argparse
 import functools
 import sys
 
 from .. import cpon
-from ..__version__ import __version__
+from ..__version__ import VERSION
 from .cpconv import CPFormat, convert
 
 
@@ -16,7 +17,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--version",
         action="version",
-        version=f"%(prog)s {__version__}",
+        version=f"%(prog)s {VERSION}",
     )
     igroup = parser.add_mutually_exclusive_group()
     ogroup = parser.add_mutually_exclusive_group()

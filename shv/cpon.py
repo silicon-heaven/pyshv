@@ -1,4 +1,5 @@
 """Cpon data format reader and writer."""
+
 import collections.abc
 import dataclasses
 import datetime
@@ -75,14 +76,14 @@ class CponReader(commonpack.CommonReader):
             else:
                 self._peek_drop()
 
-    def read_meta(self) -> SHVMetaType | None:
+    def read_meta(self) -> SHVMetaType | None:  # noqa: D102
         self._skip_white_insignificant()
         b = self._peek_byte()
         if b != ord("<"):
             return None
         return self._read_map(">")
 
-    def read(self) -> SHVType:
+    def read(self) -> SHVType:  # noqa: D102
         meta = self.read_meta()
 
         value: SHVType
@@ -345,18 +346,18 @@ class CponWriter(commonpack.CommonWriter):
             self._writestr("\n")
             self._write(self.options.indent * self._nest_level)
 
-    def write_meta(self, meta: SHVMetaType) -> None:
+    def write_meta(self, meta: SHVMetaType) -> None:  # noqa: D102
         self._writestr("<")
         self._write_map_content(meta)
         self._writestr(">")
 
-    def write_null(self) -> None:
+    def write_null(self) -> None:  # noqa: D102
         self._writestr("null")
 
-    def write_bool(self, value: bool) -> None:
+    def write_bool(self, value: bool) -> None:  # noqa: D102
         self._writestr("true" if value else "false")
 
-    def write_blob(self, value: bytes | bytearray) -> None:
+    def write_blob(self, value: bytes | bytearray) -> None:  # noqa: D102
         self._writestr('b"')
         for d in value:
             if d >= 0x7F:
@@ -386,10 +387,10 @@ class CponWriter(commonpack.CommonWriter):
                 return chr(b - 10 + ord("a"))
         raise ValueError(f"Invalid nibble value: {b}")
 
-    def write_string(self, value: str) -> None:
+    def write_string(self, value: str) -> None:  # noqa: D102
         self.write_cstring(value)
 
-    def write_cstring(self, value: str) -> None:
+    def write_cstring(self, value: str) -> None:  # noqa: D102
         self._writestr('"')
         for d in value:
             self._writestr(
@@ -405,22 +406,22 @@ class CponWriter(commonpack.CommonWriter):
             )
         self._writestr('"')
 
-    def write_int(self, value: int) -> None:
+    def write_int(self, value: int) -> None:  # noqa: D102
         self._writestr(str(value))
 
-    def write_uint(self, value: int) -> None:
+    def write_uint(self, value: int) -> None:  # noqa: D102
         self._writestr(f"{value}u")
 
-    def write_double(self, value: float) -> None:
+    def write_double(self, value: float) -> None:  # noqa: D102
         self._writestr(str(value))
 
-    def write_decimal(self, value: decimal.Decimal) -> None:
+    def write_decimal(self, value: decimal.Decimal) -> None:  # noqa: D102
         sval = str(value)
         if not any(c in ".eE" for c in sval):
             sval = sval + ".0"
         self._writestr(sval)
 
-    def write_datetime(self, value: datetime.datetime) -> None:
+    def write_datetime(self, value: datetime.datetime) -> None:  # noqa: D102
         # We perform here some modification to make the format more compact in
         # some cases. This is not essentailly required but makes it more
         # compatible with other implementations.
@@ -441,7 +442,7 @@ class CponWriter(commonpack.CommonWriter):
                 self._writestr(mpart)
         self._writestr('"')
 
-    def write_list(self, value: collections.abc.Sequence[SHVType]) -> None:
+    def write_list(self, value: collections.abc.Sequence[SHVType]) -> None:  # noqa: D102
         self._nest_level += 1
         is_oneliner = self._is_oneline_list(value)
         self._writestr("[")
@@ -458,12 +459,12 @@ class CponWriter(commonpack.CommonWriter):
     def _is_oneline_list(lst: collections.abc.Sequence[SHVType]) -> bool:
         return len(lst) <= 10 and all(not isinstance(v, (list, dict)) for v in lst)
 
-    def write_imap(self, value: collections.abc.Mapping[int, SHVType]) -> None:
+    def write_imap(self, value: collections.abc.Mapping[int, SHVType]) -> None:  # noqa: D102
         self._writestr("i{")
         self._write_map_content(value)
         self._writestr("}")
 
-    def write_map(self, value: collections.abc.Mapping[str, SHVType]) -> None:
+    def write_map(self, value: collections.abc.Mapping[str, SHVType]) -> None:  # noqa: D102
         self._writestr("{")
         self._write_map_content(value)
         self._writestr("}")

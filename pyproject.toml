@@ -1,8 +1,8 @@
 [project]
 name = "pyshv"
+version = "0.5.0"
 description = "Pure Python SHV implementation"
 readme = "README.rst"
-dynamic = ["version"]
 license = {file = "LICENSE"}
 authors = [
   { name="Elektroline a.s." },
@@ -31,23 +31,15 @@ dependencies = [
 "Github" = "https://github.com/silicon-heaven/libshv-py"
 
 [project.optional-dependencies]
-docs = [
-  "sphinx",
-  "sphinx_rtd_theme",
-  "sphinx-multiversion",
-]
 test = [
   "pytest",
   "pytest-asyncio",
   "pytest-cov",
 ]
-lint = [
-  "black",
-  "isort",
-  "pydocstyle",
-  "pylint",
-  "mypy",
-  "types-pyserial",
+docs = [
+  "sphinx",
+  "sphinx_rtd_theme",
+  "sphinx-multiversion",
 ]
 
 [project.scripts]
@@ -58,12 +50,10 @@ pyshvbroker = "shv.broker.__main__:main"
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools.dynamic]
-version = {file = "shv/version"}
 [tool.setuptools.packages.find]
 exclude = ["docs", "tests*"]
 [tool.setuptools.package-data]
-"*" = ["version", "py.typed"]
+"*" = ["py.typed"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -77,25 +67,33 @@ exclude_lines = [
     "if typing.TYPE_CHECKING:"
 ]
 
-[tool.isort]
-profile = 'black'
+[tool.ruff]
+target-version = "py311"
+exclude = ["tests/*", "docs/*"]
+[tool.ruff.lint]
+select = ["E", "W", "I", "D", "PL", "ASYNC", "RUF"]
+ignore = [
+  # Magic methods have defined behavior so what is there to document. __init__
+  # should be documented in class docstring.
+  "D105", "D107",
+  # These have conflicting rules.
+  "D203", "D213",
+  # Ignore too long lines (format tackles that)
+  "E501",
+  # Remove too-many limit for more complex code.
+  "PLR0911", "PLR0912", "PLR0913", "PLR2004"]
+[tool.ruff.format]
+docstring-code-format = true
+preview = true
 
-[tool.pylint.main]
-recursive = "y"
-ignore = ["tests", "docs"]
-fail-under = 9.5
-[tool.pylint.format]
-disable = [
-  # Exception can be safely caught because there is BaseException for unsafe
-  # ones (such as SystemExit) and there are reasons to catch all exceptions.
-  "W0718",
-  # Prevent usage of module name in documentation (seems unreasonable)
-  "C0104",
-  # We have pydocstyle for the following ones
-  "C0103", "C0114", "C0115", "C0116",
-]
-# https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html
-max-line-length = 88
-
-[tool.pydocstyle]
-ignore = ["D107"]
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+disallow_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+warn_unreachable = true
+[[tool.mypy.overrides]]
+module = "tests.*"
+allow_untyped_defs = true

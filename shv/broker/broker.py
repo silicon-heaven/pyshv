@@ -1,4 +1,5 @@
 """Common state for the RPC broker that works as server in the SHV network."""
+
 from __future__ import annotations
 
 import asyncio
@@ -11,7 +12,7 @@ import string
 import time
 import typing
 
-from ..__version__ import __version__
+from ..__version__ import VERSION
 from ..rpcclient import RpcClient, init_rpc_client
 from ..rpcerrors import (
     RpcError,
@@ -267,7 +268,7 @@ class RpcBroker:
                 "idleTimeMax": int(self.IDLE_TIMEOUT * 1000),
             }
 
-        async def disconnect(self) -> None:
+        async def disconnect(self) -> None:  # noqa: D102
             logger.info("Disconnecting client with ID %d", self.broker_client_id)
             self.__broker._unregister_client(self)  # pylint: disable=protected-access
             await super().disconnect()

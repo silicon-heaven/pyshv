@@ -1,4 +1,5 @@
 """RPC client manager that provides facitility to simply connect to the broker."""
+
 import asyncio
 import collections.abc
 import contextlib
@@ -88,7 +89,7 @@ class SimpleClient(SimpleBase):
         """
         await self._login_task
 
-    async def disconnect(self) -> None:
+    async def disconnect(self) -> None:  # noqa: D102
         self.reconnects = 0
         await super().disconnect()
 
@@ -163,7 +164,7 @@ class SimpleClient(SimpleBase):
         for sub in self._subscribes:
             await self.__subscribe(sub)
 
-    async def call(
+    async def call(  # noqa: D102
         self,
         path: str,
         method: str,

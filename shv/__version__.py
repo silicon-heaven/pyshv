@@ -1,4 +1,24 @@
-"""pySHV version."""
-import pathlib
+"""The smarter loader of the version.
 
-__version__ = (pathlib.Path(__file__).parent / "version").read_text("utf-8").strip()
+It identifies if this package is installed and returns version from egg info or
+it looks for pyproject.toml file in upper directory.
+"""
+
+import importlib.metadata
+import pathlib
+import tomllib
+
+
+def _get_version() -> str:
+    for dist_name in importlib.metadata.packages_distributions().get(__package__, []):
+        dist = importlib.metadata.distribution(dist_name)
+        if str(dist.locate_file(f"{__package__}/__version__.py")) == __file__:
+            return dist.version
+    pyproject = pathlib.Path(__file__).parent.parent / "pyproject.toml"
+    with pyproject.open("rb") as f:
+        res = tomllib.load(f)["project"]["version"]
+        assert isinstance(res, str)
+        return res
+
+
+VERSION = _get_version()

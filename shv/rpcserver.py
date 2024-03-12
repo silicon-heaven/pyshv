@@ -1,4 +1,5 @@
 """RPC server that waits for clients connection."""
+
 from __future__ import annotations
 
 import abc
@@ -173,13 +174,13 @@ class RpcServerTCP(_RpcServerStream):
             self._client_connect, host=self.location, port=self.port
         )
 
-    async def listen(self) -> None:
+    async def listen(self) -> None:  # noqa: D102
         was_listening = self.is_serving()
         await super().listen()
         if not was_listening:
             logger.debug("%s: Listening for clients", self)
 
-    def close(self) -> None:
+    def close(self) -> None:  # noqa: D102
         was_listening = self.is_serving()
         super().close()
         if was_listening and (self._server is None or not self._server.is_serving()):
@@ -222,13 +223,13 @@ class RpcServerUnix(_RpcServerStream):
     async def _create_server(self) -> asyncio.Server:
         return await asyncio.start_unix_server(self._client_connect, path=self.location)
 
-    async def listen(self) -> None:
+    async def listen(self) -> None:  # noqa: D102
         was_listening = self.is_serving()
         await super().listen()
         if not was_listening:
             logger.debug("%s: Listening for clients", self)
 
-    def close(self) -> None:
+    def close(self) -> None:  # noqa: D102
         was_listening = self.is_serving()
         super().close()
         if was_listening and (self._server is None or self._server.is_serving()):
@@ -296,22 +297,22 @@ class RpcServerTTY(RpcServer):
             else:
                 await asyncio.sleep(5)  # type: ignore
 
-    def is_serving(self) -> bool:
+    def is_serving(self) -> bool:  # noqa: D102
         return self._task is not None and not self._task.done()
 
-    async def listen(self) -> None:
+    async def listen(self) -> None:  # noqa: D102
         if not self.is_serving():
             self._task = asyncio.create_task(self._loop())
 
-    async def listen_forewer(self) -> None:
+    async def listen_forewer(self) -> None:  # noqa: D102
         await self.listen()
         await self.wait_closed()
 
-    def close(self) -> None:
+    def close(self) -> None:  # noqa: D102
         if self._task is not None:
             self._task.cancel()
 
-    async def wait_closed(self) -> None:
+    async def wait_closed(self) -> None:  # noqa: D102
         if self._task is not None:
             await self._task
 

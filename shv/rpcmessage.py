@@ -1,4 +1,5 @@
 """Implementation of RpcMessage."""
+
 from __future__ import annotations
 
 import collections.abc

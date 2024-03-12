@@ -1,4 +1,5 @@
 """Common base for SHV writers and readers."""
+
 import abc
 import asyncio
 import collections.abc

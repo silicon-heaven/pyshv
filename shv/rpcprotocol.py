@@ -1,4 +1,5 @@
 """Protocols for :class:`RpcClient`."""
+
 import abc
 import asyncio
 import binascii
@@ -65,7 +66,7 @@ class RpcProtocolStream(RpcTransportProtocol):
     """SHV RPC Stream protocol."""
 
     @classmethod
-    async def send(
+    async def send(  # noqa: D102
         cls,
         write: collections.abc.Callable[[bytes], collections.abc.Awaitable[None]],
         msg: bytes,
@@ -74,7 +75,7 @@ class RpcProtocolStream(RpcTransportProtocol):
         await write(msg)
 
     @classmethod
-    async def receive(
+    async def receive(  # noqa: D102
         cls,
         read: collections.abc.Callable[[int], collections.abc.Awaitable[bytes]],
     ) -> bytes:
@@ -167,7 +168,7 @@ class RpcProtocolSerial(_RpcProtocolSerial):
     """SHV RPC Serial protocol."""
 
     @classmethod
-    async def send(
+    async def send(  # noqa: D102
         cls,
         write: collections.abc.Callable[[bytes], collections.abc.Awaitable[None]],
         msg: bytes,
@@ -175,7 +176,7 @@ class RpcProtocolSerial(_RpcProtocolSerial):
         await cls._send(write, msg, False)
 
     @classmethod
-    async def receive(
+    async def receive(  # noqa: D102
         cls,
         read: collections.abc.Callable[[int], collections.abc.Awaitable[bytes]],
     ) -> bytes:
@@ -186,7 +187,7 @@ class RpcProtocolSerialCRC(_RpcProtocolSerial):
     """SHV RPC Serial protocol with CRC32 message validation."""
 
     @classmethod
-    async def send(
+    async def send(  # noqa: D102
         cls,
         write: collections.abc.Callable[[bytes], collections.abc.Awaitable[None]],
         msg: bytes,
@@ -194,7 +195,7 @@ class RpcProtocolSerialCRC(_RpcProtocolSerial):
         await cls._send(write, msg, True)
 
     @classmethod
-    async def receive(
+    async def receive(  # noqa: D102
         cls,
         read: collections.abc.Callable[[int], collections.abc.Awaitable[bytes]],
     ) -> bytes:

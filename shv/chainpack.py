@@ -1,4 +1,5 @@
 """Chainpack data format reader and writer."""
+
 import collections.abc
 import datetime
 import decimal
@@ -95,13 +96,13 @@ class ChainPack:
 class ChainPackReader(commonpack.CommonReader):
     """Read data in ChainPack format."""
 
-    def read_meta(self) -> SHVMetaType | None:
+    def read_meta(self) -> SHVMetaType | None:  # noqa: D102
         if self._peek_byte() != ChainPack.CP_MetaMap:
             return None
         self._peek_drop()
         return self._read_map()
 
-    def read(self) -> SHVType:
+    def read(self) -> SHVType:  # noqa: D102
         meta = self.read_meta()
 
         value: SHVType
@@ -174,7 +175,7 @@ class ChainPackReader(commonpack.CommonReader):
             num = (num << 8) + r
         return num, bitlen
 
-    def read_uint_data(self) -> int:
+    def read_uint_data(self) -> int:  # noqa: D102
         num, _ = self._read_uint_dataHelper()
         return num
 
@@ -320,55 +321,55 @@ class ChainPackWriter(commonpack.CommonWriter):
         for i in range(0, byte_cnt):
             self._write(data[i])
 
-    def write_meta(self, meta: SHVMetaType) -> None:
+    def write_meta(self, meta: SHVMetaType) -> None:  # noqa: D102
         self._write(ChainPack.CP_MetaMap)
         for k, v in meta.items():
             self.write(k)
             self.write(v)
         self._write(ChainPack.CP_TERM)
 
-    def write_null(self) -> None:
+    def write_null(self) -> None:  # noqa: D102
         self._write(ChainPack.CP_Null)
 
-    def write_bool(self, value: bool) -> None:
+    def write_bool(self, value: bool) -> None:  # noqa: D102
         self._write(ChainPack.CP_TRUE if value else ChainPack.CP_FALSE)
 
-    def write_blob(self, value: bytes | bytearray) -> None:
+    def write_blob(self, value: bytes | bytearray) -> None:  # noqa: D102
         self._write(ChainPack.CP_Blob)
         self.write_uint_data(len(value))
         self._write(value)
 
-    def write_string(self, value: str) -> None:
+    def write_string(self, value: str) -> None:  # noqa: D102
         bstring = value.encode("utf-8")
         self._write(ChainPack.CP_String)
         self.write_uint_data(len(bstring))
         self._write(bstring)
 
-    def write_cstring(self, value: str) -> None:
+    def write_cstring(self, value: str) -> None:  # noqa: D102
         bstring = value.encode("utf-8")
         self._write(ChainPack.CP_CString)
         self._write(bstring)
         self._write(b"\0")
 
-    def write_uint(self, value: int) -> None:
+    def write_uint(self, value: int) -> None:  # noqa: D102
         if value < 64:
             self._write(value % 64)
         else:
             self._write(ChainPack.CP_UInt)
             self.write_uint_data(value)
 
-    def write_uint_data(self, value: int) -> None:
+    def write_uint_data(self, value: int) -> None:  # noqa: D102
         bitcnt = value.bit_length()
         self._write_uint_data_helper(value, bitcnt)
 
-    def write_int(self, value: int) -> None:
+    def write_int(self, value: int) -> None:  # noqa: D102
         if 0 <= value < 64:
             self._write((value % 64) + 64)
         else:
             self._write(ChainPack.CP_Int)
             self.write_int_data(value)
 
-    def write_int_data(self, value: int) -> None:
+    def write_int_data(self, value: int) -> None:  # noqa: D102
         num: int = abs(value)
         neg: bool = value < 0
 
@@ -380,17 +381,17 @@ class ChainPackWriter(commonpack.CommonWriter):
             num |= sign_bit_mask
         self._write_uint_data_helper(num, bitlen)
 
-    def write_double(self, value: float) -> None:
+    def write_double(self, value: float) -> None:  # noqa: D102
         self._write(ChainPack.CP_Double)
         self._write(struct.pack("<d", value))  # little endian
 
-    def write_decimal(self, value: decimal.Decimal) -> None:
+    def write_decimal(self, value: decimal.Decimal) -> None:  # noqa: D102
         mantissa, exponent = decimal_rexp(value)
         self._write(ChainPack.CP_Decimal)
         self.write_int_data(mantissa)
         self.write_int_data(exponent)
 
-    def write_list(self, value: collections.abc.Iterable[SHVType]) -> None:
+    def write_list(self, value: collections.abc.Iterable[SHVType]) -> None:  # noqa: D102
         self._write(ChainPack.CP_List)
         for val in value:
             self.write(val)
@@ -404,21 +405,21 @@ class ChainPackWriter(commonpack.CommonWriter):
             self.write(v)
         self._write(ChainPack.CP_TERM)
 
-    def write_map(self, value: collections.abc.Mapping[str, SHVType]) -> None:
+    def write_map(self, value: collections.abc.Mapping[str, SHVType]) -> None:  # noqa: D102
         self._write(ChainPack.CP_Map)
         for k, v in value.items():
             self.write(k)
             self.write(v)
         self._write(ChainPack.CP_TERM)
 
-    def write_imap(self, value: collections.abc.Mapping[int, SHVType]) -> None:
+    def write_imap(self, value: collections.abc.Mapping[int, SHVType]) -> None:  # noqa: D102
         self._write(ChainPack.CP_IMap)
         for k, v in value.items():
             self.write(k)
             self.write(v)
         self._write(ChainPack.CP_TERM)
 
-    def write_datetime(self, value: datetime.datetime) -> None:
+    def write_datetime(self, value: datetime.datetime) -> None:  # noqa: D102
         self._write(ChainPack.CP_DateTime)
         res = int(value.timestamp() * 1000) - (ChainPack.SHV_EPOCH_SEC * 1000)
         tzdelta = value.utcoffset()

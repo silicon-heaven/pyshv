@@ -1,4 +1,5 @@
 """Common extension for the SimpleClient."""
+
 import asyncio
 import collections.abc
 import datetime

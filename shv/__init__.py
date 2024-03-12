@@ -1,5 +1,6 @@
 """Python implementation of Silicon Heaven."""
-from .__version__ import __version__
+
+from .__version__ import VERSION
 from .chainpack import ChainPack, ChainPackReader, ChainPackWriter
 from .cpon import Cpon, CponReader, CponWriter
 from .rpcclient import (

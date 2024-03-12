@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Example demonstratrating how device application can be written with pySHV."""
+
 import argparse
 import asyncio
 import logging

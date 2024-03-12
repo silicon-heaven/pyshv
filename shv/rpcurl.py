@@ -1,4 +1,5 @@
 """SHV RPC URL for RpcClient and RpcServer."""
+
 import dataclasses
 import enum
 import functools

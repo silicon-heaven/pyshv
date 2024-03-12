@@ -1,4 +1,5 @@
 """The base for the various high level SHV RPC interfaces."""
+
 import asyncio
 import collections.abc
 import contextlib
@@ -6,7 +7,7 @@ import datetime
 import logging
 import traceback
 
-from .__version__ import __version__
+from .__version__ import VERSION
 from .rpcclient import RpcClient
 from .rpcerrors import (
     RpcError,
@@ -43,7 +44,7 @@ class SimpleBase:
     You can change this value in child class to report a more accurate
     application name.
     """
-    APP_VERSION: str = __version__
+    APP_VERSION: str = VERSION
     """Version of the application reported to the SHV.
 
     You should change this value in child class to report a correct number.
@@ -97,14 +98,26 @@ class SimpleBase:
 
     async def _loop(self) -> None:
         """Loop run in asyncio task to receive messages."""
+        tasks = set()
         with contextlib.suppress(EOFError):
             while msg := await self.client.receive(raise_error=False):
                 if msg is RpcClient.Control.RESET:
                     self._reset()
                 elif msg.is_valid():
-                    asyncio.create_task(self._message(msg))
+                    tasks.add(asyncio.create_task(self._message(msg)))
                 else:
                     logger.info("%s: Dropped invalid message: %s", self.client, msg)
+                # Drop finished tasks
+                done = {t for t in tasks if t.done()}
+                self.__task_done(done)
+                tasks -= done
+        done, _ = await asyncio.wait(tasks)
+        self.__task_done(done)
+
+    def __task_done(self, tasks: collections.abc.Iterable[asyncio.Task]) -> None:
+        for task in tasks:
+            if exc := task.exception():
+                logger.info("%s: Message handlig failed", self.client, exc_info=exc)
 
     def _reset(self) -> None:
         """Handle peer's reset request."""

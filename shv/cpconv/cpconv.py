@@ -1,4 +1,5 @@
 """The implementation of conversion."""
+
 import enum
 import io
 import pathlib

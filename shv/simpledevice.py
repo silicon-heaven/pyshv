@@ -1,4 +1,5 @@
 """RPC client that represents device in a physical sense."""
+
 import collections.abc
 
 from .rpcmethod import RpcMethodAccess, RpcMethodDesc

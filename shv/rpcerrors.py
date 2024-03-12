@@ -1,4 +1,5 @@
 """Implementation of Rpc RPC specific errors."""
+
 from __future__ import annotations
 
 import dataclasses
@@ -44,6 +45,7 @@ class RpcError(RuntimeError):
     def __new__(
         cls, msg: str | None = None, code: RpcErrorCode | None = None
     ) -> "RpcError":
+        """Create an appropriate exception based on the code."""
         ncls = cls.shv_error_map.get(cls.shv_error_code if code is None else code, cls)
         return super(RpcError, cls).__new__(ncls)
 
