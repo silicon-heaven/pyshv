@@ -12,9 +12,10 @@ async def test_prop_cache(value_client, example_device):
     assert len(value_client) == 0
     assert not list(iter(value_client))
     assert "test/device/track/1" not in value_client
-    assert await value_client.prop_get("test/device/track/1") == [0]
+    assert await value_client.prop_get("test/device/track/1", 8) == [0]
     assert len(value_client) == 1
     assert value_client["test/device/track/1"] == [0]
+    assert await value_client.prop_get("test/device/track/1", 8) == [0]
     await value_client.prop_set("test/device/track/1", [1, 2])
     assert value_client["test/device/track/1"] == [1, 2]
     await value_client.unsubscribe(RpcSubscription("test/device/track"))
