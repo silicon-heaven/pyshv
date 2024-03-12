@@ -78,9 +78,9 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         """
         # Serve from cache if cache was updated not before max_age
         if path in self._cache and self._cache[path][0] + max_age >= time.time():
-            return self._cache[path]
+            return self._cache[path][1]
         value = await self.call(path, "get", max_age if int(max_age * 1000) else None)
-        if self.get(path, None) != value:
+        if self.get(path, max_age if max_age else None) != value:
             await self._value_update(path, value)
         return value
 
@@ -100,7 +100,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         self,
         path: str,
         value: SHVType = None,
-        timeout: float = 5.0,
+        timeout: float | int | None = 5.0,
         get_period: float = 1.0,
     ) -> SHVType:
         """Wait for property change.
@@ -117,9 +117,8 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         :param value: The value we compare against. It is ignored for if we have this
             path in cache and is ``None``. Otherwise it is used to actually detect the
             change (if returned value is not equal to this one).
-        :param timeout: How long we should wait for change. Pass negative number to wait
-            infinitely. This is only minimal deadline. The check for it is performed
-            only on multiples of ``get_period``.
+        :param timeout: How long we should wait for change. Pass ``None`` to wait
+            infinitely.
         :param get_period: How often the pooling should be performed.
         """
         tasks: set[asyncio.Task] = {
