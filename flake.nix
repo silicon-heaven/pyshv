@@ -13,13 +13,10 @@
       attrList = attr: list: attrValues (getAttrs list attr);
 
       requires = p: attrList p pyproject.project.dependencies;
-      requires-docs = p: attrList p pyproject.project.optional-dependencies.docs;
       requires-test = p: attrList p pyproject.project.optional-dependencies.test;
-      requires-dev = p:
-        attrList p pyproject.project.optional-dependencies.lint
-        ++ [p.build p.twine];
+      requires-docs = p: attrList p pyproject.project.optional-dependencies.docs;
 
-      pypkg-template-python = {
+      template-python = {
         buildPythonPackage,
         pytestCheckHook,
         pythonPackages,
@@ -28,7 +25,7 @@
       }:
         buildPythonPackage {
           pname = pyproject.project.name;
-          version = fileContents ./foo/version;
+          inherit (pyproject.project) version;
           format = "pyproject";
           src = builtins.path {
             path = ./.;
@@ -43,7 +40,7 @@
       {
         overlays = {
           pythonPackagesExtension = final: prev: {
-            template-python = final.callPackage pypkg-template-python {};
+            template-python = final.callPackage template-python {};
           };
           noInherit = final: prev: {
             pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [self.overlays.pythonPackagesExtension];
@@ -62,13 +59,13 @@
             packages = with pkgs; [
               editorconfig-checker
               gitlint
+              ruff
               (python3.withPackages (p:
-                [p.sphinx-autobuild]
+                [p.build p.twine p.sphinx-autobuild p.mypy]
                 ++ foldl (prev: f: prev ++ f p) [] [
                   requires
                   requires-docs
                   requires-test
-                  requires-dev
                 ]))
             ];
           };
@@ -78,7 +75,6 @@
           type = "app";
           program = "${self.packages.${system}.default}/bin/foo";
         };
-
 
         checks.default = self.packages.${system}.default;
 

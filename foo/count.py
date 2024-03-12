@@ -3,6 +3,7 @@
 # Prague, 184 00
 # info@elektroline.cz (+420 284 021 111)
 """The 'foo' counting module."""
+
 import typing
 
 

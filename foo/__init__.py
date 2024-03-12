@@ -1,9 +1,7 @@
 """Simple counter of strings of this package name."""
-from .count import count_foo
 
-VERSION = (
-    (__import__("pathlib").Path(__file__).parent / "version").read_text("utf-8").strip()
-)
+from .__version__ import VERSION
+from .count import count_foo
 
 __all__ = [
     "count_foo",
