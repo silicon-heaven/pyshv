@@ -89,7 +89,7 @@ class RpcMethodDesc:
         SOURCE = 6
 
     name: str
-    flags: RpcMethodFlags = RpcMethodFlags(0)
+    flags: RpcMethodFlags = dataclasses.field(default=RpcMethodFlags(0))
     param: str = "Null"
     result: str = "Null"
     access: RpcMethodAccess = RpcMethodAccess.BROWSE

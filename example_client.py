@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Example demonstratrating how client application can be written with pySHV."""
 import argparse
 import asyncio
 import logging
@@ -15,10 +16,11 @@ log_levels = (
 
 
 async def example_client(url: RpcUrl) -> None:
+    """Coroutine that actually uses client."""
     client = await SimpleClient.connect(url)
     assert client is not None
     res = await client.call(".broker/app", "echo", 42)
-    print(f"response received: {repr(res)}")
+    print(f"response received: {res!r}")
     await client.disconnect()
 
 

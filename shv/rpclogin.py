@@ -45,7 +45,7 @@ class RpcLogin:
     This is all in one login info for user.
     """
 
-    username: str = _get_user()
+    username: str = dataclasses.field(default=_get_user())
     """User name used to login to the remote server."""
     password: str = ""
     """Password used to login to the server."""

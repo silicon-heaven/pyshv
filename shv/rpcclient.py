@@ -103,7 +103,7 @@ class RpcClient(abc.ABC):
 
     @abc.abstractmethod
     async def _receive(self) -> bytes:
-        """Implementation of message receive.
+        """Message receive implementation.
 
         :return: bytes of received message (complete valid message).
         :raise EOFError: if end of the connection is encountered.

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Example demonstratrating how device application can be written with pySHV."""
 import argparse
 import asyncio
 import logging
@@ -97,6 +98,7 @@ class ExampleDevice(SimpleClient):
 
 
 async def example_device(url: RpcUrl) -> None:
+    """Coroutine that starts example device and waits for its termination."""
     client = await ExampleDevice.connect(url)
     if client is not None:
         await client.task

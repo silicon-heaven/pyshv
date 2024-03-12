@@ -101,11 +101,10 @@ class SimpleBase:
             while msg := await self.client.receive(raise_error=False):
                 if msg is RpcClient.Control.RESET:
                     self._reset()
+                elif msg.is_valid():
+                    asyncio.create_task(self._message(msg))
                 else:
-                    if msg.is_valid():
-                        asyncio.create_task(self._message(msg))
-                    else:
-                        logger.info("%s: Dropped invalid message: %s", self.client, msg)
+                    logger.info("%s: Dropped invalid message: %s", self.client, msg)
 
     def _reset(self) -> None:
         """Handle peer's reset request."""
@@ -221,7 +220,7 @@ class SimpleBase:
         """
         res = await self.call(path, "ls")
         if not isinstance(res, list):  # pragma: no cover
-            raise RpcMethodCallExceptionError(f"Invalid result returned: {repr(res)}")
+            raise RpcMethodCallExceptionError(f"Invalid result returned: {res!r}")
         return res
 
     async def ls_has_child(self, path: str, name: str) -> bool:
@@ -234,7 +233,7 @@ class SimpleBase:
         """
         res = await self.call(path, "ls", name)
         if not isinstance(res, bool):  # pragma: no cover
-            raise RpcMethodCallExceptionError(f"Invalid result returned: {repr(res)}")
+            raise RpcMethodCallExceptionError(f"Invalid result returned: {res!r}")
         return res
 
     async def dir(self, path: str, details: bool = False) -> list[RpcMethodDesc]:
@@ -248,7 +247,7 @@ class SimpleBase:
         res = await self.call(path, "dir", True if details else None)
         if isinstance(res, list):  # pragma: no cover
             return [RpcMethodDesc.fromSHV(m) for m in res]
-        raise RpcMethodCallExceptionError(f"Invalid result returned: {repr(res)}")
+        raise RpcMethodCallExceptionError(f"Invalid result returned: {res!r}")
 
     async def dir_description(self, path: str, name: str) -> RpcMethodDesc | None:
         """Get method description associated with node on the specified path.

@@ -4,6 +4,7 @@ import asyncio
 import binascii
 import collections.abc
 import logging
+import typing
 
 from .chainpack import ChainPack
 
@@ -95,8 +96,8 @@ class _RpcProtocolSerial(RpcTransportProtocol):
     ETX = 0xA3
     ATX = 0xA4
     ESC = 0xAA
-    ESCMAP = {0x02: STX, 0x03: ETX, 0x04: ATX, 0x0A: ESC}
-    ESCRMAP = {v: k for k, v in ESCMAP.items()}
+    ESCMAP: typing.Final = {0x02: STX, 0x03: ETX, 0x04: ATX, 0x0A: ESC}
+    ESCRMAP: typing.Final = {v: k for k, v in ESCMAP.items()}
 
     @classmethod
     async def _send(

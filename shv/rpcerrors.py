@@ -1,6 +1,7 @@
 """Implementation of Rpc RPC specific errors."""
 from __future__ import annotations
 
+import dataclasses
 import enum
 import typing
 
@@ -36,7 +37,9 @@ class RpcError(RuntimeError):
     """
 
     shv_error_code: RpcErrorCode = RpcErrorCode.UNKNOWN
-    shv_error_map: dict[int, typing.Type[RpcError]] = {}
+    shv_error_map: dict[int, typing.Type[RpcError]] = dataclasses.field(
+        default_factory=dict
+    )
 
     def __new__(
         cls, msg: str | None = None, code: RpcErrorCode | None = None

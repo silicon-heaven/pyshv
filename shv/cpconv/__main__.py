@@ -1,3 +1,4 @@
+"""Implementation of CPON ChainPack conversion tool."""
 import argparse
 import functools
 import sys

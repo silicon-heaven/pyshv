@@ -194,6 +194,8 @@ class RpcServerTCP(_RpcServerStream):
         await super()._client_connect(reader, writer)
 
     class Client(_RpcServerStream.Client):
+        """RPC client for TCP server connection."""
+
         def __str__(self) -> str:
             peername = self._writer.get_extra_info("peername")
             location = f"[{peername[0]}]" if ":" in peername[0] else peername[0]
@@ -239,6 +241,8 @@ class RpcServerUnix(_RpcServerStream):
         await super()._client_connect(reader, writer)
 
     class Client(_RpcServerStream.Client):
+        """RPC client for Unix server connection."""
+
         def __str__(self) -> str:
             return f"unix:{self._writer.get_extra_info('peername')}"
 

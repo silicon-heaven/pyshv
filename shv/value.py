@@ -94,7 +94,7 @@ class SHVMeta(abc.ABC):
         elif is_shvmap(value):
             res = SHVMap(value)
         else:
-            raise ValueError(f"Invalid SHV value: {repr(value)}")
+            raise ValueError(f"Invalid SHV value: {value!r}")
         if meta:
             res.meta.update(meta)
         return typing.cast(SHVType, res)

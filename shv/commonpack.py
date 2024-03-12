@@ -100,7 +100,7 @@ class CommonReader(abc.ABC):
         """
         b = self._read(len(data))
         if data != b:
-            raise ValueError(f"Expected {repr(data)} but got {repr(b)}")
+            raise ValueError(f"Expected {data!r} but got {b!r}")
 
     def read_raw(self, size: int) -> bytes:
         """Read raw bytes from the stream."""
@@ -179,7 +179,7 @@ class CommonWriter(abc.ABC):
         elif is_shvmap(value):
             self.write_map(value)  # type: ignore
         else:
-            raise ValueError(f"Invalid value for SHV: {repr(value)}")
+            raise ValueError(f"Invalid value for SHV: {value!r}")
 
     @abc.abstractmethod
     def write_meta(self, meta: SHVMetaType) -> None:
