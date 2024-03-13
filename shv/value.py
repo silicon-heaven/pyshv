@@ -145,7 +145,7 @@ class SHVNull(SHVMeta):
         return hash(None)
 
 
-def is_shvnull(value: typing.Any) -> bool:
+def is_shvnull(value: typing.Any) -> typing.TypeGuard[SHVNullType]:
     """Validate type of the value as either ``None`` or :class:`SHVNull`."""
     return value is None or isinstance(value, SHVNull)
 
@@ -166,7 +166,7 @@ class SHVBool(SHVMeta):
         return hash(self._value)
 
 
-def is_shvbool(value: typing.Any) -> bool:
+def is_shvbool(value: typing.Any) -> typing.TypeGuard[bool | SHVBool]:
     """Validate type of value as either :class:`bool` or :class:`SHVBool`."""
     return isinstance(value, bool | SHVBool)
 
@@ -234,14 +234,14 @@ class SHVIMap(dict[int, SHVType], SHVMeta):
     """Dictionary with :class:`SHVMeta`."""
 
 
-def is_shvmap(value: typing.Any) -> bool:
+def is_shvmap(value: typing.Any) -> typing.TypeGuard[SHVMapType]:
     """Check if given value can be SHV Map."""
     return isinstance(value, collections.abc.Mapping) and all(
         isinstance(k, str) for k in value.keys()
     )
 
 
-def is_shvimap(value: typing.Any) -> bool:
+def is_shvimap(value: typing.Any) -> typing.TypeGuard[SHVIMapType]:
     """Check if given value can be SHV IMap."""
     return isinstance(value, collections.abc.Mapping) and all(
         isinstance(k, int) for k in value.keys()

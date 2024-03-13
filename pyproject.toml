@@ -71,7 +71,7 @@ exclude_lines = [
 target-version = "py311"
 exclude = ["tests/*", "docs/*"]
 [tool.ruff.lint]
-select = ["E", "W", "I", "D", "PL", "ASYNC", "RUF"]
+select = ["F", "E", "W", "I", "D", "PL", "ASYNC", "RUF"]
 ignore = [
   # Magic methods have defined behavior so what is there to document. __init__
   # should be documented in class docstring.

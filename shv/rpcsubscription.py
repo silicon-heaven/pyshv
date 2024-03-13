@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import collections.abc
 import dataclasses
 import fnmatch
-import typing
 
-from .value import SHVMapType, SHVType
+from .value import SHVType, is_shvmap
 
 
 @dataclasses.dataclass(frozen=True)
@@ -57,9 +55,8 @@ class RpcSubscription:
     @classmethod
     def fromSHV(cls, value: SHVType) -> RpcSubscription:
         """Create subscription from SHV type representation."""
-        if not isinstance(value, collections.abc.Mapping):
+        if not is_shvmap(value):
             raise ValueError("Expected Map")
-        value = typing.cast(SHVMapType, value)
         # We intentionally ignore unknown keys here
         paths: SHVType = cls.paths
         if (path := value.get("path", None)) is not None:

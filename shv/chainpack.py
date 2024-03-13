@@ -1,6 +1,5 @@
 """Chainpack data format reader and writer."""
 
-import collections.abc
 import datetime
 import decimal
 import io
@@ -391,28 +390,20 @@ class ChainPackWriter(commonpack.CommonWriter):
         self.write_int_data(mantissa)
         self.write_int_data(exponent)
 
-    def write_list(self, value: collections.abc.Iterable[SHVType]) -> None:  # noqa: D102
+    def write_list(self, value: SHVListType) -> None:  # noqa: D102
         self._write(ChainPack.CP_List)
         for val in value:
             self.write(val)
         self._write(ChainPack.CP_TERM)
 
-    def _write_map_data(
-        self, mmap: collections.abc.Mapping[str | int, SHVType]
-    ) -> None:
-        for k, v in mmap.items():
-            self.write(k)
-            self.write(v)
-        self._write(ChainPack.CP_TERM)
-
-    def write_map(self, value: collections.abc.Mapping[str, SHVType]) -> None:  # noqa: D102
+    def write_map(self, value: SHVMapType) -> None:  # noqa: D102
         self._write(ChainPack.CP_Map)
         for k, v in value.items():
             self.write(k)
             self.write(v)
         self._write(ChainPack.CP_TERM)
 
-    def write_imap(self, value: collections.abc.Mapping[int, SHVType]) -> None:  # noqa: D102
+    def write_imap(self, value: SHVIMapType) -> None:  # noqa: D102
         self._write(ChainPack.CP_IMap)
         for k, v in value.items():
             self.write(k)

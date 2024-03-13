@@ -81,6 +81,7 @@ from .value import (
 from .valueclient import ValueClient
 
 __all__ = [
+    "VERSION",
     # cpon
     "Cpon",
     "CponReader",

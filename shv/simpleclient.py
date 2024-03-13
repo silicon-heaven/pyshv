@@ -14,7 +14,7 @@ from .rpcparams import shvgett
 from .rpcsubscription import RpcSubscription
 from .rpcurl import RpcUrl
 from .simplebase import SimpleBase
-from .value import SHVType, is_shvbool
+from .value import SHVType
 
 logger = logging.getLogger(__name__)
 
@@ -214,15 +214,18 @@ class SimpleClient(SimpleBase):
         :param sub: SHV RPC subscription to be removed.
         :return: ``True`` in case such subscribe was located and ``False`` otherwise.
         """
-        resp = await self.call(
-            ".app/broker/currentClient" if await self.peer_is_shv3() else ".broker/app",
-            "unsubscribe",
-            sub.toSHV(not await self.peer_is_shv3()),
+        resp = bool(
+            await self.call(
+                ".app/broker/currentClient"
+                if await self.peer_is_shv3()
+                else ".broker/app",
+                "unsubscribe",
+                sub.toSHV(not await self.peer_is_shv3()),
+            )
         )
-        assert is_shvbool(resp)
         if resp:
             self._subscribes.remove(sub)
-        return typing.cast(bool, resp)
+        return resp
 
     def subscriptions(self) -> collections.abc.Iterator[RpcSubscription]:
         """Iterate over all subscriptions.

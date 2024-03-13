@@ -12,7 +12,6 @@ import string
 import time
 import typing
 
-from ..__version__ import VERSION
 from ..rpcclient import RpcClient, init_rpc_client
 from ..rpcerrors import (
     RpcError,
@@ -29,7 +28,7 @@ from ..rpcsubscription import RpcSubscription
 from ..rpcurl import RpcLoginType
 from ..simplebase import SimpleBase
 from ..simpleclient import SimpleClient
-from ..value import SHVType
+from ..value import SHVType, is_shvmap
 from .config import RpcBrokerConfig
 
 logger = logging.getLogger(__name__)
@@ -330,7 +329,7 @@ class RpcBroker:
                     return msg.make_response({"nonce": self._nonce})
                 if self._nonce and msg.method == "login":
                     param = msg.param
-                    if not isinstance(param, collections.abc.Mapping):
+                    if not is_shvmap(param):
                         return msg.make_response(
                             error=RpcInvalidParamsError("Invalid type of parameters")
                         )

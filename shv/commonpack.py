@@ -9,6 +9,9 @@ import io
 import typing
 
 from .value import (
+    SHVIMapType,
+    SHVListType,
+    SHVMapType,
     SHVMetaType,
     SHVType,
     SHVUInt,
@@ -176,9 +179,9 @@ class CommonWriter(abc.ABC):
         elif isinstance(value, collections.abc.Sequence):
             self.write_list(value)
         elif is_shvimap(value):
-            self.write_imap(value)  # type: ignore
+            self.write_imap(value)
         elif is_shvmap(value):
-            self.write_map(value)  # type: ignore
+            self.write_map(value)
         else:
             raise ValueError(f"Invalid value for SHV: {value!r}")
 
@@ -223,15 +226,15 @@ class CommonWriter(abc.ABC):
         """Write decimal number to the stream."""
 
     @abc.abstractmethod
-    def write_list(self, value: collections.abc.Sequence[SHVType]) -> None:
+    def write_list(self, value: SHVListType) -> None:
         """Write list of other types to the stream."""
 
     @abc.abstractmethod
-    def write_map(self, value: collections.abc.Mapping[str, SHVType]) -> None:
+    def write_map(self, value: SHVMapType) -> None:
         """Write map of other types to the stream."""
 
     @abc.abstractmethod
-    def write_imap(self, value: collections.abc.Mapping[int, SHVType]) -> None:
+    def write_imap(self, value: SHVIMapType) -> None:
         """Write integer map of other types to the stream."""
 
     @abc.abstractmethod

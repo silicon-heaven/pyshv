@@ -442,7 +442,7 @@ class CponWriter(commonpack.CommonWriter):
                 self._writestr(mpart)
         self._writestr('"')
 
-    def write_list(self, value: collections.abc.Sequence[SHVType]) -> None:  # noqa: D102
+    def write_list(self, value: SHVListType) -> None:  # noqa: D102
         self._nest_level += 1
         is_oneliner = self._is_oneline_list(value)
         self._writestr("[")
@@ -459,12 +459,12 @@ class CponWriter(commonpack.CommonWriter):
     def _is_oneline_list(lst: collections.abc.Sequence[SHVType]) -> bool:
         return len(lst) <= 10 and all(not isinstance(v, (list, dict)) for v in lst)
 
-    def write_imap(self, value: collections.abc.Mapping[int, SHVType]) -> None:  # noqa: D102
+    def write_imap(self, value: SHVIMapType) -> None:  # noqa: D102
         self._writestr("i{")
         self._write_map_content(value)
         self._writestr("}")
 
-    def write_map(self, value: collections.abc.Mapping[str, SHVType]) -> None:  # noqa: D102
+    def write_map(self, value: SHVMapType) -> None:  # noqa: D102
         self._writestr("{")
         self._write_map_content(value)
         self._writestr("}")

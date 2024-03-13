@@ -1,6 +1,5 @@
 """RPC client specific functions to login to the RPC Broker."""
 
-import collections.abc
 import copy
 import dataclasses
 import enum
@@ -10,7 +9,7 @@ import hashlib
 import logging
 import typing
 
-from .value import SHVType
+from .value import SHVMapType, SHVType, is_shvmap
 
 logger = logging.getLogger(__name__)
 
@@ -110,35 +109,26 @@ class RpcLogin:
     def __dictget(cls, src: SHVType, tp: type[T], *key: str) -> T | None:
         if not key:
             return src if isinstance(src, tp) else None
-        if not isinstance(src, collections.abc.Mapping) or key[0] not in src:
+        if not is_shvmap(src) or key[0] not in src:
             return None
-        return cls.__dictget(
-            typing.cast(collections.abc.Mapping, src)[key[0]], tp, *key[1:]
-        )
+        return cls.__dictget(src[key[0]], tp, *key[1:])
 
     @classmethod
     def __dictmerge(
-        cls, src: collections.abc.Mapping[str, SHVType], dest: dict[str, SHVType]
+        cls, src: SHVMapType, dest: dict[str, SHVType]
     ) -> dict[str, SHVType]:
         for k, v in src.items():
             if (
-                isinstance(v, collections.abc.Mapping)
-                and all(isinstance(k, str) for k in v)
+                is_shvmap(v)
                 and isinstance((destk := dest.get(k, None)), dict)
                 and all(isinstance(k, str) for k in destk)
             ):
-                cls.__dictmerge(
-                    typing.cast(collections.abc.Mapping[str, SHVType], v), destk
-                )
+                cls.__dictmerge(v, destk)
             else:
                 dest[k] = copy.deepcopy(v)
         return dest
 
-    def param(
-        self,
-        nonce: str,
-        custom_options: collections.abc.Mapping[str, SHVType] | None = None,
-    ) -> SHVType:
+    def param(self, nonce: str, custom_options: SHVMapType | None = None) -> SHVType:
         """RPC Login parameter.
 
         :param nonce: The string with random characters returned from hello
