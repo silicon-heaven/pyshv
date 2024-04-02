@@ -1,4 +1,5 @@
 """Tests for foos counting module."""
+
 import io
 
 import pytest

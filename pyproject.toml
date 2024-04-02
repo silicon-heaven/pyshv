@@ -49,9 +49,11 @@ exclude_lines = [
 
 [tool.ruff]
 target-version = "py311"
-exclude = ["tests/*", "docs/*"]
 [tool.ruff.lint]
-select = ["E", "W", "I", "D", "PL", "ASYNC", "RUF"]
+select = [
+  "F", "E", "W", "I", "N", "D", "UP", "YTT", "ANN", "ASYNC", "TRIO", "S", "BLE",
+  "FBT", "B", "A", "COM", "PL", "RUF"
+]
 ignore = [
   # Magic methods have defined behavior so what is there to document. __init__
   # should be documented in class docstring.
@@ -60,8 +62,17 @@ ignore = [
   "D203", "D213",
   # Ignore too long lines (format tackles that)
   "E501",
+  # subprocess can be insecurely used but not is insecure by design
+  "S404", "S603",
+  # Conflict with formatter
+  "COM812",
   # Remove too-many limit for more complex code.
-  "PLR0911", "PLR0912", "PLR0913", "PLR2004"]
+  "PLR0911", "PLR0912", "PLR0913", "PLR2004"
+]
+preview = true
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D100", "D104", "S101", "ANN001", "ANN002", "ANN201"]
+"docs/conf.py" = ["D100", "D103", "A001", "ANN201", "ANN001"]
 [tool.ruff.format]
 docstring-code-format = true
 preview = true

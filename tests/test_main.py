@@ -1,4 +1,5 @@
 """Tests for cli utility."""
+
 import subprocess
 import sys
 

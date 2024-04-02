@@ -29,7 +29,7 @@ def main() -> None:
     cnt = 0
     if args.file:
         for path in args.file:
-            with open(path, "r", encoding=locale.getpreferredencoding()) as file:
+            with open(path, encoding=locale.getpreferredencoding()) as file:
                 cnt += count_foo(file)
     else:
         cnt += count_foo(sys.stdin)

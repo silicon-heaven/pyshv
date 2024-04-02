@@ -17,8 +17,9 @@ def _get_version() -> str:
     pyproject = pathlib.Path(__file__).parent.parent / "pyproject.toml"
     with pyproject.open("rb") as f:
         res = tomllib.load(f)["project"]["version"]
-        assert isinstance(res, str)
-        return res
+        if isinstance(res, str):
+            return res
+    return "unknown"
 
 
 VERSION = _get_version()
