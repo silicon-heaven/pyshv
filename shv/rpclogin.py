@@ -141,10 +141,9 @@ class RpcLogin:
         login_type = self.login_type
         if self.login_type is RpcLoginType.PLAIN and not self.force_plain:
             login_type = RpcLoginType.SHA1
-            password = hashlib.sha1(self.password.encode("utf-8")).hexdigest()
+            password = hashlib.sha1(self.password.encode("utf-8")).hexdigest()  # noqa S324
         if login_type is RpcLoginType.SHA1:
-            assert isinstance(nonce, str)
-            m = hashlib.sha1()
+            m = hashlib.sha1()  # noqa S324
             m.update(nonce.encode("utf-8"))
             m.update((password or "").encode("utf-8"))
             password = m.hexdigest()

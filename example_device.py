@@ -31,7 +31,7 @@ class ExampleDevice(SimpleClient):
 
     APP_NAME = "pyshv-example_device"
 
-    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:  # noqa ANN401
         super().__init__(*args, **kwargs)
         self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
         self.last_reset_user: None | str = None

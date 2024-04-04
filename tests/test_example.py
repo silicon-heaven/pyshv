@@ -1,4 +1,5 @@
 """Perform tests of our examples."""
+
 import pytest
 
 import example_client

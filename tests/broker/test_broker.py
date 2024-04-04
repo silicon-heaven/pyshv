@@ -1,4 +1,5 @@
 """Check our own implementation of the broker."""
+
 import dataclasses
 
 import pytest
@@ -190,7 +191,7 @@ async def test_with_example_ls(client, example_device, path, nodes):
         ),
     ),
 )
-async def test_mountedClientInfo(client, example_device, param, result):
+async def test_mounted_client_info(client, example_device, param, result):
     res = await client.call(".app/broker", "mountedClientInfo", param)
     assert res["idleTime"] >= 0
     res["idleTime"] = 42

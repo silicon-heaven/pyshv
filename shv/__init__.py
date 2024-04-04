@@ -43,7 +43,7 @@ from .rpcserver import (
     RpcServerUnix,
     create_rpc_server,
 )
-from .rpcsubscription import RpcSubscription
+from .rpcsubscription import DefaultRpcSubscription, RpcSubscription
 from .rpcurl import RpcProtocol, RpcUrl
 from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
 from .simplebase import SimpleBase
@@ -81,62 +81,83 @@ from .value import (
 from .valueclient import ValueClient
 
 __all__ = [
+    # shvversion
+    "SHV_VERSION_MAJOR",
+    "SHV_VERSION_MINOR",
     "VERSION",
-    # cpon
-    "Cpon",
-    "CponReader",
-    "CponWriter",
     # chainpack
     "ChainPack",
     "ChainPackReader",
     "ChainPackWriter",
-    # rpcclient
-    "init_rpc_client",
-    "connect_rpc_client",
+    # cpon
+    "Cpon",
+    "CponReader",
+    "CponWriter",
+    "DefaultRpcSubscription",
     "RpcClient",
-    "RpcClientTCP",
-    "RpcClientUnix",
     "RpcClientPipe",
+    "RpcClientTCP",
     "RpcClientTTY",
-    # rpcprotocol
-    "RpcTransportProtocol",
-    "RpcProtocolStream",
-    "RpcProtocolSerial",
-    "RpcProtocolSerialCRC",
-    # rpcserver
-    "create_rpc_server",
-    "RpcServer",
-    "RpcServerTCP",
-    "RpcServerUnix",
-    "RpcServerTTY",
-    # rpcurl
-    "RpcProtocol",
-    "RpcLoginType",
-    "RpcUrl",
-    # rpcmessage
-    "RpcMessage",
-    # rpcmethod
-    "RpcMethodFlags",
-    "RpcMethodAccess",
-    "RpcMethodDesc",
+    "RpcClientUnix",
+    "RpcError",
     # rpcerror
     "RpcErrorCode",
-    "RpcError",
     "RpcInternalError",
     "RpcInvalidParamsError",
     "RpcInvalidRequestError",
+    # rpclogin
+    "RpcLogin",
+    "RpcLoginRequiredError",
+    "RpcLoginType",
+    "RpcLoginType",
+    # rpcmessage
+    "RpcMessage",
+    "RpcMethodAccess",
     "RpcMethodCallCancelledError",
     "RpcMethodCallExceptionError",
     "RpcMethodCallTimeoutError",
+    "RpcMethodDesc",
+    # rpcmethod
+    "RpcMethodFlags",
     "RpcMethodNotFoundError",
     "RpcParseError",
-    "RpcLoginRequiredError",
-    "RpcUserIDRequiredError",
-    # rpclogin
-    "RpcLogin",
-    "RpcLoginType",
+    # rpcurl
+    "RpcProtocol",
+    "RpcProtocolSerial",
+    "RpcProtocolSerialCRC",
+    "RpcProtocolStream",
+    "RpcServer",
+    "RpcServerTCP",
+    "RpcServerTTY",
+    "RpcServerUnix",
     # rpcsubscription
     "RpcSubscription",
+    # rpcprotocol
+    "RpcTransportProtocol",
+    "RpcUrl",
+    "RpcUserIDRequiredError",
+    "SHVBool",
+    "SHVBoolType",
+    "SHVBytes",
+    "SHVDatetime",
+    "SHVDecimal",
+    "SHVFloat",
+    "SHVGetKey",
+    "SHVIMap",
+    "SHVIMapType",
+    "SHVInt",
+    "SHVList",
+    "SHVListType",
+    "SHVMap",
+    "SHVMapType",
+    # value
+    "SHVMeta",
+    "SHVMetaType",
+    "SHVNull",
+    "SHVNullType",
+    "SHVStr",
+    "SHVType",
+    "SHVUInt",
     # simplebase
     "SimpleBase",
     # simpleclient
@@ -145,42 +166,22 @@ __all__ = [
     "SimpleDevice",
     # valueclient
     "ValueClient",
-    # value
-    "SHVMeta",
-    "shvmeta",
-    "shvmeta_eq",
-    "SHVNull",
-    "is_shvnull",
-    "SHVBool",
-    "is_shvbool",
-    "SHVInt",
-    "SHVUInt",
-    "SHVFloat",
-    "SHVDecimal",
+    "connect_rpc_client",
+    # rpcserver
+    "create_rpc_server",
     "decimal_rexp",
-    "SHVStr",
-    "SHVBytes",
-    "SHVDatetime",
-    "SHVList",
-    "SHVMap",
-    "SHVIMap",
-    "is_shvmap",
+    # rpcclient
+    "init_rpc_client",
+    "is_shvbool",
     "is_shvimap",
-    "SHVType",
-    "SHVNullType",
-    "SHVBoolType",
-    "SHVListType",
-    "SHVMapType",
-    "SHVIMapType",
-    "SHVMetaType",
-    # rpcparams
-    "shvt",
-    "shvget",
-    "SHVGetKey",
-    "shvgett",
+    "is_shvmap",
+    "is_shvnull",
     "shvarg",
     "shvargt",
-    # shvversion
-    "SHV_VERSION_MAJOR",
-    "SHV_VERSION_MINOR",
+    "shvget",
+    "shvgett",
+    "shvmeta",
+    "shvmeta_eq",
+    # rpcparams
+    "shvt",
 ]

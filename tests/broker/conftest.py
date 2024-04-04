@@ -1,10 +1,9 @@
 import configparser
-import dataclasses
 import pathlib
 
 import pytest
 
-from shv import RpcUrl, broker
+from shv import broker
 
 
 @pytest.fixture(name="config", scope="module")

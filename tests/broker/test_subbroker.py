@@ -1,4 +1,5 @@
 """Check that we work correctly with subbrokers."""
+
 import asyncio
 import dataclasses
 

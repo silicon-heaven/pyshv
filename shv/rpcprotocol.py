@@ -138,7 +138,7 @@ class _RpcProtocolSerial(RpcTransportProtocol):
             while (await read(1))[0] != cls.STX:
                 pass
             data = bytearray()
-            while (b := (await read(1))[0]) not in (cls.ETX, cls.ATX):
+            while (b := (await read(1))[0]) not in {cls.ETX, cls.ATX}:
                 data += bytes((b,))
             if b == cls.ATX:
                 continue

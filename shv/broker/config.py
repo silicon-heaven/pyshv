@@ -86,11 +86,11 @@ class RpcBrokerConfig:
             # These are defined paths we need to allow all users to access
             if path == ".app/broker/currentClient":
                 return RpcMethodAccess.READ
-            if path in (".app", ".app/broker"):
+            if path in {".app", ".app/broker"}:
                 return RpcMethodAccess.BROWSE
             return None
 
-        def could_receive_signal(
+        def could_receive_signal(  # noqa PLR6301
             self, subscription: RpcSubscription, path: str = ""
         ) -> bool:
             """Check if this user could even receive signal based on this subscription.
@@ -117,7 +117,7 @@ class RpcBrokerConfig:
             """Password in SHA1 format."""
             if self.login_type is RpcLoginType.SHA1:
                 return self.password
-            m = hashlib.sha1()
+            m = hashlib.sha1()  # noqa S324
             m.update(self.password.encode("utf-8"))
             return m.hexdigest()
 
@@ -132,10 +132,10 @@ class RpcBrokerConfig:
                 if self.login_type is RpcLoginType.PLAIN:
                     return self.password == password
                 if self.login_type is RpcLoginType.SHA1:
-                    hpass = hashlib.sha1(password.encode("utf-8")).hexdigest()
+                    hpass = hashlib.sha1(password.encode("utf-8")).hexdigest()  # noqa PLR6301
                     return self.shapass == hpass
             if login_type is RpcLoginType.SHA1:
-                m = hashlib.sha1()
+                m = hashlib.sha1()  # noqa PLR6301
                 m.update(nonce.encode("utf-8"))
                 m.update(self.shapass.encode("utf-8"))
                 return m.hexdigest() == password
@@ -240,7 +240,7 @@ class RpcBrokerConfig:
 
     def login(
         self, user: str, password: str, nonce: str, login_type: RpcLoginType
-    ) -> typing.Optional[RpcBrokerConfig.User]:
+    ) -> RpcBrokerConfig.User | None:
         """Check the login and provide user if login is correct."""
         try:
             u = self.user(user)

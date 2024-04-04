@@ -68,7 +68,7 @@ class CponReader(commonpack.CommonReader):
                                 break
                     else:
                         raise ValueError("Malformed comment")
-                elif b in (ord(":"), ord(",")):
+                elif b in {ord(":"), ord(",")}:
                     self._peek_drop()
                     continue
                 else:
@@ -258,7 +258,7 @@ class CponReader(commonpack.CommonReader):
                 self._peek_drop()
                 break
             key = self.read()
-            if not isinstance(key, (str, int)):
+            if not isinstance(key, str | int):
                 raise ValueError(f"Invalid Map key: {type(key)}")
             self._skip_white_insignificant()
             val = self.read()
@@ -275,7 +275,7 @@ class CponReader(commonpack.CommonReader):
             bval.append(self._read_byte())
             return b
 
-        tp: typing.Type = int
+        tp: type = int
         parsed = False
         nonempty = False
         accept(b"-+")
@@ -293,14 +293,14 @@ class CponReader(commonpack.CommonReader):
             while True:
                 lb = accept(
                     b"0123456789.ueE"
-                    if tp == int
+                    if tp is int
                     else b"0123456789"
                     if exp
                     else b"0123456789eE"
                 )
                 if lb == ord("."):
                     tp = decimal.Decimal
-                elif lb in (ord("e"), ord("E")):
+                elif lb in {ord("e"), ord("E")}:
                     tp = decimal.Decimal
                     accept(b"-+")
                     exp = True
@@ -314,7 +314,7 @@ class CponReader(commonpack.CommonReader):
         if not nonempty:
             bval.append(ord("0"))
 
-        if tp in (int, SHVUInt):
+        if tp in {int, SHVUInt}:
             return tp(bval, 0)  # type: ignore
         if tp == decimal.Decimal:
             return tp(bval.decode("ascii"))  # type: ignore
@@ -331,7 +331,9 @@ class CponWriter(commonpack.CommonWriter):
         indent: bytes = b""
         """Bytes or string used to indent the code."""
 
-    def __init__(self, stream: typing.IO | None = None, options: Options | None = None):
+    def __init__(
+        self, stream: typing.IO | None = None, options: Options | None = None
+    ) -> None:
         super().__init__(stream)
         self.options = options if options is not None else self.Options()
         self._nest_level = 0
@@ -457,7 +459,7 @@ class CponWriter(commonpack.CommonWriter):
 
     @staticmethod
     def _is_oneline_list(lst: collections.abc.Sequence[SHVType]) -> bool:
-        return len(lst) <= 10 and all(not isinstance(v, (list, dict)) for v in lst)
+        return len(lst) <= 10 and all(not isinstance(v, list | dict) for v in lst)
 
     def write_imap(self, value: SHVIMapType) -> None:  # noqa: D102
         self._writestr("i{")
@@ -472,7 +474,7 @@ class CponWriter(commonpack.CommonWriter):
     @staticmethod
     def _is_oneline_map(mmap: collections.abc.Mapping) -> bool:
         return len(mmap) <= 10 and all(
-            not isinstance(v, (list, dict)) for v in mmap.values()
+            not isinstance(v, list | dict) for v in mmap.values()
         )
 
     def _write_map_content(self, mmap: collections.abc.Mapping) -> None:

@@ -1,4 +1,5 @@
 """Check that we correctly parse and serialize our URL format."""
+
 import re
 
 import pytest
@@ -87,8 +88,8 @@ def test_to_url(url, rpcurl):
 
 @pytest.mark.parametrize(
     "url,rpcurl",
-    DATA
-    + [
+    [
+        *DATA,
         ("", RpcUrl("", protocol=RpcProtocol.UNIX)),
         ("/dev/null", RpcUrl("/dev/null", protocol=RpcProtocol.UNIX)),
         ("//dev/null", RpcUrl("/dev/null", protocol=RpcProtocol.UNIX)),

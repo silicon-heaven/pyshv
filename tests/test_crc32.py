@@ -1,4 +1,5 @@
-"""We are using :func:`binascii.crc32` but is it really CRC-32?"""
+"""We are using :func:`binascii.crc32` but check if it is really CRC-32."""
+
 import binascii
 
 import pytest

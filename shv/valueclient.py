@@ -26,8 +26,8 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
     To access subscribed value you can index this object with SHV path to it.
     """
 
-    def __init__(self, *args: typing.Any, **kwargs: typing.Any):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:  # noqa ANNN401
+        super().__init__(*args, **kwargs)  # notype
         self._cache: dict[str, tuple[float, SHVType]] = {}
         self._handlers: dict[
             str, typing.Callable[[ValueClient, str, SHVType], None]
@@ -288,7 +288,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
             pth = pths.pop()
             try:
                 pths.extend(
-                    (f"{pth}{'/' if pth else ''}{name}" for name in await self.ls(pth))
+                    f"{pth}{'/' if pth else ''}{name}" for name in await self.ls(pth)
                 )
             except (RpcMethodNotFoundError, RpcMethodCallExceptionError):
                 pass  # ls might not be present which is not an issue

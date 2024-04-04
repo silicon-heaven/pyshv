@@ -1,4 +1,5 @@
 """Broker configuration loading."""
+
 import configparser
 
 import pytest
@@ -27,12 +28,10 @@ ROLE_ADMIN = broker.RpcBrokerConfig.Role(
 ROLE_BROWSE = broker.RpcBrokerConfig.Role(
     "browse",
     RpcMethodAccess.BROWSE,
-    frozenset(
-        {
-            broker.RpcBrokerConfig.Method(method="ls"),
-            broker.RpcBrokerConfig.Method(method="dir"),
-        }
-    ),
+    frozenset({
+        broker.RpcBrokerConfig.Method(method="ls"),
+        broker.RpcBrokerConfig.Method(method="dir"),
+    }),
 )
 ROLE_TESTER = broker.RpcBrokerConfig.Role(
     "tester",

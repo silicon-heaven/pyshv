@@ -1,4 +1,5 @@
 """Check implementation of SimpleDevice."""
+
 import datetime
 
 import pytest
@@ -6,11 +7,11 @@ import pytest
 from shv import (
     SHV_VERSION_MAJOR,
     SHV_VERSION_MINOR,
+    VERSION,
     RpcMethodAccess,
     RpcMethodDesc,
     RpcMethodNotFoundError,
     SimpleDevice,
-    VERSION,
     shvmeta_eq,
 )
 

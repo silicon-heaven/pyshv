@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import dataclasses
 import enum
-import typing
 
 
 class RpcErrorCode(enum.IntEnum):
@@ -38,16 +37,14 @@ class RpcError(RuntimeError):
     """
 
     shv_error_code: RpcErrorCode = RpcErrorCode.UNKNOWN
-    shv_error_map: dict[int, typing.Type[RpcError]] = dataclasses.field(
-        default_factory=dict
-    )
+    shv_error_map: dict[int, type[RpcError]] = dataclasses.field(default_factory=dict)
 
     def __new__(
         cls, msg: str | None = None, code: RpcErrorCode | None = None
-    ) -> "RpcError":
+    ) -> RpcError:
         """Create an appropriate exception based on the code."""
         ncls = cls.shv_error_map.get(cls.shv_error_code if code is None else code, cls)
-        return super(RpcError, cls).__new__(ncls)
+        return super(RpcError, cls).__new__(ncls)  # noqa UP008
 
     def __init__(
         self, msg: str | None = None, code: RpcErrorCode | None = None

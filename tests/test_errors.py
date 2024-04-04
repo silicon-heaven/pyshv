@@ -1,4 +1,5 @@
 """Check that errors can be created trough RpcError."""
+
 import pytest
 
 from shv import (

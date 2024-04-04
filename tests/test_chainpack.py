@@ -1,4 +1,5 @@
 """Check that we can serialize and deserialize Chainpack."""
+
 import datetime
 import decimal
 
@@ -64,7 +65,7 @@ DATA: list = [
     (b"\x85\x06ab\xcd\t\r\n", b"ab\xcd\t\r\n"),
     (
         b"\x8d\x04",
-        datetime.datetime(2018, 2, 2, 0, 0, 0, 1000, tzinfo=datetime.timezone.utc),
+        datetime.datetime(2018, 2, 2, 0, 0, 0, 1000, tzinfo=datetime.UTC),
     ),
     (
         b"\x8d\x82\x11",
@@ -84,8 +85,8 @@ DATA: list = [
 
 @pytest.mark.parametrize(
     "chainpack,data",
-    DATA
-    + [
+    [
+        *DATA,
         (b"\x8efoo\x00", "foo"),
     ],
 )
@@ -100,8 +101,8 @@ def test_reader_uint():
 
 @pytest.mark.parametrize(
     "chainpack,data",
-    DATA
-    + [
+    [
+        *DATA,
         (b"A", SHVMeta.new(1)),
     ],
 )

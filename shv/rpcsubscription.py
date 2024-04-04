@@ -53,7 +53,7 @@ class RpcSubscription:
         return None
 
     @classmethod
-    def fromSHV(cls, value: SHVType) -> RpcSubscription:
+    def from_shv(cls, value: SHVType) -> RpcSubscription:
         """Create subscription from SHV type representation."""
         if not is_shvmap(value):
             raise ValueError("Expected Map")
@@ -74,7 +74,7 @@ class RpcSubscription:
             raise ValueError("Invalid type")
         return cls(paths, signal, source)
 
-    def toSHV(self, compatible: bool = False) -> SHVType:
+    def to_shv(self, compatible: bool = False) -> SHVType:
         """Convert to representation used in SHV RPC communication."""
         res: dict[str, SHVType] = {}
         if compatible:
@@ -97,7 +97,7 @@ class RpcSubscription:
         return res
 
     @classmethod
-    def fromStr(cls, value: str) -> RpcSubscription:
+    def from_str(cls, value: str) -> RpcSubscription:
         """Create subscription from common string representation.
 
         This representation is simply ``PATH:SIGNAL:SOURCE`` where everything
@@ -111,13 +111,16 @@ class RpcSubscription:
         n, _, s = ns.partition(":")
         return cls(p, n if n else cls.signal, s if s else cls.source)
 
-    def toStr(self) -> str:
+    def to_str(self) -> str:
         """Convert to common string representation.
 
         Please see :meth:`fromStr`.
         """
         # TODO do not add unnecessary fields
         return f"{self.paths}:{self.signal}:${self.source}"
+
+
+DefaultRpcSubscription = RpcSubscription()
 
 
 def __match(path: str, pattern: list[str]) -> int | None:

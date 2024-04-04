@@ -48,7 +48,7 @@ class RpcClient(abc.ABC):
         """
 
     @classmethod
-    async def connect(cls, *args: typing.Any, **kwargs: typing.Any) -> typing.Self:
+    async def connect(cls, *args: typing.Any, **kwargs: typing.Any) -> typing.Self:  # noqa ANN401
         """Connect client.
 
         This conveniently combines object initialization and call to
@@ -150,7 +150,7 @@ class RpcClient(abc.ABC):
     def _disconnect(self) -> None:
         """Child's implementation of message sending."""
 
-    async def wait_disconnect(self) -> None:
+    async def wait_disconnect(self) -> None:  # noqa D027
         """Close the connection."""
 
 
@@ -271,7 +271,7 @@ class RpcClientPipe(_RpcClientStream):
     def __str__(self) -> str:
         return "pipe"
 
-    async def _open_connection(
+    async def _open_connection(  # noqa PLR6301
         self,
     ) -> tuple[asyncio.StreamReader, asyncio.StreamWriter]:
         raise ConnectionError("Pipes can't be reconnected")

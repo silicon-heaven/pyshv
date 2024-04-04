@@ -13,25 +13,25 @@ SHVBoolType: typing.TypeAlias = typing.Union[bool, "SHVBool"]
 SHVListType: typing.TypeAlias = collections.abc.Sequence["SHVType"]
 SHVMapType: typing.TypeAlias = collections.abc.Mapping[str, "SHVType"]
 SHVIMapType: typing.TypeAlias = collections.abc.Mapping[int, "SHVType"]
-SHVType: typing.TypeAlias = typing.Union[
-    SHVNullType,
-    SHVBoolType,
-    int,
-    float,
-    decimal.Decimal,
-    bytes,
-    str,
-    datetime.datetime,
-    SHVListType,
-    SHVMapType,
-    SHVIMapType,
-    SHVIMapType,
-    SHVMapType,
-]
+SHVType: typing.TypeAlias = (
+    SHVNullType
+    | SHVBoolType
+    | int
+    | float
+    | decimal.Decimal
+    | bytes
+    | str
+    | datetime.datetime
+    | SHVListType
+    | SHVMapType
+    | SHVIMapType
+    | SHVIMapType
+    | SHVMapType
+)
 SHVMetaType: typing.TypeAlias = collections.abc.MutableMapping[int | str, SHVType]
 
 
-class SHVMeta(abc.ABC):
+class SHVMeta(abc.ABC):  # noqa B024
     """SHV values can have meta with attributes associated with them.
 
     This provides meta attribute that can be added to other types. Only create
@@ -56,11 +56,11 @@ class SHVMeta(abc.ABC):
     def meta(self) -> SHVMetaType:
         """Meta attributes for this SHV type."""
         if not hasattr(self, "_meta"):
-            setattr(self, "_meta", {})
-        return typing.cast(SHVMetaType, getattr(self, "_meta"))
+            self._meta: SHVMetaType = {}
+        return typing.cast(SHVMetaType, self._meta)
 
     @staticmethod
-    def new(value: typing.Any, meta: SHVMetaType | None = None) -> SHVType:
+    def new(value: object, meta: SHVMetaType | None = None) -> SHVType:
         """Create new value with given meta.
 
         This select an appropriate class based on the value passed.
@@ -101,14 +101,14 @@ class SHVMeta(abc.ABC):
         return typing.cast(SHVType, res)
 
 
-def shvmeta(value: SHVType) -> SHVMetaType:
+def shvmeta(value: object) -> SHVMetaType:
     """Get SHV Meta or provide empty dict as a fallback."""
     if isinstance(value, SHVMeta):
         return value.meta
     return {}
 
 
-def shvmeta_eq(v1: typing.Any, v2: typing.Any) -> bool:
+def shvmeta_eq(v1: object, v2: object) -> bool:
     """Perform comparison including the :class:`SHVMeta` not just plain values."""
     if shvmeta(v1) != shvmeta(v2):
         return False
@@ -117,7 +117,7 @@ def shvmeta_eq(v1: typing.Any, v2: typing.Any) -> bool:
     if (
         isinstance(v1, collections.abc.Sequence)
         and isinstance(v2, collections.abc.Sequence)
-        and not (isinstance(v1, (str, bytes)) or isinstance(v2, (str, bytes)))
+        and not (isinstance(v1, str | bytes) or isinstance(v2, str | bytes))
     ):
         return len(v1) == len(v2) and all(
             shvmeta_eq(v1[i], v2[i]) for i in range(len(v1))
@@ -138,14 +138,14 @@ class SHVNull(SHVMeta):
     def __bool__(self) -> bool:
         return False
 
-    def __eq__(self, value: typing.Any) -> bool:
+    def __eq__(self, value: object) -> bool:
         return value is None or isinstance(value, SHVNull)
 
     def __hash__(self) -> int:
         return hash(None)
 
 
-def is_shvnull(value: typing.Any) -> typing.TypeGuard[SHVNullType]:
+def is_shvnull(value: object) -> typing.TypeGuard[SHVNullType]:
     """Validate type of the value as either ``None`` or :class:`SHVNull`."""
     return value is None or isinstance(value, SHVNull)
 
@@ -153,20 +153,20 @@ def is_shvnull(value: typing.Any) -> typing.TypeGuard[SHVNullType]:
 class SHVBool(SHVMeta):
     """Boolean with :class:`SHVMeta`."""
 
-    def __init__(self, value: bool):
+    def __init__(self, value: bool) -> None:
         self._value = value
 
     def __bool__(self) -> bool:
         return self._value
 
-    def __eq__(self, value: typing.Any) -> bool:
+    def __eq__(self, value: object) -> bool:
         return bool(value) is self._value
 
     def __hash__(self) -> int:
         return hash(self._value)
 
 
-def is_shvbool(value: typing.Any) -> typing.TypeGuard[bool | SHVBool]:
+def is_shvbool(value: object) -> typing.TypeGuard[bool | SHVBool]:
     """Validate type of value as either :class:`bool` or :class:`SHVBool`."""
     return isinstance(value, bool | SHVBool)
 
@@ -234,14 +234,14 @@ class SHVIMap(dict[int, SHVType], SHVMeta):
     """Dictionary with :class:`SHVMeta`."""
 
 
-def is_shvmap(value: typing.Any) -> typing.TypeGuard[SHVMapType]:
+def is_shvmap(value: object) -> typing.TypeGuard[SHVMapType]:
     """Check if given value can be SHV Map."""
     return isinstance(value, collections.abc.Mapping) and all(
         isinstance(k, str) for k in value.keys()
     )
 
 
-def is_shvimap(value: typing.Any) -> typing.TypeGuard[SHVIMapType]:
+def is_shvimap(value: object) -> typing.TypeGuard[SHVIMapType]:
     """Check if given value can be SHV IMap."""
     return isinstance(value, collections.abc.Mapping) and all(
         isinstance(k, int) for k in value.keys()

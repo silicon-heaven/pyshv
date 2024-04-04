@@ -36,7 +36,7 @@ class RpcMessage:
             rpc_val = SHVIMap(rpc_val)
         self.value: SHVIMap = rpc_val
 
-    def __eq__(self, other: typing.Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         return isinstance(other, RpcMessage) and shvmeta_eq(self.value, other.value)
 
     def __repr__(self) -> str:
@@ -358,7 +358,6 @@ class RpcMessage:
         """SHV method call error in standard SHV format :class:`RpcError`."""
         res = self.error
         if is_shvimap(res):
-            assert isinstance(res, dict)
             rcode = res.get(self.ErrorKey.CODE)
             code: RpcErrorCode = RpcErrorCode.UNKNOWN
             if isinstance(rcode, int):
@@ -403,7 +402,7 @@ class RpcMessage:
         param: SHVType = None,
         rid: int | None = None,
         user_id: str | None = None,
-    ) -> "RpcMessage":
+    ) -> RpcMessage:
         """Create request message.
 
         :param path: SHV path for signal.
@@ -429,7 +428,7 @@ class RpcMessage:
         source: str = "get",
         value: SHVType = None,
         access: RpcMethodAccess = RpcMethodAccess.READ,
-    ) -> "RpcMessage":
+    ) -> RpcMessage:
         """Create signal message.
 
         :param path: SHV path for signal.

@@ -60,7 +60,7 @@ class _RpcServerStream(RpcServer):
             [RpcClient], None | collections.abc.Awaitable[None]
         ],
         protocol: type[RpcTransportProtocol] = RpcProtocolStream,
-    ):
+    ) -> None:
         self.client_connected_cb = client_connected_cb
         """Callbact that is called when new client is connected."""
         self.protocol = protocol
@@ -154,7 +154,7 @@ class RpcServerTCP(_RpcServerStream):
         location: str | None = None,
         port: int = 3755,
         protocol: type[RpcTransportProtocol] = RpcProtocolStream,
-    ):
+    ) -> None:
         super().__init__(client_connected_cb, protocol)
         self.location = location
         self.port = port
@@ -213,7 +213,7 @@ class RpcServerUnix(_RpcServerStream):
         ],
         location: str = "shv.sock",
         protocol: type[RpcTransportProtocol] = RpcProtocolSerial,
-    ):
+    ) -> None:
         super().__init__(client_connected_cb, protocol)
         self.location = location
 
@@ -263,7 +263,7 @@ class RpcServerTTY(RpcServer):
         port: str,
         baudrate: int = 115200,
         protocol: type[RpcTransportProtocol] = RpcProtocolSerialCRC,
-    ):
+    ) -> None:
         self.client_connected_cb = client_connected_cb
         """Callbact that is called when new client is connected."""
         self.client = RpcClientTTY(port, baudrate, protocol)

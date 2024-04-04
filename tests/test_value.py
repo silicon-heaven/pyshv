@@ -1,4 +1,5 @@
 """Check our meta value assignment."""
+
 import datetime
 import decimal
 
@@ -20,7 +21,6 @@ from shv import (
     SHVUInt,
     is_shvbool,
     is_shvnull,
-    shvget,
     shvmeta_eq,
 )
 
@@ -110,7 +110,7 @@ def test_noteq(cls, value1, value2):
 @pytest.mark.parametrize("cls,value1,value2", REPRS)
 def test_hash(cls, value1, value2):
     """Our objects should not modify hash and thus it has to be the same."""
-    if cls in (SHVList, SHVMap, SHVIMap):
+    if cls in {SHVList, SHVMap, SHVIMap}:
         return  # Unhashable types
     assert hash(cls(value1)) == hash(value1)
     assert hash(cls(value2)) == hash(value2)

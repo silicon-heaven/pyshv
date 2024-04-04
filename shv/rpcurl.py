@@ -108,18 +108,18 @@ class RpcUrl:
         res = cls("", protocol=protocol)
 
         res.login.username = sr.username or res.login.username
-        if protocol in (
+        if protocol in {
             RpcProtocol.TCP,
             RpcProtocol.TCPS,
             RpcProtocol.SSL,
             RpcProtocol.SSLS,
-        ):
+        }:
             res.location = sr.hostname or ""
             if sr.port is not None:
                 res.port = int(sr.port)
             if sr.path:
                 raise ValueError(f"Path is not supported for {sr.scheme}: {sr.path}")
-        elif protocol in (RpcProtocol.UNIX, RpcProtocol.UNIXS, RpcProtocol.SERIAL):
+        elif protocol in {RpcProtocol.UNIX, RpcProtocol.UNIXS, RpcProtocol.SERIAL}:
             res.location = f"/{sr.netloc}{sr.path}" if sr.netloc else sr.path
         else:
             raise NotImplementedError  # pragma: no cover
@@ -161,12 +161,12 @@ class RpcUrl:
             RpcProtocol.SERIAL: "serial",
         }
         user_added = not self.login.username or self.login.username == RpcLogin.username
-        if self.protocol in (
+        if self.protocol in {
             RpcProtocol.TCP,
             RpcProtocol.TCPS,
             RpcProtocol.SSL,
             RpcProtocol.SSLS,
-        ):
+        }:
             netloc = "//"
             if not user_added:
                 netloc += f"{self.login.username}@"
@@ -176,7 +176,7 @@ class RpcUrl:
             else:
                 netloc += self.location
             netloc += f":{self.port}"
-        elif self.protocol in (RpcProtocol.UNIX, RpcProtocol.UNIXS, RpcProtocol.SERIAL):
+        elif self.protocol in {RpcProtocol.UNIX, RpcProtocol.UNIXS, RpcProtocol.SERIAL}:
             netloc = self.location
         else:
             raise NotImplementedError  # pragma: no cover

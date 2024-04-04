@@ -64,7 +64,7 @@ class SimpleBase:
         client: RpcClient,
         call_attempts: int = 1,
         call_timeout: float | None = 300.0,
-    ):
+    ) -> None:
         self.client = client
         """The underlaying RPC client instance.
 
@@ -259,7 +259,7 @@ class SimpleBase:
         """
         res = await self.call(path, "dir", True if details else None)
         if isinstance(res, list):  # pragma: no cover
-            return [RpcMethodDesc.fromSHV(m) for m in res]
+            return [RpcMethodDesc.from_shv(m) for m in res]
         raise RpcMethodCallExceptionError(f"Invalid result returned: {res!r}")
 
     async def dir_description(self, path: str, name: str) -> RpcMethodDesc | None:
@@ -275,7 +275,7 @@ class SimpleBase:
             res = res[0] if len(res) == 1 else None
         if is_shvnull(res):
             return None
-        return RpcMethodDesc.fromSHV(res)
+        return RpcMethodDesc.from_shv(res)
 
     async def peer_is_shv3(self) -> bool:
         """Check if peer supports at least SHV 3.0."""
@@ -319,7 +319,6 @@ class SimpleBase:
         if msg.is_request:
             resp = msg.make_response()
             method = msg.method
-            assert method  # is ensured by is_request but not detected by mypy
             try:
                 resp.result = await self._method_call(
                     msg.path,
@@ -337,7 +336,6 @@ class SimpleBase:
             await self._send(resp)
         elif msg.is_response:
             rid = msg.request_id
-            assert rid is not None
             if rid in self._calls_event:
                 self._calls_msg[rid] = msg
                 self._calls_event.pop(rid).set()
@@ -400,7 +398,7 @@ class SimpleBase:
             return any(v == param for v in self._ls(path))
         raise RpcInvalidParamsError("Use Null or String with node name")
 
-    def _ls(self, path: str) -> collections.abc.Iterator[str]:
+    def _ls(self, path: str) -> collections.abc.Iterator[str]:  # noqa: PLR6301
         """Implement ``ls`` method for all nodes.
 
         The default implementation supports `.app` path. Your implementation
@@ -433,15 +431,15 @@ class SimpleBase:
             raise RpcMethodNotFoundError(f"No such node: {path}")
         # Note: The list here is backward compatibility
         if is_shvnull(param) or is_shvbool(param) or isinstance(param, list):
-            return list(d.toSHV(bool(param)) for d in self._dir(path))
+            return list(d.to_shv(bool(param)) for d in self._dir(path))
         if isinstance(param, str):
             for d in self._dir(path):
                 if d.name == param:
-                    return d.toSHV()
+                    return d.to_shv()
             return None
         raise RpcInvalidParamsError("Use Null or Bool or String with node name")
 
-    def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:
+    def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:  # noqa: PLR6301
         """Implement ``dir`` method for all nodes.
 
         This implementation is called only for valid paths (:meth:`_valid_path`).

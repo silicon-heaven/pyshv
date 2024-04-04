@@ -1,4 +1,5 @@
 """Check that we can serialize and deserialize Cpon."""
+
 import datetime
 import decimal
 
@@ -59,7 +60,7 @@ DATA: list = [
     ('b"ab\\cd\\t\\r\\n"', b"ab\xcd\t\r\n"),
     (
         'd"2018-02-02T00:00:00Z"',
-        datetime.datetime(2018, 2, 2, tzinfo=datetime.timezone.utc),
+        datetime.datetime(2018, 2, 2, tzinfo=datetime.UTC),
     ),
     (
         'd"2027-05-03T11:30:12.345+01"',
@@ -79,8 +80,8 @@ DATA: list = [
 
 @pytest.mark.parametrize(
     "cpon,data",
-    DATA
-    + [
+    [
+        *DATA,
         ("0x42", 0x42),
         ("223.", 223.0),
         ("2.30", decimal.Decimal("2.3")),
@@ -89,7 +90,7 @@ DATA: list = [
         ("<>1", 1),
         (
             'd"2017-05-03T18:30:00Z"',
-            datetime.datetime(2017, 5, 3, 18, 30, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2017, 5, 3, 18, 30, tzinfo=datetime.UTC),
         ),
         (
             'd"2017-05-03T22:30:00+04"',
@@ -135,8 +136,8 @@ def test_reader_uint():
 
 @pytest.mark.parametrize(
     "cpon,data",
-    DATA
-    + [
+    [
+        *DATA,
         ("1", SHVMeta.new(1, {})),
         ("1.0", decimal.Decimal((0, (1,), 0))),
     ],

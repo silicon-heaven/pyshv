@@ -24,7 +24,7 @@ def fixture_sslport(unused_tcp_port_factory):
 
 @pytest.fixture(name="url", scope="module")
 def fixture_url(port):
-    """Provides RpcUrl for connecting to the broker."""
+    """Provide RpcUrl for connecting to the broker."""
     return RpcUrl(
         location="localhost",
         port=port,
@@ -57,17 +57,15 @@ def fixture_url_test_device(url_test):
 def fixture_shvbroker(port, sslport):
     """SHV broker usable for all tests."""
     confdir = pathlib.Path(__file__).parent / "shvbroker-etc"
-    with subprocess.Popen(
-        [
-            "minimalshvbroker",
-            "--config-dir",
-            str(confdir),
-            "--server-port",
-            str(port),
-            "--server-ssl-port",
-            str(sslport),
-        ]
-    ) as proc:
+    with subprocess.Popen([
+        "minimalshvbroker",
+        "--config-dir",
+        str(confdir),
+        "--server-port",
+        str(port),
+        "--server-ssl-port",
+        str(sslport),
+    ]) as proc:
         while True:
             try:
                 with socket.create_connection(("localhost", port)):

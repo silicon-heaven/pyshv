@@ -1,5 +1,5 @@
 """Check implementation of SimpleClient."""
-import asyncio
+
 import contextlib
 import dataclasses
 
@@ -136,12 +136,12 @@ async def test_sha_login(shvbroker, url):
 
 
 async def test_disconnect(client):
-    """This tests that multiple calls to disconnect is not an issue."""
+    """Tests that multiple calls to disconnect is not an issue."""
     await client.disconnect()
 
 
 async def test_reconnect(client):
-    """This checks that client reconnects itself if broker disconnects it.
+    """Checks that client reconnects itself if broker disconnects it.
 
     This uses broker's API to disconnect itself. Broker will give us a new
     client ID and that way we will identify that we successfully reconnected.

@@ -1,5 +1,5 @@
-"""Check various clients implementing a different link layers.
-"""
+"""Check various clients implementing a different link layers."""
+
 import asyncio
 import io
 import logging

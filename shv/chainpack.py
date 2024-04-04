@@ -145,7 +145,7 @@ class ChainPackReader(commonpack.CommonReader):
             value = SHVMeta.new(value, meta)
         return value
 
-    def _read_uint_dataHelper(self) -> tuple[int, int]:
+    def _read_uint_data_helper(self) -> tuple[int, int]:
         num = 0
         bitlen = 0
         head = self._read_byte()
@@ -175,11 +175,11 @@ class ChainPackReader(commonpack.CommonReader):
         return num, bitlen
 
     def read_uint_data(self) -> int:  # noqa: D102
-        num, _ = self._read_uint_dataHelper()
+        num, _ = self._read_uint_data_helper()
         return num
 
     def _read_int_data(self) -> int:
-        num, bitlen = self._read_uint_dataHelper()
+        num, bitlen = self._read_uint_data_helper()
         sign_bit_mask = 1 << (bitlen - 1)
         neg = num & sign_bit_mask
         snum = num
@@ -259,7 +259,7 @@ class ChainPackReader(commonpack.CommonReader):
                 self._read_byte()
                 break
             key = self.read()
-            if not isinstance(key, (str, int)):
+            if not isinstance(key, str | int):
                 raise ValueError(f"Invalid Map key: {type(key)}")
             val = self.read()
             mmap[key] = val

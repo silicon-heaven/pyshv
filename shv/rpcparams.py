@@ -32,7 +32,7 @@ class NoDefaultType:
     def __new__(cls) -> NoDefaultType:
         """Implement as singleton."""
         if not hasattr(cls, "instance"):
-            cls.instance = super(NoDefaultType, cls).__new__(cls)
+            cls.instance = super(NoDefaultType, cls).__new__(cls)  # noqa UP008
         return cls.instance
 
 
@@ -68,7 +68,7 @@ def shvget(
     :raise RpcInvalidParamsError: if the value is not present and no default was
       provided.
     """
-    for k in [key] if isinstance(key, (str, int, SHVGetKey)) else key:
+    for k in [key] if isinstance(key, str | int | SHVGetKey) else key:
         if not isinstance(value, collections.abc.Mapping):
             break
         vmap = typing.cast(collections.abc.Mapping[str | int, SHVType], value)
@@ -76,7 +76,7 @@ def shvget(
             value = vmap[k.ikey]
         elif isinstance(k, SHVGetKey) and k.skey is not None and k.skey in vmap:
             value = vmap[k.skey]
-        elif isinstance(k, (str, int)) and k in vmap:
+        elif isinstance(k, str | int) and k in vmap:
             value = vmap[k]
         else:
             if isinstance(default, NoDefaultType):

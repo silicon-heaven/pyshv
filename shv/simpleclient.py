@@ -33,10 +33,10 @@ class SimpleClient(SimpleBase):
         self,
         client: RpcClient,
         login: RpcLogin,
-        *args: typing.Any,
+        *args: typing.Any,  # noqa ANN401
         reconnects: int = 1,
-        **kwargs: typing.Any,
-    ):
+        **kwargs: typing.Any,  # noqa ANN401
+    ) -> None:
         super().__init__(client, *args, **kwargs)
         self.login: RpcLogin = login
         """The login used for logging to the connected broker."""
@@ -67,8 +67,8 @@ class SimpleClient(SimpleBase):
     async def connect(
         cls: type[typing.Self],
         url: RpcUrl,
-        *args: typing.Any,
-        **kwargs: typing.Any,
+        *args: typing.Any,  # noqa ANN401
+        **kwargs: typing.Any,  # noqa ANN401
     ) -> typing.Self:
         """Connect and login to the SHV broker.
 
@@ -133,7 +133,7 @@ class SimpleClient(SimpleBase):
 
     async def _send(self, msg: RpcMessage) -> None:
         await self._connected.wait()
-        if not msg.is_request or msg.path != "" or msg.method not in ("hello", "login"):
+        if not msg.is_request or msg.path or msg.method not in {"hello", "login"}:
             await self._login_task
         await super()._send(msg)
 
@@ -204,7 +204,7 @@ class SimpleClient(SimpleBase):
                 if await self.peer_is_shv3()
                 else ".broker/app",
                 "subscribe",
-                sub.toSHV(not await self.peer_is_shv3()),
+                sub.to_shv(not await self.peer_is_shv3()),
             )
         )
 
@@ -220,7 +220,7 @@ class SimpleClient(SimpleBase):
                 if await self.peer_is_shv3()
                 else ".broker/app",
                 "unsubscribe",
-                sub.toSHV(not await self.peer_is_shv3()),
+                sub.to_shv(not await self.peer_is_shv3()),
             )
         )
         if resp:

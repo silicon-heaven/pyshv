@@ -29,7 +29,7 @@ class CommonReader(abc.ABC):
     def __init__(
         self, stream: typing.Union[bytes, bytearray, typing.IO, "CommonReader"]
     ) -> None:
-        if isinstance(stream, (bytes, bytearray)):
+        if isinstance(stream, bytes | bytearray):
             stream = io.BytesIO(stream)
         if isinstance(stream, CommonReader):
             orig = stream
@@ -37,7 +37,7 @@ class CommonReader(abc.ABC):
 
         self.stream: typing.IO = stream
         """Stream used to receive bytes from."""
-        self.peek_bytes = bytes()
+        self.peek_bytes = b""
         """Peeked bytes so far."""
         self.bytes_cnt = 0
         """Number of bytes read so far."""
@@ -56,7 +56,7 @@ class CommonReader(abc.ABC):
         :raise EOFError: in case EOF is encountered.
         """
         assert size > 0
-        res = bytes()
+        res = b""
         while len(res) < size:
             read = self.read_raw(size - len(res))
             if len(read) == 0:
@@ -93,7 +93,7 @@ class CommonReader(abc.ABC):
     def _peek_drop(self) -> None:
         """Drop peeked data."""
         self.bytes_cnt += len(self.peek_bytes)
-        self.peek_bytes = bytes()
+        self.peek_bytes = b""
 
     def _read_check(self, data: bytes) -> None:
         """Read bytes and check that it is what we expected.

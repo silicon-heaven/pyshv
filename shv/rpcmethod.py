@@ -99,7 +99,7 @@ class RpcMethodDesc:
     source: list[str] = dataclasses.field(default_factory=list)
     description: str = ""
 
-    def toSHV(self, use_map: bool = False) -> SHVType:
+    def to_shv(self, use_map: bool = False) -> SHVType:
         """Convert to SHV RPC representation."""
         res: dict[int | str, SHVType] = {
             "name" if use_map else self.Key.NAME: self.name,
@@ -121,7 +121,7 @@ class RpcMethodDesc:
         return typing.cast(SHVType, res)
 
     @classmethod
-    def fromSHV(cls, value: SHVType) -> "RpcMethodDesc":
+    def from_shv(cls, value: SHVType) -> RpcMethodDesc:
         """Create from SHV RPC representation."""
         if not isinstance(value, collections.abc.Mapping):
             raise ValueError("Expected Map.")

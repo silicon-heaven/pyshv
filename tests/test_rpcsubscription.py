@@ -1,4 +1,5 @@
 """Check our implementation of fnmatch."""
+
 import pytest
 
 from shv.rpcsubscription import RpcSubscription, path_match, tail_pattern

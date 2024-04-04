@@ -48,10 +48,10 @@ class RpcBroker:
             self,
             client: RpcClient,
             broker: RpcBroker,
-            *args: typing.Any,
+            *args: typing.Any,  # noqa ANN401
             user: RpcBrokerConfig.User | None = None,
-            **kwargs: typing.Any,
-        ):
+            **kwargs: typing.Any,  # noqa ANN401
+        ) -> None:
             super().__init__(client, *args, **kwargs)
             self.user: RpcBrokerConfig.User | None = user
             """Local user used to deduce access rights."""
@@ -164,7 +164,7 @@ class RpcBroker:
                     )
                 case _:
                     for mnt, _ in self.broker.mounted_clients():
-                        if path == "":
+                        if not path:
                             yield mnt.split("/", maxsplit=1)[0]
                         elif mnt.startswith(path + "/"):
                             yield mnt[len(path) + 1 :].split("/", maxsplit=1)[0]
@@ -242,13 +242,13 @@ class RpcBroker:
                             return self.infomap()
                         case "subscriptions":
                             return [
-                                s.toSHV() for s in self.__broker.subscriptions(self)
+                                s.to_shv() for s in self.__broker.subscriptions(self)
                             ]
                         case "subscribe":
-                            sub = RpcSubscription.fromSHV(param)
+                            sub = RpcSubscription.from_shv(param)
                             return await self.__broker.subscribe(sub, self)
                         case "unsubscribe":
-                            sub = RpcSubscription.fromSHV(param)
+                            sub = RpcSubscription.from_shv(param)
                             return await self.__broker.unsubscribe(sub, self)
             return await super()._method_call(path, method, param, access, user_id)
 
@@ -262,7 +262,9 @@ class RpcBroker:
                 "clientId": self.broker_client_id,
                 "userName": self.user.name if self.user is not None else None,
                 "mountPoint": self.__broker.client_mountpoint(self),
-                "subscriptions": [s.toSHV() for s in self.__broker.subscriptions(self)],
+                "subscriptions": [
+                    s.to_shv() for s in self.__broker.subscriptions(self)
+                ],
                 "idleTime": int((time.monotonic() - self.client.last_receive) * 1000),
                 "idleTimeMax": int(self.IDLE_TIMEOUT * 1000),
             }
@@ -285,7 +287,7 @@ class RpcBroker:
         that are not participating in SHV RPC.
         """
 
-        def __init__(self, *args: typing.Any, **kwargs: typing.Any):
+        def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:  # noqa ANN204
             super().__init__(*args, **kwargs)
             self.IDLE_TIMEOUT = self.IDLE_TIMEOUT_LOGIN
             self._nonce: str = ""
@@ -325,7 +327,7 @@ class RpcBroker:
         def _message_login(self, msg: RpcMessage) -> RpcMessage:
             if not msg.path:
                 if msg.method == "hello":
-                    self._nonce = "".join(random.choices(string.hexdigits, k=10))
+                    self._nonce = "".join(random.choices(string.hexdigits, k=10))  # noqa S311
                     return msg.make_response({"nonce": self._nonce})
                 if self._nonce and msg.method == "login":
                     param = msg.param
@@ -392,10 +394,10 @@ class RpcBroker:
 
         def __init__(
             self,
-            *args: typing.Any,
+            *args: typing.Any,  # noqa ANN204
             target_mount_point: str | None = None,
-            **kwargs: typing.Any,
-        ):
+            **kwargs: typing.Any,  # noqa ANN204
+        ) -> None:
             super().__init__(*args, **kwargs)
             self.target_mount_point = target_mount_point
 
@@ -509,7 +511,7 @@ class RpcBroker:
         if client.active and await client.peer_is_broker():
             if newmnt:
                 self._subsubs[newmnt] = collections.Counter(
-                    (s for sub in self._subs if (s := sub.relative_to(newmnt)))
+                    s for sub in self._subs if (s := sub.relative_to(newmnt))
                 )
                 for s in self._subsubs[newmnt]:
                     if s in prev:
@@ -520,7 +522,7 @@ class RpcBroker:
                             if await client.peer_is_shv3()
                             else ".broker/app",
                             "subscribe",
-                            s.toSHV(not await client.peer_is_shv3()),
+                            s.to_shv(not await client.peer_is_shv3()),
                         )
             for s in prev:
                 await client.call(
@@ -528,7 +530,7 @@ class RpcBroker:
                     if await client.peer_is_shv3()
                     else ".broker/app",
                     "unsubscribe",
-                    s.toSHV(not await client.peer_is_shv3()),
+                    s.to_shv(not await client.peer_is_shv3()),
                 )
 
         await self._signal_mount_point_change(*(mnt for mnt in (oldmnt, newmnt) if mnt))
@@ -585,7 +587,7 @@ class RpcBroker:
                         if await subc.peer_is_shv3()
                         else ".broker/app",
                         "subscribe",
-                        sub.toSHV(),
+                        sub.to_shv(),
                     )
         return True
 
@@ -610,7 +612,7 @@ class RpcBroker:
                         if await subc.peer_is_shv3()
                         else ".broker/app",
                         "unsubscribe",
-                        sub.toSHV(),
+                        sub.to_shv(),
                     )
         return True
 
@@ -657,7 +659,7 @@ class RpcBroker:
         constmounts = mounts.difference(path)
         changes: dict[str, dict[str, bool]] = {}
         for mp in path:
-            ggi = enumerate(zip(mp, *constmounts))
+            ggi = enumerate(zip(mp, *constmounts, strict=False))
             gi = (i for i, ch in ggi if ch[0] not in ch[1:])
             i = mp.find("/", next(gi, 0))
             pth, _, name = mp[: i if i >= 0 else None].rpartition("/")

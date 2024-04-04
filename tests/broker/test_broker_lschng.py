@@ -1,4 +1,5 @@
 """Check if we correctly emit the lsmod signals."""
+
 import asyncio
 import dataclasses
 

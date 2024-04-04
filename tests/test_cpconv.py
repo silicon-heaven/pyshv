@@ -1,4 +1,5 @@
 """Check usability of our stream conversion."""
+
 import pytest
 
 from shv.cpconv import CPFormat, convert

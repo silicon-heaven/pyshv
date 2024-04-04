@@ -1,4 +1,5 @@
 """Check that our tools for working with values are correct."""
+
 import pytest
 
 from shv import SHVGetKey, shvarg, shvget
