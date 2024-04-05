@@ -65,7 +65,7 @@ async def fixture_subdevice(shvsubbroker, url_subdevice):
 @pytest.mark.parametrize(
     "path,method,result",
     (
-        ("subbroker", "ls", [".app", "device"]),
+        ("subbroker", "ls", [".app", ".broker", "device"]),
         ("subbroker/device", "ls", [".app", "track"]),
     ),
 )
@@ -91,12 +91,12 @@ async def test_signal(shvbroker, subdevice, url):
 
     assert await client.subscribe(RpcSubscription("subbroker/device/track/**", "*chng"))
 
-    assert await client.call(".app/broker/currentClient", "subscriptions") == [
+    assert await client.call(".broker/currentClient", "subscriptions") == [
         {"signal": "*chng", "paths": "subbroker/device/track/**"}
     ]
-    assert await client.call(
-        "subbroker/.app/broker/currentClient", "subscriptions"
-    ) == [{"signal": "*chng", "paths": "device/track/**"}]
+    assert await client.call("subbroker/.broker/currentClient", "subscriptions") == [
+        {"signal": "*chng", "paths": "device/track/**"}
+    ]
 
     await client.call("subbroker/device/track/1", "set", [1])
     assert await client.signals.get() == RpcMessage.signal(
@@ -107,8 +107,6 @@ async def test_signal(shvbroker, subdevice, url):
     assert await client.unsubscribe(
         RpcSubscription("subbroker/device/track/**", "*chng")
     )
-    assert (
-        await client.call("subbroker/.app/broker/currentClient", "subscriptions") == []
-    )
+    assert await client.call("subbroker/.broker/currentClient", "subscriptions") == []
 
     await client.disconnect()

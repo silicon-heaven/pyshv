@@ -30,23 +30,22 @@ class SimpleDevice(SimpleClient):
         user_id: str | None,
     ) -> SHVType:
         match path, method:
-            case ".app/device", "name":
+            case ".device", "name":
                 return self.DEVICE_NAME
-            case ".app/device", "version":
+            case ".device", "version":
                 return self.DEVICE_VERSION
-            case ".app/device", "serialNumber" if access >= RpcMethodAccess.READ:
+            case ".device", "serialNumber" if access >= RpcMethodAccess.READ:
                 return self.DEVICE_SERIAL_NUMBER
         return await super()._method_call(path, method, param, access, user_id)
 
     def _ls(self, path: str) -> collections.abc.Iterator[str]:
         yield from super()._ls(path)
-        # Parent already yield .app
-        if path == ".app":
-            yield "device"
+        if not path:
+            yield ".device"
 
     def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:
         yield from super()._dir(path)
-        if path == ".app/device":
+        if path == ".device":
             yield RpcMethodDesc.getter(
                 "name", "Null", "String", access=RpcMethodAccess.BROWSE
             )

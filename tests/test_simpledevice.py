@@ -37,9 +37,9 @@ async def fixture_device(shvbroker, url_test_device):
         ("test/device/.app", "name", "pyshv-device"),
         ("test/device/.app", "version", VERSION),
         ("test/device/.app", "ping", None),
-        ("test/device/.app/device", "name", "testdev"),
-        ("test/device/.app/device", "version", "0.0.x"),
-        ("test/device/.app/device", "serialNumber", None),
+        ("test/device/.device", "name", "testdev"),
+        ("test/device/.device", "version", "0.0.x"),
+        ("test/device/.device", "serialNumber", None),
     ),
 )
 async def test_call(client, device, path, method, result):
@@ -65,9 +65,9 @@ async def test_invalid_call(client):
 @pytest.mark.parametrize(
     "path,result",
     (
-        ("test/device", [".app"]),
-        ("test/device/.app", ["device"]),
-        ("test/device/.app/device", []),
+        ("test/device", [".app", ".device"]),
+        ("test/device/.app", []),
+        ("test/device/.device", []),
     ),
 )
 async def test_ls(client, device, path, result):
@@ -80,7 +80,7 @@ async def test_ls(client, device, path, result):
     "path,result",
     (
         (
-            "test/device/.app/device",
+            "test/device/.device",
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),

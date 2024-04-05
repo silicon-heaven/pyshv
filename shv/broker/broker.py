@@ -86,7 +86,7 @@ class RpcBroker:
             if self.__peer_is_broker is None:
                 self.__peer_is_broker = False
                 with contextlib.suppress(RpcError):
-                    lsr = await self.call(".app", "ls", "broker")
+                    lsr = await self.call("", "ls", ".broker")
                     self.__peer_is_broker = lsr if isinstance(lsr, bool) else False
             return self.__peer_is_broker
 
@@ -152,13 +152,13 @@ class RpcBroker:
 
         def _ls(self, path: str) -> typing.Iterator[str]:
             yield from super()._ls(path)
+            if not path:
+                yield ".broker"
             match path:
-                case ".app":
-                    yield "broker"
-                case ".app/broker":
+                case ".broker":
                     yield "currentClient"
                     yield "client"
-                case ".app/broker/client":
+                case ".broker/client":
                     yield from (
                         str(c.broker_client_id) for c in self.__broker.clients()
                     )
@@ -172,7 +172,7 @@ class RpcBroker:
         def _dir(self, path: str) -> typing.Iterator[RpcMethodDesc]:
             yield from super()._dir(path)
             match path:
-                case ".app/broker":
+                case ".broker":
                     yield RpcMethodDesc(
                         "clientInfo", access=RpcMethodAccess.SUPER_SERVICE
                     )
@@ -188,7 +188,7 @@ class RpcBroker:
                     yield RpcMethodDesc(
                         "disconnectClient", access=RpcMethodAccess.SUPER_SERVICE
                     )
-                case ".app/broker/currentClient":
+                case ".broker/currentClient":
                     yield RpcMethodDesc.getter("info", access=RpcMethodAccess.BROWSE)
                     yield RpcMethodDesc("subscribe", access=RpcMethodAccess.BROWSE)
                     yield RpcMethodDesc("unsubscribe", access=RpcMethodAccess.BROWSE)
@@ -206,7 +206,7 @@ class RpcBroker:
         ) -> SHVType:
             assert self.user is not None  # Otherwise handled in _message
             match path.split("/"):
-                case [".app", "broker"] if access >= RpcMethodAccess.SUPER_SERVICE:
+                case [".broker"] if access >= RpcMethodAccess.SUPER_SERVICE:
                     match method:
                         case "clientInfo":
                             if not isinstance(param, int):
@@ -236,7 +236,7 @@ class RpcBroker:
                                 )
                             await client.disconnect()
                             return None
-                case [".app", "broker", "currentClient"]:
+                case [".broker", "currentClient"]:
                     match method:
                         case "info":
                             return self.infomap()
@@ -454,10 +454,10 @@ class RpcBroker:
         :return: client associated with this mount point and path relative to
             the client or None if there is no such client.
         """
-        if path.startswith(".app/broker/client/"):
+        if path.startswith(".broker/client/"):
             pth = path.split("/")
-            client = self.get_client(pth[3])
-            return (client, "/".join(pth[4:])) if client else None
+            client = self.get_client(pth[2])
+            return (client, "/".join(pth[3:])) if client else None
 
         # Note: we do not allow recursive mount points and thus first match is the
         # correct and the only client.
@@ -518,7 +518,7 @@ class RpcBroker:
                         prev.discard(s)
                     else:
                         await client.call(
-                            ".app/broker/currentClient"
+                            ".broker/currentClient"
                             if await client.peer_is_shv3()
                             else ".broker/app",
                             "subscribe",
@@ -526,7 +526,7 @@ class RpcBroker:
                         )
             for s in prev:
                 await client.call(
-                    ".app/broker/currentClient"
+                    ".broker/currentClient"
                     if await client.peer_is_shv3()
                     else ".broker/app",
                     "unsubscribe",
@@ -583,7 +583,7 @@ class RpcBroker:
                 self._subsubs[mnt][sub] += 1
                 if self._subsubs[mnt][sub] == 1:
                     await subc.call(
-                        ".app/broker/currentClient"
+                        ".broker/currentClient"
                         if await subc.peer_is_shv3()
                         else ".broker/app",
                         "subscribe",
@@ -608,7 +608,7 @@ class RpcBroker:
                 if self._subsubs[mnt][sub] == 0:
                     del self._subsubs[mnt][sub]
                     await subc.call(
-                        ".app/broker/currentClient"
+                        ".broker/currentClient"
                         if await subc.peer_is_shv3()
                         else ".broker/app",
                         "unsubscribe",

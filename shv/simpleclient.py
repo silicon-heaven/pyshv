@@ -200,9 +200,7 @@ class SimpleClient(SimpleBase):
     async def __subscribe(self, sub: RpcSubscription) -> bool:
         return bool(
             await self.call(
-                ".app/broker/currentClient"
-                if await self.peer_is_shv3()
-                else ".broker/app",
+                ".broker/currentClient" if await self.peer_is_shv3() else ".broker/app",
                 "subscribe",
                 sub.to_shv(not await self.peer_is_shv3()),
             )
@@ -216,9 +214,7 @@ class SimpleClient(SimpleBase):
         """
         resp = bool(
             await self.call(
-                ".app/broker/currentClient"
-                if await self.peer_is_shv3()
-                else ".broker/app",
+                ".broker/currentClient" if await self.peer_is_shv3() else ".broker/app",
                 "unsubscribe",
                 sub.to_shv(not await self.peer_is_shv3()),
             )

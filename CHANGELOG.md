@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SHV value getting utilities for common parameter formats (`shvarg`, `shvgett`)
 
 ### Changed
+- `.app/broker` and `.app/device` were moved to `.broker` and `.device`
+  according to the SHV 3.0 standard
 - `SimpleBase` and thus `SimpleClient` method `_method_call` has new argument
   `user_id` and order of old arguments changes. Please update your code!
 - `RpcUrl` login specific options were moved to `RpcLogin`

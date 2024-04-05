@@ -53,7 +53,7 @@ async def test_lsmod_with_device(shvbroker, lsclient, example_device, url_test_d
     assert await lsclient.lsmods.get() == ("test", {"foo": True})
     lsclient.lsmods.task_done()
 
-    cid = (await device.call(".app/broker/currentClient", "info"))["clientId"]
+    cid = (await device.call(".broker/currentClient", "info"))["clientId"]
     await shvbroker.mount_client(shvbroker.get_client(cid), "test/other")
     assert await lsclient.lsmods.get() == ("test", {"foo": False, "other": True})
     lsclient.lsmods.task_done()

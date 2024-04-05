@@ -84,9 +84,9 @@ class RpcBrokerConfig:
                 if role.applies(path, method):
                     return role.access
             # These are defined paths we need to allow all users to access
-            if path == ".app/broker/currentClient":
+            if path == ".broker/currentClient":
                 return RpcMethodAccess.READ
-            if path in {".app", ".app/broker"}:
+            if path in {".app", ".broker"}:
                 return RpcMethodAccess.BROWSE
             return None
 

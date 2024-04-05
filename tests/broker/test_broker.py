@@ -22,12 +22,12 @@ from shv import (
 @pytest.mark.parametrize(
     "path,nodes",
     (
-        ("", [".app"]),
-        (".app", ["broker"]),
-        (".app/broker", ["currentClient", "client"]),
-        (".app/broker/currentClient", []),
-        (".app/broker/client", ["0"]),  # only connection is us
-        (".app/broker/client/0", [".app"]),
+        ("", [".app", ".broker"]),
+        (".app", []),
+        (".broker", ["currentClient", "client"]),
+        (".broker/currentClient", []),
+        (".broker/client", ["0"]),  # only connection is us
+        (".broker/client/0", [".app"]),
     ),
 )
 async def test_empty_ls(client, path, nodes):
@@ -40,8 +40,8 @@ async def test_empty_ls(client, path, nodes):
     (
         "foo",
         ".app/foo",
-        ".app/broker/foo",
-        ".app/broker/client/foo",
+        ".broker/foo",
+        ".broker/client/foo",
     ),
 )
 async def test_empty_ls_invalid(client, path):
@@ -72,7 +72,7 @@ async def test_empty_ls_invalid(client, path):
             ],
         ),
         (
-            ".app/broker",
+            ".broker",
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
@@ -87,7 +87,7 @@ async def test_empty_ls_invalid(client, path):
             ],
         ),
         (
-            ".app/broker/currentClient",
+            ".broker/currentClient",
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
@@ -99,7 +99,7 @@ async def test_empty_ls_invalid(client, path):
             ],
         ),
         (
-            ".app/broker/client",
+            ".broker/client",
             [RpcMethodDesc.stddir(), RpcMethodDesc.stdls(), RpcMethodDesc.stdlsmod()],
         ),
     ),
@@ -112,10 +112,10 @@ async def test_empty_dir(client, path, methods):
 @pytest.mark.parametrize(
     "path,method,param,result",
     (
-        (".app/broker", "clients", None, [0]),
-        (".app/broker", "mounts", None, []),
+        (".broker", "clients", None, [0]),
+        (".broker", "mounts", None, []),
         (
-            ".app/broker",
+            ".broker",
             "clientInfo",
             0,
             {
@@ -127,9 +127,9 @@ async def test_empty_dir(client, path, methods):
                 "idleTimeMax": 180000,
             },
         ),
-        (".app/broker", "mountedClientInfo", "test", None),
+        (".broker", "mountedClientInfo", "test", None),
         (
-            ".app/broker/currentClient",
+            ".broker/currentClient",
             "info",
             None,
             {
@@ -141,8 +141,8 @@ async def test_empty_dir(client, path, methods):
                 "idleTimeMax": 180000,
             },
         ),
-        (".app/broker/currentClient", "subscriptions", None, []),
-        (".app/broker/client/0/.app", "name", None, "pyshv-client"),
+        (".broker/currentClient", "subscriptions", None, []),
+        (".broker/client/0/.app", "name", None, "pyshv-client"),
     ),
 )
 async def test_empty_call(client, path, method, param, result):
@@ -153,8 +153,8 @@ async def test_empty_call(client, path, method, param, result):
 @pytest.mark.parametrize(
     "path,nodes",
     (
-        (".app/broker/client", ["0", "1"]),
-        ("", [".app", "test"]),
+        (".broker/client", ["0", "1"]),
+        ("", [".app", ".broker", "test"]),
         ("test", ["device"]),
         ("test/device", [".app", "track"]),
         ("test/device/track", ["1", "2", "3", "4", "5", "6", "7", "8"]),
@@ -192,7 +192,7 @@ async def test_with_example_ls(client, example_device, path, nodes):
     ),
 )
 async def test_mounted_client_info(client, example_device, param, result):
-    res = await client.call(".app/broker", "mountedClientInfo", param)
+    res = await client.call(".broker", "mountedClientInfo", param)
     assert res["idleTime"] >= 0
     res["idleTime"] = 42
     assert shvmeta_eq(res, result)
@@ -202,11 +202,11 @@ async def test_subscribe(client, example_device):
     sub = RpcSubscription("test/device/track/**")
     assert await client.subscribe(sub) is True
     assert await client.subscribe(sub) is False
-    assert await client.call(".app/broker/currentClient", "subscriptions") == [
+    assert await client.call(".broker/currentClient", "subscriptions") == [
         {"paths": "test/device/track/**"}
     ]
     assert await client.unsubscribe(sub) is True
-    assert await client.call(".app/broker/currentClient", "subscriptions") == []
+    assert await client.call(".broker/currentClient", "subscriptions") == []
     assert await client.unsubscribe(sub) is False
 
 
@@ -227,7 +227,7 @@ async def test_with_example_reset(example_device, client):
 async def test_unauthorized_access(shvbroker, value_client):
     """Check that we are not allowed to access node we do not have access to."""
     with pytest.raises(RpcMethodNotFoundError):
-        await value_client.call(".app/broker/clients/0", "userName")
+        await value_client.call(".broker/clients/0", "userName")
 
 
 async def test_invalid_login(shvbroker, url):
@@ -295,9 +295,9 @@ async def test_client_reset(client):
     After reconnection client must always have unique ID and thus we deteect
     only that.
     """
-    cid = await client.call(".app/broker/currentClient", "info")
+    cid = await client.call(".broker/currentClient", "info")
     await client.reset()
-    assert (await client.call(".app/broker/currentClient", "info"))["clientId"] != cid[
+    assert (await client.call(".broker/currentClient", "info"))["clientId"] != cid[
         "clientId"
     ]
 
