@@ -52,7 +52,7 @@ target-version = "py311"
 [tool.ruff.lint]
 select = [
   "F", "E", "W", "I", "N", "D", "UP", "YTT", "ANN", "ASYNC", "TRIO", "S", "BLE",
-  "FBT", "B", "A", "COM", "PL", "RUF"
+  "B", "A", "COM", "PL", "RUF"
 ]
 ignore = [
   # Magic methods have defined behavior so what is there to document. __init__
@@ -62,16 +62,26 @@ ignore = [
   "D203", "D213",
   # Ignore too long lines (format tackles that)
   "E501",
+  # It is nice that assert should not be used for input checking but it can be
+  # also used for internal consistency checking.
+  "S101", "B011",
   # subprocess can be insecurely used but not is insecure by design
-  "S404", "S603",
+  "S404", "S603", "S607",
+  # Catching Exception is valid and safe in some cases and thus should be allowed
+  "BLE001",
   # Conflict with formatter
   "COM812",
   # Remove too-many limit for more complex code.
-  "PLR0911", "PLR0912", "PLR0913", "PLR2004"
+  "PLR0904", "PLR0911", "PLR0912", "PLR0913", "PLR0917", "PLR2004", "PLR1702",
+  # This seems like a wrong rule
+  "PLW1641",
 ]
 preview = true
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["D100", "D104", "S101", "ANN001", "ANN002", "ANN201"]
+"tests/**" = [
+  "D100", "D101", "D102", "D103", "D104", "S101", "S106", "ANN001", "ANN002",
+  "ANN003", "ANN201", "ANN202", "ANN204", "ANN205", "PLR6301",
+]
 "docs/conf.py" = ["D100", "D103", "A001", "ANN201", "ANN001"]
 [tool.ruff.format]
 docstring-code-format = true
