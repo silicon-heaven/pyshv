@@ -1,7 +1,7 @@
 ============================================
 Pure Python implementation of Silicon Heaven
 ============================================
-.. image:: https://gitlab.com/elektroline-predator/pyshv/-/raw/master/docs/_static/logo.svg
+.. image:: https://gitlab.com/silicon-heaven/pyshv/-/raw/master/docs/_static/logo.svg
    :align: right
    :height: 128px
 
@@ -9,9 +9,9 @@ The implementation of serialized and deserializer for CPON and Chainpack as well
 as implementation of `Silicon Heaven RPC
 <https://silicon-heaven.github.io/shv-doc/>`__.
 
-* `📃 Sources <https://gitlab.com/elektroline-predator/pyshv>`__
-* `⁉️ Issue tracker <https://gitlab.com/elektroline-predator/pyshv/-/issues>`__
-* `📕 Documentation <https://elektroline-predator.gitlab.io/pyshv/>`__
+* `📃 Sources <https://gitlab.com/silicon-heaven/pyshv>`__
+* `⁉️ Issue tracker <https://gitlab.com/silicon-heaven/pyshv/-/issues>`__
+* `📕 Documentation <https://silicon-heaven.gitlab.io/pyshv/>`__
 
 
 Installation

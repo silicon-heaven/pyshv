@@ -18,7 +18,7 @@ The device implementation should be a new Python class based on
 
 .. tip::
    Devices can be more easilly implemented with `SHVTree
-   <https://elektroline-predator.gitlab.io/shvtree/>`_. That removes common
+   <https://silicon-heaven.gitlab.io/shvtree/>`_. That removes common
    errors where :meth:`shv.SimpleBase._dir` and
    :meth:`shv.SimpleBase._method_call` implementations are not in synch and thus
    method is described as being different than actually is.

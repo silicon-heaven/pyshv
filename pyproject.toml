@@ -26,8 +26,8 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://gitlab.com/elektroline-predator/pyshv"
-"Bug Tracker" = "https://gitlab.com/elektroline-predator/pyshv/-/issues"
+"Homepage" = "https://gitlab.com/silicon-heaven/pyshv"
+"Bug Tracker" = "https://gitlab.com/silicon-heaven/pyshv/-/issues"
 "Github" = "https://github.com/silicon-heaven/libshv-py"
 
 [project.optional-dependencies]
