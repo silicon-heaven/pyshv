@@ -52,12 +52,12 @@ class ExampleDevice(SimpleClient):
                     "reset",
                     RpcMethodFlags.USER_ID_REQUIRED,
                     access=RpcMethodAccess.COMMAND,
-                    description="Reset all tracks to their initial state",
+                    extra={"dependencies": "Reset all tracks to their initial state"},
                 )
                 yield RpcMethodDesc.getter("lastResetUser", result="StringOrNull")
             case ["track", track] if track in self.tracks:
                 yield RpcMethodDesc.getter(
-                    result="List[Int]", description="List of tracks"
+                    result="List[Int]", description="List of tracks", signal=True
                 )
                 yield RpcMethodDesc.setter(param="List[Int]", description="Set track")
 

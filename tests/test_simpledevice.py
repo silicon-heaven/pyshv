@@ -12,7 +12,7 @@ from shv import (
     RpcMethodDesc,
     RpcMethodNotFoundError,
     SimpleDevice,
-    shvmeta_eq,
+    shvmeta,
 )
 
 
@@ -45,7 +45,8 @@ async def fixture_device(shvbroker, url_test_device):
 async def test_call(client, device, path, method, result):
     """Check that we can call various methods using blocking call."""
     res = await client.call(path, method)
-    assert shvmeta_eq(res, result)
+    assert res == result
+    assert shvmeta(res) == shvmeta(result)
 
 
 async def test_call_date(client, device):
@@ -84,7 +85,6 @@ async def test_ls(client, device, path, result):
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
-                RpcMethodDesc.stdlsmod(),
                 RpcMethodDesc.getter(
                     "name", "Null", "String", access=RpcMethodAccess.BROWSE
                 ),

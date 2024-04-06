@@ -9,13 +9,13 @@ import functools
 import typing
 
 from .rpcparams import SHVGetKey, shvget, shvgett
-from .value import SHVType
+from .value import SHVMapType, SHVType, is_shvmap
 
 
 class RpcMethodFlags(enum.IntFlag):
     """Flags assigned to the SHV RPC methods."""
 
-    SIGNAL = 1 << 0
+    NOT_CALLABLE = 1 << 0
     GETTER = 1 << 1
     SETTER = 1 << 2
     LARGE_RESULT_HINT = 1 << 3
@@ -89,61 +89,60 @@ class RpcMethodDesc:
         PARAM = 3
         RESULT = 4
         ACCESS = 5
-        SOURCE = 6
+        SIGNALS = 6
+        EXTRA = 63
 
     name: str
     flags: RpcMethodFlags = dataclasses.field(default=RpcMethodFlags(0))
     param: str = "Null"
     result: str = "Null"
     access: RpcMethodAccess = RpcMethodAccess.BROWSE
-    source: list[str] = dataclasses.field(default_factory=list)
-    description: str = ""
+    signals: dict[str, str] = dataclasses.field(default_factory=dict)
+    extra: dict[str, SHVType] = dataclasses.field(default_factory=dict)
 
-    def to_shv(self, use_map: bool = False) -> SHVType:
+    def to_shv(self, extra: bool = False) -> SHVType:
         """Convert to SHV RPC representation."""
-        res: dict[int | str, SHVType] = {
-            "name" if use_map else self.Key.NAME: self.name,
-            "flags" if use_map else self.Key.FLAGS: self.flags,
+        res: dict[int, SHVType] = {
+            self.Key.NAME: self.name,
+            self.Key.FLAGS: self.flags,
         }
         if self.param != "Null":
-            res["param" if use_map else self.Key.PARAM] = self.param
+            res[self.Key.PARAM] = self.param
         if self.result != "Null":
-            res["result" if use_map else self.Key.RESULT] = self.result
-        res["access" if use_map else self.Key.ACCESS] = RpcMethodAccess.tostr(
-            self.access
-        )
-        if self.source:
-            res["source" if use_map else self.Key.SOURCE] = (
-                self.source[0] if len(self.source) == 1 else self.source
-            )
-        if self.description and use_map:
-            res["description"] = self.description
-        return typing.cast(SHVType, res)
+            res[self.Key.RESULT] = self.result
+        res[self.Key.ACCESS] = self.access
+        if self.signals:
+            res[self.Key.SIGNALS] = self.signals
+        if self.extra:
+            res[self.Key.EXTRA] = self.extra
+        return res
 
     @classmethod
     def from_shv(cls, value: SHVType) -> RpcMethodDesc:
         """Create from SHV RPC representation."""
         if not isinstance(value, collections.abc.Mapping):
-            raise ValueError("Expected Map.")
-        rsource = shvget(value, SHVGetKey("source", cls.Key.SOURCE), [])
+            raise ValueError(f"Expected Map but got {value!r}.")
+        raccess = shvget(value, SHVGetKey("access", cls.Key.ACCESS), cls.access)
+        rsignals = shvget(
+            value, SHVGetKey("source", cls.Key.SIGNALS), typing.cast(SHVMapType, {})
+        )
+        rextra = shvget(value, cls.Key.EXTRA, typing.cast(SHVMapType, {}))
         return cls(
             name=shvgett(value, SHVGetKey("name", cls.Key.NAME), str, "UNSPECIFIED"),
             flags=RpcMethodFlags(
                 shvgett(value, SHVGetKey("flags", cls.Key.FLAGS), int, cls.flags)
             ),
-            param=shvgett(value, SHVGetKey("param", cls.Key.PARAM), str, cls.param),
-            result=shvgett(value, SHVGetKey("result", cls.Key.RESULT), str, cls.result),
-            access=RpcMethodAccess.fromstr(
-                shvgett(
-                    value, SHVGetKey("access", cls.Key.ACCESS), str, cls.access.tostr()
-                )
-            ),
-            source=[rsource]
-            if isinstance(rsource, str)
-            else [v for v in rsource if isinstance(v, str)]
-            if isinstance(rsource, collections.abc.Sequence)
-            else [],
-            description=shvgett(value, "description", str, cls.description),
+            param=shvgett(value, cls.Key.PARAM, str, cls.param),
+            result=shvgett(value, cls.Key.RESULT, str, cls.result),
+            access=RpcMethodAccess(raccess)
+            if isinstance(raccess, int)
+            else RpcMethodAccess.fromstr(raccess)
+            if isinstance(raccess, str)
+            else cls.access,
+            signals={k: v for k, v in rsignals.items() if isinstance(v, str)}
+            if is_shvmap(rsignals)
+            else {},
+            extra=dict(rextra) if is_shvmap(rextra) else {},
         )
 
     @classmethod
@@ -153,6 +152,7 @@ class RpcMethodDesc:
         param: str = "Int",
         result: str = "Any",
         access: RpcMethodAccess = RpcMethodAccess.READ,
+        signal: bool | str = False,
         description: str = "",
     ) -> RpcMethodDesc:
         """Create getter method description.
@@ -161,9 +161,20 @@ class RpcMethodDesc:
         :param param: Type of the parameter this getter expects.
         :param result: Type of the result this getter provides.
         :param access: Minimal granted access level for this getter.
+        :param signal: Allows specifying property change signal. You can specify
+          `True` to get default `"chng"` signal or you can specify custom signal
+          name (should end with *chng*).
         :param description: Short description of the value.
         """
-        return cls(name, RpcMethodFlags.GETTER, param, result, access, [], description)
+        return cls(
+            name,
+            RpcMethodFlags.GETTER,
+            param,
+            result,
+            access,
+            {"chng" if signal is True else signal: result} if signal else {},
+            {"description": description} if description else {},
+        )
 
     @classmethod
     def setter(
@@ -182,33 +193,13 @@ class RpcMethodDesc:
         :param access: Minimal granted access level for this setter.
         :param description: Short description of the value.
         """
-        return cls(name, RpcMethodFlags.SETTER, param, result, access, [], description)
-
-    @classmethod
-    def signal(
-        cls,
-        name: str = "chng",
-        source: list[str] | str = "get",
-        param: str = "Any",
-        access: RpcMethodAccess = RpcMethodAccess.READ,
-        description: str = "",
-    ) -> RpcMethodDesc:
-        """Create signal method description.
-
-        :param name: Name of the signal.
-        :param source: Method(s) name signal is associated with.
-        :param param: Type of the parameter this signal carries.
-        :param access: Minimal granted access level for this setter.
-        :param description: Short description of the value.
-        """
         return cls(
             name,
-            RpcMethodFlags.SIGNAL,
-            "Null",
+            RpcMethodFlags.SETTER,
             param,
+            result,
             access,
-            [source] if isinstance(source, str) else source,
-            description,
+            extra={"description": description} if description else {},
         )
 
     @classmethod
@@ -221,10 +212,4 @@ class RpcMethodDesc:
     @functools.lru_cache(maxsize=1)
     def stdls(cls) -> RpcMethodDesc:
         """Get description of standard 'ls' method."""
-        return cls("ls", param="ils", result="ols")
-
-    @classmethod
-    @functools.lru_cache(maxsize=1)
-    def stdlsmod(cls) -> RpcMethodDesc:
-        """Get description of standard 'lsmod' signal method."""
-        return cls.signal("lsmod", "ls", "olsmod", RpcMethodAccess.BROWSE)
+        return cls("ls", param="ils", result="ols", signals={"lsmod": "olsmod"})

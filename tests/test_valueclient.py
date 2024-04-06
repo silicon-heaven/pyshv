@@ -60,6 +60,7 @@ async def test_get_snapshot_subscribes(value_client, example_device):
     assert len(value_client) == 8
 
 
+@pytest.mark.xfail(reason="libshv doesn't support subscribe to fixed path for now.")
 async def test_get_snapshot_lower_subscribe(value_client, example_device):
     """Check that get_snapshot caches only subscribed paths."""
     await value_client.subscribe(RpcSubscription("test/device/track/2"))

@@ -294,5 +294,5 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
                 pass  # ls might not be present which is not an issue
             if not self.is_subscribed(pth) or (not update and pth in self._cache):
                 continue
-            if await self.dir_description(pth, "get") is not None:
+            if await self.dir_exists(pth, "get"):
                 self._cache[pth] = (time.time(), await self.prop_get(pth))

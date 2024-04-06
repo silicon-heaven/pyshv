@@ -15,7 +15,7 @@ from shv import (
     RpcMethodNotFoundError,
     RpcSubscription,
     SimpleClient,
-    shvmeta_eq,
+    shvmeta,
 )
 
 
@@ -55,14 +55,13 @@ async def test_empty_ls_invalid(client, path):
     (
         (
             "",
-            [RpcMethodDesc.stddir(), RpcMethodDesc.stdls(), RpcMethodDesc.stdlsmod()],
+            [RpcMethodDesc.stddir(), RpcMethodDesc.stdls()],
         ),
         (
             ".app",
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
-                RpcMethodDesc.stdlsmod(),
                 RpcMethodDesc.getter("shvVersionMajor", "Null", "Int"),
                 RpcMethodDesc.getter("shvVersionMinor", "Null", "Int"),
                 RpcMethodDesc.getter("name", "Null", "String"),
@@ -76,7 +75,6 @@ async def test_empty_ls_invalid(client, path):
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
-                RpcMethodDesc.stdlsmod(),
                 RpcMethodDesc("clientInfo", access=RpcMethodAccess.SUPER_SERVICE),
                 RpcMethodDesc(
                     "mountedClientInfo", access=RpcMethodAccess.SUPER_SERVICE
@@ -91,7 +89,6 @@ async def test_empty_ls_invalid(client, path):
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
-                RpcMethodDesc.stdlsmod(),
                 RpcMethodDesc.getter("info", access=RpcMethodAccess.BROWSE),
                 RpcMethodDesc("subscribe", access=RpcMethodAccess.BROWSE),
                 RpcMethodDesc("unsubscribe", access=RpcMethodAccess.BROWSE),
@@ -100,7 +97,7 @@ async def test_empty_ls_invalid(client, path):
         ),
         (
             ".broker/client",
-            [RpcMethodDesc.stddir(), RpcMethodDesc.stdls(), RpcMethodDesc.stdlsmod()],
+            [RpcMethodDesc.stddir(), RpcMethodDesc.stdls()],
         ),
     ),
 )
@@ -147,7 +144,9 @@ async def test_empty_dir(client, path, methods):
 )
 async def test_empty_call(client, path, method, param, result):
     """Call various broker methods."""
-    assert shvmeta_eq(await client.call(path, method, param), result)
+    res = await client.call(path, method, param)
+    assert res == result
+    assert shvmeta(res) == shvmeta(result)
 
 
 @pytest.mark.parametrize(
@@ -195,7 +194,8 @@ async def test_mounted_client_info(client, example_device, param, result):
     res = await client.call(".broker", "mountedClientInfo", param)
     assert res["idleTime"] >= 0
     res["idleTime"] = 42
-    assert shvmeta_eq(res, result)
+    assert res == result
+    assert shvmeta(res) == shvmeta(result)
 
 
 async def test_subscribe(client, example_device):

@@ -5,7 +5,7 @@ import decimal
 
 import pytest
 
-from shv import CponReader, CponWriter, SHVMeta, SHVUInt, shvmeta_eq
+from shv import CponReader, CponWriter, SHVMeta, SHVUInt, shvmeta
 
 DATA: list = [
     ("null", None),
@@ -127,7 +127,9 @@ DATA: list = [
     ],
 )
 def test_reader(cpon, data):
-    assert shvmeta_eq(CponReader.unpack(cpon), data)
+    res = CponReader.unpack(cpon)
+    assert res == data
+    assert shvmeta(res) == shvmeta(data)
 
 
 def test_reader_uint():

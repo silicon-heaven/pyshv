@@ -262,20 +262,21 @@ class SimpleBase:
             return [RpcMethodDesc.from_shv(m) for m in res]
         raise RpcMethodCallExceptionError(f"Invalid result returned: {res!r}")
 
-    async def dir_description(self, path: str, name: str) -> RpcMethodDesc | None:
-        """Get method description associated with node on the specified path.
+    async def dir_exists(self, path: str, name: str) -> bool:
+        """Check if method exists using ``dir`` method.
 
         :param path: SHV path to the node we want methods to be listed for.
-        :param name: Name of the method description to be received for.
-        :return: Method description or ``None`` in case there is no such method.
+        :param name: Name of the method which existence should be checked.
+        :return: ``True`` if method exists and ``False`` otherwise.
         :raise RpcMethodNotFoundError: when there is no such path.
         """
         res = await self.call(path, "dir", name)
-        if isinstance(res, list):  # pragma: no cover, backward compatibility
-            res = res[0] if len(res) == 1 else None
-        if is_shvnull(res):
-            return None
-        return RpcMethodDesc.from_shv(res)
+        # list, null and mapping is backward compatibility
+        if not isinstance(
+            res, bool | None | collections.abc.Mapping | collections.abc.Sequence
+        ):  # pragma: no cover
+            raise RpcMethodCallExceptionError(f"Invalid result returned: {res!r}")
+        return bool(res)
 
     async def peer_is_shv3(self) -> bool:
         """Check if peer supports at least SHV 3.0."""
@@ -385,8 +386,7 @@ class SimpleBase:
 
     def _method_call_ls(self, path: str, param: SHVType) -> SHVType:
         """Implement ``ls`` method call functionality."""
-        # Note: list is backward compatibility
-        if is_shvnull(param) or isinstance(param, list):
+        if is_shvnull(param):
             res = []
             for v in self._ls(path):
                 if v not in res:
@@ -429,14 +429,10 @@ class SimpleBase:
         """Implement ``dir`` method call functionality."""
         if not self._valid_path(path):
             raise RpcMethodNotFoundError(f"No such node: {path}")
-        # Note: The list here is backward compatibility
-        if is_shvnull(param) or is_shvbool(param) or isinstance(param, list):
+        if is_shvnull(param) or is_shvbool(param):
             return list(d.to_shv(bool(param)) for d in self._dir(path))
         if isinstance(param, str):
-            for d in self._dir(path):
-                if d.name == param:
-                    return d.to_shv()
-            return None
+            return any(v.name == param for v in self._dir(path))
         raise RpcInvalidParamsError("Use Null or Bool or String with node name")
 
     def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:  # noqa: PLR6301
@@ -452,7 +448,6 @@ class SimpleBase:
         """
         yield RpcMethodDesc.stddir()
         yield RpcMethodDesc.stdls()
-        yield RpcMethodDesc.stdlsmod()
         if path == ".app":
             yield RpcMethodDesc.getter("shvVersionMajor", "Null", "Int")
             yield RpcMethodDesc.getter("shvVersionMinor", "Null", "Int")

@@ -5,7 +5,7 @@ import decimal
 
 import pytest
 
-from shv import ChainPackReader, ChainPackWriter, SHVMeta, SHVUInt, shvmeta_eq
+from shv import ChainPackReader, ChainPackWriter, SHVMeta, SHVUInt, shvmeta
 
 # You can get chainpack using this shell command:
 #   echo 'null' | cp2cp --ip --oc \
@@ -92,7 +92,8 @@ DATA: list = [
 )
 def test_reader(chainpack, data):
     obj = ChainPackReader.unpack(chainpack)
-    assert shvmeta_eq(obj, data)
+    assert obj == data
+    assert shvmeta(obj) == shvmeta(data)
 
 
 def test_reader_uint():

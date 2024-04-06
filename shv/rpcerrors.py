@@ -21,6 +21,7 @@ class RpcErrorCode(enum.IntEnum):
     UNKNOWN = 9
     LOGIN_REQUIRED = 10
     USER_ID_REQUIRED = 11
+    NOT_IMPLEMENTED = 12
     USER_CODE = 32
 
 
@@ -125,6 +126,12 @@ class RpcUserIDRequiredError(RpcError):
     shv_error_code = RpcErrorCode.USER_ID_REQUIRED
 
 
+class RpcNotImplementedError(RpcError):
+    """Called method that is not implemented right now but valid."""
+
+    shv_error_code = RpcErrorCode.NOT_IMPLEMENTED
+
+
 RpcError.shv_error_map = {
     e.shv_error_code: e
     for e in (
@@ -138,5 +145,6 @@ RpcError.shv_error_map = {
         RpcMethodCallExceptionError,
         RpcLoginRequiredError,
         RpcUserIDRequiredError,
+        RpcNotImplementedError,
     )
 }

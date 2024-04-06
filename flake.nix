@@ -2,7 +2,7 @@
   description = "Flake for Pure Python SHV implementation";
 
   inputs = {
-    libshv.url = "git+https://github.com/silicon-heaven/libshv.git?submodules=1";
+    libshv.url = "github:silicon-heaven/libshv";
   };
 
   outputs = {
@@ -35,7 +35,7 @@
         setuptools,
         sphinxHook,
         pytestCheckHook,
-        libshv,
+        libshvCli,
       }:
         buildPythonPackage {
           pname = pyproject.project.name;
@@ -48,7 +48,7 @@
           outputs = ["out" "doc"];
           propagatedBuildInputs = requires pythonPackages;
           nativeBuildInputs = [setuptools sphinxHook] ++ requires-docs pythonPackages;
-          nativeCheckInputs = [pytestCheckHook libshv] ++ requires-test pythonPackages;
+          nativeCheckInputs = [pytestCheckHook libshvCli] ++ requires-test pythonPackages;
         };
 
       multiversion = {
@@ -112,7 +112,7 @@
               editorconfig-checker
               gitlint
               ruff
-              pkgs.libshv
+              pkgs.libshvCli
               (python3.withPackages (p:
                 [p.build p.twine p.sphinx-autobuild p.mypy]
                 ++ foldl (prev: f: prev ++ f p) [] [

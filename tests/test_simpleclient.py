@@ -10,10 +10,8 @@ from shv import (
     RpcMessage,
     RpcMethodAccess,
     RpcMethodDesc,
-    RpcMethodFlags,
-    SHVUInt,
     SimpleClient,
-    shvmeta_eq,
+    shvmeta,
 )
 
 
@@ -28,16 +26,20 @@ from shv import (
             None,
             [
                 {
-                    "access": "bws",
-                    "flags": SHVUInt(0),
-                    "name": "dir",
-                    "signature": 3,
+                    1: "dir",
+                    3: "DirParam",
+                    4: "DirResult",
+                    5: 1,
+                    6: {},
+                    7: {"description": "", "label": ""},
                 },
                 {
-                    "access": "bws",
-                    "flags": SHVUInt(0),
-                    "name": "ls",
-                    "signature": 3,
+                    1: "ls",
+                    3: "LsParam",
+                    4: "LsResult",
+                    5: 1,
+                    6: {},
+                    7: {"description": "", "label": ""},
                 },
             ],
         ),
@@ -46,7 +48,8 @@ from shv import (
 async def test_call(client, path, method, params, result):
     """Check that we can call various methods using blocking call."""
     res = await client.call(path, method, params)
-    assert shvmeta_eq(res, result)
+    assert res == result
+    assert shvmeta(res) == shvmeta(result)
 
 
 @pytest.mark.parametrize(
@@ -59,11 +62,23 @@ async def test_call(client, path, method, params, result):
 )
 async def test_ls(client, path, result):
     """Verify that we can use ls method."""
-    res = await client.ls(path)
-    assert res == result
+    assert await client.ls(path) == result
 
 
-# TODO test ls_with_child but only after C++ broker supports it.
+@pytest.mark.parametrize(
+    "path,name,result",
+    (
+        ("", ".broker", True),
+        ("", "test", True),
+        ("", "invalid", False),
+        (".broker", "currentClient", True),
+        (".broker", "foo", False),
+        (".broker/app", "log", True),
+    ),
+)
+async def test_ls_has_child(client, path, name, result):
+    """Verify that child existence check works."""
+    assert await client.ls_has_child(path, name) == result
 
 
 @pytest.mark.parametrize(
@@ -72,38 +87,94 @@ async def test_ls(client, path, result):
         (
             "",
             [
-                RpcMethodDesc("dir"),
-                RpcMethodDesc("ls"),
+                RpcMethodDesc("dir", param="DirParam", result="DirResult"),
+                RpcMethodDesc("ls", param="LsParam", result="LsResult"),
+            ],
+        ),
+        (
+            ".broker/currentClient",
+            [
+                RpcMethodDesc("dir", param="DirParam", result="DirResult"),
+                RpcMethodDesc("ls", param="LsParam", result="LsResult"),
+                RpcMethodDesc(
+                    name="clientId",
+                    param="void",
+                    result="ret",
+                    access=RpcMethodAccess.READ,
+                    signals={},
+                    extra={},
+                ),
+                RpcMethodDesc(
+                    name="mountPoint",
+                    param="void",
+                    result="ret",
+                    access=RpcMethodAccess.READ,
+                ),
+                RpcMethodDesc(
+                    name="userRoles",
+                    param="void",
+                    result="ret",
+                    access=RpcMethodAccess.READ,
+                ),
+                RpcMethodDesc(
+                    name="userProfile",
+                    param="void",
+                    result="ret",
+                    access=RpcMethodAccess.READ,
+                ),
+                RpcMethodDesc(
+                    name="accessGrantForMethodCall",
+                    param="param",
+                    result="ret",
+                    access=RpcMethodAccess.READ,
+                ),
+                RpcMethodDesc(
+                    name="accessLevelForMethodCall",
+                    param="param",
+                    result="ret",
+                    access=RpcMethodAccess.READ,
+                ),
+                RpcMethodDesc(
+                    name="accesLevelForMethodCall",
+                    param="param",
+                    result="ret",
+                    access=RpcMethodAccess.READ,
+                ),
+                RpcMethodDesc(
+                    name="changePassword",
+                    param="param",
+                    result="ret",
+                    access=RpcMethodAccess.WRITE,
+                ),
             ],
         ),
         (
             ".broker/app/log",
             [
-                RpcMethodDesc("dir"),
-                RpcMethodDesc("ls", access=RpcMethodAccess.READ),
-                RpcMethodDesc(
-                    "chng",
-                    RpcMethodFlags.SIGNAL,
-                    access=RpcMethodAccess.READ,
-                ),
+                RpcMethodDesc("dir", param="DirParam", result="DirResult"),
+                RpcMethodDesc("ls", param="LsParam", result="LsResult"),
                 RpcMethodDesc(
                     "getSendLogAsSignalEnabled",
-                    RpcMethodFlags.GETTER,
+                    param="void",
+                    result="ret",
                     access=RpcMethodAccess.READ,
                 ),
                 RpcMethodDesc(
                     "setSendLogAsSignalEnabled",
-                    RpcMethodFlags.SETTER,
+                    param="param",
+                    result="ret",
                     access=RpcMethodAccess.WRITE,
                 ),
                 RpcMethodDesc(
                     "verbosity",
-                    RpcMethodFlags.GETTER,
+                    param="void",
+                    result="ret",
                     access=RpcMethodAccess.READ,
                 ),
                 RpcMethodDesc(
                     "setVerbosity",
-                    RpcMethodFlags.SETTER,
+                    param="ret",
+                    result="param",
                     access=RpcMethodAccess.COMMAND,
                 ),
             ],
@@ -113,6 +184,22 @@ async def test_ls(client, path, result):
 async def test_dir(client, path, result):
     """Verify that we can use dir method."""
     res = await client.dir(path)
+    assert res == result
+
+
+@pytest.mark.parametrize(
+    "path,name,result",
+    (
+        (".broker/app", "ping", True),
+        (".broker/app", "invalid", False),
+        (".broker/currentClient", "clientId", True),
+        (".broker/app/log", "verbosity", True),
+        (".broker/app/log", "verbositys", False),
+    ),
+)
+async def test_dir_exists(client, path, name, result):
+    """Verify that method existence check works."""
+    res = await client.dir_exists(path, name)
     assert res == result
 
 

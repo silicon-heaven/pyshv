@@ -15,13 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New RPC error `RpcUserIDRequiredError`
 - RPC Broker configuration option `config.name`
 - SHV value getting utilities for common parameter formats (`shvarg`, `shvgett`)
+- `SimpleBase.dir_exists` that is consistent with `SimpleBase.ls_has_child`
+- `RpcNotImplementedError`
 
 ### Changed
-- `.app/broker` and `.app/device` were moved to `.broker` and `.device`
-  according to the SHV 3.0 standard
 - `SimpleBase` and thus `SimpleClient` method `_method_call` has new argument
   `user_id` and order of old arguments changes. Please update your code!
 - `RpcUrl` login specific options were moved to `RpcLogin`
+- `.app/broker` and `.app/device` were moved to `.broker` and `.device`
+  according to the SHV 3.0 standard
+- `RpcMethodDesc.SIGNAL` renamed to `RpcMethodDesc.NOT_CALLABLE` and should not
+  be used and at the same time new field `RpcMethodDesc.signals` was added.
+  Signals now should be specified there and not as a separate items.
 - `SimpleClient` has now new base `SimpleBase`
 - `RpcClient.reset` no longer disconnects and instead sends reset signal to
   peer. The `RpcClient.receive` now receives not only messages but also these
@@ -48,6 +53,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - `rpc_login` and `rpc_login_url` in favor of `RpcLogin`
+- `SimpleClient.dir_description` that is replaced with `SimpleBase.dir_exists`
+- `RpcMethodDesc.signal` as it is invalid with latest changes
+- `RpcMethodDesc.description` that was replaced with
+  `RpcMethodDesc.extra["description"]`
 - Broker no longer provides `.app/broker/clientInfo`
 - Broker no longer provides method
   `.app/broker/currentClient:rejectNotSubscribed`
