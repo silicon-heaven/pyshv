@@ -75,21 +75,19 @@ from .value import (
     is_shvimap,
     is_shvmap,
     is_shvnull,
+    is_shvtype,
     shvmeta,
     shvmeta_eq,
 )
 from .valueclient import ValueClient
 
 __all__ = [
-    # shvversion
     "SHV_VERSION_MAJOR",
     "SHV_VERSION_MINOR",
     "VERSION",
-    # chainpack
     "ChainPack",
     "ChainPackReader",
     "ChainPackWriter",
-    # cpon
     "Cpon",
     "CponReader",
     "CponWriter",
@@ -100,28 +98,23 @@ __all__ = [
     "RpcClientTTY",
     "RpcClientUnix",
     "RpcError",
-    # rpcerror
     "RpcErrorCode",
     "RpcInternalError",
     "RpcInvalidParamsError",
     "RpcInvalidRequestError",
-    # rpclogin
     "RpcLogin",
     "RpcLoginRequiredError",
     "RpcLoginType",
     "RpcLoginType",
-    # rpcmessage
     "RpcMessage",
     "RpcMethodAccess",
     "RpcMethodCallCancelledError",
     "RpcMethodCallExceptionError",
     "RpcMethodCallTimeoutError",
     "RpcMethodDesc",
-    # rpcmethod
     "RpcMethodFlags",
     "RpcMethodNotFoundError",
     "RpcParseError",
-    # rpcurl
     "RpcProtocol",
     "RpcProtocolSerial",
     "RpcProtocolSerialCRC",
@@ -130,9 +123,7 @@ __all__ = [
     "RpcServerTCP",
     "RpcServerTTY",
     "RpcServerUnix",
-    # rpcsubscription
     "RpcSubscription",
-    # rpcprotocol
     "RpcTransportProtocol",
     "RpcUrl",
     "RpcUserIDRequiredError",
@@ -150,7 +141,6 @@ __all__ = [
     "SHVListType",
     "SHVMap",
     "SHVMapType",
-    # value
     "SHVMeta",
     "SHVMetaType",
     "SHVNull",
@@ -158,30 +148,24 @@ __all__ = [
     "SHVStr",
     "SHVType",
     "SHVUInt",
-    # simplebase
     "SimpleBase",
-    # simpleclient
     "SimpleClient",
-    # simpledevice
     "SimpleDevice",
-    # valueclient
     "ValueClient",
     "connect_rpc_client",
-    # rpcserver
     "create_rpc_server",
     "decimal_rexp",
-    # rpcclient
     "init_rpc_client",
     "is_shvbool",
     "is_shvimap",
     "is_shvmap",
     "is_shvnull",
+    "is_shvtype",
     "shvarg",
     "shvargt",
     "shvget",
     "shvgett",
     "shvmeta",
     "shvmeta_eq",
-    # rpcparams
     "shvt",
 ]

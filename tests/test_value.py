@@ -21,6 +21,7 @@ from shv import (
     SHVUInt,
     is_shvbool,
     is_shvnull,
+    is_shvtype,
     shvmeta_eq,
 )
 
@@ -172,6 +173,34 @@ def test_is_shvnull(value, expected):
 )
 def test_is_shvbool(value, expected):
     assert is_shvbool(value) is expected
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    (
+        (None, True),
+        (SHVNull(), True),
+        (True, True),
+        (False, True),
+        (SHVBool(True), True),
+        (SHVBool(False), True),
+        (42, True),
+        (0.42, True),
+        (decimal.Decimal("0.42"), True),
+        (b"foo", True),
+        ("foo", True),
+        (datetime.datetime.now(), True),
+        ([4, 2], True),
+        (["foo", datetime.datetime.now(), None, False], True),
+        ({10: 4, 1: 2}, True),
+        ({"tenth": 4, "cent": 2}, True),
+        ({10: 4, "cent": 2}, False),
+        ([{10: 4, 1: [2, 0]}, {"tenth": 4, "cent": 2}], True),
+        (datetime.UTC, False),
+    ),
+)
+def test_is_shvtype(value, expected):
+    assert is_shvtype(value) is expected
 
 
 @pytest.mark.parametrize("cls,args", CLASSES)

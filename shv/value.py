@@ -234,15 +234,36 @@ class SHVIMap(dict[int, SHVType], SHVMeta):
     """Dictionary with :class:`SHVMeta`."""
 
 
+def is_shvlist(value: object) -> typing.TypeGuard[SHVListType]:
+    """Check if given value can be SHV List."""
+    return isinstance(value, collections.abc.Sequence) and all(
+        is_shvtype(v) for v in value
+    )
+
+
 def is_shvmap(value: object) -> typing.TypeGuard[SHVMapType]:
     """Check if given value can be SHV Map."""
     return isinstance(value, collections.abc.Mapping) and all(
-        isinstance(k, str) for k in value.keys()
+        isinstance(k, str) and is_shvtype(v) for k, v in value.items()
     )
 
 
 def is_shvimap(value: object) -> typing.TypeGuard[SHVIMapType]:
     """Check if given value can be SHV IMap."""
     return isinstance(value, collections.abc.Mapping) and all(
-        isinstance(k, int) for k in value.keys()
+        isinstance(k, int) and is_shvtype(v) for k, v in value.items()
+    )
+
+
+def is_shvtype(value: object) -> typing.TypeGuard[SHVType]:
+    """Validate type of the value as SHVType."""
+    return (
+        is_shvnull(value)
+        or is_shvbool(value)
+        or isinstance(
+            value, int | float | decimal.Decimal | bytes | str | datetime.datetime
+        )
+        or is_shvlist(value)
+        or is_shvimap(value)
+        or is_shvmap(value)
     )
