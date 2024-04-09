@@ -16,7 +16,9 @@
     with nixpkgs.lib; let
       pyproject = trivial.importTOML ./pyproject.toml;
 
-      pypy2nix_map = {};
+      pypy2nix_map = {
+        "pytest-asyncio" = "pytest-asyncio_0_21";
+      };
       list2attr = list: attr: attrValues (getAttrs list attr);
       pypi2nix = list:
         list2attr (map (n: let

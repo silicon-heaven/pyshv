@@ -33,7 +33,7 @@ dependencies = [
 [project.optional-dependencies]
 test = [
   "pytest",
-  "pytest-asyncio",
+  "pytest-asyncio == 0.21.1",
   "pytest-cov",
 ]
 docs = [
