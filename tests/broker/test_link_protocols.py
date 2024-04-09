@@ -18,7 +18,7 @@ class Protocol:
         return url
 
     @pytest.fixture(name="shvbroker")
-    async def fixture_shvbroker(self, event_loop, config, broker_url):
+    async def fixture_shvbroker(self, config, broker_url):
         config.listen = {"test": broker_url}
         b = broker.RpcBroker(config)
         await b.start_serving()
