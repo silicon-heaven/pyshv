@@ -111,8 +111,9 @@ class SimpleBase:
                 done = {t for t in tasks if t.done()}
                 self.__task_done(done)
                 tasks -= done
-        done, _ = await asyncio.wait(tasks)
-        self.__task_done(done)
+        if tasks:
+            done, _ = await asyncio.wait(tasks)
+            self.__task_done(done)
 
     def __task_done(self, tasks: collections.abc.Iterable[asyncio.Task]) -> None:
         for task in tasks:
