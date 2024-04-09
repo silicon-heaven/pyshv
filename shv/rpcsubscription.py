@@ -83,10 +83,10 @@ class RpcSubscription:
                 res["paths"] = self.paths
             else:
                 res["path"] = pth
-            if "*" in self.signal:
+            if "*" in self.signal and self.signal != "*":
                 res["methods"] = self.signal
             else:
-                res["method"] = self.signal
+                res["method"] = "" if self.signal == "*" else self.signal
         else:
             if self.paths != "**":
                 res["paths"] = self.paths

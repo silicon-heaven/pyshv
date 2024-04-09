@@ -10,6 +10,7 @@ from shv import (
     RpcMessage,
     RpcMethodAccess,
     RpcMethodDesc,
+    RpcMethodFlags,
     SimpleClient,
     shvmeta,
 )
@@ -27,6 +28,7 @@ from shv import (
             [
                 {
                     1: "dir",
+                    2: 0,
                     3: "DirParam",
                     4: "DirResult",
                     5: 1,
@@ -35,6 +37,7 @@ from shv import (
                 },
                 {
                     1: "ls",
+                    2: 0,
                     3: "LsParam",
                     4: "LsResult",
                     5: 1,
@@ -155,24 +158,28 @@ async def test_ls_has_child(client, path, name, result):
                 RpcMethodDesc("ls", param="LsParam", result="LsResult"),
                 RpcMethodDesc(
                     "getSendLogAsSignalEnabled",
+                    flags=RpcMethodFlags.GETTER,
                     param="Null",
                     result="Bool",
                     access=RpcMethodAccess.READ,
                 ),
                 RpcMethodDesc(
                     "setSendLogAsSignalEnabled",
+                    flags=RpcMethodFlags.SETTER,
                     param="Bool",
                     result="Bool",
                     access=RpcMethodAccess.WRITE,
                 ),
                 RpcMethodDesc(
                     "verbosity",
+                    flags=RpcMethodFlags.GETTER,
                     param="Null",
                     result="String",
                     access=RpcMethodAccess.READ,
                 ),
                 RpcMethodDesc(
                     "setVerbosity",
+                    flags=RpcMethodFlags.SETTER,
                     param="Bool",
                     result="String",
                     access=RpcMethodAccess.COMMAND,
