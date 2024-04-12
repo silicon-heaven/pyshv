@@ -75,10 +75,14 @@ class RpcMethodDesc:
     This is implemented as :func:`dataclasses.dataclass`.
 
     :param name: Name of the method.
-    :param signature: Calling signature for this method.
     :param flags: Flags assigned to the method.
+    :param param: Parameter type that should be provided to the method.
+    :param result: Result type that is provided by the method.
     :param access: Minimal granted access level for this method.
-    :param description: Short description of the method.
+    :param signals: Mapping of signal name to data type they cary. These are
+      signals emited by this method.
+    :param extra: Additional fields to be provied in some cases. The most common
+      one is ``"description"`` with method description.
     """
 
     class Key(enum.IntEnum):
