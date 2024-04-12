@@ -4,13 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.6.1] - 2024-04-12
 ### Added
 - `is_shvtype` and `is_shvlist` functions that validates Python object as being
   `SHVType` and `SHVListType` respectively
 
 ### Changed
 - `is_shvmap` and `is_shvimap` now inspect also values with `is_shvtype`
+
+### Fixed
+- Compatibility for `RpcSubscription` when all methods are requested
+- `SimpleBase` sometimes causing error on exit due to not having any task to
+  finish
 
 
 ## [0.6.0] - 2024-04-06
