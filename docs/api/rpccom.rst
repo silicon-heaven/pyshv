@@ -29,7 +29,7 @@ Server
 Servers are waiting for clients connection and provides you with client on the
 sever side to communicate with newly connected peer.
 
-.. automethod:: shv.rpcserver.create_rpc_server
+.. autofunction:: shv.create_rpc_server
 .. autoclass:: shv.RpcServer
 .. autoclass:: shv.RpcServerTCP
 .. autoclass:: shv.RpcServerUnix

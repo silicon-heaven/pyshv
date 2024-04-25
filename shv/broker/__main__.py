@@ -2,7 +2,6 @@
 
 import argparse
 import asyncio
-import configparser
 import logging
 
 from .broker import RpcBroker
@@ -42,7 +41,7 @@ def parse_args() -> argparse.Namespace:
         "-c",
         "--config",
         action="store",
-        default="/etc/pyshvbroker.ini",
+        default="/etc/pyshvbroker.toml",
         help="Configuration file",
     )
     return parser.parse_args()
@@ -65,9 +64,7 @@ def main() -> None:
         format="[%(asctime)s] [%(levelname)s] - %(message)s",
     )
 
-    config = configparser.ConfigParser()
-    config.read(args.config)
-    brokerconf = RpcBrokerConfig.load(config)
+    brokerconf = RpcBrokerConfig.load(args.config)
     try:
         asyncio.run(_broker_main(brokerconf))
     except KeyboardInterrupt:

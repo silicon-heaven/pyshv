@@ -1,4 +1,3 @@
-import configparser
 import pathlib
 
 import pytest
@@ -8,16 +7,12 @@ from shv import broker
 
 @pytest.fixture(name="config", scope="module")
 def fixture_config():
-    config = configparser.ConfigParser()
-    config.read(pathlib.Path(__file__).parent / "pyshvbroker.ini")
-    return broker.RpcBrokerConfig.load(config)
+    return broker.RpcBrokerConfig.load(pathlib.Path(__file__).parent / "config.toml")
 
 
 @pytest.fixture(name="subconfig", scope="module")
 def fixture_subconfig():
-    config = configparser.ConfigParser()
-    config.read(pathlib.Path(__file__).parent / "pyshvsubbroker.ini")
-    return broker.RpcBrokerConfig.load(config)
+    return broker.RpcBrokerConfig.load(pathlib.Path(__file__).parent / "subconfig.toml")
 
 
 @pytest.fixture(name="shvbroker")

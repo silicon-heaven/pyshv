@@ -1,13 +1,17 @@
-"""Protocols for :class:`RpcClient`."""
+"""Common base for stream based clients."""
+
+from __future__ import annotations
 
 import abc
 import asyncio
 import binascii
 import collections.abc
+import contextlib
 import logging
 import typing
 
-from .chainpack import ChainPack
+from ..chainpack import ChainPack
+from .abc import RpcClient, RpcServer
 
 logger = logging.getLogger(__name__)
 
@@ -200,3 +204,153 @@ class RpcProtocolSerialCRC(_RpcProtocolSerial):
         read: collections.abc.Callable[[int], collections.abc.Awaitable[bytes]],
     ) -> bytes:
         return await cls._receive(read, True)
+
+
+class RpcClientStream(RpcClient):
+    """RPC connection to some SHV peer over data stream."""
+
+    def __init__(
+        self,
+        protocol: type[RpcTransportProtocol] = RpcProtocolStream,
+    ) -> None:
+        super().__init__()
+        self._reader: None | asyncio.StreamReader = None
+        self._writer: None | asyncio.StreamWriter = None
+        self.protocol = protocol
+        """Stream communication protocol."""
+
+    async def _send(self, msg: bytes) -> None:
+        if self._writer is None:
+            raise EOFError("Not connected")
+        try:
+            await self.protocol.asyncio_send(self._writer, msg)
+        except ConnectionError as exc:
+            raise EOFError from exc
+
+    async def _receive(self) -> bytes:
+        if self._reader is None:
+            raise EOFError("Not connected")
+        try:
+            return await self.protocol.asyncio_receive(self._reader)
+        except EOFError:
+            if self._writer is not None:
+                self._writer.close()
+            raise
+
+    async def reset(self) -> None:
+        if not self.connected:
+            self._reader, self._writer = await self._open_connection()
+            logger.debug("%s: Connected", self)
+        else:
+            await super().reset()
+
+    @abc.abstractmethod
+    async def _open_connection(
+        self,
+    ) -> tuple[asyncio.StreamReader, asyncio.StreamWriter]:
+        pass
+
+    @property
+    def connected(self) -> bool:
+        return self._writer is not None and not self._writer.is_closing()
+
+    def _disconnect(self) -> None:
+        if self._writer is not None:
+            self._writer.close()
+
+    async def wait_disconnect(self) -> None:
+        if self._writer is not None:
+            with contextlib.suppress(ConnectionError):
+                await self._writer.wait_closed()
+
+
+class RpcServerStream(RpcServer):
+    """RPC server listenting for SHV connections for streams."""
+
+    def __init__(
+        self,
+        client_connected_cb: typing.Callable[
+            [RpcClient], None | collections.abc.Awaitable[None]
+        ],
+        protocol: type[RpcTransportProtocol] = RpcProtocolStream,
+    ) -> None:
+        self.client_connected_cb = client_connected_cb
+        """Callbact that is called when new client is connected."""
+        self.protocol = protocol
+        """Stream communication protocol."""
+        self.clients: list[RpcServerStream.Client] = []
+        """List of clients used for termination of the server."""
+        self._server: asyncio.Server | None = None
+
+    @abc.abstractmethod
+    async def _create_server(self) -> asyncio.Server:
+        """Create the server instance."""
+
+    def is_serving(self) -> bool:
+        return self._server is not None and self._server.is_serving()
+
+    async def listen(self) -> None:
+        if self._server is None:
+            self._server = await self._create_server()
+        await self._server.start_serving()
+
+    async def listen_forewer(self) -> None:
+        if self._server is None:
+            self._server = await self._create_server()
+        await self._server.serve_forever()
+
+    async def _client_connect(
+        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+    ) -> None:
+        client = self.Client(reader, writer, self)
+        self.clients.append(client)
+        res = self.client_connected_cb(client)
+        if isinstance(res, collections.abc.Awaitable):
+            await res
+
+    def close(self) -> None:
+        if self._server is not None:
+            self._server.close()
+
+    async def wait_closed(self) -> None:
+        if self._server is not None:
+            await self._server.wait_closed()
+
+    class Client(RpcClient):
+        """RPC client for Asyncio's stream server connection."""
+
+        def __init__(
+            self,
+            reader: asyncio.StreamReader,
+            writer: asyncio.StreamWriter,
+            server: RpcServerStream,
+        ) -> None:
+            super().__init__()
+            self._reader = reader
+            self._writer = writer
+            self.protocol = server.protocol
+            """Stream communication protocol."""
+
+        async def _send(self, msg: bytes) -> None:
+            try:
+                await self.protocol.asyncio_send(self._writer, msg)
+            except ConnectionError as exc:
+                raise EOFError from exc
+
+        async def _receive(self) -> bytes:
+            try:
+                return await self.protocol.asyncio_receive(self._reader)
+            except EOFError:
+                self._writer.close()
+                raise
+
+        @property
+        def connected(self) -> bool:
+            return not self._writer.is_closing()
+
+        def _disconnect(self) -> None:
+            self._writer.close()
+
+        async def wait_disconnect(self) -> None:
+            with contextlib.suppress(ConnectionError):
+                await self._writer.wait_closed()

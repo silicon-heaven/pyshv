@@ -8,7 +8,6 @@ import logging
 import traceback
 
 from .__version__ import VERSION
-from .rpcclient import RpcClient
 from .rpcerrors import (
     RpcError,
     RpcInvalidParamsError,
@@ -18,6 +17,7 @@ from .rpcerrors import (
 )
 from .rpcmessage import RpcMessage
 from .rpcmethod import RpcMethodAccess, RpcMethodDesc
+from .rpctransport import RpcClient
 from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
 from .value import SHVType, is_shvbool, is_shvnull
 

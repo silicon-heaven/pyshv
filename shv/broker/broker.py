@@ -12,7 +12,6 @@ import string
 import time
 import typing
 
-from ..rpcclient import RpcClient, init_rpc_client
 from ..rpcerrors import (
     RpcError,
     RpcErrorCode,
@@ -23,8 +22,8 @@ from ..rpcerrors import (
 from ..rpcmessage import RpcMessage
 from ..rpcmethod import RpcMethodAccess, RpcMethodDesc
 from ..rpcparams import shvgett
-from ..rpcserver import RpcServer, create_rpc_server
 from ..rpcsubscription import RpcSubscription
+from ..rpctransport import RpcClient, RpcServer, create_rpc_server, init_rpc_client
 from ..rpcurl import RpcLoginType
 from ..simplebase import SimpleBase
 from ..simpleclient import SimpleClient

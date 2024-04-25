@@ -7,11 +7,11 @@ import logging
 import time
 import typing
 
-from .rpcclient import RpcClient, connect_rpc_client
 from .rpclogin import RpcLogin
 from .rpcmessage import RpcMessage
 from .rpcparams import shvgett
 from .rpcsubscription import RpcSubscription
+from .rpctransport import RpcClient, connect_rpc_client
 from .rpcurl import RpcUrl
 from .simplebase import SimpleBase
 from .value import SHVType
