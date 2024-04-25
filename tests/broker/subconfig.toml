@@ -1,0 +1,18 @@
+[listen]
+unix = "unix:shvsubbroker.sock"
+
+[connect.broker]
+url = "tcp://test@localhost:3755?password=test&devmount=subbroker"
+user = "upper"
+
+
+[users.admin]
+password = "admin!234"
+roles = ["admin"]
+[users.upper]
+roles = ["admin"]
+
+
+[roles.admin]
+access = "dev"
+methods = [":"]

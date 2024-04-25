@@ -1,6 +1,6 @@
 """Broker configuration loading."""
 
-import configparser
+import pathlib
 
 import pytest
 
@@ -37,7 +37,6 @@ ROLE_TESTER = broker.RpcBrokerConfig.Role(
     "tester",
     RpcMethodAccess.COMMAND,
     frozenset({broker.RpcBrokerConfig.Method("test")}),
-    frozenset({ROLE_BROWSE}),
 )
 ROLES = {
     ROLE_ADMIN,
@@ -56,19 +55,19 @@ def test_roles_sub(subconfig):
 
 
 USER_ADMIN = broker.RpcBrokerConfig.User(
-    "admin", "admin!123", RpcLoginType.PLAIN, frozenset({ROLE_ADMIN})
+    "admin", "admin!123", RpcLoginType.PLAIN, (ROLE_ADMIN,)
 )
 USER_SHAADMIN = broker.RpcBrokerConfig.User(
     "shaadmin",
     "57a261a7bcb9e6cf1db80df501cdd89cee82957e",
     RpcLoginType.SHA1,
-    frozenset({ROLE_ADMIN}),
+    (ROLE_ADMIN,),
 )
 USER_TEST = broker.RpcBrokerConfig.User(
     "test",
     "test",
     RpcLoginType.PLAIN,
-    frozenset({ROLE_TESTER}),
+    (ROLE_TESTER, ROLE_BROWSE),
 )
 USER_NOBODY = broker.RpcBrokerConfig.User(
     "nobody",
@@ -83,9 +82,9 @@ USERS = {
 }
 
 SUBUSER_ADMIN = broker.RpcBrokerConfig.User(
-    "admin", "admin!234", RpcLoginType.PLAIN, frozenset({ROLE_ADMIN})
+    "admin", "admin!234", RpcLoginType.PLAIN, (ROLE_ADMIN,)
 )
-SUBUSER_UPPER = broker.RpcBrokerConfig.User("upper", "", None, frozenset({ROLE_ADMIN}))
+SUBUSER_UPPER = broker.RpcBrokerConfig.User("upper", "", None, (ROLE_ADMIN,))
 SUBUSERS = {SUBUSER_ADMIN, SUBUSER_UPPER}
 
 
@@ -112,7 +111,7 @@ def test_connect_sub(subconfig):
 
 
 def test_default_config():
-    config = broker.RpcBrokerConfig.load(configparser.ConfigParser())
+    config = broker.RpcBrokerConfig.load(pathlib.Path("/dev/null"))
     assert config.listen == {}
     assert set(config.users()) == set()
     assert set(config.roles()) == set()

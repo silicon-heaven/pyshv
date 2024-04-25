@@ -13,45 +13,43 @@ Broker can be started from console by issuing the following command:
 
 .. code-block:: console
 
-   $ pyshvbroker -c config.ini
+   $ pyshvbroker -c config.toml
 
 If you do not have pySHV installed but only downloaded you can also run it
 locally for testing purposes with:
 
 .. code-block:: console
 
-   $ python3 -m shv.broker -c config.ini
+   $ python3 -m shv.broker -c tests/broker/config.toml
 
 
-The configuration file is in INI format and in the minimal form can look like
+The configuration file is in TOML format and in the minimal form can look like
 this:
 
-.. code-block:: ini
+.. code-block:: toml
 
   [listen]
-  internet = tcp://[::]:3755
-  unix = localsocket:shvbroker.sock
+  internet = "tcp://[::]:3755"
+  unix = "localsocket:shvbroker.sock"
 
   [users.admin]
-  password = admin
-  roles = admin
+  password = "admin"
+  roles = ["admin"]
 
   [roles.admin]
-  methods = :
-  access = ssrv
+  access = "ssrv"
+  methods = [":"]
 
 This configuration file specifies that broker should listen on all IP addresses
 for TCP/IP connection on port 3755 and on local socket ``shvbroker.sock``. It
-also declares one user that is admin and has super-service access level.
+also declares one user that is admin and has super-service access level to all
+methods on all nodes.
 
-:config:
-  This section contains generic configurations for Broker. The following options
-  can be specified in this section:
-
-  :name: The name of the broker. This is used when constructing ClientID to
-    identify this broker. In default this is empty and thus only user's name is
-    appended but if you specify it then user name will be prefixed with this
-    name (forming ``localhost:foo`` for ``name = localhost`` and user ``foo``).
+:name:
+  The name of the broker. This is used when constructing ClientID to identify
+  this broker. In default this is empty and thus only user's name is appended
+  but if you specify it then user name will be prefixed with this name (forming
+  ``localhost:foo`` for ``name = localhost`` and user ``foo``).
 
 :listen:
   This section specifies URLs where server should listen for the new
@@ -105,18 +103,14 @@ also declares one user that is admin and has super-service access level.
     :srv: Allows all that ``cfg`` does plus service operations.
     :ssrv: Allows all that ``srv`` with additional service operations.
     :dev: Allows pretty much all operations and is intended for developer
-      access.
+    access.
     :su: Super user access that allows everything.
-  :roles: Space separated list of other roles. This allows combination of the
-    roles and thus higher versatility in the way roles are structured. All rules
-    from these roles are considered to be part of the role specifying this
-    option but checked after all top level ones were checked (BFS algorithm).
 
 
 The complete configuration example used in pySHV tests:
 
-.. literalinclude:: ../tests/broker/pyshvbroker.ini
-   :language: ini
+.. literalinclude:: ../tests/broker/config.toml
+   :language: toml
 
 
 Running directly from Python

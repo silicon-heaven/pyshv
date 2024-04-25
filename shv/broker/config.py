@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import collections.abc
-import configparser
 import dataclasses
 import hashlib
-import typing
+import pathlib
+import tomllib
 
 from ..rpcmethod import RpcMethodAccess
 from ..rpcsubscription import RpcSubscription
@@ -50,37 +50,29 @@ class RpcBrokerConfig:
             default_factory=frozenset
         )
         """Methods used to check if this role should apply."""
-        roles: frozenset[RpcBrokerConfig.Role] = dataclasses.field(
-            default_factory=frozenset
-        )
-        """Additional roles to applied after this role."""
 
         def applies(self, path: str, method: str) -> bool:
             """Check if this role applies on any method."""
-            return any(rule.applies(path, method) for rule in self.methods)
+            return any(m.applies(path, method) for m in self.methods)
 
     @dataclasses.dataclass(frozen=True)
     class User:
         """User's login information."""
 
         name: str
+        """Name of the user."""
         password: str
+        """Password user needs to use to login."""
         login_type: RpcLoginType | None = RpcLoginType.SHA1
-        roles: frozenset[RpcBrokerConfig.Role] = dataclasses.field(
-            default_factory=frozenset
+        """The password format (the default is SHA1)."""
+        roles: collections.abc.Sequence[RpcBrokerConfig.Role] = dataclasses.field(
+            default_factory=tuple
         )
-
-        def all_roles(self) -> typing.Iterator[RpcBrokerConfig.Role]:
-            """Iterate over all roles assigned to this user."""
-            rlst = list(self.roles)
-            while rlst:
-                role = rlst.pop()
-                yield role
-                rlst.extend(role.roles)
+        """Sequence of roles the user has assigned to."""
 
         def access_level(self, path: str, method: str) -> RpcMethodAccess | None:
             """Deduce access level (if any) for this user on given path and method."""
-            for role in self.all_roles():
+            for role in self.roles:
                 if role.applies(path, method):
                     return role.access
             # These are defined paths we need to allow all users to access
@@ -209,20 +201,13 @@ class RpcBrokerConfig:
         :param info: role description.
         :raise ValueError: in case it specifies unknown rule.
         """
-        for srole in role.roles:
-            if srole is not self._roles.get(srole.name, None):
-                raise ValueError(f"Invalid role '{srole.name}'")
         oldrole = self._roles.get(role.name, None)
         if oldrole is not None:
-            for name, srole in self._roles.items():
-                if oldrole in srole.roles:
-                    self._roles[name] = dataclasses.replace(
-                        srole, roles=(srole.roles ^ {oldrole, role})
-                    )
             for name, user in self._users.items():
                 if oldrole in user.roles:
                     self._users[name] = dataclasses.replace(
-                        user, roles=(user.roles ^ {oldrole, role})
+                        user,
+                        roles=tuple(role if r is oldrole else r for r in user.roles),
                     )
         self._roles[role.name] = role
 
@@ -252,7 +237,7 @@ class RpcBrokerConfig:
         return None
 
     @classmethod
-    def load(cls, config: configparser.ConfigParser) -> RpcBrokerConfig:
+    def load(cls, file: pathlib.Path) -> RpcBrokerConfig:
         """Load configuration from ConfigParser.
 
         :param config: Configuration to be loaded.
@@ -260,66 +245,78 @@ class RpcBrokerConfig:
         :raise ValueError: When there is an issue in the configuration.
         :raise KeyError: When referencing non-existent user or role.
         """
-        # TODO do not ignore uknown options and sections
+        with file.open("rb") as f:
+            data = tomllib.load(f)
         res = cls()
-        if "config" in config:
-            res.name = config["config"].get("name", "")
-        if "listen" in config:
-            for name, url in config["listen"].items():
+        res.name = str(data.pop("name", res.name))
+        if listen := data.pop("listen", {}):
+            if not isinstance(listen, collections.abc.Mapping):
+                raise ConfigurationError("'listen' must be table of name and RPC URL")
+            for name, url in listen.items():
                 res.listen[name] = RpcUrl.parse(url)
-        for secname, sec in filter(lambda v: v[0].startswith("roles."), config.items()):
-            res.add_role(
-                cls.Role(
-                    secname[6:],
-                    RpcMethodAccess.fromstr(sec.get("access", "")),
-                    frozenset(
-                        cls.Method.fromstr(method)
-                        for method in sec.get("methods", "").split()
-                    ),
-                )
-            )
-        for secname, sec in filter(lambda v: v[0].startswith("roles."), config.items()):
-            roles = sec.get("roles", "").split()
-            name = secname[6:]
-            if roles:
-                res.add_role(
-                    dataclasses.replace(
-                        res.role(name),
-                        roles=frozenset(map(res.role, roles)),
+        if roles := data.pop("roles", {}):
+            if not isinstance(roles, collections.abc.Mapping):
+                raise ConfigurationError("'roles' must be table")
+            for name, role in roles.items():
+                access = RpcMethodAccess.fromstr(role.pop("access", ""))
+                rmethods = role.pop("methods", [])
+                if not isinstance(rmethods, collections.abc.Sequence):
+                    raise ConfigurationError(f"'role.{name}.methods' must be array")
+                methods = frozenset(cls.Method.fromstr(str(m)) for m in rmethods)
+                res.add_role(cls.Role(name, access, methods))
+                print(name)
+                if role:
+                    raise ConfigurationError(
+                        f"'roles.{name}' invalid table keys: {', '.join(role)}"
+                    )
+        if users := data.pop("users", {}):
+            if not isinstance(users, collections.abc.Mapping):
+                raise ConfigurationError("'users' must be table")
+            for name, user in users.items():
+                if "password" in user:
+                    password = user.pop("password")
+                    login_type = RpcLoginType.PLAIN
+                elif "sha1pass" in user:
+                    password = user.pop("sha1pass")
+                    login_type = RpcLoginType.SHA1
+                else:
+                    password = ""
+                    login_type = None
+                rroles = user.pop("roles", [])
+                if not isinstance(rroles, collections.abc.Sequence):
+                    raise ConfigurationError(f"'users.{name}.roles' must be array")
+                roles = tuple(res.role(m) for m in rroles)
+                res.add_user(cls.User(name, password, login_type, roles))
+                if user:
+                    raise ConfigurationError(
+                        f"'users.{name}' invalid table keys: {', '.join(user)}"
+                    )
+        if connect := data.pop("connect", {}):
+            if not isinstance(connect, collections.abc.Mapping):
+                raise ConfigurationError("'connect' must be table")
+            for name, conn in connect.items():
+                if not isinstance(conn, collections.abc.MutableMapping):
+                    raise ConfigurationError(f"'connect.{name}' must be table")
+                if "url" not in conn:
+                    raise ConfigurationError(f"'connect.{name}.url' must be specified")
+                if "user" not in conn:
+                    raise ConfigurationError(f"'connect.{name}.user' must be specified")
+                res.add_connection(
+                    cls.Connection(
+                        name,
+                        RpcUrl.parse(conn.pop("url")),
+                        res.user(str(conn.pop("user"))),
                     )
                 )
-        for secname, sec in filter(lambda v: v[0].startswith("users."), config.items()):
-            login_type: RpcLoginType | None
-            if "password" in sec:
-                password = sec["password"]
-                login_type = RpcLoginType.PLAIN
-            elif "sha1pass" in sec:
-                password = sec["sha1pass"]
-                login_type = RpcLoginType.SHA1
-            else:
-                password = ""
-                login_type = None
-            res.add_user(
-                cls.User(
-                    secname[6:],
-                    password,
-                    login_type,
-                    frozenset(
-                        res.role(role_name)
-                        for role_name in sec.get("roles", "").split()
-                    ),
-                )
-            )
-        for secname, sec in filter(
-            lambda v: v[0].startswith("connect."), config.items()
-        ):
-            if "url" not in sec:
-                raise ValueError(f"Connect requires 'url' option in {secname}")
-            if "user" not in sec:
-                raise ValueError(f"Connect requires 'user' option in {secname}")
-            name = secname[8:]
-            res.add_connection(
-                cls.Connection(name, RpcUrl.parse(sec["url"]), res.user(sec["user"]))
-            )
+                if conn:
+                    raise ConfigurationError(
+                        f"'connect.{name}' invalid table keys: {', '.join(conn)}"
+                    )
 
+        if data:
+            raise ConfigurationError(f"Invalid table keys: {', '.join(data)}")
         return res
+
+
+class ConfigurationError(ValueError):
+    """The error in the configuration."""
