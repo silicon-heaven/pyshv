@@ -22,6 +22,7 @@ connection to some other client.
 .. autoclass:: shv.RpcClientUnix
 .. autoclass:: shv.RpcClientPipe
 .. autoclass:: shv.RpcClientTTY
+.. autoclass:: shv.RpcClientWebSockets
 
 Server
 ------
@@ -34,6 +35,8 @@ sever side to communicate with newly connected peer.
 .. autoclass:: shv.RpcServerTCP
 .. autoclass:: shv.RpcServerUnix
 .. autoclass:: shv.RpcServerTTY
+.. autoclass:: shv.RpcServerWebSockets
+.. autoclass:: shv.RpcServerWebSocketsUnix
 
 Transport protocols
 -------------------

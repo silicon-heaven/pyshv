@@ -22,6 +22,7 @@ requires-python = ">=3.11"
 dependencies = [
   "pyserial",
   "aioserial",
+  "websockets",
   "asyncinotify; sys_platform == \"linux\"",
 ]
 
@@ -93,6 +94,7 @@ ignore = [
   "COM812",
   # Remove too-many limit for more complex code.
   "PLR0904", "PLR0911", "PLR0912", "PLR0913", "PLR0917", "PLR2004", "PLR1702",
+  "PLR0915",
   # This seems like a wrong rule
   "PLW1641",
 ]

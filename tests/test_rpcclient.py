@@ -16,10 +16,13 @@ from shv import (
     RpcClientTCP,
     RpcClientTTY,
     RpcClientUnix,
+    RpcClientWebSockets,
     RpcInvalidRequestError,
     RpcMessage,
     RpcServerTCP,
     RpcServerUnix,
+    RpcServerWebSockets,
+    RpcServerWebSocketsUnix,
 )
 
 logger = logging.getLogger(__name__)
@@ -206,3 +209,63 @@ class TestSerial(Link):
         msg = RpcMessage.request("prop", "set", b"1\xa2\xa3\xa4\xa5\xaa2")
         await clients[0].send(msg)
         assert await clients[1].receive() == msg
+
+
+class TestWebSockets(ServerLink):
+    """Check that WebSockets transport protocol works."""
+
+    @pytest.fixture(name="server")
+    async def fixture_server(self, port):
+        queue = asyncio.Queue()
+        server = RpcServerWebSockets(queue.put, "localhost", port)
+        await server.listen()
+        yield server, queue
+        server.close()
+        await server.wait_closed()
+
+    @pytest.fixture(name="clients")
+    async def fixture_clients(self, server, port):
+        client = await RpcClientWebSockets.connect("localhost", port)
+        server_client = await server[1].get()
+        await asyncio.sleep(0)
+        yield server_client, client
+        client.disconnect()
+        server_client.disconnect()
+        await client.wait_disconnect()
+        await server_client.wait_disconnect()
+
+    async def test_before_connect(self, port) -> None:
+        client = RpcClientWebSockets("localhost", port)
+        with pytest.raises(EOFError):
+            await client.receive()
+        with pytest.raises(EOFError):
+            await client.send(RpcMessage.request(".app", "ping"))
+        client.disconnect()
+        await client.wait_disconnect()
+
+
+class TestWebSocketsUnix(ServerLink):
+    """Check that WebSockets Unix transport protocol works."""
+
+    @pytest.fixture(name="sockpath")
+    def fixture_sockpath(self, tmp_path):
+        return tmp_path / "s"
+
+    @pytest.fixture(name="server")
+    async def fixture_server(self, sockpath):
+        queue = asyncio.Queue()
+        server = RpcServerWebSocketsUnix(queue.put, sockpath)
+        await server.listen()
+        yield server, queue
+        server.close()
+        await server.wait_closed()
+
+    @pytest.fixture(name="clients")
+    async def fixture_clients(self, server, sockpath):
+        client = await RpcClientWebSockets.connect(sockpath)
+        server_client = await server[1].get()
+        yield server_client, client
+        server_client.disconnect()
+        client.disconnect()
+        await server_client.wait_disconnect()
+        await client.wait_disconnect()

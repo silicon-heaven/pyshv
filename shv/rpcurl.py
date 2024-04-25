@@ -35,6 +35,10 @@ class RpcProtocol(enum.Enum):
     """Unix local domain named socket using Reliable Serial transport layer."""
     SERIAL = enum.auto()
     """Serial transport layer."""
+    WS = enum.auto()
+    """WebSockets transport layer."""
+    WSS = enum.auto()
+    """WebSockets secure transport layer."""
 
 
 @dataclasses.dataclass
@@ -51,11 +55,7 @@ class RpcUrl:
 
     # URL primary fields
     location: str
-    """Hostname of the SHV RPC server or path to the socket.
-
-    .. versionchanged:: 0.3.0
-       This attribute was named ``host`` in version 0.2.0.
-    """
+    """Hostname of the SHV RPC server or path to the socket."""
     port: int = -1
     """Port the SHV RPC server is listening on."""
     protocol: RpcProtocol = RpcProtocol.TCP
@@ -100,6 +100,8 @@ class RpcUrl:
             "unixs": RpcProtocol.UNIXS,
             "serial": RpcProtocol.SERIAL,
             "tty": RpcProtocol.SERIAL,
+            "ws": RpcProtocol.WS,
+            "wss": RpcProtocol.WSS,
         }
         if sr.scheme not in protocols:
             raise ValueError(f"Invalid scheme: {sr.scheme}")
@@ -121,6 +123,8 @@ class RpcUrl:
                 raise ValueError(f"Path is not supported for {sr.scheme}: {sr.path}")
         elif protocol in {RpcProtocol.UNIX, RpcProtocol.UNIXS, RpcProtocol.SERIAL}:
             res.location = f"/{sr.netloc}{sr.path}" if sr.netloc else sr.path
+        elif protocol in {RpcProtocol.WS, RpcProtocol.WSS}:
+            res.location = f"{sr.netloc}{sr.path}"
         else:
             raise NotImplementedError  # pragma: no cover
 
@@ -159,6 +163,8 @@ class RpcUrl:
             RpcProtocol.UNIX: "unix",
             RpcProtocol.UNIXS: "unixs",
             RpcProtocol.SERIAL: "serial",
+            RpcProtocol.WS: "ws",
+            RpcProtocol.WSS: "wss",
         }
         user_added = not self.login.username or self.login.username == RpcLogin.username
         if self.protocol in {
@@ -176,7 +182,13 @@ class RpcUrl:
             else:
                 netloc += self.location
             netloc += f":{self.port}"
-        elif self.protocol in {RpcProtocol.UNIX, RpcProtocol.UNIXS, RpcProtocol.SERIAL}:
+        elif self.protocol in {
+            RpcProtocol.UNIX,
+            RpcProtocol.UNIXS,
+            RpcProtocol.SERIAL,
+            RpcProtocol.WS,
+            RpcProtocol.WSS,
+        }:
             netloc = self.location
         else:
             raise NotImplementedError  # pragma: no cover

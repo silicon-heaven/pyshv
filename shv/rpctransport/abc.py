@@ -137,7 +137,7 @@ class RpcClient(abc.ABC):
         """Child's implementation of message sending."""
 
     async def wait_disconnect(self) -> None:  # noqa D027
-        """Close the connection."""
+        """Wait for the client's disconnection."""
 
 
 class RpcServer(abc.ABC):
@@ -145,7 +145,11 @@ class RpcServer(abc.ABC):
 
     @abc.abstractmethod
     def is_serving(self) -> bool:
-        """Check if server is accepting new SHV connections."""
+        """Check if server is accepting new SHV connections.
+
+        :return: ``True`` if new connection can be accepted and ``False``
+          otherwise.
+        """
 
     @abc.abstractmethod
     async def listen(self) -> None:
@@ -161,4 +165,4 @@ class RpcServer(abc.ABC):
 
     @abc.abstractmethod
     async def wait_closed(self) -> None:
-        """Stop accepting new SHV connections and for that to make effect."""
+        """Wait for the server termination."""

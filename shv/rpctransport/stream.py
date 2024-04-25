@@ -238,6 +238,11 @@ class RpcClientStream(RpcClient):
             raise
 
     async def reset(self) -> None:
+        """Reset or establish the connection.
+
+        This method not only resets the existing connection but primarilly
+        estableshes the new one.
+        """
         if not self.connected:
             self._reader, self._writer = await self._open_connection()
             logger.debug("%s: Connected", self)
@@ -252,6 +257,7 @@ class RpcClientStream(RpcClient):
 
     @property
     def connected(self) -> bool:
+        """Check if client is still connected."""
         return self._writer is not None and not self._writer.is_closing()
 
     def _disconnect(self) -> None:
@@ -259,6 +265,7 @@ class RpcClientStream(RpcClient):
             self._writer.close()
 
     async def wait_disconnect(self) -> None:
+        """Wait for the client's disconnection."""
         if self._writer is not None:
             with contextlib.suppress(ConnectionError):
                 await self._writer.wait_closed()
@@ -287,14 +294,17 @@ class RpcServerStream(RpcServer):
         """Create the server instance."""
 
     def is_serving(self) -> bool:
+        """Check if server is accepting new SHV connections."""
         return self._server is not None and self._server.is_serving()
 
     async def listen(self) -> None:
+        """Start accepting new SHV connections."""
         if self._server is None:
             self._server = await self._create_server()
         await self._server.start_serving()
 
     async def listen_forewer(self) -> None:
+        """Listen and block the calling coroutine until cancelation."""
         if self._server is None:
             self._server = await self._create_server()
         await self._server.serve_forever()
@@ -309,10 +319,12 @@ class RpcServerStream(RpcServer):
             await res
 
     def close(self) -> None:
+        """Stop accepting new SHV connections."""
         if self._server is not None:
             self._server.close()
 
     async def wait_closed(self) -> None:
+        """Wait for the server termination."""
         if self._server is not None:
             await self._server.wait_closed()
 
@@ -346,11 +358,13 @@ class RpcServerStream(RpcServer):
 
         @property
         def connected(self) -> bool:
+            """Check if client is still connected."""
             return not self._writer.is_closing()
 
         def _disconnect(self) -> None:
             self._writer.close()
 
         async def wait_disconnect(self) -> None:
+            """Wait for the client's disconnection."""
             with contextlib.suppress(ConnectionError):
                 await self._writer.wait_closed()

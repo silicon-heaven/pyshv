@@ -8,6 +8,7 @@ from .stream import RpcProtocolSerial, RpcProtocolSerialCRC, RpcProtocolStream
 from .tcp import RpcClientTCP, RpcServerTCP
 from .tty import RpcClientTTY, RpcServerTTY
 from .unix import RpcClientUnix, RpcServerUnix
+from .ws import RpcClientWebSockets, RpcServerWebSockets, RpcServerWebSocketsUnix
 
 
 def init_rpc_client(url: RpcUrl) -> RpcClient:
@@ -27,6 +28,8 @@ def init_rpc_client(url: RpcUrl) -> RpcClient:
             return RpcClientUnix(url.location, RpcProtocolSerial)
         case RpcProtocol.SERIAL:
             return RpcClientTTY(url.location, url.baudrate, RpcProtocolSerialCRC)
+        case RpcProtocol.WS:
+            return RpcClientWebSockets(url.location)
         case _:
             raise NotImplementedError(f"Unimplemented protocol: {url.protocol}")
 
@@ -57,23 +60,29 @@ async def create_rpc_server(
     :param url: RPC URL specifying where server should listen.
     """
     res: RpcServer
-    if url.protocol is RpcProtocol.TCP:
-        res = RpcServerTCP(
-            client_connected_cb, url.location, url.port, RpcProtocolStream
-        )
-    elif url.protocol is RpcProtocol.TCPS:
-        res = RpcServerTCP(
-            client_connected_cb, url.location, url.port, RpcProtocolSerial
-        )
-    elif url.protocol is RpcProtocol.UNIX:
-        res = RpcServerUnix(client_connected_cb, url.location, RpcProtocolStream)
-    elif url.protocol is RpcProtocol.UNIXS:
-        res = RpcServerUnix(client_connected_cb, url.location, RpcProtocolSerial)
-    elif url.protocol is RpcProtocol.SERIAL:
-        res = RpcServerTTY(
-            client_connected_cb, url.location, url.baudrate, RpcProtocolSerialCRC
-        )
-    else:
-        raise NotImplementedError(f"Unimplemented protocol: {url.protocol}")
+    match url.protocol:
+        case RpcProtocol.TCP:
+            res = RpcServerTCP(
+                client_connected_cb, url.location, url.port, RpcProtocolStream
+            )
+        case RpcProtocol.TCPS:
+            res = RpcServerTCP(
+                client_connected_cb, url.location, url.port, RpcProtocolSerial
+            )
+        case RpcProtocol.UNIX:
+            res = RpcServerUnix(client_connected_cb, url.location, RpcProtocolStream)
+        case RpcProtocol.UNIXS:
+            res = RpcServerUnix(client_connected_cb, url.location, RpcProtocolSerial)
+        case RpcProtocol.SERIAL:
+            res = RpcServerTTY(
+                client_connected_cb, url.location, url.baudrate, RpcProtocolSerialCRC
+            )
+        case RpcProtocol.WS:
+            if url.port != -1:
+                res = RpcServerWebSockets(client_connected_cb, url.location, url.port)
+            else:
+                res = RpcServerWebSocketsUnix(client_connected_cb, url.location)
+        case _:
+            raise NotImplementedError(f"Unimplemented protocol: {url.protocol}")
     await res.listen()
     return res

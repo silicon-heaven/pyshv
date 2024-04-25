@@ -52,24 +52,23 @@ methods on all nodes.
   ``localhost:foo`` for ``name = localhost`` and user ``foo``).
 
 :listen:
-  This section specifies URLs where server should listen for the new
-  connections. The option names are only informative and used for identification
-  purpose (feel free to name them as ever you want).
+  This table specifies URLs where server should listen for the new connections.
+  The table keys are only informative and used for identification purpose (feel
+  free to name them as ever you want).
 
 :connect.*:
-  These are sections that define connection to some other SHV broker. They all
-  have to start with ``connect.`` where rest of the section is connection
-  identifier that is used only in logs but must be unique per connection. The
-  following options needs to be specified in this section:
+  These are tables that define connection to some other SHV broker. The ``*``
+  must be the connection identifier name that is used only in logs but must be
+  unique per connection. The following options needs to be specified in this
+  table:
 
   :url: Where to connect including the login information.
   :user: User that connected client gets assigned to. This is used of this
     broker (not the remote one).
 
 :users.*:
-  These are sections that define different users. They all have to start with
-  ``users.`` where the rest of the section name is the user's name. The allowed
-  options are:
+  These are sections that define different users. The ``*`` must be the user's
+  name. The allowed options are:
 
   :password: Plain text password that is required to be provided by client
     when connecting to the broker. This allows user to use ``PLAIN`` and
@@ -78,19 +77,19 @@ methods on all nodes.
     client when connecting to the broker (note that ``password`` has precedence
     over this one). This allow user to use only ``SHA`` login method but has
     advantage that password is not stored in plain text on server.
-  :roles: Space separated list of roles assigned to the user.
+  :roles: List of roles assigned to the user. These must be defined roles
+    (``roles.*``).
 
 :roles.*:
   Roles are groupings of rules that are assigned to the users. They provide
-  versatility in the configuration. The role sections need to start with
-  ``roles.`` and the rest of the section name is name of the role. The allowed
+  versatility in the configuration. The ``*`` must be the role name. The allowed
   options are:
 
-  :methods: Specifies path and method this role applies on. The path and method
-    is delimited with ``:`` and empty method matches all methods. And thus
-    ``foo:`` matches all methods associated with node ``foo`` and its children.
-    The sole ``:`` used in example matches all methods from root node and thus
-    specifies the role to apply to all nodes and methods.
+  :methods: Specifies luist of path and method pairs this role applies on. The
+    path and method is delimited with ``:`` and empty method matches all
+    methods. And thus ``foo:`` matches all methods associated with node ``foo``
+    and its children. The sole ``:`` used in example matches all methods from
+    root node and thus specifies the role to apply to all nodes and methods.
   :access: Access level granted to the user with this role for matching methods.
     Note that access level of the first role that has at least one matching rule
     is used. The ordering of the roles can be used to specify complex access
