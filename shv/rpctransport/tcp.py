@@ -65,8 +65,12 @@ class RpcServerTCP(RpcServerStream):
         return f"server.tcp:{location}:{self.port}"
 
     async def _create_server(self) -> asyncio.Server:
+        # Note: The hack for '::' here is to allow really bind to all
+        # interfaces as that is what this should do and  not just loopback.
         return await asyncio.start_server(
-            self._client_connect, host=self.location, port=self.port
+            self._client_connect,
+            host=None if self.location == "::" else self.location,
+            port=self.port,
         )
 
     async def listen(self) -> None:  # noqa: D102

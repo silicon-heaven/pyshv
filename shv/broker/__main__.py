@@ -3,18 +3,12 @@
 import argparse
 import asyncio
 import logging
+import pathlib
 
 from .broker import RpcBroker
 from .config import RpcBrokerConfig
 
 logger = logging.getLogger(__name__)
-log_levels = (
-    logging.DEBUG,
-    logging.INFO,
-    logging.WARNING,
-    logging.ERROR,
-    logging.CRITICAL,
-)
 
 
 def parse_args() -> argparse.Namespace:
@@ -37,11 +31,20 @@ def parse_args() -> argparse.Namespace:
         default=0,
         help="Decrease verbosity level of logging",
     )
+    levels = [level for level in logging.getLevelNamesMapping() if level != "NOTSET"]
+    parser.add_argument(
+        "--log-level",
+        action="store",
+        choices=levels,
+        help="Set logging level exactly to specific level (ignores -v and -q)."
+        + f"The default level is WARNING. Supported levels: {', '.join(levels)}",
+    )
     parser.add_argument(
         "-c",
         "--config",
         action="store",
         default="/etc/pyshvbroker.toml",
+        type=pathlib.Path,
         help="Configuration file",
     )
     return parser.parse_args()
@@ -60,7 +63,9 @@ def main() -> None:
     args = parse_args()
 
     logging.basicConfig(
-        level=log_levels[sorted([1 - args.v + args.q, 0, len(log_levels) - 1])[1]],
+        level=logging.getLevelNamesMapping()[args.log_level]
+        if args.log_level
+        else logging.WARN + ((args.q - args.v) * 10),
         format="[%(asctime)s] [%(levelname)s] - %(message)s",
     )
 

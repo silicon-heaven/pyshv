@@ -63,7 +63,7 @@ methods on all nodes.
   table:
 
   :url: Where to connect including the login information.
-  :user: User that connected client gets assigned to. This is used of this
+  :user: User that connected client gets assigned to. This is user of this
     broker (not the remote one).
 
 :users.*:
@@ -72,7 +72,9 @@ methods on all nodes.
 
   :password: Plain text password that is required to be provided by client
     when connecting to the broker. This allows user to use ``PLAIN`` and
-    ``SHA1`` login methods.
+    ``SHA1`` login methods. If you do not specify this option (nor ``sha1pass``)
+    then this user won't be used for login but still can be used with
+    ``connect.*.user``.
   :sha1pass: Password hashed with SHA1 hash that is required to be provided by
     client when connecting to the broker (note that ``password`` has precedence
     over this one). This allow user to use only ``SHA`` login method but has
@@ -85,7 +87,7 @@ methods on all nodes.
   versatility in the configuration. The ``*`` must be the role name. The allowed
   options are:
 
-  :methods: Specifies luist of path and method pairs this role applies on. The
+  :methods: Specifies list of path and method pairs this role applies on. The
     path and method is delimited with ``:`` and empty method matches all
     methods. And thus ``foo:`` matches all methods associated with node ``foo``
     and its children. The sole ``:`` used in example matches all methods from

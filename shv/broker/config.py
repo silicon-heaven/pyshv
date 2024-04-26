@@ -64,7 +64,8 @@ class RpcBrokerConfig:
         password: str
         """Password user needs to use to login."""
         login_type: RpcLoginType | None = RpcLoginType.SHA1
-        """The password format (the default is SHA1)."""
+        """The password format (the default is SHA1). Use ``None`` to disable
+        this user for login."""
         roles: collections.abc.Sequence[RpcBrokerConfig.Role] = dataclasses.field(
             default_factory=tuple
         )
@@ -264,7 +265,6 @@ class RpcBrokerConfig:
                     raise ConfigurationError(f"'role.{name}.methods' must be array")
                 methods = frozenset(cls.Method.fromstr(str(m)) for m in rmethods)
                 res.add_role(cls.Role(name, access, methods))
-                print(name)
                 if role:
                     raise ConfigurationError(
                         f"'roles.{name}' invalid table keys: {', '.join(role)}"

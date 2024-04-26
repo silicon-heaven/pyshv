@@ -43,10 +43,7 @@
           pname = pyproject.project.name;
           inherit (pyproject.project) version;
           format = "pyproject";
-          src = builtins.path {
-            path = ./.;
-            filter = path: type: ! hasSuffix ".nix" path;
-          };
+          src = ./.;
           outputs = ["out" "doc"];
           propagatedBuildInputs = requires pythonPackages;
           nativeBuildInputs = [setuptools sphinxHook] ++ requires-docs pythonPackages;
@@ -101,6 +98,10 @@
             self.overlays.noInherit
           ];
         };
+        nixosModules = import ./nixos/modules {
+          inherit (nixpkgs) lib;
+          inherit (self) overlays;
+        };
       }
       // eachDefaultSystem (system: let
         pkgs = nixpkgs.legacyPackages.${system}.extend self.overlays.default;
@@ -138,7 +139,9 @@
           };
         };
 
-        checks.default = self.packages.${system}.default;
+        checks =
+          import ./nixos/tests nixpkgs.lib pkgs self.nixosModules
+          // {inherit (self.packages.${system}) default;};
 
         formatter = pkgs.alejandra;
       });
