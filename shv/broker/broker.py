@@ -629,7 +629,7 @@ class RpcBroker:
                 if not client.active:
                     continue
                 assert client.user is not None
-                access = client.user.access_level(msg.path, msg.method)
+                access = client.user.access_level(msg.path, msg.source)
                 if access is None or access < msgaccess:
                     continue
                 await client.send(msg)
