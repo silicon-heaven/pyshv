@@ -60,7 +60,7 @@ nix-build:
 nix-check:
   extends: .test
   script:
-    - nix flake check --log-lines 1000
+    - nix flake check --no-auto-allocate-uids --log-lines 1000
 
 include:
   - template: Security/Secret-Detection.gitlab-ci.yml

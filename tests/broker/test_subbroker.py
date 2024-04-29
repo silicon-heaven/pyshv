@@ -104,9 +104,7 @@ async def test_signal(shvbroker, subdevice, url):
     )
     client.signals.task_done()
 
-    assert await client.unsubscribe(
-        RpcRI("subbroker/device/track/**", signal="*chng")
-    )
+    assert await client.unsubscribe(RpcRI("subbroker/device/track/**", signal="*chng"))
     assert await client.call("subbroker/.broker/currentClient", "subscriptions") == []
 
     await client.disconnect()
