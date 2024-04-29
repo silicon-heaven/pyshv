@@ -15,4 +15,4 @@ roles = ["admin"]
 
 [roles.admin]
 access = "dev"
-methods = [":"]
+match = ["**"]

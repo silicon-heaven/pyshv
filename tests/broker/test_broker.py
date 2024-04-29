@@ -13,7 +13,7 @@ from shv import (
     RpcMethodCallExceptionError,
     RpcMethodDesc,
     RpcMethodNotFoundError,
-    RpcSubscription,
+    RpcRI,
     SimpleClient,
     shvmeta,
 )
@@ -199,7 +199,7 @@ async def test_mounted_client_info(client, example_device, param, result):
 
 
 async def test_subscribe(client, example_device):
-    sub = RpcSubscription("test/device/track/**")
+    sub = RpcRI("test/device/track/**")
     assert await client.subscribe(sub) is True
     assert await client.subscribe(sub) is False
     assert await client.call(".broker/currentClient", "subscriptions") == [
@@ -212,7 +212,7 @@ async def test_subscribe(client, example_device):
 
 async def test_with_example_set(example_device, value_client):
     """Perform set to trigger also notifications."""
-    await value_client.subscribe(RpcSubscription("test/device/track/**"))
+    await value_client.subscribe(RpcRI("test/device/track/**"))
     await value_client.prop_set("test/device/track/1", [1, 2])
     assert await value_client.prop_get("test/device/track/1") == [1, 2]
     assert value_client["test/device/track/1"] == [1, 2]

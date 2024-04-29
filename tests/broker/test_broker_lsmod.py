@@ -6,7 +6,7 @@ import dataclasses
 import pytest
 
 from example_device import ExampleDevice
-from shv import RpcMessage, RpcSubscription, SimpleClient
+from shv import RpcMessage, RpcRI, SimpleClient
 
 
 class LSClient(SimpleClient):
@@ -28,7 +28,7 @@ async def fixture_lsclient(shvbroker, url):
 
 
 async def test_lsmod(lsclient, url_test_device):
-    await lsclient.subscribe(RpcSubscription(signal="lsmod"))
+    await lsclient.subscribe(RpcRI(signal="lsmod"))
 
     device = await ExampleDevice.connect(url_test_device)
     assert await lsclient.lsmods.get() == ("", {"test": True})
@@ -41,7 +41,7 @@ async def test_lsmod(lsclient, url_test_device):
 
 async def test_lsmod_with_device(shvbroker, lsclient, example_device, url_test_device):
     """Device keeps test path valid and thus we must report it relative to it."""
-    await lsclient.subscribe(RpcSubscription(signal="lsmod"))
+    await lsclient.subscribe(RpcRI(signal="lsmod"))
 
     nurl = dataclasses.replace(
         url_test_device,

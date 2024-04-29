@@ -10,7 +10,7 @@ from shv import (
     RpcLogin,
     RpcLoginType,
     RpcMessage,
-    RpcSubscription,
+    RpcRI,
     RpcUrl,
     SimpleClient,
     broker,
@@ -89,7 +89,7 @@ async def test_signal(shvbroker, subdevice, url):
     """Check that we propagate signals through subbroker."""
     client = await NotifClient.connect(url)
 
-    assert await client.subscribe(RpcSubscription("subbroker/device/track/**", "*chng"))
+    assert await client.subscribe(RpcRI("subbroker/device/track/**", signal="*chng"))
 
     assert await client.call(".broker/currentClient", "subscriptions") == [
         {"signal": "*chng", "paths": "subbroker/device/track/**"}
@@ -105,7 +105,7 @@ async def test_signal(shvbroker, subdevice, url):
     client.signals.task_done()
 
     assert await client.unsubscribe(
-        RpcSubscription("subbroker/device/track/**", "*chng")
+        RpcRI("subbroker/device/track/**", signal="*chng")
     )
     assert await client.call("subbroker/.broker/currentClient", "subscriptions") == []
 

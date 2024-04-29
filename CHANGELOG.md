@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Broker's configuration format changed from INI to TOML
+- Broker's configuration option ``methods`` changed to ``match`` and is now
+  list of RPC Resource Identifiers.
 - Broker now filters signals based on the source method not signal name
 
 

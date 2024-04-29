@@ -42,7 +42,7 @@ in {
           };
           roles.admin = {
             access = "su";
-            methods = [":"];
+            match = ["**"];
           };
         };
       };

@@ -22,7 +22,7 @@ from ..rpcerrors import (
 from ..rpcmessage import RpcMessage
 from ..rpcmethod import RpcMethodAccess, RpcMethodDesc
 from ..rpcparams import shvgett
-from ..rpcsubscription import RpcSubscription
+from ..rpcri import RpcRI
 from ..rpctransport import RpcClient, RpcServer, create_rpc_server, init_rpc_client
 from ..rpcurl import RpcLoginType
 from ..simplebase import SimpleBase
@@ -241,13 +241,14 @@ class RpcBroker:
                             return self.infomap()
                         case "subscriptions":
                             return [
-                                s.to_shv() for s in self.__broker.subscriptions(self)
+                                s.to_subscription()
+                                for s in self.__broker.subscriptions(self)
                             ]
                         case "subscribe":
-                            sub = RpcSubscription.from_shv(param)
+                            sub = RpcRI.parse_subscription(param)
                             return await self.__broker.subscribe(sub, self)
                         case "unsubscribe":
-                            sub = RpcSubscription.from_shv(param)
+                            sub = RpcRI.parse_subscription(param)
                             return await self.__broker.unsubscribe(sub, self)
             return await super()._method_call(path, method, param, access, user_id)
 
@@ -262,7 +263,7 @@ class RpcBroker:
                 "userName": self.user.name if self.user is not None else None,
                 "mountPoint": self.__broker.client_mountpoint(self),
                 "subscriptions": [
-                    s.to_shv() for s in self.__broker.subscriptions(self)
+                    s.to_subscription() for s in self.__broker.subscriptions(self)
                 ],
                 "idleTime": int((time.monotonic() - self.client.last_receive) * 1000),
                 "idleTimeMax": int(self.IDLE_TIMEOUT * 1000),
@@ -413,9 +414,9 @@ class RpcBroker:
         self.servers: dict[str, RpcServer] = {}
         """All servers managed by Broker where keys are their configured names."""
         self._clients: dict[int, RpcBroker.Client] = {}
-        self._subs: dict[RpcSubscription, set[int]] = {}
+        self._subs: dict[RpcRI, set[int]] = {}
         self._mounts: dict[str, int] = {}
-        self._subsubs: dict[str, collections.Counter[RpcSubscription]] = {}
+        self._subsubs: dict[str, collections.Counter[RpcRI]] = {}
         self.__last_caller_id = -1
 
     def _register_client(self, client: Client) -> int:
@@ -521,7 +522,7 @@ class RpcBroker:
                             if await client.peer_is_shv3()
                             else ".broker/app",
                             "subscribe",
-                            s.to_shv(not await client.peer_is_shv3()),
+                            s.to_subscription(not await client.peer_is_shv3()),
                         )
             for s in prev:
                 await client.call(
@@ -529,7 +530,7 @@ class RpcBroker:
                     if await client.peer_is_shv3()
                     else ".broker/app",
                     "unsubscribe",
-                    s.to_shv(not await client.peer_is_shv3()),
+                    s.to_subscription(not await client.peer_is_shv3()),
                 )
 
         await self._signal_mount_point_change(*(mnt for mnt in (oldmnt, newmnt) if mnt))
@@ -553,7 +554,7 @@ class RpcBroker:
 
     def subscriptions(
         self, client: Client | None = None
-    ) -> collections.abc.Iterator[RpcSubscription]:
+    ) -> collections.abc.Iterator[RpcRI]:
         """Iterate over subscriptions this broker manages.
 
         :param client: The optional filtering over client's subscriptions.
@@ -565,7 +566,7 @@ class RpcBroker:
             if client is None or client.broker_client_id in v
         )
 
-    async def subscribe(self, subscription: RpcSubscription, client: Client) -> bool:
+    async def subscribe(self, subscription: RpcRI, client: Client) -> bool:
         """Add given subscription as being requested by given client."""
         assert client.user is not None
         if subscription in self._subs:
@@ -586,11 +587,11 @@ class RpcBroker:
                         if await subc.peer_is_shv3()
                         else ".broker/app",
                         "subscribe",
-                        sub.to_shv(),
+                        sub.to_subscription(),
                     )
         return True
 
-    async def unsubscribe(self, subscription: RpcSubscription, client: Client) -> bool:
+    async def unsubscribe(self, subscription: RpcRI, client: Client) -> bool:
         """Remove given subscription as being requested by given client."""
         if subscription not in self._subs:
             return False
@@ -611,7 +612,7 @@ class RpcBroker:
                         if await subc.peer_is_shv3()
                         else ".broker/app",
                         "unsubscribe",
-                        sub.to_shv(),
+                        sub.to_subscription(),
                     )
         return True
 
@@ -622,7 +623,7 @@ class RpcBroker:
         """
         msgaccess = msg.rpc_access or RpcMethodAccess.READ
         for sub, clients in self._subs.items():
-            if not sub.applies(msg.path, msg.signal_name, msg.source):
+            if not sub.signal_match(msg.path, msg.source, msg.signal_name):
                 continue
             for cid in clients:
                 client = self._clients[cid]

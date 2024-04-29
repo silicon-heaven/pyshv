@@ -4,7 +4,7 @@ import pathlib
 
 import pytest
 
-from shv import RpcLoginType, RpcMethodAccess, RpcUrl, broker
+from shv import RpcLoginType, RpcMethodAccess, RpcRI, RpcUrl, broker
 
 
 def test_listen(config):
@@ -23,20 +23,17 @@ def test_listen_sub(subconfig):
 ROLE_ADMIN = broker.RpcBrokerConfig.Role(
     "admin",
     RpcMethodAccess.DEVEL,
-    frozenset({broker.RpcBrokerConfig.Method()}),
+    frozenset({RpcRI()}),
 )
 ROLE_BROWSE = broker.RpcBrokerConfig.Role(
     "browse",
     RpcMethodAccess.BROWSE,
-    frozenset({
-        broker.RpcBrokerConfig.Method(method="ls"),
-        broker.RpcBrokerConfig.Method(method="dir"),
-    }),
+    frozenset({RpcRI(method="ls"), RpcRI(method="dir")}),
 )
 ROLE_TESTER = broker.RpcBrokerConfig.Role(
     "tester",
     RpcMethodAccess.COMMAND,
-    frozenset({broker.RpcBrokerConfig.Method("test")}),
+    frozenset({RpcRI("test/**")}),
 )
 ROLES = {
     ROLE_ADMIN,

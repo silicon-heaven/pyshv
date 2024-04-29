@@ -21,9 +21,9 @@ password = "nobody"
 
 [roles.admin]
 access = "dev"
-methods = [":"]
+match = ["**"]
 [roles.tester]
 access = "cmd"
-methods = ["test:"]
+match = ["test/**"]
 [roles.browse]
-methods = [":ls", ":dir"]
+match = ["**:ls", "**:dir"]

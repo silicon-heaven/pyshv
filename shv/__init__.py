@@ -21,7 +21,7 @@ from .rpclogin import RpcLogin, RpcLoginType
 from .rpcmessage import RpcMessage
 from .rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodFlags
 from .rpcparams import SHVGetKey, shvarg, shvargt, shvget, shvgett, shvt
-from .rpcsubscription import DefaultRpcSubscription, RpcSubscription
+from .rpcri import RpcRI
 from .rpctransport import (
     RpcClient,
     RpcClientPipe,
@@ -90,7 +90,6 @@ __all__ = [
     "Cpon",
     "CponReader",
     "CponWriter",
-    "DefaultRpcSubscription",
     "RpcClient",
     "RpcClientPipe",
     "RpcClientTCP",
@@ -119,13 +118,13 @@ __all__ = [
     "RpcProtocolSerial",
     "RpcProtocolSerialCRC",
     "RpcProtocolStream",
+    "RpcRI",
     "RpcServer",
     "RpcServerTCP",
     "RpcServerTTY",
     "RpcServerUnix",
     "RpcServerWebSockets",
     "RpcServerWebSocketsUnix",
-    "RpcSubscription",
     "RpcTransportProtocol",
     "RpcUrl",
     "RpcUserIDRequiredError",

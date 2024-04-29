@@ -9,34 +9,12 @@ import pathlib
 import tomllib
 
 from ..rpcmethod import RpcMethodAccess
-from ..rpcsubscription import RpcSubscription
+from ..rpcri import RpcRI
 from ..rpcurl import RpcLoginType, RpcUrl
 
 
 class RpcBrokerConfig:
     """SHV RPC Broker configuration."""
-
-    @dataclasses.dataclass(frozen=True)
-    class Method:
-        """Combination of method and SHV path."""
-
-        path: str = ""
-        """Path prefix that need to match for this to apply."""
-        method: str = ""
-        """Method name that should be matched. Empty matches all methods."""
-
-        @classmethod
-        def fromstr(cls, string: str) -> RpcBrokerConfig.Method:
-            """Parse :class:`RpcBrokerConfig.Method` from string."""
-            if ":" not in string:
-                raise ValueError(f"Invalid specification of method: {string}")
-            return cls(*string.split(":", maxsplit=1))
-
-        def applies(self, path: str, method: str) -> bool:
-            """Check if this method applies to this combination of path and method."""
-            return (
-                not self.path or path == self.path or path.startswith(self.path + "/")
-            ) and (not self.method or method == self.method)
 
     @dataclasses.dataclass(frozen=True)
     class Role:
@@ -46,14 +24,16 @@ class RpcBrokerConfig:
         """Name of the role."""
         access: RpcMethodAccess = RpcMethodAccess.BROWSE
         """Access level granted to the user by this role."""
-        methods: frozenset[RpcBrokerConfig.Method] = dataclasses.field(
-            default_factory=frozenset
-        )
-        """Methods used to check if this role should apply."""
+        match: frozenset[RpcRI] = dataclasses.field(default_factory=frozenset)
+        """Reasource identifications this role applies on."""
 
-        def applies(self, path: str, method: str) -> bool:
-            """Check if this role applies on any method."""
-            return any(m.applies(path, method) for m in self.methods)
+        def method_applies(self, path: str, method: str) -> bool:
+            """Check if this role applies on this method."""
+            return any(ri.method_match(path, method) for ri in self.match)
+
+        def signal_applies(self, path: str, source: str, signal: str) -> bool:
+            """Check if this role applies on this signal."""
+            return any(ri.signal_match(path, source, signal) for ri in self.match)
 
     @dataclasses.dataclass(frozen=True)
     class User:
@@ -74,7 +54,7 @@ class RpcBrokerConfig:
         def access_level(self, path: str, method: str) -> RpcMethodAccess | None:
             """Deduce access level (if any) for this user on given path and method."""
             for role in self.roles:
-                if role.applies(path, method):
+                if role.method_applies(path, method):
                     return role.access
             # These are defined paths we need to allow all users to access
             if path == ".broker/currentClient":
@@ -83,9 +63,16 @@ class RpcBrokerConfig:
                 return RpcMethodAccess.BROWSE
             return None
 
-        def could_receive_signal(  # noqa PLR6301
-            self, subscription: RpcSubscription, path: str = ""
-        ) -> bool:
+        def access_level_signal(
+            self, path: str, source: str, signal: str
+        ) -> RpcMethodAccess | None:
+            """Deduce access level (if any) for this user on given path, source and signal."""
+            for role in self.roles:
+                if role.signal_applies(path, source, signal):
+                    return role.access
+            return None
+
+        def could_receive_signal(self, rid: RpcRI, path: str = "") -> bool:  # noqa PLR6301
             """Check if this user could even receive signal based on this subscription.
 
             This is used to optimize subscriptions for sub-brokers. There is no
@@ -98,7 +85,7 @@ class RpcBrokerConfig:
             The regular check when signal is actually received can be done with
             :meth:`access_level` as for any other message.
 
-            :param subscription: The subscription to use for check.
+            :param ri: The RPC RI user subscribed for.
             :param path: Path to limit the subscription application.
             :return: ``True`` if signal might be deliverable to this user and
               ``False`` if user just doesn't have rights to get any such signal.
@@ -260,11 +247,11 @@ class RpcBrokerConfig:
                 raise ConfigurationError("'roles' must be table")
             for name, role in roles.items():
                 access = RpcMethodAccess.fromstr(role.pop("access", ""))
-                rmethods = role.pop("methods", [])
-                if not isinstance(rmethods, collections.abc.Sequence):
-                    raise ConfigurationError(f"'role.{name}.methods' must be array")
-                methods = frozenset(cls.Method.fromstr(str(m)) for m in rmethods)
-                res.add_role(cls.Role(name, access, methods))
+                rmatch = role.pop("match", [])
+                if not isinstance(rmatch, collections.abc.Sequence):
+                    raise ConfigurationError(f"'role.{name}.match' must be array")
+                match = frozenset(RpcRI.parse(str(m)) for m in rmatch)
+                res.add_role(cls.Role(name, access, match))
                 if role:
                     raise ConfigurationError(
                         f"'roles.{name}' invalid table keys: {', '.join(role)}"

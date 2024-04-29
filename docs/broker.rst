@@ -87,15 +87,23 @@ methods on all nodes.
   versatility in the configuration. The ``*`` must be the role name. The allowed
   options are:
 
-  :methods: Specifies list of path and method pairs this role applies on. The
-    path and method is delimited with ``:`` and empty method matches all
-    methods. And thus ``foo:`` matches all methods associated with node ``foo``
-    and its children. The sole ``:`` used in example matches all methods from
-    root node and thus specifies the role to apply to all nodes and methods.
-  :access: Access level granted to the user with this role for matching methods.
-    Note that access level of the first role that has at least one matching rule
-    is used. The ordering of the roles can be used to specify complex access
-    rules. The following levels are allowed:
+  :match: Specifies list of resource identifiers matching rules this role
+    sets access level to. This can be up to triplet delimited with ``:``. The
+    first field is pattern for SHV path, second field is method name and third
+    is signal name. You can left out either signal or signal and method fields.
+    The default for both signal and method fields is ``*`` (matching any name).
+    The special exception is when you use empty string for method (such as
+    ``PATH::SIGNAL``) and in such case it is assumed to be ``get``. The first
+    field for path is glob pattern (rules from POSIX.2, 3.13 with added support
+    for ``**``) and second and third fields are wildcard patterns (rules from
+    POSIX.2, 3.13). Note that by specifying the ``PATH:METHOD:SIGNAL`` you also
+    specify implicitly ``PATH:METHOD`` that is because signal access
+    intrinsically provides access to the method itself.
+  :access: Access level granted to the user with this role for methods and
+    signals matching resource identifications in ``match``. Note that access
+    level of the first role that has at least one matching rule is used. The
+    ordering of the roles can be used to specify complex access rules. The
+    following levels are allowed:
     :bws: The lowest level that commonly allows only nodes discovery.
     :rd: Allows reading basic property values as well as node discovery.
     :wr: Allows all that ``rd`` does plus changing basic property values.

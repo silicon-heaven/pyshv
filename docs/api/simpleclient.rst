@@ -9,3 +9,4 @@ Simple RPC API
    :private-members:
 .. autoclass:: shv.SimpleDevice
    :private-members:
+.. autoclass:: shv.RpcRI
