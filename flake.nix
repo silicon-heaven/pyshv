@@ -29,7 +29,7 @@
           format = "pyproject";
           src = builtins.path {
             path = ./.;
-            filter = path: type: ! hasSuffix ".nix" path;
+            filter = path: _: ! hasSuffix ".nix" path;
           };
           outputs = ["out" "doc"];
           propagatedBuildInputs = requires pythonPackages;
@@ -39,10 +39,10 @@
     in
       {
         overlays = {
-          pythonPackagesExtension = final: prev: {
+          pythonPackagesExtension = final: _: {
             template-python = final.callPackage template-python {};
           };
-          noInherit = final: prev: {
+          noInherit = _: prev: {
             pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [self.overlays.pythonPackagesExtension];
           };
           default = composeManyExtensions [self.overlays.noInherit];
@@ -58,6 +58,8 @@
           default = pkgs.mkShell {
             packages = with pkgs; [
               editorconfig-checker
+              statix
+              deadnix
               gitlint
               ruff
               (python3.withPackages (p:
