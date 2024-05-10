@@ -149,7 +149,7 @@ class RpcBroker:
             # pylint: disable=protected-access
             self.__broker_client_id = self.__broker._register_client(self)
 
-        def _ls(self, path: str) -> typing.Iterator[str]:
+        def _ls(self, path: str) -> collections.abc.Iterator[str]:
             yield from super()._ls(path)
             if not path:
                 yield ".broker"
@@ -168,7 +168,7 @@ class RpcBroker:
                         elif mnt.startswith(path + "/"):
                             yield mnt[len(path) + 1 :].split("/", maxsplit=1)[0]
 
-        def _dir(self, path: str) -> typing.Iterator[RpcMethodDesc]:
+        def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:
             yield from super()._dir(path)
             match path:
                 case ".broker":
@@ -252,7 +252,7 @@ class RpcBroker:
                             return await self.__broker.unsubscribe(sub, self)
             return await super()._method_call(path, method, param, access, user_id)
 
-        def infomap(self) -> SHVType:
+        def infomap(self) -> dict[str, SHVType]:
             """Produce Map with client's info.
 
             This is info provided to administator to inform it about this

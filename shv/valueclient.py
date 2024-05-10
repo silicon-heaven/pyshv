@@ -30,14 +30,14 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         super().__init__(*args, **kwargs)  # notype
         self._cache: dict[str, tuple[float, SHVType]] = {}
         self._handlers: dict[
-            str, typing.Callable[[ValueClient, str, SHVType], None]
+            str, collections.abc.Callable[[ValueClient, str, SHVType], None]
         ] = {}
         self._futures: dict[str, list[asyncio.Future]] = {}
 
     def __getitem__(self, key: str) -> SHVType:
         return self._cache[key][1]
 
-    def __iter__(self) -> typing.Iterator[str]:
+    def __iter__(self) -> collections.abc.Iterator[str]:
         return iter(self._cache.keys())
 
     def __len__(self) -> int:
@@ -57,7 +57,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
 
     def _get_handler(
         self, path: str
-    ) -> None | typing.Callable[["ValueClient", str, SHVType], None]:
+    ) -> None | collections.abc.Callable[["ValueClient", str, SHVType], None]:
         """Get the handler for the longest path match."""
         split_key = path.split("/")
         paths = (
@@ -162,7 +162,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
     def on_change(
         self,
         path: str,
-        callback: typing.Callable[["ValueClient", str, SHVType], None] | None,
+        callback: collections.abc.Callable[["ValueClient", str, SHVType], None] | None,
     ) -> None:
         """Register callback handler called when value change is reported.
 

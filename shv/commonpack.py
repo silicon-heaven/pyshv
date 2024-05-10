@@ -1,5 +1,7 @@
 """Common base for SHV writers and readers."""
 
+from __future__ import annotations
+
 import abc
 import asyncio
 import collections.abc
@@ -26,9 +28,7 @@ from .value import (
 class CommonReader(abc.ABC):
     """Common reader base."""
 
-    def __init__(
-        self, stream: typing.Union[bytes, bytearray, typing.IO, "CommonReader"]
-    ) -> None:
+    def __init__(self, stream: bytes | bytearray | typing.IO | CommonReader) -> None:
         if isinstance(stream, bytes | bytearray):
             stream = io.BytesIO(stream)
         if isinstance(stream, CommonReader):

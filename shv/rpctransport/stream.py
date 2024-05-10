@@ -276,7 +276,7 @@ class RpcServerStream(RpcServer):
 
     def __init__(
         self,
-        client_connected_cb: typing.Callable[
+        client_connected_cb: collections.abc.Callable[
             [RpcClient], None | collections.abc.Awaitable[None]
         ],
         protocol: type[RpcTransportProtocol] = RpcProtocolStream,
