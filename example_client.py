@@ -20,8 +20,8 @@ async def example_client(url: RpcUrl) -> None:
     """Coroutine that actually uses client."""
     client = await SimpleClient.connect(url)
     assert client is not None
-    res = await client.call(".broker/app", "echo", 42)
-    print(f"response received: {res!r}")
+    res = await client.call(".app", "name")
+    print(f"Connected to: {res!r}")
     await client.disconnect()
 
 

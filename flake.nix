@@ -1,15 +1,10 @@
 {
   description = "Flake for Pure Python SHV implementation";
 
-  inputs = {
-    libshv.url = "github:silicon-heaven/libshv";
-  };
-
   outputs = {
     self,
     flake-utils,
     nixpkgs,
-    libshv,
   }:
     with builtins;
     with flake-utils.lib;
@@ -37,7 +32,6 @@
         setuptools,
         sphinxHook,
         pytestCheckHook,
-        libshvCli,
       }:
         buildPythonPackage {
           pname = pyproject.project.name;
@@ -47,7 +41,7 @@
           outputs = ["out" "doc"];
           propagatedBuildInputs = requires pythonPackages;
           nativeBuildInputs = [setuptools sphinxHook] ++ requires-docs pythonPackages;
-          nativeCheckInputs = [pytestCheckHook libshvCli] ++ requires-test pythonPackages;
+          nativeCheckInputs = [pytestCheckHook] ++ requires-test pythonPackages;
         };
 
       multiversion = {
@@ -85,18 +79,16 @@
     in
       {
         overlays = {
-          pythonPackagesExtension = final: prev: {
+          pythonPackagesExtension = final: _: {
             pyshv = final.callPackage pyshv {};
             sphinx-multiversion = final.callPackage multiversion {};
             types-pyserial = final.callPackage types-serial {};
           };
-          noInherit = final: prev: {
-            pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [self.overlays.pythonPackagesExtension];
+          default = _: prev: {
+            pythonPackagesExtensions =
+              prev.pythonPackagesExtensions
+              ++ [self.overlays.pythonPackagesExtension];
           };
-          default = composeManyExtensions [
-            libshv.overlays.default
-            self.overlays.noInherit
-          ];
         };
         nixosModules = import ./nixos/modules {
           inherit (nixpkgs) lib;
@@ -115,7 +107,6 @@
               editorconfig-checker
               gitlint
               ruff
-              pkgs.libshvCli
               (python3.withPackages (p:
                 [p.build p.twine p.sphinx-autobuild p.mypy]
                 ++ foldl (prev: f: prev ++ f p) [] [

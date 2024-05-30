@@ -1,13 +1,10 @@
 import dataclasses
 import pathlib
-import socket
-import subprocess
-import time
 
 import pytest
 
 from example_device import ExampleDevice
-from shv import RpcLogin, RpcLoginType, RpcUrl, SimpleClient, ValueClient
+from shv import RpcLogin, RpcLoginType, RpcUrl, SimpleClient, ValueClient, broker
 
 
 @pytest.fixture(name="port", scope="module")
@@ -53,33 +50,23 @@ def fixture_url_test_device(url_test):
     )
 
 
-@pytest.fixture(name="shvbroker", scope="module")
-def fixture_shvbroker(port, sslport):
+@pytest.fixture(name="shvbroker_config", scope="module")
+def fixture_shvbroker_config(port):
+    conf = broker.RpcBrokerConfig.load(
+        pathlib.Path(__file__).parent / "broker" / "config.toml"
+    )
+    conf.listen["internet"].port = port
+    del conf.listen["unix"]
+    return conf
+
+
+@pytest.fixture(name="shvbroker")
+async def fixture_shvbroker(port, shvbroker_config):
     """SHV broker usable for all tests."""
-    confdir = pathlib.Path(__file__).parent / "shvbroker-etc"
-    with subprocess.Popen([
-        "minimalshvbroker",
-        "--config-dir",
-        str(confdir),
-        "--server-port",
-        str(port),
-        "--server-ssl-port",
-        str(sslport),
-    ]) as proc:
-        while True:
-            try:
-                with socket.create_connection(("localhost", port)):
-                    break
-            except OSError:
-                time.sleep(0.01)
-        yield
-        proc.terminate()
-        try:
-            proc.wait(timeout=3)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            proc.wait()
-            raise
+    b = broker.RpcBroker(shvbroker_config)
+    await b.start_serving()
+    yield b
+    await b.terminate()
 
 
 @pytest.fixture(name="client")

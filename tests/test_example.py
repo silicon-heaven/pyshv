@@ -10,21 +10,7 @@ from shv import RpcMethodAccess, RpcMethodNotFoundError, RpcRI, shvmeta
     "path,method,param,result",
     (
         ("", "ls", "test", True),
-        (
-            "test",
-            "ls",
-            None,
-            [
-                "device",
-                "intProperty",
-                "myStructProperty1",
-                "myStructProperty2",
-                "rpcValueProperty",
-                "stringProperty",
-                "uptime",
-                "uptime-duration",
-            ],
-        ),
+        ("test", "ls", None, ["device"]),
         ("test/device", "ls", None, [".app", "track"]),
         ("test/device/track", "ls", None, [str(i) for i in range(1, 9)]),
         ("test/device/track", "ls", "1", True),
@@ -161,7 +147,7 @@ async def test_reset(example_device, value_client):
     assert len(value_client) == 1
     assert (
         await value_client.call("test/device/track", "lastResetUser")
-        == "broker.local:test"
+        == "testbroker:test"
     )
 
 

@@ -1,13 +1,12 @@
 """Check implementation of SimpleClient."""
 
-import contextlib
+import asyncio
 import dataclasses
 
 import pytest
 
 from shv import (
     RpcLoginType,
-    RpcMessage,
     RpcMethodAccess,
     RpcMethodDesc,
     RpcMethodFlags,
@@ -19,8 +18,8 @@ from shv import (
 @pytest.mark.parametrize(
     "path,method,params,result",
     (
-        (".broker/app", "echo", 42, 42),
-        ("", "ls", None, [".broker", "test"]),
+        (".app", "ping", None, None),
+        ("", "ls", None, [".app", ".broker"]),
         (
             "",
             "dir",
@@ -29,20 +28,17 @@ from shv import (
                 {
                     1: "dir",
                     2: 0,
-                    3: "DirParam",
-                    4: "DirResult",
+                    3: "idir",
+                    4: "odir",
                     5: 1,
-                    6: {},
-                    7: {"description": "", "label": ""},
                 },
                 {
                     1: "ls",
                     2: 0,
-                    3: "LsParam",
-                    4: "LsResult",
+                    3: "ils",
+                    4: "ols",
                     5: 1,
-                    6: {},
-                    7: {"description": "", "label": ""},
+                    6: {"lsmod": "olsmod"},
                 },
             ],
         ),
@@ -58,9 +54,9 @@ async def test_call(client, path, method, params, result):
 @pytest.mark.parametrize(
     "path,result",
     (
-        ("", [".broker", "test"]),
-        (".broker", ["app", "clients", "currentClient", "etc", "masters", "mounts"]),
-        (".broker/app/log", []),
+        ("", [".app", ".broker"]),
+        (".app", []),
+        (".broker", ["currentClient", "client"]),
     ),
 )
 async def test_ls(client, path, result):
@@ -72,11 +68,9 @@ async def test_ls(client, path, result):
     "path,name,result",
     (
         ("", ".broker", True),
-        ("", "test", True),
         ("", "invalid", False),
         (".broker", "currentClient", True),
         (".broker", "foo", False),
-        (".broker/app", "log", True),
     ),
 )
 async def test_ls_has_child(client, path, name, result):
@@ -90,100 +84,58 @@ async def test_ls_has_child(client, path, name, result):
         (
             "",
             [
-                RpcMethodDesc("dir", param="DirParam", result="DirResult"),
-                RpcMethodDesc("ls", param="LsParam", result="LsResult"),
+                RpcMethodDesc("dir", param="idir", result="odir"),
+                RpcMethodDesc(
+                    "ls", param="ils", result="ols", signals={"lsmod": "olsmod"}
+                ),
+            ],
+        ),
+        (
+            ".broker",
+            [
+                RpcMethodDesc("dir", param="idir", result="odir"),
+                RpcMethodDesc(
+                    "ls", param="ils", result="ols", signals={"lsmod": "olsmod"}
+                ),
+                RpcMethodDesc(
+                    "clientInfo",
+                    param="Int",
+                    result="ClientInfo",
+                    access=RpcMethodAccess.SUPER_SERVICE,
+                ),
+                RpcMethodDesc(
+                    "mountedClientInfo",
+                    param="String",
+                    result="ClientInfo",
+                    access=RpcMethodAccess.SUPER_SERVICE,
+                ),
+                RpcMethodDesc.getter(
+                    "clients", "Null", "List[Int]", access=RpcMethodAccess.SUPER_SERVICE
+                ),
+                RpcMethodDesc.getter(
+                    "mounts",
+                    "Null",
+                    "List[String]",
+                    access=RpcMethodAccess.SUPER_SERVICE,
+                ),
+                RpcMethodDesc(
+                    "disconnectClient",
+                    param="Int",
+                    access=RpcMethodAccess.SUPER_SERVICE,
+                ),
             ],
         ),
         (
             ".broker/currentClient",
             [
-                RpcMethodDesc("dir", param="DirParam", result="DirResult"),
-                RpcMethodDesc("ls", param="LsParam", result="LsResult"),
+                RpcMethodDesc("dir", param="idir", result="odir"),
                 RpcMethodDesc(
-                    name="clientId",
-                    param="Null",
-                    result="Int",
-                    access=RpcMethodAccess.READ,
-                    signals={},
-                    extra={},
+                    "ls", param="ils", result="ols", signals={"lsmod": "olsmod"}
                 ),
-                RpcMethodDesc(
-                    name="mountPoint",
-                    param="Null",
-                    result="String",
-                    access=RpcMethodAccess.READ,
-                ),
-                RpcMethodDesc(
-                    name="userRoles",
-                    param="Null",
-                    result="List",
-                    access=RpcMethodAccess.READ,
-                ),
-                RpcMethodDesc(
-                    name="userProfile",
-                    param="Null",
-                    result="RpcValue",
-                    access=RpcMethodAccess.READ,
-                ),
-                RpcMethodDesc(
-                    name="accessGrantForMethodCall",
-                    param="List",
-                    result="String",
-                    access=RpcMethodAccess.READ,
-                ),
-                RpcMethodDesc(
-                    name="accessLevelForMethodCall",
-                    param="List",
-                    result="Int",
-                    access=RpcMethodAccess.READ,
-                ),
-                RpcMethodDesc(
-                    name="accesLevelForMethodCall",
-                    param="List",
-                    result="Int",
-                    access=RpcMethodAccess.READ,
-                ),
-                RpcMethodDesc(
-                    name="changePassword",
-                    param="List",
-                    result="Bool",
-                    access=RpcMethodAccess.WRITE,
-                ),
-            ],
-        ),
-        (
-            ".broker/app/log",
-            [
-                RpcMethodDesc("dir", param="DirParam", result="DirResult"),
-                RpcMethodDesc("ls", param="LsParam", result="LsResult"),
-                RpcMethodDesc(
-                    "getSendLogAsSignalEnabled",
-                    flags=RpcMethodFlags.GETTER,
-                    param="Null",
-                    result="Bool",
-                    access=RpcMethodAccess.READ,
-                ),
-                RpcMethodDesc(
-                    "setSendLogAsSignalEnabled",
-                    flags=RpcMethodFlags.SETTER,
-                    param="Bool",
-                    result="Bool",
-                    access=RpcMethodAccess.WRITE,
-                ),
-                RpcMethodDesc(
-                    "verbosity",
-                    flags=RpcMethodFlags.GETTER,
-                    param="Null",
-                    result="String",
-                    access=RpcMethodAccess.READ,
-                ),
-                RpcMethodDesc(
-                    "setVerbosity",
-                    flags=RpcMethodFlags.SETTER,
-                    param="Bool",
-                    result="String",
-                    access=RpcMethodAccess.COMMAND,
-                ),
+                RpcMethodDesc("info", RpcMethodFlags.GETTER, result="Any"),
+                RpcMethodDesc("subscribe"),
+                RpcMethodDesc("unsubscribe"),
+                RpcMethodDesc.getter("subscriptions", access=RpcMethodAccess.BROWSE),
             ],
         ),
     ),
@@ -197,11 +149,9 @@ async def test_dir(client, path, result):
 @pytest.mark.parametrize(
     "path,name,result",
     (
-        (".broker/app", "ping", True),
-        (".broker/app", "invalid", False),
-        (".broker/currentClient", "clientId", True),
-        (".broker/app/log", "verbosity", True),
-        (".broker/app/log", "verbositys", False),
+        (".app", "ping", True),
+        (".app", "invalid", False),
+        (".broker/currentClient", "info", True),
     ),
 )
 async def test_dir_exists(client, path, name, result):
@@ -225,7 +175,7 @@ async def test_sha_login(shvbroker, url):
         ),
     )
     client = await SimpleClient.connect(nurl)
-    assert await client.ls("") == [".broker", "test"]
+    assert await client.call(".app", "ping") is None
     await client.disconnect()
 
 
@@ -234,18 +184,16 @@ async def test_disconnect(client):
     await client.disconnect()
 
 
-async def test_reconnect(client):
+async def test_reconnect(client, shvbroker):
     """Checks that client reconnects itself if broker disconnects it.
 
     This uses broker's API to disconnect itself. Broker will give us a new
     client ID and that way we will identify that we successfully reconnected.
     """
     client.reconnects = 2
-    cid = await client.call(".broker/currentClient", "clientId")
-    # We must use client directly because broker won't respond before it
-    # disconnects us and thus we would attempt resent.
-    with contextlib.suppress(EOFError):
-        await client.client.send(
-            RpcMessage.request(f".broker/clients/{cid}", "dropClient")
-        )
-    assert await client.call(".broker/currentClient", "clientId") != cid
+    info = await client.call(".broker/currentClient", "info")
+    await shvbroker.get_client(info["clientId"]).disconnect()
+    await asyncio.sleep(0)
+    assert (await client.call(".broker/currentClient", "info"))["clientId"] != info[
+        "clientId"
+    ]

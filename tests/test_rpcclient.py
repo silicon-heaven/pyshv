@@ -178,6 +178,7 @@ class TestSerial(Link):
 
         client1 = await RpcClientTTY.connect(os.ttyname(pty1_slave))
         os.close(pty1_slave)
+        await asyncio.sleep(0)  # Give time to send client1 reset
         client2 = await RpcClientTTY.connect(os.ttyname(pty2_slave))
         os.close(pty2_slave)
         # Flush reset sent by client2

@@ -12,6 +12,7 @@ from shv import (
     RpcMethodAccess,
     RpcMethodCallExceptionError,
     RpcMethodDesc,
+    RpcMethodFlags,
     RpcMethodNotFoundError,
     RpcRI,
     SimpleClient,
@@ -75,13 +76,32 @@ async def test_empty_ls_invalid(client, path):
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
-                RpcMethodDesc("clientInfo", access=RpcMethodAccess.SUPER_SERVICE),
                 RpcMethodDesc(
-                    "mountedClientInfo", access=RpcMethodAccess.SUPER_SERVICE
+                    "clientInfo",
+                    param="Int",
+                    result="ClientInfo",
+                    access=RpcMethodAccess.SUPER_SERVICE,
                 ),
-                RpcMethodDesc.getter("clients", access=RpcMethodAccess.SUPER_SERVICE),
-                RpcMethodDesc.getter("mounts", access=RpcMethodAccess.SUPER_SERVICE),
-                RpcMethodDesc("disconnectClient", access=RpcMethodAccess.SUPER_SERVICE),
+                RpcMethodDesc(
+                    "mountedClientInfo",
+                    param="String",
+                    result="ClientInfo",
+                    access=RpcMethodAccess.SUPER_SERVICE,
+                ),
+                RpcMethodDesc.getter(
+                    "clients", "Null", "List[Int]", access=RpcMethodAccess.SUPER_SERVICE
+                ),
+                RpcMethodDesc.getter(
+                    "mounts",
+                    "Null",
+                    "List[String]",
+                    access=RpcMethodAccess.SUPER_SERVICE,
+                ),
+                RpcMethodDesc(
+                    "disconnectClient",
+                    param="Int",
+                    access=RpcMethodAccess.SUPER_SERVICE,
+                ),
             ],
         ),
         (
@@ -89,7 +109,12 @@ async def test_empty_ls_invalid(client, path):
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
-                RpcMethodDesc.getter("info", access=RpcMethodAccess.BROWSE),
+                RpcMethodDesc(
+                    "info",
+                    RpcMethodFlags.GETTER,
+                    result="Any",
+                    access=RpcMethodAccess.BROWSE,
+                ),
                 RpcMethodDesc("subscribe", access=RpcMethodAccess.BROWSE),
                 RpcMethodDesc("unsubscribe", access=RpcMethodAccess.BROWSE),
                 RpcMethodDesc.getter("subscriptions", access=RpcMethodAccess.BROWSE),

@@ -20,7 +20,7 @@ from ..rpcerrors import (
     RpcMethodCallExceptionError,
 )
 from ..rpcmessage import RpcMessage
-from ..rpcmethod import RpcMethodAccess, RpcMethodDesc
+from ..rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodFlags
 from ..rpcparams import shvgett
 from ..rpcri import RpcRI
 from ..rpctransport import RpcClient, RpcServer, create_rpc_server, init_rpc_client
@@ -173,22 +173,36 @@ class RpcBroker:
             match path:
                 case ".broker":
                     yield RpcMethodDesc(
-                        "clientInfo", access=RpcMethodAccess.SUPER_SERVICE
+                        "clientInfo",
+                        param="Int",
+                        result="ClientInfo",
+                        access=RpcMethodAccess.SUPER_SERVICE,
                     )
                     yield RpcMethodDesc(
-                        "mountedClientInfo", access=RpcMethodAccess.SUPER_SERVICE
+                        "mountedClientInfo",
+                        param="String",
+                        result="ClientInfo",
+                        access=RpcMethodAccess.SUPER_SERVICE,
                     )
                     yield RpcMethodDesc.getter(
-                        "clients", access=RpcMethodAccess.SUPER_SERVICE
+                        "clients",
+                        "Null",
+                        "List[Int]",
+                        access=RpcMethodAccess.SUPER_SERVICE,
                     )
                     yield RpcMethodDesc.getter(
-                        "mounts", access=RpcMethodAccess.SUPER_SERVICE
+                        "mounts",
+                        "Null",
+                        "List[String]",
+                        access=RpcMethodAccess.SUPER_SERVICE,
                     )
                     yield RpcMethodDesc(
-                        "disconnectClient", access=RpcMethodAccess.SUPER_SERVICE
+                        "disconnectClient",
+                        param="Int",
+                        access=RpcMethodAccess.SUPER_SERVICE,
                     )
                 case ".broker/currentClient":
-                    yield RpcMethodDesc.getter("info", access=RpcMethodAccess.BROWSE)
+                    yield RpcMethodDesc("info", RpcMethodFlags.GETTER, result="Any")
                     yield RpcMethodDesc("subscribe", access=RpcMethodAccess.BROWSE)
                     yield RpcMethodDesc("unsubscribe", access=RpcMethodAccess.BROWSE)
                     yield RpcMethodDesc.getter(
@@ -374,7 +388,7 @@ class RpcBroker:
                             type(self).IDLE_TIMEOUT,
                         )
                     )
-                    return msg.make_response({"clientId": self.broker_client_id})
+                    return msg.make_response()
             return msg.make_response(
                 error=RpcLoginRequiredError(
                     "Use hello and login methods" if self._nonce else "Use hello method"
