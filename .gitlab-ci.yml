@@ -41,7 +41,7 @@ devenv:
 tests:
   extends: .test
   script:
-    - nix develop --quiet -c pytest -v --junitxml=report.xml --cov=. --cov-report xml:coverage.xml --cov-report html:coverage --cov-report term
+    - nix develop --quiet -c pytest -vv --log-level DEBUG --junitxml=report.xml --cov=. --cov-report xml:coverage.xml --cov-report html:coverage --cov-report term
   artifacts:
     reports:
       junit: report.xml

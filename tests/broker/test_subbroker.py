@@ -18,7 +18,7 @@ from shv import (
 
 
 @pytest.fixture(name="suburl")
-async def fixture_suburl(unused_tcp_port_factory):
+def fixture_suburl(unused_tcp_port_factory):
     """URL to connect to the subbroker."""
     return RpcUrl(
         location="localhost",

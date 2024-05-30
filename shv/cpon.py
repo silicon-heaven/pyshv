@@ -420,7 +420,7 @@ class CponWriter(commonpack.CommonWriter):
     def write_decimal(self, value: decimal.Decimal) -> None:  # noqa: D102
         sval = str(value)
         if not any(c in ".eE" for c in sval):
-            sval = sval + ".0"
+            sval += ".0"
         self._writestr(sval)
 
     def write_datetime(self, value: datetime.datetime) -> None:  # noqa: D102

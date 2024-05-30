@@ -307,13 +307,13 @@ class ChainPackWriter(commonpack.CommonWriter):
         data = bytearray(byte_cnt)
         for i in range(byte_cnt - 1, -1, -1):
             data[i] = num & 0xFF
-            num = num >> 8
+            num >>= 8
 
         if bit_len <= 28:
             mask = 0xF0 << (4 - byte_cnt)
-            data[0] = data[0] & ~mask
+            data[0] &= ~mask
             mask = (mask << 1) & 0xFF
-            data[0] = data[0] | mask
+            data[0] |= mask
         else:
             data[0] = 0xF0 | (byte_cnt - 5)
 

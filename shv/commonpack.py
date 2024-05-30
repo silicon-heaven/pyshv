@@ -111,7 +111,7 @@ class CommonReader(abc.ABC):
         res = self.peek_bytes[:size]
         self.peek_bytes = self.peek_bytes[size:]
         if len(res) < size:
-            res = res + self.stream.read(size - len(res))
+            res += self.stream.read(size - len(res))
         return res
 
     @abc.abstractmethod

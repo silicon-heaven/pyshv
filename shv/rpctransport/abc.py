@@ -111,7 +111,7 @@ class RpcClient(abc.ABC):
           or possible.
         """
         await self._send(bytes((0,)))
-        logger.debug("%s => Control message RESET")
+        logger.debug("%s => Control message RESET", self)
 
     @property
     @abc.abstractmethod
