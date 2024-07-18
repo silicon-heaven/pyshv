@@ -15,10 +15,11 @@ def _get_version() -> str:
         if str(dist.locate_file(f"{__package__}/__version__.py")) == __file__:
             return dist.version
     pyproject = pathlib.Path(__file__).parent.parent / "pyproject.toml"
-    with pyproject.open("rb") as f:
-        res = tomllib.load(f)["project"]["version"]
-        if isinstance(res, str):
-            return res
+    if pyproject.exists():
+        with pyproject.open("rb") as f:
+            res = tomllib.load(f)["project"]["version"]
+            if isinstance(res, str):
+                return res
     return "unknown"
 
 

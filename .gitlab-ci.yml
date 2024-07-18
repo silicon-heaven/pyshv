@@ -82,6 +82,11 @@ mypy:
     - mkdir .mypy-cache
     - nix develop --quiet -c mypy --cache-dir .mypy-cache .
 
+statix:
+  extends: .lint
+  script:
+    - nix develop --quiet -c statix check .
+
 ## Style stage #################################################################
 .style:
   stage: style
@@ -94,6 +99,17 @@ format:
   script:
     - nix develop --quiet -c ruff format --diff .
     - nix develop --quiet -c ruff check --diff .
+
+nixfmt:
+  extends: .style
+  script:
+    - nix fmt
+    - git diff --exit-code
+
+deadnix:
+  extends: .style
+  script:
+    - nix develop --quiet -c deadnix --fail .
 
 editorconfig-checker:
   extends: .style

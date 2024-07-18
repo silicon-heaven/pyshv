@@ -10,6 +10,10 @@
     with flake-utils.lib;
     with nixpkgs.lib; let
       pyproject = trivial.importTOML ./pyproject.toml;
+      src = builtins.path {
+        path = ./.;
+        filter = path: _: ! hasSuffix ".nix" path;
+      };
 
       pypy2nix_map = {
         "pytest-asyncio" = "pytest-asyncio_0_21";
@@ -21,7 +25,6 @@
         in
           pypy2nix_map.${nn} or nn)
         list);
-
       requires = pypi2nix pyproject.project.dependencies;
       requires-docs = pypi2nix pyproject.project.optional-dependencies.docs;
       requires-test = pypi2nix pyproject.project.optional-dependencies.test;
@@ -36,22 +39,26 @@
         buildPythonPackage {
           pname = pyproject.project.name;
           inherit (pyproject.project) version;
-          format = "pyproject";
-          src = ./.;
+          inherit src;
+          pyproject = true;
+          build-system = [setuptools];
           outputs = ["out" "doc"];
           propagatedBuildInputs = requires pythonPackages;
-          nativeBuildInputs = [setuptools sphinxHook] ++ requires-docs pythonPackages;
+          nativeBuildInputs = [sphinxHook] ++ requires-docs pythonPackages;
           nativeCheckInputs = [pytestCheckHook] ++ requires-test pythonPackages;
         };
 
       multiversion = {
         buildPythonPackage,
         fetchFromGitHub,
+        setuptools,
         sphinx,
       }:
         buildPythonPackage {
           pname = "sphinx-multiversion";
           version = "0.2.4";
+          pyproject = true;
+          build-system = [setuptools];
           src = fetchFromGitHub {
             owner = "Holzhaus";
             repo = "sphinx-multiversion";
@@ -65,10 +72,13 @@
       types-serial = {
         buildPythonPackage,
         fetchPypi,
+        setuptools,
       }:
         buildPythonPackage rec {
           pname = "types-pyserial";
           version = "3.5.0.10";
+          pyproject = true;
+          build-system = [setuptools];
           src = fetchPypi {
             inherit pname version;
             hash = "sha256-libfaTGzM0gtBZZrMupSoUGj0ZyccPs8/vkX9x97bS0=";
@@ -105,6 +115,8 @@
           default = pkgs.mkShell {
             packages = with pkgs; [
               editorconfig-checker
+              statix
+              deadnix
               gitlint
               ruff
               (python3.withPackages (p:
