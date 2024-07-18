@@ -171,18 +171,23 @@ class TestSerial(Link):
     async def fixture_clients(self):
         pty1_master, pty1_slave = pty.openpty()
         pty2_master, pty2_slave = pty.openpty()
+
+        client1 = await RpcClientTTY.connect(os.ttyname(pty1_slave))
+        os.close(pty1_slave)
+        client2 = await RpcClientTTY.connect(os.ttyname(pty2_slave))
+        os.close(pty2_slave)
+
+        # ptycopy is started only when both clients get connected. Otherwise
+        # there is an uncerten race condition that reset message from client1
+        # might be delivered to client2 although most of the times that doesn't
+        # happen.
         process = multiprocessing.Process(
             target=self.ptycopy, args=(pty1_master, pty2_master)
         )
         process.start()
-
-        client1 = await RpcClientTTY.connect(os.ttyname(pty1_slave))
-        os.close(pty1_slave)
-        await asyncio.sleep(0)  # Give time to send client1 reset
-        client2 = await RpcClientTTY.connect(os.ttyname(pty2_slave))
-        os.close(pty2_slave)
-        # Flush reset sent by client2
+        # Flush reset sent by clients
         assert await client1.receive() is RpcClient.Control.RESET
+        assert await client2.receive() is RpcClient.Control.RESET
 
         yield client1, client2
 
