@@ -15,16 +15,7 @@
         filter = path: _: ! hasSuffix ".nix" path;
       };
 
-      pypy2nix_map = {
-        "pytest-asyncio" = "pytest-asyncio_0_21";
-      };
-      list2attr = list: attr: attrValues (getAttrs list attr);
-      pypi2nix = list:
-        list2attr (map (n: let
-          nn = elemAt (match "([^ ;]*).*" n) 0;
-        in
-          pypy2nix_map.${nn} or nn)
-        list);
+      pypi2nix = list: attr: attrValues (getAttrs (map (n: elemAt (match "([^ ;]*).*" n) 0) list) attr);
       requires = pypi2nix pyproject.project.dependencies;
       requires-docs = pypi2nix pyproject.project.optional-dependencies.docs;
       requires-test = pypi2nix pyproject.project.optional-dependencies.test;

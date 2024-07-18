@@ -104,7 +104,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         self,
         path: str,
         value: SHVType = None,
-        timeout: float | int | None = 5.0,
+        timeout: float | int | None = 5.0,  # noqa ASYNC109
         get_period: float = 1.0,
     ) -> SHVType:
         """Wait for property change.

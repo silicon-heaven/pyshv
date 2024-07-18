@@ -34,7 +34,7 @@ dependencies = [
 [project.optional-dependencies]
 test = [
   "pytest",
-  "pytest-asyncio == 0.21.1",
+  "pytest-asyncio",
   "pytest-cov",
 ]
 docs = [
@@ -72,7 +72,7 @@ exclude_lines = [
 target-version = "py311"
 [tool.ruff.lint]
 select = [
-  "F", "E", "W", "I", "N", "D", "UP", "YTT", "ANN", "ASYNC", "TRIO", "S", "BLE",
+  "F", "E", "W", "I", "N", "D", "UP", "YTT", "ANN", "ASYNC", "ASYNC1", "S", "BLE",
   "B", "A", "COM", "PL", "RUF"
 ]
 ignore = [
