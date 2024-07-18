@@ -10,8 +10,12 @@
     with flake-utils.lib;
     with nixpkgs.lib; let
       pyproject = trivial.importTOML ./pyproject.toml;
-      attrList = attr: list: attrValues (getAttrs list attr);
+      src = builtins.path {
+        path = ./.;
+        filter = path: _: ! hasSuffix ".nix" path;
+      };
 
+      attrList = attr: list: attrValues (getAttrs list attr);
       requires = p: attrList p pyproject.project.dependencies;
       requires-test = p: attrList p pyproject.project.optional-dependencies.test;
       requires-docs = p: attrList p pyproject.project.optional-dependencies.docs;
@@ -26,14 +30,12 @@
         buildPythonPackage {
           pname = pyproject.project.name;
           inherit (pyproject.project) version;
-          format = "pyproject";
-          src = builtins.path {
-            path = ./.;
-            filter = path: _: ! hasSuffix ".nix" path;
-          };
+          inherit src;
+          pyproject = true;
+          build-system = [setuptools];
           outputs = ["out" "doc"];
           propagatedBuildInputs = requires pythonPackages;
-          nativeBuildInputs = [setuptools sphinxHook] ++ requires-docs pythonPackages;
+          nativeBuildInputs = [sphinxHook] ++ requires-docs pythonPackages;
           nativeCheckInputs = [pytestCheckHook] ++ requires-test pythonPackages;
         };
     in
