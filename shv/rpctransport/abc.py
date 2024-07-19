@@ -165,4 +165,16 @@ class RpcServer(abc.ABC):
 
     @abc.abstractmethod
     async def wait_closed(self) -> None:
+        """Wait for the server closure."""
+
+    @abc.abstractmethod
+    def terminate(self) -> None:
+        """Terminate the server.
+
+        This disconnects all accepted clients as well as stops accepting new SHV
+        connections.
+        """
+
+    @abc.abstractmethod
+    async def wait_terminated(self) -> None:
         """Wait for the server termination."""

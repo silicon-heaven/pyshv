@@ -1,4 +1,8 @@
-"""Resource identification matching in SHV RPC."""
+"""Resource identification matching in SHV RPC.
+
+This is implemented according to the `SHV standard documentation
+<https://silicon-heaven.github.io/shv-doc/rpcri.html>`__.
+"""
 
 from __future__ import annotations
 
@@ -31,35 +35,21 @@ class RpcRI:
         method = self.method if self.method != "get" else ""
         return f"{self.path}:{method}:{self.signal}"
 
-    def method_match(self, path: str, name: str) -> bool:
-        """Check if given method call matches this resource identifier.
+    def match(self, path: str, method: str, signal: str = "") -> bool:
+        """Check if this resource identifier matches.
 
-        For method matching only ``path`` and ``method`` RI fields are used. The
-        ``signal`` filed is disregarded.
+        For method call matching you must keep ``signal`` to default, that is
+        empty string.
 
-        :param path: SHV Path.
-        :param name: Method name.
-        :return: ``True`` if resource identifier matches this method and
-          ``False`` otherwise.
-        """
-        # TODO wouldn't be better to use signal == "*"?
-        return path_match(path, self.path) and fnmatch.fnmatchcase(name, self.method)
-
-    def signal_match(self, path: str, source: str, signal: str) -> bool:
-        """Check if given signal matches this resource identifier.
-
-        For signal matching all three RI parameters are used.
-
-        :param path: SHV Path.
-        :param source: Source method name.
-        :param signal: Signal name.
-        :return: ``True`` if resource identifier matches this signal and
-          ``False`` otherwise.
+        :param path: SHV path to the resource.
+        :param method: Method name for the resource match.
+        :param signal: Signal name for the resource match.
+        :return: ``True`` if matches and ``False`` otherwise.
         """
         return (
             path_match(path, self.path)
+            and fnmatch.fnmatchcase(method, self.method)
             and fnmatch.fnmatchcase(signal, self.signal)
-            and fnmatch.fnmatchcase(source, self.method)
         )
 
     def relative_to(self, path: str) -> RpcRI | None:
@@ -99,31 +89,35 @@ class RpcRI:
         return cls(p)
 
     @classmethod
-    def parse_subscription(cls, value: SHVType) -> RpcRI:
+    def from_subscription(cls, value: SHVType) -> tuple[RpcRI, int | None]:
         """Create RPC RI for subscription from SHV type representation."""
         if not is_shvmap(value):
             raise ValueError("Expected Map")
         # We intentionally ignore unknown keys here
-        paths: SHVType = cls.path
+        paths: SHVType = RpcRI.path
         if (path := value.get("path", None)) is not None:
             paths = f"{path}/**" if path else "**"
         paths = value.get("paths", paths)
-        method = value.get("source", cls.method)
+        method = value.get("source", RpcRI.method)
         # Note: the methods here is misleading but it backward compatible for
         # implementations that viewed signal as a method and not as something
         # associated with method.
         signal = value.get(
-            "methods", value.get("method", value.get("signal", cls.signal))
+            "methods", value.get("method", value.get("signal", RpcRI.signal))
         )
+        ttl = value.get("ttl", None)
         if (
             not isinstance(paths, str)
             or not isinstance(method, str)
             or not isinstance(signal, str)
+            or (not isinstance(ttl, int) and ttl is not None)
         ):
             raise ValueError("Invalid type")
-        return cls(paths, method, signal)
+        return cls(paths, method, signal), ttl
 
-    def to_subscription(self, compatible: bool = False) -> SHVType:
+    def to_subscription(
+        self, ttl: int | None = None, compatible: bool = False
+    ) -> SHVType:
         """Convert to representation Subscription used in SHV RPC communication."""
         res: dict[str, SHVType] = {}
         if compatible:
@@ -141,6 +135,8 @@ class RpcRI:
                 res["paths"] = self.path
             if self.signal != "*":
                 res["signal"] = self.signal
+            if ttl is not None:
+                res["ttl"] = ttl
         if self.method != "*":
             res["source"] = self.method
         return res

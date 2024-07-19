@@ -17,7 +17,7 @@ def fixture_subconfig():
 
 @pytest.fixture(name="shvbroker")
 async def fixture_shvbroker(config, url):
-    config.listen = {"test": url}
+    config.listen = [url]
     b = broker.RpcBroker(config)
     await b.start_serving()
     yield b

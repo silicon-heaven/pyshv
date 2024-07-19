@@ -1,18 +1,18 @@
-[listen]
-unix = "unix:shvsubbroker.sock"
+listen = "unix:shvsubbroker.sock"
 
-[connect.broker]
-url = "tcp://test@localhost:3755?password=test&devmount=subbroker"
-user = "upper"
+[[connect]]
+url = "tcp://test@localhost:3755?password=test&devmount=test/subbroker"
+role = "upper"
+mountPoint = ".." # Upper broker gets mounted to the '..' path
 
 
-[users.admin]
+[user.admin]
 password = "admin!234"
-roles = ["admin"]
-[users.upper]
-roles = ["admin"]
+role = "admin"
 
+[role.admin]
+mountPoints = "**" # Admin can mount itself anywhere
+access.dev = "**" # Admin can access everything with DEV level
 
-[roles.admin]
-access = "dev"
-match = ["**"]
+[role.upper]
+access.cmd = "**" # Requrest from upper broker are limited to the CMD level

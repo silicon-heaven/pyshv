@@ -9,6 +9,7 @@ import collections.abc
 import contextlib
 import logging
 import typing
+import weakref
 
 from ..chainpack import ChainPack
 from .abc import RpcClient, RpcServer
@@ -285,9 +286,8 @@ class RpcServerStream(RpcServer):
         """Callbact that is called when new client is connected."""
         self.protocol = protocol
         """Stream communication protocol."""
-        self.clients: list[RpcServerStream.Client] = []
-        """List of clients used for termination of the server."""
         self._server: asyncio.Server | None = None
+        self._clients: weakref.WeakSet[RpcServerStream.Client] = weakref.WeakSet()
 
     @abc.abstractmethod
     async def _create_server(self) -> asyncio.Server:
@@ -313,20 +313,35 @@ class RpcServerStream(RpcServer):
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
         client = self.Client(reader, writer, self)
-        self.clients.append(client)
+        self._clients.add(client)
         res = self.client_connected_cb(client)
         if isinstance(res, collections.abc.Awaitable):
             await res
 
-    def close(self) -> None:
-        """Stop accepting new SHV connections."""
+    def close(self) -> None:  # noqa D102
         if self._server is not None:
             self._server.close()
 
-    async def wait_closed(self) -> None:
-        """Wait for the server termination."""
+    async def wait_closed(self) -> None:  # noqa D102
         if self._server is not None:
             await self._server.wait_closed()
+
+    def terminate(self) -> None:  # noqa D102
+        self.close()
+        for client in self._clients:
+            client.disconnect()
+
+    async def wait_terminated(self) -> None:  # noqa D102
+        await self.wait_closed()
+        res = await asyncio.gather(
+            *(c.wait_disconnect() for c in self._clients),
+            return_exceptions=True,
+        )
+        excs = [v for v in res if isinstance(v, BaseException)]
+        if excs:
+            if len(excs) == 1:
+                raise excs[0]
+            raise BaseExceptionGroup("", excs)
 
     class Client(RpcClient):
         """RPC client for Asyncio's stream server connection."""

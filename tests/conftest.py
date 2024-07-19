@@ -1,10 +1,21 @@
 import dataclasses
+import logging
 import pathlib
 
 import pytest
 
 from example_device import ExampleDevice
-from shv import RpcLogin, RpcLoginType, RpcUrl, SimpleClient, ValueClient, broker
+from shv import (
+    RpcLogin,
+    RpcLoginType,
+    RpcProtocol,
+    RpcUrl,
+    SimpleClient,
+    ValueClient,
+    broker,
+)
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(name="port", scope="module")
@@ -45,7 +56,8 @@ def fixture_url_test_device(url_test):
     return dataclasses.replace(
         url_test,
         login=dataclasses.replace(
-            url_test.login, options={"device": {"mountPoint": "test/device"}}
+            url_test.login,
+            options={"device": {"deviceId": "example", "mountPoint": "test/device"}},
         ),
     )
 
@@ -55,8 +67,9 @@ def fixture_shvbroker_config(port):
     conf = broker.RpcBrokerConfig.load(
         pathlib.Path(__file__).parent / "broker" / "config.toml"
     )
-    conf.listen["internet"].port = port
-    del conf.listen["unix"]
+    assert conf.listen[0].protocol is RpcProtocol.TCP
+    conf.listen[0].port = port
+    del conf.listen[1]
     return conf
 
 

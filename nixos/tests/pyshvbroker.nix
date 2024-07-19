@@ -36,14 +36,11 @@ in {
         openFirewall = true;
         logLevel = "DEBUG";
         config = {
-          users.admin = {
+          user.admin = {
             passwordFile = "/etc/adminpass";
-            roles = ["admin"];
+            role = "admin";
           };
-          roles.admin = {
-            access = "su";
-            match = ["**"];
-          };
+          role.admin.access.su = ["**"];
         };
       };
     };
@@ -51,8 +48,7 @@ in {
       environment.systemPackages = [
         (shvTest "checkls" ''
           async def main():
-              url = shv.RpcUrl("broker", 3755, login=shv.RpcLogin("admin", "admin!123"))
-              client = await shv.SimpleClient.connect(url)
+              client = await shv.SimpleClient.connect("tcp://admin@broker?password=admin!123")
               assert await client.ls("") == [".app", ".broker"]
               await client.disconnect()
         '')

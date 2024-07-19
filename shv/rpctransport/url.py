@@ -11,12 +11,14 @@ from .unix import RpcClientUnix, RpcServerUnix
 from .ws import RpcClientWebSockets, RpcServerWebSockets, RpcServerWebSocketsUnix
 
 
-def init_rpc_client(url: RpcUrl) -> RpcClient:
+def init_rpc_client(url: RpcUrl | str) -> RpcClient:
     """Initialize correct :class:`RpcClient` for given URL.
 
     :param url: RPC URL specifying the connection target.
     :return: Chosen :class:`RpcClient` child instance based on the passed URL.
     """
+    if isinstance(url, str):
+        url = RpcUrl.parse(url)
     match url.protocol:
         case RpcProtocol.TCP:
             return RpcClientTCP(url.location, url.port, RpcProtocolStream)
@@ -34,7 +36,7 @@ def init_rpc_client(url: RpcUrl) -> RpcClient:
             raise NotImplementedError(f"Unimplemented protocol: {url.protocol}")
 
 
-async def connect_rpc_client(url: RpcUrl) -> RpcClient:
+async def connect_rpc_client(url: RpcUrl | str) -> RpcClient:
     """Initialize and establish :class:`RpcClient` connection for given URL.
 
     Compared to the :func:`init_rpc_client` this also calls
@@ -52,7 +54,7 @@ async def create_rpc_server(
     client_connected_cb: collections.abc.Callable[
         [RpcClient], None | collections.abc.Awaitable[None]
     ],
-    url: RpcUrl,
+    url: RpcUrl | str,
 ) -> RpcServer:
     """Create server listening on given URL.
 
@@ -60,6 +62,8 @@ async def create_rpc_server(
     :param url: RPC URL specifying where server should listen.
     """
     res: RpcServer
+    if isinstance(url, str):
+        url = RpcUrl.parse(url)
     match url.protocol:
         case RpcProtocol.TCP:
             res = RpcServerTCP(

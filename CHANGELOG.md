@@ -8,12 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Support for WebSockets transport
 - NixOS module for pyshvbroker
+- `RpcLogin` now provides password validation algorithm and conversion from and
+  to SHV login parameter
+- RPC servers now have `terminate` and `wait_terminated` method that terminates
+  not server but also its clients
+- Support for string arguments in places where `RpcRI` or `RpcUrl` is being used
 
 ### Changed
-- Broker's configuration format changed from INI to TOML
-- Broker's configuration option ``methods`` changed to ``match`` and is now
-  list of RPC Resource Identifiers.
+- Broker's configuration format changed from INI to TOML as well as the concept
+  of the configuractuion changed. Please update your configuration according to
+  the new documentation.
 - Broker now filters signals based on the source method not signal name
+- `RpcBrokerConfig` completely rewritten
+- `RpcBroker` client are now registered only if they are active
+- `RpcRI.method_match` and `RpcRI.signal_match` replaced by `RpcRI.match`
 
 
 ## [0.6.1] - 2024-04-12

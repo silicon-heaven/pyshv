@@ -181,6 +181,7 @@ class TestSerial(Link):
         # there is an uncerten race condition that reset message from client1
         # might be delivered to client2 although most of the times that doesn't
         # happen.
+        multiprocessing.set_start_method("fork", force=True)
         process = multiprocessing.Process(
             target=self.ptycopy, args=(pty1_master, pty2_master)
         )

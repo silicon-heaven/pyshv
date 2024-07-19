@@ -201,7 +201,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         self._futures[path].append(future)
         return await future
 
-    async def unsubscribe(self, sub: RpcRI, clean_cache: bool = True) -> bool:
+    async def unsubscribe(self, sub: RpcRI | str, clean_cache: bool = True) -> bool:
         """Perform unsubscribe for signals on given path.
 
         :param sub: SHV RPC subscription to be removed.
@@ -231,7 +231,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         :param source: Method name signal is associated with.
         :return: ``True`` if subscribed for that path and ``False`` otherwise.
         """
-        return any(sub.signal_match(path, source, signal) for sub in self._subscribes)
+        return any(sub.match(path, source, signal) for sub in self._subscribes)
 
     def clean_cache(self) -> None:
         """Remove no longer subscribed paths from cache.

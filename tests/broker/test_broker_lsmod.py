@@ -27,37 +27,23 @@ async def fixture_lsclient(shvbroker, url):
     await res.disconnect()
 
 
-async def test_lsmod(lsclient, url_test_device):
-    await lsclient.subscribe(RpcRI(signal="lsmod"))
-
-    device = await ExampleDevice.connect(url_test_device)
-    assert await lsclient.lsmods.get() == ("", {"test": True})
-    lsclient.lsmods.task_done()
-
-    await device.disconnect()
-    assert await lsclient.lsmods.get() == ("", {"test": False})
-    lsclient.lsmods.task_done()
-
-
-async def test_lsmod_with_device(shvbroker, lsclient, example_device, url_test_device):
-    """Device keeps test path valid and thus we must report it relative to it."""
+@pytest.mark.parametrize(
+    "mount_point",
+    ("test/node", "test/node/well"),
+)
+async def test_lsmod(lsclient, url_test_device, example_device, mount_point):
     await lsclient.subscribe(RpcRI(signal="lsmod"))
 
     nurl = dataclasses.replace(
         url_test_device,
         login=dataclasses.replace(
-            url_test_device.login, opt_device_mount_point="test/foo/device"
+            url_test_device.login, options={"device": {"mountPoint": mount_point}}
         ),
     )
     device = await ExampleDevice.connect(nurl)
-    assert await lsclient.lsmods.get() == ("test", {"foo": True})
-    lsclient.lsmods.task_done()
-
-    cid = (await device.call(".broker/currentClient", "info"))["clientId"]
-    await shvbroker.mount_client(shvbroker.get_client(cid), "test/other")
-    assert await lsclient.lsmods.get() == ("test", {"foo": False, "other": True})
+    assert await lsclient.lsmods.get() == ("test", {"node": True})
     lsclient.lsmods.task_done()
 
     await device.disconnect()
-    assert await lsclient.lsmods.get() == ("test", {"other": False})
+    assert await lsclient.lsmods.get() == ("test", {"node": False})
     lsclient.lsmods.task_done()

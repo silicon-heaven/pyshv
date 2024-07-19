@@ -89,7 +89,7 @@ class SimpleBase:
         The call to the disconnect when client is not connected is silently
         ignored.
 
-        This call blocks until disconnect is completed. You can use
+        Await blocks until disconnect is completed. You can use
         ``x.client.disconnect()`` to only initialize disconnect without waiting
         for it to take an effect.
         """
@@ -98,31 +98,20 @@ class SimpleBase:
 
     async def _loop(self) -> None:
         """Loop run in asyncio task to receive messages."""
-        tasks = set()
-        with contextlib.suppress(EOFError):
-            while msg := await self.client.receive(raise_error=False):
-                if msg is RpcClient.Control.RESET:
-                    self._reset()
-                elif msg.is_valid():
-                    tasks.add(asyncio.create_task(self._message(msg)))
-                else:
-                    logger.info("%s: Dropped invalid message: %s", self.client, msg)
-                # Drop finished tasks
-                done = {t for t in tasks if t.done()}
-                self.__task_done(done)
-                tasks -= done
-        if tasks:
-            done, _ = await asyncio.wait(tasks)
-            self.__task_done(done)
-
-    def __task_done(self, tasks: collections.abc.Iterable[asyncio.Task]) -> None:
-        for task in tasks:
-            if exc := task.exception():
-                logger.info("%s: Message handlig failed", self.client, exc_info=exc)
+        async with asyncio.TaskGroup() as tg:
+            with contextlib.suppress(EOFError):
+                while msg := await self.client.receive(raise_error=False):
+                    if msg is RpcClient.Control.RESET:
+                        self._reset()
+                    elif msg.is_valid():
+                        tg.create_task(self._message(msg))
+                    else:
+                        logger.info("%s: Dropped invalid message: %s", self.client, msg)
 
     def _reset(self) -> None:
         """Handle peer's reset request."""
         logger.info("%s: Doing reset", self.client)
+        self.__peer_is_shv3 = None
         for event in self._calls_event.values():
             event.set()
 
@@ -146,6 +135,7 @@ class SimpleBase:
         ensure that send can be correctly overwritten and optionally postponed
         or blocked by child implementations.
         """
+        # TODO possibly lock to prevent from spliting this call
         await self.client.send(msg)
 
     async def call(
@@ -164,7 +154,7 @@ class SimpleBase:
 
         The delivery of the messages is not ensure in SHV network (they can be
         dropped due to multiple reasons without informing the source of the
-        message) and thus this method can attempt the request sending multiple
+        message) and thus this method can send the request message multiple
         times if it doesn't receive an appropriate response.
 
         :param path: SHV path method is associated with.
@@ -335,7 +325,12 @@ class SimpleBase:
                 resp.rpc_error = RpcMethodCallExceptionError(
                     "".join(traceback.format_exception(exc))
                 )
-            await self._send(resp)
+            try:
+                await self._send(resp)
+            except EOFError:
+                return  # No need to spam logs on disconnect
+            except Exception as exc:
+                logger.warning("%s: Failed to send response", self.client, exc_info=exc)
         elif msg.is_response:
             rid = msg.request_id
             if rid in self._calls_event:

@@ -1,4 +1,4 @@
-"""SHV RPC URL for RpcClient and RpcServer."""
+"""SHV RPC URL used to specify connection and listen settings."""
 
 import dataclasses
 import enum
@@ -153,8 +153,12 @@ class RpcUrl:
 
         return res
 
-    def to_url(self) -> str:
-        """Convert to string URL."""
+    def to_url(self, public: bool = False) -> str:
+        """Convert to string URL.
+
+        :param public: You can pass ``True`` to not include login credentials.
+        :returns: The string representation of the RPC URL.
+        """
         protocols = {
             RpcProtocol.TCP: "tcp",
             RpcProtocol.TCPS: "tcps",
@@ -201,7 +205,7 @@ class RpcUrl:
             opts.append(f"devid={urllib.parse.quote(self.login.device_id)}")
         if self.login.device_mount_point:
             opts.append(f"devmount={urllib.parse.quote(self.login.device_mount_point)}")
-        if self.login.password:
+        if self.login.password and not public:
             if self.login.login_type is RpcLoginType.SHA1:
                 opts.append(f"shapass={self.login.password}")
             elif self.login.login_type is RpcLoginType.PLAIN:

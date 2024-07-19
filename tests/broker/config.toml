@@ -1,29 +1,41 @@
 name = "testbroker"
+listen = [ "tcp://localhost:3755", "unix:shvbroker.sock"]
 
-[listen]
-internet = "tcp://localhost:3755"
-unix = "unix:shvbroker.sock"
-
-
-[users.admin]
+[user.admin]
 password = "admin!123"
-roles = ["admin"]
-[users.shaadmin]
+role = "admin"
+[user.shaadmin]
 sha1pass = "57a261a7bcb9e6cf1db80df501cdd89cee82957e"
-roles = ["admin"]
-[users.test]
+role = "admin"
+[user.test]
 password = "test"
-roles = ["tester", "browse"]
-[users.nobody]
-# User with no access rights and thus minimum ones
+role = ["test", "browse"] # Combination of test and browse role
+[user.nobody]
 password = "nobody"
+role = "nobody"
 
 
-[roles.admin]
-access = "dev"
-match = ["**"]
-[roles.tester]
-access = "cmd"
-match = ["test/**"]
-[roles.browse]
-match = ["**:ls", "**:dir"]
+[role.admin]
+mountPoints = "**" # Admin can mount itself anywhere
+access.dev = "**" # Admin can access everything with DEV level
+[role.test]
+mountPoints = ["test/*"] # Test can mount only bellow test node
+access.cmd = "test/**" # Tester user has access to the test node
+[role.browse]
+access.bws = ["**:ls", "**:dir"] # Browse access to the whole tree.
+[role.nobody]
+# Just a dummy role with minimal rights
+
+
+[[autosetup]]
+# Automatically mount history to the correct location
+role = "admin"
+deviceId = "history"
+mountPoint = ".history"
+subscriptions = ["test/**"]
+[[autosetup]]
+# Devices providing non-empty ID will be mounted bellow test node to the node of
+# the provided ID name.
+role = ["admin", "test"]
+deviceId = "?*"  # nonempty device ID
+mountPoint = "test/%d%i"

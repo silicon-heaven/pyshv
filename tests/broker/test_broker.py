@@ -136,33 +136,6 @@ async def test_empty_dir(client, path, methods):
     (
         (".broker", "clients", None, [0]),
         (".broker", "mounts", None, []),
-        (
-            ".broker",
-            "clientInfo",
-            0,
-            {
-                "clientId": 0,
-                "mountPoint": None,
-                "subscriptions": [],
-                "userName": "admin",
-                "idleTime": 0,
-                "idleTimeMax": 180000,
-            },
-        ),
-        (".broker", "mountedClientInfo", "test", None),
-        (
-            ".broker/currentClient",
-            "info",
-            None,
-            {
-                "clientId": 0,
-                "mountPoint": None,
-                "subscriptions": [],
-                "userName": "admin",
-                "idleTime": 0,
-                "idleTimeMax": 180000,
-            },
-        ),
         (".broker/currentClient", "subscriptions", None, []),
         (".broker/client/0/.app", "name", None, "pyshv-client"),
     ),
@@ -170,6 +143,55 @@ async def test_empty_dir(client, path, methods):
 async def test_empty_call(client, path, method, param, result):
     """Call various broker methods."""
     res = await client.call(path, method, param)
+    assert res == result
+    assert shvmeta(res) == shvmeta(result)
+
+
+@pytest.mark.parametrize(
+    "path,method,param,result",
+    (
+        (
+            ".broker",
+            "clientInfo",
+            0,
+            {
+                # "client": indeterministic
+                "clientId": 0,
+                "deviceId": None,
+                "mountPoint": None,
+                "subscriptions": [],
+                "userName": "admin",
+                "role": "admin",
+                # "idleTime": indeterministic
+                "idleTimeMax": 180000,
+            },
+        ),
+        (
+            ".broker/currentClient",
+            "info",
+            None,
+            {
+                # "client": indeterministic
+                "clientId": 0,
+                "deviceId": None,
+                "mountPoint": None,
+                "subscriptions": [],
+                "userName": "admin",
+                "role": "admin",
+                # "idleTime": indeterministic
+                "idleTimeMax": 180000,
+            },
+        ),
+    ),
+)
+async def test_client_info(client, path, method, param, result):
+    """Call client info query methods."""
+    res = await client.call(path, method, param)
+    assert res["client"]
+    del res["client"]
+    assert isinstance(res["idleTime"], int)
+    assert res["idleTime"] >= 0
+    del res["idleTime"]
     assert res == result
     assert shvmeta(res) == shvmeta(result)
 
@@ -194,22 +216,28 @@ async def test_with_example_ls(client, example_device, path, nodes):
         (
             "test/device",
             {
+                # "client": indeterministic
                 "clientId": 1,
+                "deviceId": "example",
                 "mountPoint": "test/device",
                 "subscriptions": [],
                 "userName": "test",
-                "idleTime": 42,
+                "role": "test-browse",
+                # "idleTime": indeterministic
                 "idleTimeMax": 180000,
             },
         ),
         (
             "test/device/track",
             {
+                # "client": indeterministic
                 "clientId": 1,
+                "deviceId": "example",
                 "mountPoint": "test/device",
                 "subscriptions": [],
                 "userName": "test",
-                "idleTime": 42,
+                "role": "test-browse",
+                # "idleTime": indeterministic
                 "idleTimeMax": 180000,
             },
         ),
@@ -218,7 +246,10 @@ async def test_with_example_ls(client, example_device, path, nodes):
 async def test_mounted_client_info(client, example_device, param, result):
     res = await client.call(".broker", "mountedClientInfo", param)
     assert res["idleTime"] >= 0
-    res["idleTime"] = 42
+    del res["idleTime"]
+    assert res["client"]
+    assert isinstance(res["client"], str)
+    del res["client"]
     assert res == result
     assert shvmeta(res) == shvmeta(result)
 
@@ -327,11 +358,6 @@ async def test_client_reset(client):
     ]
 
 
-async def test_broker_client(example_device, shvbroker):
-    """Check that we can use broker's clients as clients as well."""
-    client = next(shvbroker.clients())
-    assert await client.call(".app", "name") == "pyshv-example_device"
-
-
 # TODO test clients disconnect on idle
 # TODO test access level
+# TODO test subscription TTL

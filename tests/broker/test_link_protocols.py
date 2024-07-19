@@ -19,7 +19,7 @@ class Protocol:
 
     @pytest.fixture(name="shvbroker")
     async def fixture_shvbroker(self, config, broker_url):
-        config.listen = {"test": broker_url}
+        config.listen = [broker_url]
         b = broker.RpcBroker(config)
         await b.start_serving()
         yield b

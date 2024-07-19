@@ -6,6 +6,8 @@ API reference
 
    value
    rpcmessage
+   rpcurl
+   rpcri
    rpccom
    simpleclient
    broker

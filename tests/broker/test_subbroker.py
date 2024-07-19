@@ -33,8 +33,8 @@ def fixture_suburl(unused_tcp_port_factory):
 
 @pytest.fixture(name="shvsubbroker")
 async def fixture_shvsubbroker(subconfig, suburl, port, shvbroker):
-    subconfig.listen = {"test": suburl}
-    subconfig.connection("broker").url.port = port
+    subconfig.listen = [suburl]
+    subconfig.connect[0].url.port = port
     b = broker.RpcBroker(subconfig)
     await b.start_serving()
     yield b
@@ -65,8 +65,8 @@ async def fixture_subdevice(shvsubbroker, url_subdevice):
 @pytest.mark.parametrize(
     "path,method,result",
     (
-        ("subbroker", "ls", [".app", ".broker", "device"]),
-        ("subbroker/device", "ls", [".app", "track"]),
+        ("test/subbroker", "ls", [".app", ".broker", "..", "device"]),
+        ("test/subbroker/device", "ls", [".app", "track"]),
     ),
 )
 async def test_broker2subbroker(shvbroker, subdevice, client, path, method, result):
@@ -89,22 +89,28 @@ async def test_signal(shvbroker, subdevice, url):
     """Check that we propagate signals through subbroker."""
     client = await NotifClient.connect(url)
 
-    assert await client.subscribe(RpcRI("subbroker/device/track/**", signal="*chng"))
+    assert await client.subscribe(
+        RpcRI("test/subbroker/device/track/**", signal="*chng")
+    )
+    await asyncio.sleep(0)  # Yield to propagate subscription
 
     assert await client.call(".broker/currentClient", "subscriptions") == [
-        {"signal": "*chng", "paths": "subbroker/device/track/**"}
-    ]
-    assert await client.call("subbroker/.broker/currentClient", "subscriptions") == [
-        {"signal": "*chng", "paths": "device/track/**"}
+        {"signal": "*chng", "paths": "test/subbroker/device/track/**"}
     ]
 
-    await client.call("subbroker/device/track/1", "set", [1])
+    sub = await client.call("test/subbroker/.broker/currentClient", "subscriptions")
+    assert "ttl" in sub[0]
+    assert sub[0]["ttl"] > 0
+    del sub[0]["ttl"]
+    assert sub == [{"signal": "*chng", "paths": "device/track/**"}]
+
+    await client.call("test/subbroker/device/track/1", "set", [1])
     assert await client.signals.get() == RpcMessage.signal(
-        "subbroker/device/track/1", value=[1]
+        "test/subbroker/device/track/1", value=[1]
     )
     client.signals.task_done()
 
-    assert await client.unsubscribe(RpcRI("subbroker/device/track/**", signal="*chng"))
-    assert await client.call("subbroker/.broker/currentClient", "subscriptions") == []
+    # Note: unsibscribe happens only after TTL. We do not want to wait so we
+    # just don't test it right now.
 
     await client.disconnect()

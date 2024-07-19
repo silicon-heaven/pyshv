@@ -7,6 +7,7 @@ import asyncio
 import collections.abc
 import logging
 import typing
+import weakref
 
 import websockets.client
 import websockets.server
@@ -114,6 +115,7 @@ class _RpcServerWebSockets(RpcServer):
         self.client_connected_cb = client_connected_cb
         """Callbact that is called when new client is connected."""
         self._server: websockets.server.WebSocketServer | None = None
+        self._clients: weakref.WeakSet[_RpcServerWebSockets.Client] = weakref.WeakSet()
 
     @abc.abstractmethod
     async def _create_server(self) -> websockets.server.WebSocketServer:
@@ -122,10 +124,13 @@ class _RpcServerWebSockets(RpcServer):
     async def _client_connect(
         self, wsp: websockets.server.WebSocketServerProtocol
     ) -> None:
-        res = self.client_connected_cb(self.Client(wsp, self))
+        client = self.Client(wsp, self)
+        self._clients.add(client)
+        res = self.client_connected_cb(client)
         if isinstance(res, collections.abc.Awaitable):
             await res
-        await wsp.wait_closed()
+        # This coroutine must be blocked to not close the connection.
+        await client.wait_disconnect()
 
     def is_serving(self) -> bool:
         return self._server is not None and self._server.is_serving()
@@ -147,6 +152,23 @@ class _RpcServerWebSockets(RpcServer):
     async def wait_closed(self) -> None:
         if self._server is not None:
             await self._server.wait_closed()
+
+    def terminate(self) -> None:
+        self.close()
+        for client in self._clients:
+            client.disconnect()
+
+    async def wait_terminated(self) -> None:
+        await self.wait_closed()
+        res = await asyncio.gather(
+            *(c.wait_disconnect() for c in self._clients),
+            return_exceptions=True,
+        )
+        excs = [v for v in res if isinstance(v, BaseException)]
+        if excs:
+            if len(excs) == 1:
+                raise excs[0]
+            raise BaseExceptionGroup("", excs)
 
     class Client(RpcClient):
         def __init__(

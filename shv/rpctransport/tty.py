@@ -156,3 +156,11 @@ class RpcServerTTY(RpcServer):
     async def wait_closed(self) -> None:  # noqa: D102
         if self._task is not None:
             await self._task
+
+    def terminate(self) -> None:  # noqa D102
+        self.close()
+        self.client.disconnect()
+
+    async def wait_terminated(self) -> None:  # noqa D102
+        await self.wait_closed()
+        await self.client.wait_disconnect()

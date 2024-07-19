@@ -66,7 +66,7 @@ class SimpleClient(SimpleBase):
     @classmethod
     async def connect(
         cls: type[typing.Self],
-        url: RpcUrl,
+        url: RpcUrl | str,
         *args: typing.Any,  # noqa ANN401
         **kwargs: typing.Any,  # noqa ANN401
     ) -> typing.Self:
@@ -77,8 +77,14 @@ class SimpleClient(SimpleBase):
         :param url: SHV RPC URL to the broker
         :return: Connected instance.
         """
+        if isinstance(url, str):
+            url = RpcUrl.parse(url)
         res = cls(await connect_rpc_client(url), url.login, *args, **kwargs)
-        await res.wait_for_login()
+        try:
+            await res.wait_for_login()
+        except Exception as exc:
+            await res.disconnect()
+            raise exc
         return res
 
     async def wait_for_login(self) -> None:
@@ -158,7 +164,7 @@ class SimpleClient(SimpleBase):
         await self.call(
             "",
             "login",
-            self.login.param(nonce, {"idleWatchDogTimeOut": int(self.IDLE_TIMEOUT)}),
+            self.login.to_shv(nonce, {"idleWatchDogTimeOut": int(self.IDLE_TIMEOUT)}),
         )
         # Restore subscriptions
         for ri in self._subscribes:
@@ -185,7 +191,7 @@ class SimpleClient(SimpleBase):
                 await asyncio.sleep(0)  # Let loop detect disconnect
                 await self._connected.wait()
 
-    async def subscribe(self, ri: RpcRI) -> bool:
+    async def subscribe(self, ri: RpcRI | str) -> bool:
         """Perform subscribe for signals on given path.
 
         Subscribe is always performed on the node itself as well as all its
@@ -193,30 +199,37 @@ class SimpleClient(SimpleBase):
 
         :param ri: SHV RPC RI for subscription to be added.
         """
+        if isinstance(ri, str):
+            ri = RpcRI.parse(ri)
         res = await self.__subscribe(ri)
         self._subscribes.add(ri)
         return res
 
     async def __subscribe(self, ri: RpcRI) -> bool:
+        compat = not await self.peer_is_shv3()
         return bool(
             await self.call(
-                ".broker/currentClient" if await self.peer_is_shv3() else ".broker/app",
+                ".broker/currentClient" if not compat else ".broker/app",
                 "subscribe",
-                ri.to_subscription(not await self.peer_is_shv3()),
+                ri.to_subscription(None, compat),
             )
         )
 
-    async def unsubscribe(self, ri: RpcRI) -> bool:
+    async def unsubscribe(self, ri: RpcRI | str) -> bool:
         """Perform unsubscribe for signals on given path.
 
         :param ri: SHV RPC RI for subscription to be removed.
-        :return: ``True`` in case such subscribe was located and ``False`` otherwise.
+        :return: ``True`` in case such subscribe was located and ``False``
+          otherwise.
         """
+        if isinstance(ri, str):
+            ri = RpcRI.parse(ri)
+        compat = not await self.peer_is_shv3()
         resp = bool(
             await self.call(
-                ".broker/currentClient" if await self.peer_is_shv3() else ".broker/app",
+                ".broker/currentClient" if not compat else ".broker/app",
                 "unsubscribe",
-                ri.to_subscription(not await self.peer_is_shv3()),
+                ri.to_subscription(None, compat),
             )
         )
         if resp:

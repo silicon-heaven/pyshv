@@ -1,14 +1,6 @@
 RPC communication
 =================
 
-URL and connection parameters
------------------------------
-
-.. autoclass:: shv.RpcUrl
-.. autoclass:: shv.RpcProtocol
-.. autoclass:: shv.RpcLogin
-.. autoclass:: shv.RpcLoginType
-
 Client
 ------
 

@@ -7,14 +7,15 @@ discover device's nodes and methods. This requires ``ls`` and ``dir`` methods
 implemnetation for every node.
 
 The device implementation should be a new Python class based on
-:class:`shv.SimpleBase` or :class:`shv.SimpleDevice` (for physical devices).
+:class:`shv.SimpleClient` or :class:`shv.SimpleDevice` (for physical devices).
 
 .. warning::
    There are two concepts of "device" in SHV. One is RPC Device which is client
    mounted in SHV RPC Broker. The second is the physical device representation.
    This document talks about the first concept not the second one and thus you
-   should use :class:`shv.SimpleBase` and not :class:`shv.SimpleDevice`, unless
-   you really have physical interface that this client controls.
+   should use :class:`shv.SimpleBase` or :class:`shv.SimpleClient` and not
+   :class:`shv.SimpleDevice`, unless you really have physical device that
+   this application manages.
 
 .. tip::
    Devices can be more easilly implemented with `SHVTree
@@ -29,11 +30,12 @@ Listing nodes
 
 This is implementation of ``ls`` method. In :class:`shv.SimpleBase` you need to
 override :meth:`shv.SimpleBase._ls` method and implement it. It needs to return
-iterator over child nodes. Do not forget to also yield base implementation.
+iterator over child nodes. Do not forget to also yield base implementation with
+`yield from super()._ls(path)`.
 
 The simple example for tree like this follows::
 
-   ├── status
+   ├── .app
    └── track
        ├── 1
        └── 2
@@ -55,7 +57,9 @@ Listing methods
 
 To implement ``dir`` method you need to override :meth:`shv.SimpleBase._dir`
 method and implement generator providing method descriptions. This method is
-called only if :meth:`shv.SimpleBase._ls` reports this node as existing one.
+called only if :meth:`shv.SimpleBase._ls` reports this node as existing one. Do
+not forget to first yield base implementation with `yield from
+super()._dir(path)` to provide standard methods such as ``ls`` and ``dir``.
 
 .. sourcecode::
 
@@ -66,9 +70,6 @@ called only if :meth:`shv.SimpleBase._ls` reports this node as existing one.
             yield RpcMethodDesc.getter(result="List[Int]", description="List of tracks")
             yield RpcMethodDesc.setter(param="List[Int]", description="Set track")
 
-The base implementation should be always called right at the start because it
-provides standard methods such as ``ls`` and ``dir``.
-
 
 Methods implementation
 ----------------------
@@ -77,9 +78,11 @@ Now when clients can discover our SHV tree and our methods we need to actually
 implement them. This is done by overriding method
 :meth:`shv.SimpleBase._method_call`.
 
-The implementation is pretty strait forward. You get SHV path and method name as
-arguments alongside parameters and you need to return result or raise exception
-(preferably one of :class:`shv.RpcError` children).
+The implementation is pretty strait forward. You get SHV path and method name,
+optional user's ID, and access level as arguments alongside parameter. The
+access level needs to be checked if user has required access level. The
+implementation needs to return result or raise exception (preferably one of
+:class:`shv.RpcError` children) or call the parent's implementation.
 
 For an example see the next section.
 
