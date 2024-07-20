@@ -210,10 +210,7 @@ class SimpleBase:
 
     async def ping(self) -> None:
         """Ping the peer to check the connection."""
-        await self.call(
-            ".app" if await self.peer_is_shv3() else ".broker/currentClient",
-            "ping",
-        )
+        await self.call(".app" if await self.peer_is_shv3() else ".broker/app", "ping")
 
     async def ls(self, path: str) -> list[str]:
         """List child nodes of the node on the specified path.

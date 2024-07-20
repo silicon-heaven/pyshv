@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RpcBroker` client are now registered only if they are active
 - `RpcRI.method_match` and `RpcRI.signal_match` replaced by `RpcRI.match`
 
+### Fixed
+- `SimpleBase.ping` now uses `.broker/app` instead of `.broker/currentClient` on
+  pre-SHV3 brokers
+
 
 ## [0.6.1] - 2024-04-12
 ### Added
