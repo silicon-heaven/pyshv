@@ -9,7 +9,7 @@ import typing
 
 from .rpclogin import RpcLogin
 from .rpcmessage import RpcMessage
-from .rpcparams import shvgett
+from .rpcparam import shvgett
 from .rpcri import RpcRI
 from .rpctransport import RpcClient, connect_rpc_client
 from .rpcurl import RpcUrl

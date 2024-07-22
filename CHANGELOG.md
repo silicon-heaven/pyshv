@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `SimpleBase.ping` now uses `.broker/app` instead of `.broker/currentClient` on
   pre-SHV3 brokers
+- `is_shvlist` now excludes strings and bytes to not invalidly classify them as
+  lists
+- `shvarg` and `shvargt` now correctly manages single values and provides them
+  only as for zero index (was for all indexes)
 
 
 ## [0.6.1] - 2024-04-12

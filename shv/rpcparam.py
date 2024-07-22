@@ -6,7 +6,7 @@ import collections.abc
 import typing
 
 from .rpcerrors import RpcInvalidParamsError
-from .value import SHVType
+from .value import SHVType, is_shvlist
 
 SHVT = typing.TypeVar("SHVT", bound=SHVType)
 
@@ -136,10 +136,10 @@ def shvarg(
     :raise RpcInvalidParamsError: if the value is not present and no default
       provided.
     """
-    if isinstance(value, collections.abc.Sequence):
+    if is_shvlist(value):
         if len(value) > index and (res := value[index]) is not None:
             return res
-    elif value is not None:
+    elif index == 0 and value is not None:
         return value  # Covers that first argument is sent outside list
     if isinstance(default, NoDefaultType):
         raise RpcInvalidParamsError(f"Field {index} not provided")

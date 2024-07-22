@@ -20,7 +20,7 @@ from .rpcerrors import (
 from .rpclogin import RpcLogin, RpcLoginType
 from .rpcmessage import RpcMessage
 from .rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodFlags
-from .rpcparams import SHVGetKey, shvarg, shvargt, shvget, shvgett, shvt
+from .rpcparam import SHVGetKey, shvarg, shvargt, shvget, shvgett, shvt
 from .rpcri import RpcRI
 from .rpctransport import (
     RpcClient,

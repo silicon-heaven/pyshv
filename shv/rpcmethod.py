@@ -8,7 +8,7 @@ import enum
 import functools
 import typing
 
-from .rpcparams import SHVGetKey, shvget, shvgett
+from .rpcparam import SHVGetKey, shvget, shvgett
 from .value import SHVMapType, SHVType, is_shvmap
 
 

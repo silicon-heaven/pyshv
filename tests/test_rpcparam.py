@@ -27,11 +27,16 @@ def test_shvget(value, key, default, expected):
 @pytest.mark.parametrize(
     "value,index,default,expected",
     (
-        (None, 1, 3, 3),
+        (None, 0, 3, 3),
+        (41, 1, 4, 4),
+        (41, 0, 4, 41),
         ([41, 42, 43], 1, 3, 42),
         ([41, None, 43], 1, 3, 3),
-        ([], 1, 3, 3),
+        ([], 0, 3, 3),
         ([41], 1, 3, 3),
+        ([41], 0, 3, 41),
+        ("foo", 1, None, None),
+        ("foo", 0, 4, "foo"),
     ),
 )
 def test_shvarg(value, index, default, expected):

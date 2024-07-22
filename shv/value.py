@@ -236,8 +236,10 @@ class SHVIMap(dict[int, SHVType], SHVMeta):
 
 def is_shvlist(value: object) -> typing.TypeGuard[SHVListType]:
     """Check if given value can be SHV List."""
-    return isinstance(value, collections.abc.Sequence) and all(
-        is_shvtype(v) for v in value
+    return (
+        isinstance(value, collections.abc.Sequence)
+        and not isinstance(value, str | bytes)
+        and all(is_shvtype(v) for v in value)
     )
 
 

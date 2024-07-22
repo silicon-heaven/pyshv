@@ -12,7 +12,7 @@ import logging
 import typing
 
 from .rpcerrors import RpcInvalidParamsError
-from .rpcparams import shvgett
+from .rpcparam import shvgett
 from .value import SHVMapType, SHVType, is_shvmap
 
 logger = logging.getLogger(__name__)
