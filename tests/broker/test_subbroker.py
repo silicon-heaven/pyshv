@@ -95,14 +95,12 @@ async def test_signal(shvbroker, subdevice, url):
     await asyncio.sleep(0)  # Yield to propagate subscription
 
     assert await client.call(".broker/currentClient", "subscriptions") == [
-        {"signal": "*chng", "paths": "test/subbroker/device/track/**"}
+        "test/subbroker/device/track/**:*:*chng"
     ]
 
-    sub = await client.call("test/subbroker/.broker/currentClient", "subscriptions")
-    assert "ttl" in sub[0]
-    assert sub[0]["ttl"] > 0
-    del sub[0]["ttl"]
-    assert sub == [{"signal": "*chng", "paths": "device/track/**"}]
+    assert await client.call(
+        "test/subbroker/.broker/currentClient", "subscriptions"
+    ) == ["device/track/**:*:*chng"]
 
     await client.call("test/subbroker/device/track/1", "set", [1])
     assert await client.signals.get() == RpcMessage.signal(

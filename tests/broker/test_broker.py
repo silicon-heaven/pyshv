@@ -259,7 +259,7 @@ async def test_subscribe(client, example_device):
     assert await client.subscribe(sub) is True
     assert await client.subscribe(sub) is False
     assert await client.call(".broker/currentClient", "subscriptions") == [
-        {"paths": "test/device/track/**"}
+        "test/device/track/**"
     ]
     assert await client.unsubscribe(sub) is True
     assert await client.call(".broker/currentClient", "subscriptions") == []

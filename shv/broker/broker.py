@@ -24,6 +24,7 @@ from ..rpcerrors import (
 from ..rpclogin import RpcLogin
 from ..rpcmessage import RpcMessage
 from ..rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodFlags
+from ..rpcparam import shvargt
 from ..rpcri import RpcRI
 from ..rpctransport import RpcClient, RpcServer, create_rpc_server, init_rpc_client
 from ..simplebase import SimpleBase
@@ -317,11 +318,15 @@ class RpcBroker:
                         case "subscriptions":
                             return self._subscriptions()
                         case "subscribe":
-                            sub, ttl = RpcRI.from_subscription(param)
-                            return await self.__broker.subscribe(self, sub, ttl)
+                            sub = RpcRI.parse(shvargt(param, 0, str))
+                            ttl = shvargt(param, 1, int, -1)
+                            return await self.__broker.subscribe(
+                                self, sub, None if ttl < 0 else ttl
+                            )
                         case "unsubscribe":
-                            sub, _ = RpcRI.from_subscription(param)
-                            return await self.__broker.unsubscribe(self, sub)
+                            if not isinstance(param, str):
+                                raise RpcInvalidParamsError("Use string")
+                            return await self.__broker.unsubscribe(self, param)
             return await super()._method_call(path, method, param, access, user_id)
 
         def infomap(self) -> dict[str, SHVType]:
@@ -343,9 +348,7 @@ class RpcBroker:
         def _subscriptions(self) -> list[SHVType]:
             now = time.time()
             return [
-                ri.to_subscription(
-                    int(deadline - now) if deadline is not None else None
-                )
+                str(ri)
                 for ri, deadline in self.__broker.subscriptions(self)
                 if deadline is None or deadline > now
             ]
@@ -687,7 +690,7 @@ class RpcBroker:
         self._subs_notify()
         return res
 
-    async def unsubscribe(self, client: Client, ri: RpcRI) -> bool:
+    async def unsubscribe(self, client: Client, ri: RpcRI | str) -> bool:
         """Remove given subscription as being requested by given client.
 
         :param client: Client object this subscription is requested by.
@@ -695,6 +698,8 @@ class RpcBroker:
         :returns: ``False`` if no subscription was removed and ``True``
           otherwise.
         """
+        if isinstance(ri, str):
+            ri = RpcRI.parse(ri)
         if client.broker_client_id is None:
             raise ValueError("Client must be registered")
         if ri not in self._subs:
@@ -776,9 +781,7 @@ class RpcBroker:
                     ) and (rri := ri.relative_to(mnt)):
                         client.send(
                             RpcMessage.request(
-                                ".broker/currentClient",
-                                "subscribe",
-                                rri.to_subscription(ttl=120),
+                                ".broker/currentClient", "subscribe", [str(rri), 120]
                             )
                         )
                 assert client.broker_client_id is not None

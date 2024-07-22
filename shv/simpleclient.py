@@ -199,19 +199,24 @@ class SimpleClient(SimpleBase):
 
         :param ri: SHV RPC RI for subscription to be added.
         """
-        if isinstance(ri, str):
-            ri = RpcRI.parse(ri)
         res = await self.__subscribe(ri)
-        self._subscribes.add(ri)
+        self._subscribes.add(ri if isinstance(ri, RpcRI) else RpcRI.parse(ri))
         return res
 
-    async def __subscribe(self, ri: RpcRI) -> bool:
+    async def __subscribe(self, ri: RpcRI | str) -> bool:
         compat = not await self.peer_is_shv3()
+        riv: SHVType
+        if compat:
+            riv = (
+                RpcRI.parse(ri) if isinstance(ri, str) else ri
+            ).to_legacy_subscription()
+        else:
+            riv = str(ri)
         return bool(
             await self.call(
                 ".broker/currentClient" if not compat else ".broker/app",
                 "subscribe",
-                ri.to_subscription(None, compat),
+                riv,
             )
         )
 
@@ -222,18 +227,23 @@ class SimpleClient(SimpleBase):
         :return: ``True`` in case such subscribe was located and ``False``
           otherwise.
         """
-        if isinstance(ri, str):
-            ri = RpcRI.parse(ri)
         compat = not await self.peer_is_shv3()
+        riv: SHVType
+        if compat:
+            riv = (
+                RpcRI.parse(ri) if isinstance(ri, str) else ri
+            ).to_legacy_subscription()
+        else:
+            riv = str(ri)
         resp = bool(
             await self.call(
                 ".broker/currentClient" if not compat else ".broker/app",
                 "unsubscribe",
-                ri.to_subscription(None, compat),
+                riv,
             )
         )
         if resp:
-            self._subscribes.remove(ri)
+            self._subscribes.remove(ri if isinstance(ri, RpcRI) else RpcRI.parse(ri))
         return resp
 
     def subscriptions(self) -> collections.abc.Iterator[RpcRI]:

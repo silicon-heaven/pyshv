@@ -3,7 +3,6 @@
 import pytest
 
 from shv.rpcri import RpcRI, path_match, tail_pattern
-from shv.value import SHVType
 
 
 @pytest.mark.parametrize(
@@ -117,51 +116,20 @@ def test_relative_to(sub, path, res):
     assert sub.relative_to(path) == res
 
 
-DATA: list[tuple[RpcRI, int | None, SHVType]] = [
-    (RpcRI(), None, {}),
-    (RpcRI("test/this"), None, {"paths": "test/this"}),
-    (RpcRI(), 42, {"ttl": 42}),
-    (RpcRI("**", "get", "*chng"), None, {"source": "get", "signal": "*chng"}),
-]
-
-
-@pytest.mark.parametrize("obj,ttl,shv", DATA)
-def test_to_shv(shv, ttl, obj):
-    assert obj.to_subscription(ttl) == shv
-
-
 @pytest.mark.parametrize(
-    "obj,ttl,shv",
-    [
-        *DATA,
-        (RpcRI("test/this/**"), None, {"path": "test/this"}),
-    ],
-)
-def test_from_shv(shv, ttl, obj):
-    assert RpcRI.from_subscription(shv) == (obj, ttl)
-
-
-@pytest.mark.parametrize(
-    "shv,msg",
+    "obj,shv",
     (
-        ({"ttl": "invalid"}, "Invalid type"),
-        ({"paths": 22}, "Invalid type"),
-        ([], "Expected Map"),
+        (RpcRI(), {"method": "", "path": ""}),
+        (RpcRI("test/this"), {"method": "", "paths": "test/this"}),
+        (
+            RpcRI("**", "get", "*chng"),
+            {"path": "", "source": "get", "methods": "*chng"},
+        ),
+        (RpcRI("test/this/**"), {"path": "test/this", "method": ""}),
+        (RpcRI(), {"path": "", "method": ""}),
+        (RpcRI("test/this/*"), {"paths": "test/this/*", "method": ""}),
+        (RpcRI(signal="*chng"), {"path": "", "methods": "*chng"}),
     ),
 )
-def test_from_shv_invalid(shv, msg):
-    with pytest.raises(ValueError, match=msg):
-        RpcRI.from_subscription(shv)
-
-
-@pytest.mark.parametrize(
-    "obj,ttl,shv",
-    (
-        (RpcRI("test/this/**"), None, {"path": "test/this", "method": ""}),
-        (RpcRI(), None, {"path": "", "method": ""}),
-        (RpcRI("test/this/*"), None, {"paths": "test/this/*", "method": ""}),
-        (RpcRI(signal="*chng"), None, {"path": "", "methods": "*chng"}),
-    ),
-)
-def test_to_shv_compatible(shv, ttl, obj):
-    assert obj.to_subscription(ttl, True) == shv
+def test_to_legacy_subscription(shv, obj):
+    assert obj.to_legacy_subscription() == shv

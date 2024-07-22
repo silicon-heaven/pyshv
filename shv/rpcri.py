@@ -9,7 +9,7 @@ from __future__ import annotations
 import dataclasses
 import fnmatch
 
-from .value import SHVType, is_shvmap
+from .value import SHVType
 
 
 @dataclasses.dataclass(frozen=True)
@@ -88,55 +88,18 @@ class RpcRI:
             return cls(p, m)
         return cls(p)
 
-    @classmethod
-    def from_subscription(cls, value: SHVType) -> tuple[RpcRI, int | None]:
-        """Create RPC RI for subscription from SHV type representation."""
-        if not is_shvmap(value):
-            raise ValueError("Expected Map")
-        # We intentionally ignore unknown keys here
-        paths: SHVType = RpcRI.path
-        if (path := value.get("path", None)) is not None:
-            paths = f"{path}/**" if path else "**"
-        paths = value.get("paths", paths)
-        method = value.get("source", RpcRI.method)
-        # Note: the methods here is misleading but it backward compatible for
-        # implementations that viewed signal as a method and not as something
-        # associated with method.
-        signal = value.get(
-            "methods", value.get("method", value.get("signal", RpcRI.signal))
-        )
-        ttl = value.get("ttl", None)
-        if (
-            not isinstance(paths, str)
-            or not isinstance(method, str)
-            or not isinstance(signal, str)
-            or (not isinstance(ttl, int) and ttl is not None)
-        ):
-            raise ValueError("Invalid type")
-        return cls(paths, method, signal), ttl
-
-    def to_subscription(
-        self, ttl: int | None = None, compatible: bool = False
-    ) -> SHVType:
-        """Convert to representation Subscription used in SHV RPC communication."""
+    def to_legacy_subscription(self) -> SHVType:
+        """Convert to legacy SHV subscription representation."""
         res: dict[str, SHVType] = {}
-        if compatible:
-            pth, _, tail = self.path.rpartition("/")
-            if "*" in pth or tail != "**":
-                res["paths"] = self.path
-            else:
-                res["path"] = pth
-            if "*" in self.signal and self.signal != "*":
-                res["methods"] = self.signal
-            else:
-                res["method"] = "" if self.signal == "*" else self.signal
+        pth, _, tail = self.path.rpartition("/")
+        if "*" in pth or tail != "**":
+            res["paths"] = self.path
         else:
-            if self.path != "**":
-                res["paths"] = self.path
-            if self.signal != "*":
-                res["signal"] = self.signal
-            if ttl is not None:
-                res["ttl"] = ttl
+            res["path"] = pth
+        if "*" in self.signal and self.signal != "*":
+            res["methods"] = self.signal
+        else:
+            res["method"] = "" if self.signal == "*" else self.signal
         if self.method != "*":
             res["source"] = self.method
         return res
