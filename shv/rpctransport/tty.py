@@ -2,6 +2,7 @@
 
 import asyncio
 import collections.abc
+import contextlib
 import logging
 import pathlib
 
@@ -112,7 +113,7 @@ class RpcServerTTY(RpcServer):
         self._task: asyncio.Task | None = None
 
     def __str__(self) -> str:
-        return f"tty:{self.client.port}"
+        return f"server.tty:{self.client.port}"
 
     async def _loop(self) -> None:
         while True:
@@ -121,6 +122,7 @@ class RpcServerTTY(RpcServer):
             except OSError as exc:
                 logger.debug("%s: Waiting for accessible TTY device: %s", self, exc)
             else:
+                logger.debug("%s: Openned", self)
                 res = self.client_connected_cb(self.client)
                 if isinstance(res, collections.abc.Awaitable):
                     await res
@@ -155,7 +157,8 @@ class RpcServerTTY(RpcServer):
 
     async def wait_closed(self) -> None:  # noqa: D102
         if self._task is not None:
-            await self._task
+            with contextlib.suppress(asyncio.CancelledError):
+                await self._task
 
     def terminate(self) -> None:  # noqa D102
         self.close()

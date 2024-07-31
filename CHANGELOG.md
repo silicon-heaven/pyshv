@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lists
 - `shvarg` and `shvargt` now correctly manages single values and provides them
   only as for zero index (was for all indexes)
+- `RpcServerTTY` no longer raise `asyncio.CancelledError` when its being closed
 
 
 ## [0.6.1] - 2024-04-12

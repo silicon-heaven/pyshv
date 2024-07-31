@@ -1,12 +1,17 @@
-"""Check various clients implementing a different link layers."""
+"""Check various clients and servers implementing a different link layers."""
+
+from __future__ import annotations
 
 import asyncio
+import collections.abc
+import contextlib
+import dataclasses
 import io
 import logging
-import multiprocessing
 import os
 import pty
 import select
+import threading
 
 import pytest
 
@@ -20,12 +25,69 @@ from shv import (
     RpcInvalidRequestError,
     RpcMessage,
     RpcServerTCP,
+    RpcServerTTY,
     RpcServerUnix,
     RpcServerWebSockets,
     RpcServerWebSocketsUnix,
 )
 
 logger = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass
+class PTYPort:
+    """PTY based exchange port."""
+
+    port1: str
+    port2: str
+    event: threading.Event
+
+    @classmethod
+    @contextlib.contextmanager
+    def new(cls) -> collections.abc.Iterator[PTYPort]:
+        """Context function that provides PTY based ports.
+
+        :return: Tuple with two strings containing paths to the pty ports and
+          event that can be cleared to pause data exchange and set to resume it
+          again.
+        """
+        pty1_master, pty1_slave = pty.openpty()
+        pty2_master, pty2_slave = pty.openpty()
+        event = threading.Event()
+        event.set()
+        thread = threading.Thread(
+            target=cls._exchange, args=(pty1_master, pty2_master, event)
+        )
+        thread.start()
+        yield cls(os.ttyname(pty1_slave), os.ttyname(pty2_slave), event)
+        os.close(pty1_slave)
+        os.close(pty2_slave)
+        thread.join()
+
+    @staticmethod
+    def _exchange(fd1: int, fd2: int, event: threading.Event) -> None:
+        p = select.poll()
+        p.register(fd1, select.POLLIN | select.POLLPRI)
+        p.register(fd2, select.POLLIN | select.POLLPRI)
+        fds = 2
+        while fds:
+            for fd, pevent in p.poll():
+                event.wait()
+                if pevent & select.POLLHUP:
+                    p.unregister(fd)
+                    fds -= 1
+                if pevent & select.POLLIN:
+                    data = os.read(fd, io.DEFAULT_BUFFER_SIZE)
+                    os.write(fd1 if fd is fd2 else fd2, data)
+                if pevent & select.POLLERR:
+                    logger.error("Error detected in ptycopy")
+                    return
+
+
+@pytest.fixture(name="pty")
+def fixture_pty():
+    with PTYPort.new() as port:
+        yield port
 
 
 class Link:
@@ -92,6 +154,19 @@ class ServerLink(Link):
         await server_client.wait_disconnect()
 
 
+class TestPipe(Link):
+    """Check that we can work over Unix pipe pair."""
+
+    @pytest.fixture(name="clients")
+    async def fixture_clients(self):
+        client1, client2 = await RpcClientPipe.open_pair()
+        yield client1, client2
+        client1.disconnect()
+        client2.disconnect()
+        await client1.wait_disconnect()
+        await client2.wait_disconnect()
+
+
 class TestTCP(ServerLink):
     """Check that TCP/IP transport protocol works."""
 
@@ -151,41 +226,19 @@ class TestUnix(ServerLink):
         await client.wait_disconnect()
 
 
-class TestPipe(Link):
-    """Check that we can work over Unix pipe pair."""
+class TestTTY(Link):
+    """Check that we can work over TTY port transport protocol."""
 
     @pytest.fixture(name="clients")
-    async def fixture_clients(self):
-        client1, client2 = await RpcClientPipe.open_pair()
-        yield client1, client2
-        client1.disconnect()
-        client2.disconnect()
-        await client1.wait_disconnect()
-        await client2.wait_disconnect()
+    async def fixture_clients(self, pty):
+        # We pause data exchange to resolve race condition between terminal
+        # setup and reset message sending. This ensures that ports are
+        # configured to raw mode before reset message is exchanged.
+        pty.event.clear()
+        client1 = await RpcClientTTY.connect(pty.port1)
+        client2 = await RpcClientTTY.connect(pty.port2)
+        pty.event.set()
 
-
-class TestSerial(Link):
-    """Check that we can work over Serial port transport protocol."""
-
-    @pytest.fixture(name="clients")
-    async def fixture_clients(self):
-        pty1_master, pty1_slave = pty.openpty()
-        pty2_master, pty2_slave = pty.openpty()
-
-        client1 = await RpcClientTTY.connect(os.ttyname(pty1_slave))
-        os.close(pty1_slave)
-        client2 = await RpcClientTTY.connect(os.ttyname(pty2_slave))
-        os.close(pty2_slave)
-
-        # ptycopy is started only when both clients get connected. Otherwise
-        # there is an uncerten race condition that reset message from client1
-        # might be delivered to client2 although most of the times that doesn't
-        # happen.
-        multiprocessing.set_start_method("fork", force=True)
-        process = multiprocessing.Process(
-            target=self.ptycopy, args=(pty1_master, pty2_master)
-        )
-        process.start()
         # Flush reset sent by clients
         assert await client1.receive() is RpcClient.Control.RESET
         assert await client2.receive() is RpcClient.Control.RESET
@@ -196,26 +249,38 @@ class TestSerial(Link):
         client2.disconnect()
         await client1.wait_disconnect()
         await client2.wait_disconnect()
-        process.terminate()
-        process.join()
-
-    def ptycopy(self, fd1, fd2):
-        p = select.poll()
-        p.register(fd1, select.POLLIN | select.POLLPRI)
-        p.register(fd2, select.POLLIN | select.POLLPRI)
-        while True:
-            for fd, event in p.poll():
-                if event & select.POLLIN:
-                    data = os.read(fd, io.DEFAULT_BUFFER_SIZE)
-                    os.write(fd1 if fd is fd2 else fd2, data)
-                if event & select.POLLERR:
-                    logger.error("Error detected in ptycopy")
-                    return
 
     async def test_escapes(self, clients):
         msg = RpcMessage.request("prop", "set", b"1\xa2\xa3\xa4\xa5\xaa2")
         await clients[0].send(msg)
         assert await clients[1].receive() == msg
+
+
+class TestTTYServer(Link):
+    """Check that we can work over TTY port transport protocol and its server."""
+
+    @pytest.fixture(name="server")
+    async def fixture_server(self, pty):
+        pty.event.clear()
+        queue = asyncio.Queue()
+        server = RpcServerTTY(queue.put, pty.port1)
+        await server.listen()
+        yield server, queue
+        server.terminate()
+        await server.wait_terminated()
+
+    @pytest.fixture(name="clients")
+    async def fixture_clients(self, server, pty):
+        client = await RpcClientTTY.connect(pty.port2)
+        server_client = await server[1].get()
+        pty.event.set()
+        assert await server_client.receive() is RpcClient.Control.RESET
+        assert await client.receive() is RpcClient.Control.RESET
+        yield server_client, client
+        client.disconnect()
+        server_client.disconnect()
+        await client.wait_disconnect()
+        await server_client.wait_disconnect()
 
 
 class TestWebSockets(ServerLink):
