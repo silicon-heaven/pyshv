@@ -28,7 +28,7 @@ def init_rpc_client(url: RpcUrl | str) -> RpcClient:
             return RpcClientUnix(url.location, RpcProtocolStream)
         case RpcProtocol.UNIXS:
             return RpcClientUnix(url.location, RpcProtocolSerial)
-        case RpcProtocol.SERIAL:
+        case RpcProtocol.TTY:
             return RpcClientTTY(url.location, url.baudrate, RpcProtocolSerialCRC)
         case RpcProtocol.WS:
             return RpcClientWebSockets(url.location)
@@ -77,7 +77,7 @@ async def create_rpc_server(
             res = RpcServerUnix(client_connected_cb, url.location, RpcProtocolStream)
         case RpcProtocol.UNIXS:
             res = RpcServerUnix(client_connected_cb, url.location, RpcProtocolSerial)
-        case RpcProtocol.SERIAL:
+        case RpcProtocol.TTY:
             res = RpcServerTTY(
                 client_connected_cb, url.location, url.baudrate, RpcProtocolSerialCRC
             )

@@ -20,7 +20,7 @@ DATA = [
         "serial:/dev/null?user=test%40example.com&password=a%C4%8D%C5%A1f",
         RpcUrl(
             "/dev/null",
-            protocol=RpcProtocol.SERIAL,
+            protocol=RpcProtocol.TTY,
             login=RpcLogin(username="test@example.com", password="ačšf"),
         ),
     ),
@@ -72,10 +72,10 @@ DATA = [
         ),
     ),
     ("tcp://[::]:4242", RpcUrl("::", port=4242)),
-    ("serial:/dev/ttyX", RpcUrl("/dev/ttyX", protocol=RpcProtocol.SERIAL)),
+    ("serial:/dev/ttyX", RpcUrl("/dev/ttyX", protocol=RpcProtocol.TTY)),
     (
         "serial:/dev/ttyX?baudrate=1152000",
-        RpcUrl("/dev/ttyX", protocol=RpcProtocol.SERIAL, baudrate=1152000),
+        RpcUrl("/dev/ttyX", protocol=RpcProtocol.TTY, baudrate=1152000),
     ),
 ]
 

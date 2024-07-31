@@ -33,7 +33,7 @@ class RpcProtocol(enum.Enum):
     """Unix local domain named socket using Stream transport layer."""
     UNIXS = enum.auto()
     """Unix local domain named socket using Reliable Serial transport layer."""
-    SERIAL = enum.auto()
+    TTY = enum.auto()
     """Serial transport layer."""
     WS = enum.auto()
     """WebSockets transport layer."""
@@ -98,8 +98,8 @@ class RpcUrl:
             "ssls": RpcProtocol.SSLS,
             "unix": RpcProtocol.UNIX,
             "unixs": RpcProtocol.UNIXS,
-            "serial": RpcProtocol.SERIAL,
-            "tty": RpcProtocol.SERIAL,
+            "serial": RpcProtocol.TTY,
+            "tty": RpcProtocol.TTY,
             "ws": RpcProtocol.WS,
             "wss": RpcProtocol.WSS,
         }
@@ -121,7 +121,7 @@ class RpcUrl:
                 res.port = int(sr.port)
             if sr.path:
                 raise ValueError(f"Path is not supported for {sr.scheme}: {sr.path}")
-        elif protocol in {RpcProtocol.UNIX, RpcProtocol.UNIXS, RpcProtocol.SERIAL}:
+        elif protocol in {RpcProtocol.UNIX, RpcProtocol.UNIXS, RpcProtocol.TTY}:
             res.location = f"/{sr.netloc}{sr.path}" if sr.netloc else sr.path
         elif protocol in {RpcProtocol.WS, RpcProtocol.WSS}:
             res.location = f"{sr.netloc}{sr.path}"
@@ -144,7 +144,7 @@ class RpcUrl:
             res.login.device_id = opts[0]
         if opts := pqs.pop("devmount", []):
             res.login.device_mount_point = opts[0]
-        if protocol is RpcProtocol.SERIAL:
+        if protocol is RpcProtocol.TTY:
             if opts := pqs.pop("baudrate", []):
                 res.baudrate = int(opts[0])
 
@@ -166,7 +166,7 @@ class RpcUrl:
             RpcProtocol.SSLS: "ssls",
             RpcProtocol.UNIX: "unix",
             RpcProtocol.UNIXS: "unixs",
-            RpcProtocol.SERIAL: "serial",
+            RpcProtocol.TTY: "serial",
             RpcProtocol.WS: "ws",
             RpcProtocol.WSS: "wss",
         }
@@ -189,7 +189,7 @@ class RpcUrl:
         elif self.protocol in {
             RpcProtocol.UNIX,
             RpcProtocol.UNIXS,
-            RpcProtocol.SERIAL,
+            RpcProtocol.TTY,
             RpcProtocol.WS,
             RpcProtocol.WSS,
         }:
