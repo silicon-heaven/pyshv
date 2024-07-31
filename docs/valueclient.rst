@@ -100,8 +100,8 @@ all signals unless we explicitly ask for them with
 :class:`shv.ValueClient` caches subscribed values and you can quickly access
 them using subscribe operator (that is Python operator `[]`).
 
->>> await client.subscribe("test/device/track/**")))
->>> await client.get_snapshot("test/device/track/**")))
+>>> await client.subscribe("test/device/track/**:*:*")))
+>>> await client.get_snapshot("test/device/track/**:*:*")))
 >>> client["test/device/track/1"]))
 [0]
 >>> await client.prop_set("test/device/track/1", [1])))
@@ -118,6 +118,6 @@ cache. Note that :class:`KeyError` is raised if path is not in cache as we can't
 know if it is not there due to not being initialized yet or because there is no
 such node.
 
->>> await client.subscribe("test/device/track")))
+>>> await client.subscribe("test/device/track/**:*:*")))
 >>> client["test/device/track/1"]))
 KeyError: 'test/device/track/1'

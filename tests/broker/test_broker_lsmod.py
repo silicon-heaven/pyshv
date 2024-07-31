@@ -6,7 +6,7 @@ import dataclasses
 import pytest
 
 from example_device import ExampleDevice
-from shv import RpcMessage, RpcRI, SimpleClient
+from shv import RpcMessage, SimpleClient
 
 
 class LSClient(SimpleClient):
@@ -32,7 +32,7 @@ async def fixture_lsclient(shvbroker, url):
     ("test/node", "test/node/well"),
 )
 async def test_lsmod(lsclient, url_test_device, example_device, mount_point):
-    await lsclient.subscribe(RpcRI(signal="lsmod"))
+    await lsclient.subscribe("**:ls:lsmod")
 
     nurl = dataclasses.replace(
         url_test_device,

@@ -7,7 +7,6 @@ import asyncio
 import collections
 import collections.abc
 import contextlib
-import itertools
 import logging
 import random
 import string
@@ -25,32 +24,15 @@ from ..rpclogin import RpcLogin
 from ..rpcmessage import RpcMessage
 from ..rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodFlags
 from ..rpcparam import shvargt
-from ..rpcri import RpcRI
+from ..rpcri import rpcri_match, rpcri_relative_to
 from ..rpctransport import RpcClient, RpcServer, create_rpc_server, init_rpc_client
 from ..simplebase import SimpleBase
 from ..simpleclient import SimpleClient
 from ..value import SHVType
 from .config import RpcBrokerConfigABC, RpcBrokerRoleABC
+from .utils import nmax, nmin
 
 logger = logging.getLogger(__name__)
-
-
-def _nmin(*vals: collections.abc.Iterator[float | None] | float | None) -> float | None:
-    res: float | None = None
-    itr = (v if isinstance(v, collections.abc.Iterator) else iter([v]) for v in vals)
-    for val in itertools.chain(*itr):
-        if val is not None and (res is None or res < val):
-            res = val
-    return res
-
-
-def _nmax(*vals: collections.abc.Iterator[float | None] | float | None) -> float | None:
-    res: float | None = None
-    itr = (v if isinstance(v, collections.abc.Iterator) else iter([v]) for v in vals)
-    for val in itertools.chain(*itr):
-        if val is not None and (res is None or res > val):
-            res = val
-    return res
 
 
 class RpcBroker:
@@ -318,7 +300,7 @@ class RpcBroker:
                         case "subscriptions":
                             return self._subscriptions()
                         case "subscribe":
-                            sub = RpcRI.parse(shvargt(param, 0, str))
+                            sub = shvargt(param, 0, str)
                             ttl = shvargt(param, 1, int, -1)
                             return await self.__broker.subscribe(
                                 self, sub, None if ttl < 0 else ttl
@@ -512,7 +494,7 @@ class RpcBroker:
         self._clients: dict[int, RpcBroker.Client] = {}
         self._mounts: dict[str, int] = {}
         self._reserved_mount_points: set[str] = set()
-        self._subs: dict[RpcRI, dict[int, float | None]] = {}
+        self._subs: dict[str, dict[int, float | None]] = {}
         """Subscriptions.
 
         RI filters signals and value contains map of all client IDs this
@@ -653,7 +635,7 @@ class RpcBroker:
 
     def subscriptions(
         self, client: Client | None = None
-    ) -> collections.abc.Iterator[tuple[RpcRI, float | None]]:
+    ) -> collections.abc.Iterator[tuple[str, float | None]]:
         """Iterate over subscriptions this broker manages.
 
         :param client: The optional filtering over client's subscriptions.
@@ -665,15 +647,13 @@ class RpcBroker:
                 s,
                 v[client.broker_client_id]
                 if client is not None and client.broker_client_id is not None
-                else _nmax(iter(v.values())),
+                else nmax(iter(v.values())),
             )
             for s, v in self._subs.items()
             if client is None or client.broker_client_id in v
         )
 
-    async def subscribe(
-        self, client: Client, ri: RpcRI, ttl: int | None = None
-    ) -> bool:
+    async def subscribe(self, client: Client, ri: str, ttl: int | None = None) -> bool:
         """Add given subscription as being requested by given client.
 
         :param client: Client object this subscription is requested by.
@@ -690,7 +670,7 @@ class RpcBroker:
         self._subs_notify()
         return res
 
-    async def unsubscribe(self, client: Client, ri: RpcRI | str) -> bool:
+    async def unsubscribe(self, client: Client, ri: str) -> bool:
         """Remove given subscription as being requested by given client.
 
         :param client: Client object this subscription is requested by.
@@ -698,8 +678,6 @@ class RpcBroker:
         :returns: ``False`` if no subscription was removed and ``True``
           otherwise.
         """
-        if isinstance(ri, str):
-            ri = RpcRI.parse(ri)
         if client.broker_client_id is None:
             raise ValueError("Client must be registered")
         if ri not in self._subs:
@@ -717,12 +695,12 @@ class RpcBroker:
         msgaccess = msg.rpc_access or RpcMethodAccess.READ
         cids: set[int] = set()
         for sub, clients in self._subs.items():
-            if sub.match(msg.path, msg.source, msg.signal_name):
+            if rpcri_match(sub, msg.path, msg.source, msg.signal_name):
                 cids |= {c for c in clients if c is not None}
         for cid in cids:
             client = self._clients[cid]
             assert client.role is not None
-            access = client.role.access_level(msg.path, msg.source, msg.signal_name)
+            access = client.role.access_level(msg.path, msg.source)
             if access is not None and access >= msgaccess:
                 client.send(msg)
 
@@ -754,7 +732,7 @@ class RpcBroker:
         subscriptions and propagates needed subscriptions to the sub-brokers.
         """
         loop = asyncio.get_running_loop()
-        subsubs: dict[RpcRI, float] = {}
+        subsubs: dict[str, float] = {}
         subbrokers: set[int] = set()
         # TODO use heuristic to increase the delay for long term subscriptions
         while True:
@@ -778,7 +756,7 @@ class RpcBroker:
                     if (
                         client.broker_client_id not in subbrokers
                         or subsubs.get(ri, now) <= now
-                    ) and (rri := ri.relative_to(mnt)):
+                    ) and (rri := rpcri_relative_to(ri, mnt)):
                         client.send(
                             RpcMessage.request(
                                 ".broker/currentClient", "subscribe", [str(rri), 120]
@@ -794,8 +772,8 @@ class RpcBroker:
                 for ri in self._subs
             }
             # Now identify when we should do this again
-            dlsub = _nmin(*(iter(d.values()) for d in self._subs.values()))
-            deadline = _nmin(iter(subsubs.values()), dlsub)
+            dlsub = nmin(*(iter(d.values()) for d in self._subs.values()))
+            deadline = nmin(iter(subsubs.values()), dlsub)
             if dlsub is None and not subbrokers:
                 return  # Terminate this task as it is not required
             # Now wait for event or deadline

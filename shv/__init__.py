@@ -21,7 +21,7 @@ from .rpclogin import RpcLogin, RpcLoginType
 from .rpcmessage import RpcMessage
 from .rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodFlags
 from .rpcparam import SHVGetKey, shvarg, shvargt, shvget, shvgett, shvt
-from .rpcri import RpcRI
+from .rpcri import rpcri_legacy_subscription, rpcri_match, rpcri_relative_to
 from .rpctransport import (
     RpcClient,
     RpcClientPipe,
@@ -118,7 +118,6 @@ __all__ = [
     "RpcProtocolSerial",
     "RpcProtocolSerialCRC",
     "RpcProtocolStream",
-    "RpcRI",
     "RpcServer",
     "RpcServerTCP",
     "RpcServerTTY",
@@ -162,6 +161,9 @@ __all__ = [
     "is_shvmap",
     "is_shvnull",
     "is_shvtype",
+    "rpcri_legacy_subscription",
+    "rpcri_match",
+    "rpcri_relative_to",
     "shvarg",
     "shvargt",
     "shvget",

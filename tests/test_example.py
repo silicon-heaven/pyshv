@@ -3,7 +3,7 @@
 import pytest
 
 import example_client
-from shv import RpcMethodAccess, RpcMethodNotFoundError, RpcRI, shvmeta
+from shv import RpcMethodAccess, RpcMethodNotFoundError, shvmeta
 
 
 @pytest.mark.parametrize(
@@ -139,7 +139,7 @@ async def test_set(example_device, client):
 
 async def test_reset(example_device, value_client):
     await value_client.prop_set("test/device/track/2", [42] * 8)
-    await value_client.subscribe(RpcRI("test/device/**"))
+    await value_client.subscribe("test/device/**:*:*")
     assert await value_client.call("test/device/track", "reset") is None
     # Reset should send update on track 2 because it was changed
     assert value_client["test/device/track/2"] == [0, 1]

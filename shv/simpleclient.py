@@ -10,7 +10,7 @@ import typing
 from .rpclogin import RpcLogin
 from .rpcmessage import RpcMessage
 from .rpcparam import shvgett
-from .rpcri import RpcRI
+from .rpcri import rpcri_legacy_subscription
 from .rpctransport import RpcClient, connect_rpc_client
 from .rpcurl import RpcUrl
 from .simplebase import SimpleBase
@@ -56,7 +56,7 @@ class SimpleClient(SimpleBase):
         :class:`EOFError`). The reset is handled automatically no matter this
         settings.
         """
-        self._subscribes: set[RpcRI] = set()
+        self._subscribes: set[str] = set()
         self._connected = asyncio.Event()
         self._login_task = asyncio.create_task(self._login())
 
@@ -191,7 +191,7 @@ class SimpleClient(SimpleBase):
                 await asyncio.sleep(0)  # Let loop detect disconnect
                 await self._connected.wait()
 
-    async def subscribe(self, ri: RpcRI | str) -> bool:
+    async def subscribe(self, ri: str) -> bool:
         """Perform subscribe for signals on given path.
 
         Subscribe is always performed on the node itself as well as all its
@@ -200,27 +200,20 @@ class SimpleClient(SimpleBase):
         :param ri: SHV RPC RI for subscription to be added.
         """
         res = await self.__subscribe(ri)
-        self._subscribes.add(ri if isinstance(ri, RpcRI) else RpcRI.parse(ri))
+        self._subscribes.add(ri)
         return res
 
-    async def __subscribe(self, ri: RpcRI | str) -> bool:
+    async def __subscribe(self, ri: str) -> bool:
         compat = not await self.peer_is_shv3()
-        riv: SHVType
-        if compat:
-            riv = (
-                RpcRI.parse(ri) if isinstance(ri, str) else ri
-            ).to_legacy_subscription()
-        else:
-            riv = str(ri)
         return bool(
             await self.call(
                 ".broker/currentClient" if not compat else ".broker/app",
                 "subscribe",
-                riv,
+                ri if not compat else rpcri_legacy_subscription(ri),
             )
         )
 
-    async def unsubscribe(self, ri: RpcRI | str) -> bool:
+    async def unsubscribe(self, ri: str) -> bool:
         """Perform unsubscribe for signals on given path.
 
         :param ri: SHV RPC RI for subscription to be removed.
@@ -228,25 +221,18 @@ class SimpleClient(SimpleBase):
           otherwise.
         """
         compat = not await self.peer_is_shv3()
-        riv: SHVType
-        if compat:
-            riv = (
-                RpcRI.parse(ri) if isinstance(ri, str) else ri
-            ).to_legacy_subscription()
-        else:
-            riv = str(ri)
         resp = bool(
             await self.call(
                 ".broker/currentClient" if not compat else ".broker/app",
                 "unsubscribe",
-                riv,
+                ri if not compat else rpcri_legacy_subscription(ri),
             )
         )
         if resp:
-            self._subscribes.remove(ri if isinstance(ri, RpcRI) else RpcRI.parse(ri))
+            self._subscribes.remove(ri)
         return resp
 
-    def subscriptions(self) -> collections.abc.Iterator[RpcRI]:
+    def subscriptions(self) -> collections.abc.Iterator[str]:
         """Iterate over all subscriptions.
 
         Note that this uses local subscription cache. It won't reach for the

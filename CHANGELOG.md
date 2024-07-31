@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to SHV login parameter
 - RPC servers now have `terminate` and `wait_terminated` method that terminates
   not server but also its clients
-- Support for string arguments in places where `RpcRI` or `RpcUrl` is being used
+- Support for string arguments in places where `RpcUrl` is being used
 
 ### Changed
 - Broker's configuration format changed from INI to TOML as well as the concept
@@ -21,8 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Broker now filters signals based on the source method not signal name
 - `RpcBrokerConfig` completely rewritten
 - `RpcBroker` client are now registered only if they are active
-- `RpcRI.method_match` and `RpcRI.signal_match` replaced by `RpcRI.match`
 - `RpcProtocol.SERIAL` renamed to `RpcProtocol.TTY`
+
+### Removed
+- `RpcRI` in favor of using strings and `rpcri_*` functions
 
 ### Fixed
 - `SimpleBase.ping` now uses `.broker/app` instead of `.broker/currentClient` on

@@ -2,7 +2,7 @@
 
 import pytest
 
-from shv import RpcLogin, RpcLoginType, RpcMethodAccess, RpcProtocol, RpcRI, RpcUrl
+from shv import RpcLogin, RpcLoginType, RpcMethodAccess, RpcProtocol, RpcUrl
 from shv.broker import RpcBrokerConfig
 
 
@@ -14,15 +14,17 @@ def test_config(config):
             RpcUrl("shvbroker.sock", protocol=RpcProtocol.UNIX),
         ],
         roles=[
-            RpcBrokerConfig.Role("admin", {"**"}, {RpcMethodAccess.DEVEL: {RpcRI()}}),
             RpcBrokerConfig.Role(
-                "test", {"test/*"}, {RpcMethodAccess.COMMAND: {RpcRI("test/**")}}
+                "admin",
+                {"**"},
+                {RpcMethodAccess.DEVEL: {"**:*"}},
+            ),
+            RpcBrokerConfig.Role(
+                "test", {"test/*"}, {RpcMethodAccess.COMMAND: {"test/**:*"}}
             ),
             RpcBrokerConfig.Role(
                 "browse",
-                access={
-                    RpcMethodAccess.BROWSE: {RpcRI(method="ls"), RpcRI(method="dir")}
-                },
+                access={RpcMethodAccess.BROWSE: {"**:ls", "**:dir"}},
             ),
             RpcBrokerConfig.Role("nobody"),
         ],
@@ -39,7 +41,7 @@ def test_config(config):
         ],
         autosetups=[
             RpcBrokerConfig.Autosetup(
-                {"history"}, {"admin"}, ".history", {RpcRI("test/**")}
+                {"history"}, {"admin"}, ".history", {"test/**:*:*"}
             ),
             RpcBrokerConfig.Autosetup({"?*"}, {"admin", "test"}, "test/%d%i"),
         ],
@@ -66,8 +68,8 @@ def test_subconfig(subconfig):
             )
         ],
         roles=[
-            RpcBrokerConfig.Role("admin", {"**"}, {RpcMethodAccess.DEVEL: {RpcRI()}}),
-            RpcBrokerConfig.Role("upper", access={RpcMethodAccess.COMMAND: {RpcRI()}}),
+            RpcBrokerConfig.Role("admin", {"**"}, {RpcMethodAccess.DEVEL: {"**:*"}}),
+            RpcBrokerConfig.Role("upper", access={RpcMethodAccess.COMMAND: {"**:*"}}),
         ],
         users=[
             RpcBrokerConfig.User("admin", "admin!234", ["admin"]),
@@ -99,16 +101,16 @@ def test_login_invalid_mount(config):
 
 
 @pytest.mark.parametrize(
-    "path,method,signal,res",
+    "path,method,res",
     (
-        ("", "ls", "", RpcMethodAccess.BROWSE),
-        ("", "get", "", None),
-        ("test/device/track/1", "get", "", RpcMethodAccess.COMMAND),
+        ("", "ls", RpcMethodAccess.BROWSE),
+        ("", "get", None),
+        ("test/device/track/1", "get", RpcMethodAccess.COMMAND),
     ),
 )
-def test_access_level_test(config, path, method, signal, res):
+def test_access_level_test(config, path, method, res):
     role = config.login(RpcLogin("test", "test"), "nonce")
-    assert role.access_level(path, method, signal) == res
+    assert role.access_level(path, method) == res
 
 
 def test_role_test(config):
@@ -140,21 +142,21 @@ def test_role_history(config):
     )
     assert role.mount_point(set()) == ".history"
     # assert role.mount_point({".history"}) is None  # TODO
-    assert list(role.initial_subscriptions()) == [RpcRI("test/**")]
+    assert list(role.initial_subscriptions()) == ["test/**:*:*"]
 
 
 @pytest.mark.parametrize(
-    "path,method,signal,res",
+    "path,method,res",
     (
-        ("", "ls", "", RpcMethodAccess.COMMAND),
-        ("test/device/track/1", "get", "", RpcMethodAccess.COMMAND),
+        ("", "ls", RpcMethodAccess.COMMAND),
+        ("test/device/track/1", "get", RpcMethodAccess.COMMAND),
     ),
 )
-def test_access_level_upper(subconfig, path, method, signal, res):
+def test_access_level_upper(subconfig, path, method, res):
     url, role = next(subconfig.connections())
     assert url is subconfig.connect[0].url
     assert role.connection is subconfig.connect[0]
-    assert role.access_level(path, method, signal) == res
+    assert role.access_level(path, method) == res
 
 
 def test_upper(subconfig):

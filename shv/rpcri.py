@@ -6,106 +6,81 @@ This is implemented according to the `SHV standard documentation
 
 from __future__ import annotations
 
-import dataclasses
 import fnmatch
 
 from .value import SHVType
 
 
-@dataclasses.dataclass(frozen=True)
-class RpcRI:
-    """Resource identification in SHV RPC.
+def rpcri_match(ri: str, path: str, method: str, signal: str | None = None) -> bool:
+    """Check if given path or method matches given RPC RI.
 
-    This is used to create matching rules for methods as well as signals.
-    Examples are subscriptions in RPC Broker or access control in the Broker.
+    This can use used to match method or signal against RI.
+
+    :param ri: RPC RI that should be used to match method or signal.
+    :param path: SHV Path that that RI should match.
+    :param method: SHV RPC method name that RI should match.
+    :param signal: SHV RPC signal name that RI should match. This can be
+      ``NULL`` and in such case RI matches method (``PATH:METHOD``) or non-empty
+      string for signal matching (``PATH:METHOD:SIGNAL``).
+    :return: ``True`` if RI matches the provided method or signal and ``False``
+      otherwise.
     """
-
-    path: str = "**"
-    """Pattern for SHV path matching."""
-    method: str = "*"
-    """Pattern for method name matching."""
-    signal: str = "*"
-    """Pattern for signal name matching."""
-
-    def __str__(self) -> str:
-        if self.signal == type(self).signal:
-            if self.method == type(self).method:
-                return self.path
-            return f"{self.path}:{self.method}"
-        method = self.method if self.method != "get" else ""
-        return f"{self.path}:{method}:{self.signal}"
-
-    def match(self, path: str, method: str, signal: str = "") -> bool:
-        """Check if this resource identifier matches.
-
-        For method call matching you must keep ``signal`` to default, that is
-        empty string.
-
-        :param path: SHV path to the resource.
-        :param method: Method name for the resource match.
-        :param signal: Signal name for the resource match.
-        :return: ``True`` if matches and ``False`` otherwise.
-        """
-        return (
-            path_match(path, self.path)
-            and fnmatch.fnmatchcase(method, self.method)
-            and fnmatch.fnmatchcase(signal, self.signal)
-        )
-
-    def relative_to(self, path: str) -> RpcRI | None:
-        """Deduce RPC RI that is relative to the given path.
-
-        This is used to pass subscription to sub-brokers. It updates
-        :param:`path` in such a way that it is applied relative to that path.
-        ``None`` is returned if this resource identification doesn't apply it.
-
-        :param path: Path this sunscription should be fixed to.
-        :return: New subscription that is relative to the given *path* or
-          ``None``.
-        """
-        if not path:
-            return self  # Relative to root
-        if (pat := tail_pattern(path.rstrip("/"), self.path)) is not None:
-            return dataclasses.replace(self, path=pat)
-        return None
-
-    @classmethod
-    def parse(cls, value: str) -> RpcRI:
-        """Create RPC RI from common string representation.
-
-        This representation is simply ``PATH:METHOD:SIGNAL`` where everything
-        except ``PATH`` is optional. If you want to use default ``METHOD``
-        ``get`` but specify ``SIGNAL`` then you can use ``PATH::SIGNAL``
-
-        :param value: The string representation to be interpreted.
-        :return: New object representing this RPC RI.
-        """
-        p, d, ms = value.partition(":")
-        if d == ":":
-            m, d, s = ms.partition(":")
-            if d == ":":
-                return cls(p, m if m else "get", s if s else cls.signal)
-            return cls(p, m)
-        return cls(p)
-
-    def to_legacy_subscription(self) -> SHVType:
-        """Convert to legacy SHV subscription representation."""
-        res: dict[str, SHVType] = {}
-        pth, _, tail = self.path.rpartition("/")
-        if "*" in pth or tail != "**":
-            res["paths"] = self.path
-        else:
-            res["path"] = pth
-        if "*" in self.signal and self.signal != "*":
-            res["methods"] = self.signal
-        else:
-            res["method"] = "" if self.signal == "*" else self.signal
-        if self.method != "*":
-            res["source"] = self.method
-        return res
+    parts = ri.split(":")
+    match len(parts):
+        case 2:
+            return (
+                signal is None
+                and shvpath_match(parts[0], path)
+                and fnmatch.fnmatchcase(method, parts[1])
+            )
+        case 3:
+            return (
+                signal is not None
+                and shvpath_match(parts[0], path)
+                and fnmatch.fnmatchcase(method, parts[1])
+                and fnmatch.fnmatchcase(signal, parts[2])
+            )
+    return False
 
 
-def __match(path: str, pattern: list[str]) -> int | None:
+def rpcri_relative_to(ri: str, path: str) -> str | None:
+    """Derive the RPC RI that is relative to the given path.
+
+    :param ri: RPC RI that should be modified to be relative to the given path.
+    :param path: Path that must be used as a relative root.
+    :return: New RPC RI or ``None`` in case RI is not relative to the path.
+    """
+    pth, sep, rest = ri.partition(":")
+    npth = shvpath_tail(pth, path)
+    return f"{npth}{sep}{rest}" if npth is not None else None
+
+
+def rpcri_legacy_subscription(ri: str) -> SHVType:
+    """Convert RPC RI to legacy SHV subscription representation.
+
+    :param ri: RPC RI for signal matching that should be converted.
+    :return: Legacy subscription description.
+    """
+    parts = ri.split(":")
+    if len(parts) != 3:
+        raise ValueError("Must be RPC RI for signals")
+    path, method, signal = parts
+    res: dict[str, SHVType] = {}
+    pth, _, tail = path.rpartition("/")
+    if "*" in pth or tail != "**":
+        res["paths"] = path
+    else:
+        res["path"] = pth
+    if "*" in signal and signal != "*":
+        res["methods"] = signal
+    else:
+        res["method"] = "" if signal == "*" else signal
+    if method != "*":
+        res["source"] = method
+    return res
+
+
+def __pth_match(path: str, pattern: list[str]) -> int | None:
     i = 0
     for node in path.split("/"):
         if i >= len(pattern):
@@ -124,28 +99,28 @@ def __match(path: str, pattern: list[str]) -> int | None:
     return i
 
 
-def path_match(path: str, pattern: str) -> bool:
+def shvpath_match(pattern: str, path: str) -> bool:
     """Check if given path matches given pattern.
 
-    :param path: SHV Path.
     :param pattern: Pattern that should match the SHV path.
+    :param path: SHV Path.
     :return: ``True`` if the whole path matches the pattern and ``False`` otherwise.
     """
     ptn = pattern.split("/")
-    res = __match(path, ptn)
+    res = __pth_match(path, ptn)
     return res is not None and len(ptn) == res
 
 
-def tail_pattern(path: str, pattern: str) -> str | None:
+def shvpath_tail(pattern: str, path: str) -> str | None:
     """Remove the pattern prefix that matches given path.
 
+    :param pattern: Pattern for which tail should be derived.
     :param path: Path the pattern should match.
-    :param pattern: Pattern to be split.
     :return: Returns tail that can be used to match nodes bellow path or ``None`` in
       case pattern doesn't match the path or matches it exactly.
     """
     ptn = pattern.split("/")
-    res = __match(path, ptn)
+    res = __pth_match(path, ptn)
     if len(ptn) == res and ptn[-1] == "**":
         res -= 1
     if res is None or len(ptn) == res:

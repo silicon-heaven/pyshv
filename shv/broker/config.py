@@ -13,9 +13,10 @@ import typing
 
 from ..rpclogin import RpcLogin, RpcLoginType
 from ..rpcmethod import RpcMethodAccess
-from ..rpcri import RpcRI
+from ..rpcri import rpcri_match
 from ..rpcurl import RpcUrl
 from .configabc import RpcBrokerConfigABC, RpcBrokerRoleABC
+from .utils import nmax
 
 logger = logging.getLogger(__name__)
 
@@ -70,21 +71,16 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
         """Name of this role."""
         mount_points: set[str] = dataclasses.field(default_factory=set)
         """Set of patterns for mount points allowed to this role."""
-        access: dict[RpcMethodAccess, set[RpcRI]] = dataclasses.field(
+        access: dict[RpcMethodAccess, set[str]] = dataclasses.field(
             default_factory=dict
         )
         """Resource identifiers used to assign highest possible access level."""
 
-        def access_level(
-            self,
-            path: str,
-            method: str,
-            signal: str = "",
-        ) -> RpcMethodAccess | None:
-            """Access level deduction based on this role."""
+        def access_level(self, path: str, method: str) -> RpcMethodAccess | None:
+            """Deduce access level for method based on these rules."""
             for level in sorted(RpcMethodAccess, reverse=True):
                 if any(
-                    ri.match(path, method, signal) for ri in self.access.get(level, [])
+                    rpcri_match(ri, path, method) for ri in self.access.get(level, [])
                 ):
                     return level
             return None
@@ -114,7 +110,7 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
           used mount point is located.
         * ``%%`` is replaced with plain ``%``
         """
-        subscriptions: set[RpcRI] = dataclasses.field(default_factory=set)
+        subscriptions: set[str] = dataclasses.field(default_factory=set)
         """Set of initial subscriptions."""
 
         def generate_mount_point(
@@ -225,22 +221,17 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
                     )
                 return self._mount_point
 
-            def initial_subscriptions(self) -> collections.abc.Iterator[RpcRI]:  # noqa D102
+            def initial_subscriptions(self) -> collections.abc.Iterator[str]:  # noqa D102
                 if autosetup := self._autosetup():
                     yield from autosetup.subscriptions
 
-            def access_level(  # noqa D102
-                self,
-                path: str,
-                method: str,
-                signal: str = "",
+            def access_level(  # noqa PLR6301
+                self, path: str, method: str
             ) -> RpcMethodAccess | None:
-                res: RpcMethodAccess | None = None
-                for r in self.user.roles:
-                    level = self.config.roles[r].access_level(path, method, signal)
-                    if res is None or (level is not None and res < level):
-                        res = level
-                return res
+                return nmax(
+                    self.config.roles[r].access_level(path, method)
+                    for r in self.user.roles
+                )
 
     @dataclasses.dataclass
     class Connect:
@@ -252,7 +243,7 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
         """Roles assigned to this connection."""
         mount_point: str | None = None
         """Mount point for this connection."""
-        subscriptions: set[RpcRI] = dataclasses.field(default_factory=set)
+        subscriptions: set[str] = dataclasses.field(default_factory=set)
         """Set of subscriptions to be automatically prepared for this connection."""
 
         class Role(RpcBrokerRoleABC):
@@ -273,21 +264,16 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
             ) -> str | None:
                 return self.connection.mount_point
 
-            def initial_subscriptions(self) -> collections.abc.Iterator[RpcRI]:  # noqa D102
+            def initial_subscriptions(self) -> collections.abc.Iterator[str]:  # noqa D102
                 yield from self.connection.subscriptions
 
-            def access_level(  # noqa D102
-                self,
-                path: str,
-                method: str,
-                signal: str = "",
+            def access_level(  # noqa PLR6301
+                self, path: str, method: str
             ) -> RpcMethodAccess | None:
-                res: RpcMethodAccess | None = None
-                for r in self.connection.roles:
-                    level = self.config.roles[r].access_level(path, method, signal)
-                    if res is None or (level is not None and res < level):
-                        res = level
-                return res
+                return nmax(
+                    self.config.roles[r].access_level(path, method)
+                    for r in self.connection.roles
+                )
 
     def __init__(
         self,
@@ -442,7 +428,7 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
                                 f"'role.{name}.access.{level}' must be array"
                             )
                         r.access[nlevel] = {
-                            RpcRI.parse(str(v))
+                            str(v)
                             for v in ([paths] if isinstance(paths, str) else paths)
                         }
                 if role:
@@ -500,8 +486,9 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
         return [RpcUrl.parse(sub) for sub in cls._load_strarr(value, location)]
 
     @classmethod
-    def _load_ris(cls, value: object, location: str) -> set[RpcRI]:
-        return {RpcRI.parse(sub) for sub in cls._load_strarr(value, location)}
+    def _load_ris(cls, value: object, location: str) -> set[str]:
+        # TODO possibly validate RIs
+        return {sub for sub in cls._load_strarr(value, location)}
 
 
 class ConfigurationError(ValueError):

@@ -12,7 +12,7 @@ role = "admin"
 
 [role.admin]
 mountPoints = "**" # Admin can mount itself anywhere
-access.dev = "**" # Admin can access everything with DEV level
+access.dev = "**:*" # Admin can access everything with DEV level
 
 [role.upper]
-access.cmd = "**" # Requrest from upper broker are limited to the CMD level
+access.cmd = "**:*" # Requrest from upper broker are limited to the CMD level

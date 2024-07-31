@@ -29,8 +29,6 @@ Running tests
 
 This project contains tests in directory ``tests``.
 
-Tests require `SHV applications <https://github.com/silicon-heaven/shvapp>`__.
-
 To run tests you have to use **pytest**. To run all tests just run it in the top
 level directory of the project. See the `pytest documentation
 <https://docs.pytest.org/>`__ for more info.

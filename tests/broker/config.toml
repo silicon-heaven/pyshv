@@ -17,10 +17,10 @@ role = "nobody"
 
 [role.admin]
 mountPoints = "**" # Admin can mount itself anywhere
-access.dev = "**" # Admin can access everything with DEV level
+access.dev = "**:*" # Admin can access everything with DEV level
 [role.test]
 mountPoints = ["test/*"] # Test can mount only bellow test node
-access.cmd = "test/**" # Tester user has access to the test node
+access.cmd = "test/**:*" # Tester user has access to the test node
 [role.browse]
 access.bws = ["**:ls", "**:dir"] # Browse access to the whole tree.
 [role.nobody]
@@ -32,7 +32,7 @@ access.bws = ["**:ls", "**:dir"] # Browse access to the whole tree.
 role = "admin"
 deviceId = "history"
 mountPoint = ".history"
-subscriptions = ["test/**"]
+subscriptions = ["test/**:*:*"]
 [[autosetup]]
 # Devices providing non-empty ID will be mounted bellow test node to the node of
 # the provided ID name.

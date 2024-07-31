@@ -8,7 +8,6 @@ import collections.abc
 
 from ..rpclogin import RpcLogin
 from ..rpcmethod import RpcMethodAccess
-from ..rpcri import RpcRI
 from ..rpcurl import RpcUrl
 
 
@@ -36,35 +35,28 @@ class RpcBrokerRoleABC(abc.ABC):
         """
         return None
 
-    def initial_subscriptions(self) -> collections.abc.Iterator[RpcRI]:  # noqa PLR6301
+    def initial_subscriptions(self) -> collections.abc.Iterator[str]:  # noqa PLR6301
         """Iterate over subscription the peer should be initialized with.
 
         These subscription should be inserted as the initial set of
         subscriptions (TTL won't be applied on them).
 
-        :return: Iterator over :class:`RpcRI` of subscriptions.
+        :return: Iterator over RPC RI for subscriptions.
         """
         return iter([])
 
     def access_level(  # noqa PLR6301
-        self,
-        path: str,
-        method: str,
-        signal: str = "",
+        self, path: str, method: str
     ) -> RpcMethodAccess | None:
-        """Deduce the access level (if any) for given method or signal.
+        """Deduce the access level (if any) for given method.
 
         Note that all users have implicit browse access to the root node,
         ``.app``, ``.broker``, and ``.broker/currentClient`` that doesn't
         have to be covered by this function.
 
-        :param path: SHV Path of the method or signal.
-        :param method: SHV Method name. For signals this is associated
-          method.
-        :param signal: Signal name. The empty string is used if you are
-          interested into method access level.
-        :return: Access level for this method or signal or ``None`` in case
-          of no access.
+        :param path: SHV Path of the method.
+        :param method: SHV Method name.
+        :return: Access level for this method or ``None`` in case of no access.
         """
         return None
 

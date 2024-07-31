@@ -64,8 +64,8 @@ The following are all available keys for top-level table in TOML:
   :role: The role name (or array of role names) to be used to control access of
     the connected peer on this broker.
   :mountPoint: Optional local mount point for the connected peer.
-  :subscriptions: The array of subscriptions in [resource
-    identifier](https://silicon-heaven.github.io/shv-doc/rpcri.html) format used
+  :subscriptions: The array of subscriptions in `resource identifier
+    <https://silicon-heaven.github.io/shv-doc/rpcri.html>`_ format used
     as an initial set of subscriptions this connection gets assigned.
 
 :user.*:
@@ -90,11 +90,12 @@ The following are all available keys for top-level table in TOML:
   ``connect[].role``. It is used to control access to the methods and signals as
   well as to limit mount points user can request. The allowed options are:
 
-  :access: This is table with access levels as keys and [resource
-    identifiers](https://silicon-heaven.github.io/shv-doc/rpcri.html) in array
-    as value. The highest access level that has matching resource identifier is
-    used. The following [access
-    levels](https://silicon-heaven.github.io/shv-doc/shvrpcconcepts.html#access-control)
+  :access: This is table with access levels as keys and `resource
+    identifiers for methods
+    <https://silicon-heaven.github.io/shv-doc/rpcri.html>`_ in array as
+    value. The highest access level that has matching resource identifier is
+    used. The following `access levels
+    <https://silicon-heaven.github.io/shv-doc/shvrpcconcepts.html#access-control>`_
     from highest to the lowest are supported:
 
     - ``su`` Admin
@@ -141,8 +142,8 @@ The following are all available keys for top-level table in TOML:
       same.
     - ``%%`` the plain ``%``.
 
-  :subscriptions: The array of subscriptions in [resource
-    identifier](https://silicon-heaven.github.io/shv-doc/rpcri.html) format used
+  :subscriptions: The array of subscriptions in `resource identifier
+    <https://silicon-heaven.github.io/shv-doc/rpcri.html>`_ format used
     as an initial set of subscriptions user gets assigned.
 
 The complete configuration example used in pySHV tests:
