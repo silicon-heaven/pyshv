@@ -8,8 +8,7 @@ import collections
 import collections.abc
 import contextlib
 import logging
-import random
-import string
+import secrets
 import time
 import typing
 
@@ -400,7 +399,8 @@ class RpcBroker:
                 return  # Ignore anything other than requests before login
             if not msg.path:
                 if msg.method == "hello":
-                    self._nonce = "".join(random.choices(string.hexdigits, k=10))  # noqa S311
+                    if not self._nonce:
+                        self._nonce = secrets.token_hex(5)  # ten characters
                     await self._send(msg.make_response({"nonce": self._nonce}))
                     return
                 if self._nonce and msg.method == "login":
