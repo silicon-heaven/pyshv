@@ -111,12 +111,26 @@ async def test_empty_ls_invalid(client, path):
                 RpcMethodDesc(
                     "info",
                     RpcMethodFlags.GETTER,
-                    result="Any",
+                    result="ClientInfo",
                     access=RpcMethodAccess.BROWSE,
                 ),
-                RpcMethodDesc("subscribe", access=RpcMethodAccess.BROWSE),
-                RpcMethodDesc("unsubscribe", access=RpcMethodAccess.BROWSE),
-                RpcMethodDesc.getter("subscriptions", access=RpcMethodAccess.BROWSE),
+                RpcMethodDesc(
+                    "subscribe",
+                    param="String",
+                    result="Bool",
+                    access=RpcMethodAccess.BROWSE,
+                ),
+                RpcMethodDesc(
+                    "unsubscribe",
+                    param="String",
+                    result="Bool",
+                    access=RpcMethodAccess.BROWSE,
+                ),
+                RpcMethodDesc.getter(
+                    "subscriptions",
+                    result="List[String]",
+                    access=RpcMethodAccess.BROWSE,
+                ),
             ],
         ),
         (

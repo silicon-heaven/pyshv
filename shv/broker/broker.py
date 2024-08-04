@@ -245,11 +245,25 @@ class RpcBroker:
                         access=RpcMethodAccess.SUPER_SERVICE,
                     )
                 case ".broker/currentClient":
-                    yield RpcMethodDesc("info", RpcMethodFlags.GETTER, result="Any")
-                    yield RpcMethodDesc("subscribe", access=RpcMethodAccess.BROWSE)
-                    yield RpcMethodDesc("unsubscribe", access=RpcMethodAccess.BROWSE)
+                    yield RpcMethodDesc(
+                        "info", RpcMethodFlags.GETTER, result="ClientInfo"
+                    )
+                    yield RpcMethodDesc(
+                        "subscribe",
+                        param="String",
+                        result="Bool",
+                        access=RpcMethodAccess.BROWSE,
+                    )
+                    yield RpcMethodDesc(
+                        "unsubscribe",
+                        param="String",
+                        result="Bool",
+                        access=RpcMethodAccess.BROWSE,
+                    )
                     yield RpcMethodDesc.getter(
-                        "subscriptions", access=RpcMethodAccess.BROWSE
+                        "subscriptions",
+                        result="List[String]",
+                        access=RpcMethodAccess.BROWSE,
                     )
 
         async def _method_call(

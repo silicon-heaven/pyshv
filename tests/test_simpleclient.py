@@ -132,10 +132,14 @@ async def test_ls_has_child(client, path, name, result):
                 RpcMethodDesc(
                     "ls", param="ils", result="ols", signals={"lsmod": "olsmod"}
                 ),
-                RpcMethodDesc("info", RpcMethodFlags.GETTER, result="Any"),
-                RpcMethodDesc("subscribe"),
-                RpcMethodDesc("unsubscribe"),
-                RpcMethodDesc.getter("subscriptions", access=RpcMethodAccess.BROWSE),
+                RpcMethodDesc("info", RpcMethodFlags.GETTER, result="ClientInfo"),
+                RpcMethodDesc("subscribe", param="String", result="Bool"),
+                RpcMethodDesc("unsubscribe", param="String", result="Bool"),
+                RpcMethodDesc.getter(
+                    "subscriptions",
+                    result="List[String]",
+                    access=RpcMethodAccess.BROWSE,
+                ),
             ],
         ),
     ),
