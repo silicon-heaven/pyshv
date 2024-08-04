@@ -10,7 +10,7 @@ import traceback
 from .__version__ import VERSION
 from .rpcerrors import (
     RpcError,
-    RpcInvalidParamsError,
+    RpcInvalidParamError,
     RpcMethodCallExceptionError,
     RpcMethodNotFoundError,
     RpcUserIDRequiredError,
@@ -389,7 +389,7 @@ class SimpleBase:
             return res
         if isinstance(param, str):
             return any(v == param for v in self._ls(path))
-        raise RpcInvalidParamsError("Use Null or String with node name")
+        raise RpcInvalidParamError("Use Null or String with node name")
 
     def _ls(self, path: str) -> collections.abc.Iterator[str]:  # noqa: PLR6301
         """Implement ``ls`` method for all nodes.
@@ -426,7 +426,7 @@ class SimpleBase:
             return list(d.to_shv(bool(param)) for d in self._dir(path))
         if isinstance(param, str):
             return any(v.name == param for v in self._dir(path))
-        raise RpcInvalidParamsError("Use Null or Bool or String with node name")
+        raise RpcInvalidParamError("Use Null or Bool or String with node name")
 
     def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:  # noqa: PLR6301
         """Implement ``dir`` method for all nodes.

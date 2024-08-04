@@ -11,7 +11,7 @@ import hashlib
 import logging
 import typing
 
-from .rpcerrors import RpcInvalidParamsError
+from .rpcerrors import RpcInvalidParamError
 from .rpcparam import shvgett
 from .value import SHVMapType, SHVType, is_shvmap
 
@@ -226,10 +226,10 @@ class RpcLogin:
 
         :param value: The value that was received as login method parameter.
         :return: The :class:`RpcLogin` object.
-        :raise RpcInvalidParamsError: If parameter is invalid in some way.
+        :raise RpcInvalidParamError: If parameter is invalid in some way.
         """
         if not is_shvmap(value):
-            raise RpcInvalidParamsError("Expected Map.")
+            raise RpcInvalidParamError("Expected Map.")
         username = shvgett(value, ("login", "user"), str, "")
         password = shvgett(value, ("login", "password"), str, "")
         login_type = RpcLoginType(

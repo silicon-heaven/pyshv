@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from shv import RpcInvalidParamsError, RpcLogin, RpcLoginType
+from shv import RpcInvalidParamError, RpcLogin, RpcLoginType
 
 
 def test_options_init():
@@ -174,5 +174,5 @@ def test_from_shv(shv, obj):
     (([], "Expected Map."),),
 )
 def test_from_shv_invalid(shv, msg):
-    with pytest.raises(RpcInvalidParamsError, match=re.escape(msg)):
+    with pytest.raises(RpcInvalidParamError, match=re.escape(msg)):
         RpcLogin.from_shv(shv)

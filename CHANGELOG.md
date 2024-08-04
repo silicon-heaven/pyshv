@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RpcBrokerConfig` completely rewritten
 - `RpcBroker` client are now registered only if they are active
 - `RpcProtocol.SERIAL` renamed to `RpcProtocol.TTY`
+- `RpcInvalidParamsError` was renamed to `RpcInvalidParamError`
+- `RpcErrorCode.INVALID_PARAMS` was renamed to `RpcErrorCode.INVALID_PARAMS`
 
 ### Removed
 - `RpcRI` in favor of using strings and `rpcri_*` functions

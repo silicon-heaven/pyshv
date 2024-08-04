@@ -6,7 +6,7 @@ import pytest
 
 from shv import (
     RpcClientTCP,
-    RpcInvalidParamsError,
+    RpcInvalidParamError,
     RpcLoginRequiredError,
     RpcMessage,
     RpcMethodAccess,
@@ -328,7 +328,7 @@ async def test_invalid_login_null(shvbroker, url):
     await client.send(RpcMessage.request(None, "hello"))
     await client.receive()
     await client.send(RpcMessage.request(None, "login"))
-    with pytest.raises(RpcInvalidParamsError):
+    with pytest.raises(RpcInvalidParamError):
         await client.receive()
 
 

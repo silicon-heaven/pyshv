@@ -7,7 +7,7 @@ import logging
 import typing
 
 from shv import (
-    RpcInvalidParamsError,
+    RpcInvalidParamError,
     RpcMethodAccess,
     RpcMethodDesc,
     RpcMethodFlags,
@@ -89,7 +89,7 @@ class ExampleDevice(SimpleClient):
                     if not isinstance(param, list) or not all(
                         isinstance(v, int) for v in param
                     ):
-                        raise RpcInvalidParamsError("Only list of ints is accepted.")
+                        raise RpcInvalidParamError("Only list of ints is accepted.")
                     old_track = self.tracks[track]
                     self.tracks[track] = param
                     if old_track != param:

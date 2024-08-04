@@ -12,7 +12,7 @@ class RpcErrorCode(enum.IntEnum):
     NO_ERROR = 0
     INVALID_REQUEST = 1
     METHOD_NOT_FOUND = 2
-    INVALID_PARAMS = 3
+    INVALID_PARAM = 3
     INTERNAL_ERR = 4
     PARSE_ERR = 5
     METHOD_CALL_TIMEOUT = 6
@@ -78,10 +78,10 @@ class RpcMethodNotFoundError(RpcError):
     shv_error_code = RpcErrorCode.METHOD_NOT_FOUND
 
 
-class RpcInvalidParamsError(RpcError):
-    """Invalid method parameters were provided."""
+class RpcInvalidParamError(RpcError):
+    """Invalid method parameter were provided."""
 
-    shv_error_code = RpcErrorCode.INVALID_PARAMS
+    shv_error_code = RpcErrorCode.INVALID_PARAM
 
 
 class RpcInternalError(RpcError):
@@ -137,7 +137,7 @@ RpcError.shv_error_map = {
     for e in (
         RpcInvalidRequestError,
         RpcMethodNotFoundError,
-        RpcInvalidParamsError,
+        RpcInvalidParamError,
         RpcInternalError,
         RpcParseError,
         RpcMethodCallTimeoutError,

@@ -14,7 +14,7 @@ import typing
 
 from ..rpcerrors import (
     RpcError,
-    RpcInvalidParamsError,
+    RpcInvalidParamError,
     RpcLoginRequiredError,
     RpcMethodCallExceptionError,
     RpcMethodNotFoundError,
@@ -280,12 +280,12 @@ class RpcBroker:
                     match method:
                         case "clientInfo":
                             if not isinstance(param, int):
-                                raise RpcInvalidParamsError("Use Int")
+                                raise RpcInvalidParamError("Use Int")
                             client = self.broker.get_client(param)
                             return client.infomap() if client is not None else None
                         case "mountedClientInfo":
                             if not isinstance(param, str):
-                                raise RpcInvalidParamsError("Use String with SHV path")
+                                raise RpcInvalidParamError("Use String with SHV path")
                             client_pth = self.broker.client_on_path(param)
                             if client_pth is not None:
                                 return client_pth[0].infomap()
@@ -298,7 +298,7 @@ class RpcBroker:
                             return [mnt for mnt, _ in self.broker.mounted_clients()]
                         case "disconnectClient":
                             if not isinstance(param, int):
-                                raise RpcInvalidParamsError("Use Int")
+                                raise RpcInvalidParamError("Use Int")
                             client = self.broker.get_client(param)
                             if client is None:
                                 raise RpcMethodCallExceptionError(
@@ -320,7 +320,7 @@ class RpcBroker:
                             )
                         case "unsubscribe":
                             if not isinstance(param, str):
-                                raise RpcInvalidParamsError("Use string")
+                                raise RpcInvalidParamError("Use string")
                             return await self.__broker.unsubscribe(self, param)
             return await super()._method_call(path, method, param, access, user_id)
 

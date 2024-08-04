@@ -5,7 +5,7 @@ from __future__ import annotations
 import collections.abc
 import typing
 
-from .rpcerrors import RpcInvalidParamsError
+from .rpcerrors import RpcInvalidParamError
 from .value import SHVType, is_shvlist
 
 SHVT = typing.TypeVar("SHVT", bound=SHVType)
@@ -19,10 +19,10 @@ def shvt(value: SHVType, tp: type[SHVT]) -> SHVT:
     :param value: The value received as parameter for SHV RPC.
     :param tp: Python type the value should be of.
     :return: The value.
-    :raises RpcInvalidParamsError: If doesn't match what was provided in value.
+    :raises RpcInvalidParamError: If doesn't match what was provided in value.
     """
     if not isinstance(value, tp):
-        raise RpcInvalidParamsError(f"Invalid type: {type(value)}")
+        raise RpcInvalidParamError(f"Invalid type: {type(value)}")
     return value
 
 
@@ -62,10 +62,10 @@ def shvget(
     :param key: Key or list of keys that should be recursively applied to the
       value.
     :param default: Default value used if value is not present.
-      :class:`RpcInvalidParamsError` is raised instead if :data:`NO_DEFAULT` is
+      :class:`RpcInvalidParamError` is raised instead if :data:`NO_DEFAULT` is
       specifiedl.
     :return: extracted value or default.
-    :raise RpcInvalidParamsError: if the value is not present and no default was
+    :raise RpcInvalidParamError: if the value is not present and no default was
       provided.
     """
     for k in [key] if isinstance(key, str | int | SHVGetKey) else key:
@@ -80,7 +80,7 @@ def shvget(
             value = vmap[k]
         else:
             if isinstance(default, NoDefaultType):
-                raise RpcInvalidParamsError(f"Missing key: {k}")
+                raise RpcInvalidParamError(f"Missing key: {k}")
             value = default
             break
     if value is None and not isinstance(default, NoDefaultType):
@@ -105,10 +105,10 @@ def shvgett(
       value.
     :param tp: Type of the expected value.
     :param default: Default value used if value is not present.
-      :class:`RpcInvalidParamsError` is raised instead if :data:`NO_DEFAULT` is
+      :class:`RpcInvalidParamError` is raised instead if :data:`NO_DEFAULT` is
       specifiedl.
     :return: extracted value or default.
-    :raise RpcInvalidParamsError: if the value is not present and no default
+    :raise RpcInvalidParamError: if the value is not present and no default
       provided.
     """
     return shvt(shvget(value, key, default), tp)
@@ -130,10 +130,10 @@ def shvarg(
     :param value: Some List to be sanitized.
     :param index: The index in list we want to access.
     :param default: Default value used if value is not present.
-      :class:`RpcInvalidParamsError` is raised instead if :data:`NO_DEFAULT` is
+      :class:`RpcInvalidParamError` is raised instead if :data:`NO_DEFAULT` is
       specifiedl.
     :return: extracted value or default.
-    :raise RpcInvalidParamsError: if the value is not present and no default
+    :raise RpcInvalidParamError: if the value is not present and no default
       provided.
     """
     if is_shvlist(value):
@@ -142,7 +142,7 @@ def shvarg(
     elif index == 0 and value is not None:
         return value  # Covers that first argument is sent outside list
     if isinstance(default, NoDefaultType):
-        raise RpcInvalidParamsError(f"Field {index} not provided")
+        raise RpcInvalidParamError(f"Field {index} not provided")
     return default
 
 
@@ -158,10 +158,10 @@ def shvargt(
     :param index: The index in list we want to access.
     :param tp: Type of the expected value.
     :param default: Default value used if value is not present.
-      :class:`RpcInvalidParamsError` is raised instead if :data:`NO_DEFAULT` is
+      :class:`RpcInvalidParamError` is raised instead if :data:`NO_DEFAULT` is
       specifiedl.
     :return: extracted value or default.
-    :raise RpcInvalidParamsError: if the value is not present and no default
+    :raise RpcInvalidParamError: if the value is not present and no default
       provided.
     """
     return shvt(shvarg(value, index, default), tp)
