@@ -50,7 +50,7 @@ class RpcError(RuntimeError):
     def __init__(
         self, msg: str | None = None, code: RpcErrorCode | None = None
     ) -> None:
-        super().__init__(str(msg), self.shv_error_code if code is None else code)
+        super().__init__(msg, self.shv_error_code if code is None else code)
 
     @property
     def message(self) -> str | None:

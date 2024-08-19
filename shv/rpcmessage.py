@@ -381,7 +381,11 @@ class RpcMessage:
         else:
             err: SHVIMapType = {
                 self.ErrorKey.CODE: error.error_code,
-                self.ErrorKey.MESSAGE: error.message,
+                **(
+                    {}
+                    if error.message is None
+                    else {self.ErrorKey.MESSAGE: error.message}
+                ),
             }
             self.error = err
 
