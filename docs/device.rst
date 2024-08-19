@@ -63,7 +63,7 @@ super()._dir(path)` to provide standard methods such as ``ls`` and ``dir``.
 
 .. sourcecode::
 
-    def _dir(self, path: str) -> typing.Iterator[RpcMethodDesc]:
+    def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:
         yield from super()._dir(path)
         pth = path.split("/") if path else []
         if len(pth) == 2 and pth[0] == "track" and pth[1] in self.tracks:

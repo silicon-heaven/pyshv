@@ -3,6 +3,7 @@
 
 import argparse
 import asyncio
+import collections.abc
 import logging
 import typing
 
@@ -36,7 +37,7 @@ class ExampleDevice(SimpleClient):
         self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
         self.last_reset_user: None | str = None
 
-    def _ls(self, path: str) -> typing.Iterator[str]:
+    def _ls(self, path: str) -> collections.abc.Iterator[str]:
         yield from super()._ls(path)
         match path:
             case "":
@@ -44,7 +45,7 @@ class ExampleDevice(SimpleClient):
             case "track":
                 yield from self.tracks.keys()
 
-    def _dir(self, path: str) -> typing.Iterator[RpcMethodDesc]:
+    def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:
         yield from super()._dir(path)
         match path.split("/"):
             case ["track"]:
