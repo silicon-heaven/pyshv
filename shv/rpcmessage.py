@@ -282,6 +282,9 @@ class RpcMessage:
     def rpc_access(self) -> RpcMethodAccess | None:
         """Access level as :class:`shv.RpcMethodAccess`."""
         m = RpcMethodAccess.strmap()
+        if level := self.value.meta.get(self.Tag.ACCESS_LEVEL):
+            if isinstance(level, int):
+                return RpcMethodAccess(level)
         for access in self.access:
             if access in m:
                 return m[access]
