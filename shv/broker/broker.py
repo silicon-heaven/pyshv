@@ -147,7 +147,7 @@ class RpcBroker:
                 )
                 # Append user ID
                 if msg.user_id is not None:
-                    msg.user_id += ("," if msg.user_id else "") + self.user_id
+                    msg.user_id += (";" if msg.user_id else "") + self.user_id
                 # Check if we should handle it ourself (else propagate it)
                 if (cpath := self.__broker.client_on_path(msg.path)) is None:
                     return await super()._message(msg)
@@ -215,6 +215,12 @@ class RpcBroker:
             yield from super()._dir(path)
             match path:
                 case ".broker":
+                    yield RpcMethodDesc.getter(
+                        "name",
+                        "Null",
+                        "String",
+                        access=RpcMethodAccess.BROWSE,
+                    )
                     yield RpcMethodDesc(
                         "clientInfo",
                         param="Int",
@@ -278,6 +284,8 @@ class RpcBroker:
             match path.split("/"):
                 case [".broker"] if access >= RpcMethodAccess.SUPER_SERVICE:
                     match method:
+                        case "name":
+                            return self.__broker.config.name
                         case "clientInfo":
                             if not isinstance(param, int):
                                 raise RpcInvalidParamError("Use Int")
@@ -340,13 +348,13 @@ class RpcBroker:
                 "client": str(self.client),
             }
 
-        def _subscriptions(self) -> list[SHVType]:
+        def _subscriptions(self) -> dict[str, int | None]:
             now = time.time()
-            return [
-                str(ri)
+            return {
+                str(ri): int(deadline - now) if deadline is not None else None
                 for ri, deadline in self.__broker.subscriptions(self)
                 if deadline is None or deadline > now
-            ]
+            }
 
     class LoginClient(Client):
         """Broker's client that expects login from client."""
@@ -378,7 +386,7 @@ class RpcBroker:
             """Provide user ID for this Broker client."""
             s = super().user_id
             n = self._login.username if self._login else "?"
-            return f"{s}{':' if s else ''}{n}"
+            return f"{n}{':' if s else ''}{s}"
 
         async def _loop(self) -> None:
             activity_task = asyncio.create_task(self._activity_loop())

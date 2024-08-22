@@ -75,6 +75,9 @@ async def test_empty_ls_invalid(client, path):
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
+                RpcMethodDesc.getter(
+                    "name", "Null", "String", access=RpcMethodAccess.BROWSE
+                ),
                 RpcMethodDesc(
                     "clientInfo",
                     param="Int",
@@ -147,9 +150,10 @@ async def test_empty_dir(client, path, methods):
 @pytest.mark.parametrize(
     "path,method,param,result",
     (
+        (".broker", "name", None, "testbroker"),
         (".broker", "clients", None, [0]),
         (".broker", "mounts", None, []),
-        (".broker/currentClient", "subscriptions", None, []),
+        (".broker/currentClient", "subscriptions", None, {}),
         (".broker/client/0/.app", "name", None, "pyshv-client"),
     ),
 )
@@ -172,7 +176,7 @@ async def test_empty_call(client, path, method, param, result):
                 "clientId": 0,
                 "deviceId": None,
                 "mountPoint": None,
-                "subscriptions": [],
+                "subscriptions": {},
                 "userName": "admin",
                 "role": "admin",
                 # "idleTime": indeterministic
@@ -188,7 +192,7 @@ async def test_empty_call(client, path, method, param, result):
                 "clientId": 0,
                 "deviceId": None,
                 "mountPoint": None,
-                "subscriptions": [],
+                "subscriptions": {},
                 "userName": "admin",
                 "role": "admin",
                 # "idleTime": indeterministic
@@ -233,7 +237,7 @@ async def test_with_example_ls(client, example_device, path, nodes):
                 "clientId": 1,
                 "deviceId": "example",
                 "mountPoint": "test/device",
-                "subscriptions": [],
+                "subscriptions": {},
                 "userName": "test",
                 "role": "test-browse",
                 # "idleTime": indeterministic
@@ -247,7 +251,7 @@ async def test_with_example_ls(client, example_device, path, nodes):
                 "clientId": 1,
                 "deviceId": "example",
                 "mountPoint": "test/device",
-                "subscriptions": [],
+                "subscriptions": {},
                 "userName": "test",
                 "role": "test-browse",
                 # "idleTime": indeterministic
@@ -271,11 +275,11 @@ async def test_subscribe(client, example_device):
     sub = "test/device/track/**:*:*"
     assert await client.subscribe(sub) is True
     assert await client.subscribe(sub) is False
-    assert await client.call(".broker/currentClient", "subscriptions") == [
-        "test/device/track/**:*:*"
-    ]
+    assert await client.call(".broker/currentClient", "subscriptions") == {
+        "test/device/track/**:*:*": None
+    }
     assert await client.unsubscribe(sub) is True
-    assert await client.call(".broker/currentClient", "subscriptions") == []
+    assert await client.call(".broker/currentClient", "subscriptions") == {}
     assert await client.unsubscribe(sub) is False
 
 
@@ -290,7 +294,7 @@ async def test_with_example_set(example_device, value_client):
 async def test_with_example_reset(example_device, client):
     """Perform reset on example device to check user's ID."""
     await client.call("test/device/track", "reset")
-    assert await client.call("test/device/track", "lastResetUser") == "testbroker:admin"
+    assert await client.call("test/device/track", "lastResetUser") == "admin:testbroker"
 
 
 async def test_unauthorized_access(shvbroker, value_client):

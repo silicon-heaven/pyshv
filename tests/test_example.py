@@ -147,7 +147,7 @@ async def test_reset(example_device, value_client):
     assert len(value_client) == 1
     assert (
         await value_client.call("test/device/track", "lastResetUser")
-        == "testbroker:test"
+        == "test:testbroker"
     )
 
 

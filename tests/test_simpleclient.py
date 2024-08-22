@@ -83,19 +83,15 @@ async def test_ls_has_child(client, path, name, result):
     (
         (
             "",
-            [
-                RpcMethodDesc("dir", param="idir", result="odir"),
-                RpcMethodDesc(
-                    "ls", param="ils", result="ols", signals={"lsmod": "olsmod"}
-                ),
-            ],
+            [RpcMethodDesc.stddir(), RpcMethodDesc.stdls()],
         ),
         (
             ".broker",
             [
-                RpcMethodDesc("dir", param="idir", result="odir"),
-                RpcMethodDesc(
-                    "ls", param="ils", result="ols", signals={"lsmod": "olsmod"}
+                RpcMethodDesc.stddir(),
+                RpcMethodDesc.stdls(),
+                RpcMethodDesc.getter(
+                    "name", "Null", "String", access=RpcMethodAccess.BROWSE
                 ),
                 RpcMethodDesc(
                     "clientInfo",
@@ -128,10 +124,8 @@ async def test_ls_has_child(client, path, name, result):
         (
             ".broker/currentClient",
             [
-                RpcMethodDesc("dir", param="idir", result="odir"),
-                RpcMethodDesc(
-                    "ls", param="ils", result="ols", signals={"lsmod": "olsmod"}
-                ),
+                RpcMethodDesc.stddir(),
+                RpcMethodDesc.stdls(),
                 RpcMethodDesc("info", RpcMethodFlags.GETTER, result="ClientInfo"),
                 RpcMethodDesc("subscribe", param="String", result="Bool"),
                 RpcMethodDesc("unsubscribe", param="String", result="Bool"),
