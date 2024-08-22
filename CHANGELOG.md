@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.7.0] - 2024-08-22
 ### Added
 - Support for WebSockets transport
 - NixOS module for pyshvbroker
@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RpcBroker` client are now registered only if they are active
 - `RpcProtocol.SERIAL` renamed to `RpcProtocol.TTY`
 - `RpcInvalidParamsError` was renamed to `RpcInvalidParamError`
-- `RpcErrorCode.INVALID_PARAMS` was renamed to `RpcErrorCode.INVALID_PARAMS`
+- `RpcErrorCode.INVALID_PARAMS` was renamed to `RpcErrorCode.INVALID_PARAM`
 
 ### Removed
 - `RpcRI` in favor of using strings and `rpcri_*` functions
