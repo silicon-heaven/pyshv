@@ -93,7 +93,12 @@ class SimpleClient(SimpleBase):
         This also propagates any exception that we encounter during the login
         process.
         """
-        await self._login_task
+        while True:
+            try:
+                await self._login_task
+                return
+            except asyncio.CancelledError:
+                pass
 
     async def disconnect(self) -> None:  # noqa: D102
         self.reconnects = 0

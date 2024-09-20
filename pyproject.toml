@@ -90,6 +90,8 @@ ignore = [
   "S404", "S603", "S607",
   # Catching Exception is valid and safe in some cases and thus should be allowed
   "BLE001",
+  # Relative imports can't be mixed up
+  "A005",
   # Conflict with formatter
   "COM812",
   # Remove too-many limit for more complex code.
