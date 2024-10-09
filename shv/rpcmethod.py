@@ -116,7 +116,9 @@ class RpcMethodDesc:
             res[self.Key.RESULT] = self.result
         res[self.Key.ACCESS] = self.access
         if self.signals:
-            res[self.Key.SIGNALS] = self.signals
+            res[self.Key.SIGNALS] = {
+                k: None if v == self.result else v for k, v in self.signals.items()
+            }
         if self.extra:
             res[self.Key.EXTRA] = self.extra
         return res
@@ -131,19 +133,24 @@ class RpcMethodDesc:
             value, SHVGetKey("source", cls.Key.SIGNALS), typing.cast(SHVMapType, {})
         )
         rextra = shvget(value, cls.Key.EXTRA, typing.cast(SHVMapType, {}))
+        result: str = shvgett(value, cls.Key.RESULT, str, cls.result)
         return cls(
             name=shvgett(value, SHVGetKey("name", cls.Key.NAME), str, "UNSPECIFIED"),
             flags=RpcMethodFlags(
                 shvgett(value, SHVGetKey("flags", cls.Key.FLAGS), int, cls.flags)
             ),
             param=shvgett(value, cls.Key.PARAM, str, cls.param),
-            result=shvgett(value, cls.Key.RESULT, str, cls.result),
+            result=result,
             access=RpcMethodAccess(raccess)
             if isinstance(raccess, int)
             else RpcMethodAccess.fromstr(raccess)
             if isinstance(raccess, str)
             else cls.access,
-            signals={k: v for k, v in rsignals.items() if isinstance(v, str)}
+            signals={
+                k: (result if v is None else v)
+                for k, v in rsignals.items()
+                if v is None or isinstance(v, str)
+            }
             if is_shvmap(rsignals)
             else {},
             extra=dict(rextra) if is_shvmap(rextra) else {},

@@ -104,7 +104,7 @@ from shv import RpcMethodAccess, RpcMethodNotFoundError, shvmeta
                     3: "Int",
                     4: "List[Int]",
                     5: RpcMethodAccess.READ,
-                    6: {"chng": "List[Int]"},
+                    6: {"chng": None},
                     63: {"description": "List of tracks"},
                 },
                 {
