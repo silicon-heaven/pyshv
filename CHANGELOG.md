@@ -4,8 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2024-09-10
+### Fixed
+- Re-release due to error in this file causing deployment failure
+
+
 ## [0.7.1] - 2024-09-10
-## Fixed
+### Fixed
 - `RpcMethodDesc` now correctly handles `null` for the signal parameter
 - `CancelledError` raised from login task when reset is received before login is
   finished
