@@ -28,9 +28,9 @@ this:
 
 .. code-block:: toml
 
-  listen = ["tcp://[::]:3755", "localsocket:shvbroker.sock"]
+  listen = ["tcp://[::]:3755", "unix:shvbroker.sock"]
 
-  [users.admin]
+  [user.admin]
   password = "admin"
   role = "admin"
 
