@@ -198,7 +198,7 @@ class ChainPackReader(commonpack.CommonReader):
         return decimal.Decimal(f"{mant}e{exp}")
 
     def _read_datetime(self) -> datetime.datetime:
-        d = self.read_uint_data()
+        d = self._read_int_data()
         offset = 0
         has_tz_offset = d & 1
         has_not_msec = d & 2
