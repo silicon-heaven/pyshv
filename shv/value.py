@@ -57,7 +57,7 @@ class SHVMeta(abc.ABC):  # noqa B024
         """Meta attributes for this SHV type."""
         if not hasattr(self, "_meta"):
             self._meta: SHVMetaType = {}
-        return typing.cast(SHVMetaType, self._meta)
+        return self._meta
 
     @staticmethod
     def new(value: object, meta: SHVMetaType | None = None) -> SHVType:
