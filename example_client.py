@@ -5,7 +5,7 @@ import argparse
 import asyncio
 import logging
 
-from shv import RpcUrl, SimpleClient
+from shv import RpcUrl, SHVClient
 
 log_levels = (
     logging.DEBUG,
@@ -18,7 +18,7 @@ log_levels = (
 
 async def example_client(url: RpcUrl) -> None:
     """Coroutine that actually uses client."""
-    client = await SimpleClient.connect(url)
+    client = await SHVClient.connect(url)
     assert client is not None
     res = await client.call(".app", "name")
     print(f"Connected to: {res!r}")

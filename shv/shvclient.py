@@ -13,16 +13,17 @@ from .rpcparam import shvgett
 from .rpcri import rpcri_legacy_subscription
 from .rpctransport import RpcClient, connect_rpc_client
 from .rpcurl import RpcUrl
-from .simplebase import SimpleBase
+from .shvbase import SHVBase
 from .value import SHVType
 
 logger = logging.getLogger(__name__)
 
 
-class SimpleClient(SimpleBase):
-    """SHV client made simple to use.
+class SHVClient(SHVBase):
+    """SHV RPC client made simple to use.
 
-    You most likely want to use this client instead of using RpcClient directly.
+    You most likely want to use this client instead of using :class:`RpcClient`
+    directly.
 
     It is designed as a RPC peer that is connected to the SHV RPC Broker.
     """

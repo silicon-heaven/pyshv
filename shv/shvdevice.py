@@ -3,11 +3,11 @@
 import collections.abc
 
 from .rpcmethod import RpcMethodAccess, RpcMethodDesc
-from .simpleclient import SimpleClient
+from .shvclient import SHVClient
 from .value import SHVType
 
 
-class SimpleDevice(SimpleClient):
+class SHVDevice(SHVClient):
     """SHV client that represents a physical device."""
 
     APP_NAME: str = "pyshv-device"

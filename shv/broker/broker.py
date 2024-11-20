@@ -25,8 +25,8 @@ from ..rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodFlags
 from ..rpcparam import shvargt
 from ..rpcri import rpcri_match, rpcri_relative_to
 from ..rpctransport import RpcClient, RpcServer, create_rpc_server, init_rpc_client
-from ..simplebase import SimpleBase
-from ..simpleclient import SimpleClient
+from ..shvbase import SHVBase
+from ..shvclient import SHVClient
 from ..value import SHVType
 from .config import RpcBrokerConfigABC, RpcBrokerRoleABC
 from .utils import nmax, nmin
@@ -41,7 +41,7 @@ class RpcBroker:
     between them.
     """
 
-    class Client(SimpleBase):
+    class Client(SHVBase):
         """Single client connected to the broker."""
 
         def __init__(
@@ -135,9 +135,10 @@ class RpcBroker:
                 access = self.role.access_level(msg.path, msg.method)
                 if access is None:
                     if msg.path not in {"", ".app", ".broker", ".broker/currentClient"}:
-                        return await self._send(
+                        await self._send(
                             msg.make_response(error=RpcMethodNotFoundError("No access"))
                         )
+                        return
                     access = RpcMethodAccess.BROWSE
                 # Limit access level in the message
                 msg.rpc_access = (
@@ -150,15 +151,17 @@ class RpcBroker:
                     msg.user_id += (";" if msg.user_id else "") + self.user_id
                 # Check if we should handle it ourself (else propagate it)
                 if (cpath := self.__broker.client_on_path(msg.path)) is None:
-                    return await super()._message(msg)
+                    await super()._message(msg)
+                    return
                 # Protect sub-broker currentClient access
                 if cpath[1] == ".broker/currentClient" and (
                     msg.method in {"subscribe", "unsubscribe"}
                     or msg.rpc_access < RpcMethodAccess.SUPER_SERVICE
                 ):
-                    return await self._send(
+                    await self._send(
                         msg.make_response(error=RpcMethodNotFoundError("No access"))
                     )
+                    return
                 # Propagate to some peer
                 assert self.__broker_client_id is not None
                 msg.caller_ids = [*msg.caller_ids, self.__broker_client_id]
@@ -168,7 +171,8 @@ class RpcBroker:
             elif msg.is_response:
                 cids = list(msg.caller_ids)
                 if not cids:  # no caller IDs means this is message for us
-                    return await super()._message(msg)
+                    await super()._message(msg)
+                    return
                 cid = cids.pop()
                 msg.caller_ids = cids
                 if (peer := self.__broker.get_client(cid)) is not None:
@@ -485,7 +489,7 @@ class RpcBroker:
                 "deviceId": self._login.device_id,
             }
 
-    class ConnectClient(SimpleClient, Client):
+    class ConnectClient(SHVClient, Client):
         """Broker client that activelly connects to some other peer."""
 
         APP_NAME = "pyshvbroker-client"

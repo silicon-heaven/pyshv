@@ -1,11 +1,14 @@
 Simple RPC API
 ==============
 
-.. autoclass:: shv.SimpleBase
+This provides object based API that can be used as either client to be used for
+easy connection to the SHV RPC or as a base for the SHV device implementation.
+
+.. autoclass:: shv.SHVBase
    :private-members:
-.. autoclass:: shv.SimpleClient
+.. autoclass:: shv.SHVClient
    :private-members:
-.. autoclass:: shv.ValueClient
+.. autoclass:: shv.SHVValueClient
    :private-members:
-.. autoclass:: shv.SimpleDevice
+.. autoclass:: shv.SHVDevice
    :private-members:

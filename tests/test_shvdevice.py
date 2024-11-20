@@ -11,12 +11,12 @@ from shv import (
     RpcMethodAccess,
     RpcMethodDesc,
     RpcMethodNotFoundError,
-    SimpleDevice,
+    SHVDevice,
     shvmeta,
 )
 
 
-class Device(SimpleDevice):
+class Device(SHVDevice):
     DEVICE_NAME = "testdev"
     DEVICE_VERSION = "0.0.x"
 

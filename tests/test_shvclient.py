@@ -1,4 +1,4 @@
-"""Check implementation of SimpleClient."""
+"""Check implementation of SHVClient."""
 
 import asyncio
 import dataclasses
@@ -10,7 +10,7 @@ from shv import (
     RpcMethodAccess,
     RpcMethodDesc,
     RpcMethodFlags,
-    SimpleClient,
+    SHVClient,
     shvmeta,
 )
 
@@ -172,7 +172,7 @@ async def test_sha_login(shvbroker, url):
             login_type=RpcLoginType.SHA1,
         ),
     )
-    client = await SimpleClient.connect(nurl)
+    client = await SHVClient.connect(nurl)
     assert await client.call(".app", "ping") is None
     await client.disconnect()
 

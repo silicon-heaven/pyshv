@@ -24,12 +24,12 @@ from .value import SHVType, is_shvbool, is_shvnull
 logger = logging.getLogger(__name__)
 
 
-class SimpleBase:
+class SHVBase:
     """SHV RPC made simple to use.
 
     You want to use this if you plan to implement your own specific RPC handler
-    but in most cases you might want to use :class:`SimpleClient` or
-    :class:`SimpleDevice` instead.
+    but in most cases you might want to use :class:`SHVClient` or
+    :class:`SHVDevice` instead.
 
     Messages are handled in an asyncio loop and based on the type of the message
     the different operation is performed.

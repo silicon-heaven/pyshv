@@ -11,7 +11,7 @@ from shv import (
     RpcLoginType,
     RpcMessage,
     RpcUrl,
-    SimpleClient,
+    SHVClient,
     broker,
 )
 
@@ -73,7 +73,7 @@ async def test_broker2subbroker(shvbroker, subdevice, client, path, method, resu
     assert await client.call(path, method) == result
 
 
-class NotifClient(SimpleClient):
+class NotifClient(SHVClient):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.signals = asyncio.Queue()

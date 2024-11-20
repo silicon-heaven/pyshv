@@ -5,7 +5,7 @@ import logging
 
 import pytest
 
-from shv import RpcProtocol, SimpleClient, broker
+from shv import RpcProtocol, SHVClient, broker
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class Protocol:
         await b.terminate()
 
     async def test_with_client(self, shvbroker, url):
-        client = await SimpleClient.connect(url)
+        client = await SHVClient.connect(url)
         assert await client.call(".app", "ping") is None
         await client.disconnect()
 

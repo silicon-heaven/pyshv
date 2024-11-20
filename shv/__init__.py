@@ -44,10 +44,11 @@ from .rpctransport import (
     init_rpc_client,
 )
 from .rpcurl import RpcProtocol, RpcUrl
+from .shvbase import SHVBase
+from .shvclient import SHVClient
+from .shvdevice import SHVDevice
+from .shvvalueclient import SHVValueClient
 from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
-from .simplebase import SimpleBase
-from .simpleclient import SimpleClient
-from .simpledevice import SimpleDevice
 from .value import (
     SHVBool,
     SHVBoolType,
@@ -78,7 +79,6 @@ from .value import (
     shvmeta,
     shvmeta_eq,
 )
-from .valueclient import ValueClient
 
 __all__ = [
     "SHV_VERSION_MAJOR",
@@ -127,11 +127,14 @@ __all__ = [
     "RpcTransportProtocol",
     "RpcUrl",
     "RpcUserIDRequiredError",
+    "SHVBase",
     "SHVBool",
     "SHVBoolType",
     "SHVBytes",
+    "SHVClient",
     "SHVDatetime",
     "SHVDecimal",
+    "SHVDevice",
     "SHVFloat",
     "SHVGetKey",
     "SHVIMap",
@@ -148,10 +151,7 @@ __all__ = [
     "SHVStr",
     "SHVType",
     "SHVUInt",
-    "SimpleBase",
-    "SimpleClient",
-    "SimpleDevice",
-    "ValueClient",
+    "SHVValueClient",
     "connect_rpc_client",
     "create_rpc_server",
     "decimal_rexp",

@@ -6,10 +6,10 @@ import dataclasses
 import pytest
 
 from example_device import ExampleDevice
-from shv import RpcMessage, SimpleClient
+from shv import RpcMessage, SHVClient
 
 
-class LSClient(SimpleClient):
+class LSClient(SHVClient):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.lsmods = asyncio.Queue()
