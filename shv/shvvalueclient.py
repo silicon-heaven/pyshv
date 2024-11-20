@@ -1,4 +1,6 @@
-"""Common extension for the SimpleClient."""
+"""Common extension for the :class:`SHVClient`."""
+
+from __future__ import annotations
 
 import asyncio
 import collections.abc
@@ -9,14 +11,14 @@ import typing
 
 from .rpcerrors import RpcMethodCallExceptionError, RpcMethodNotFoundError
 from .rpcri import rpcri_match
-from .simpleclient import SimpleClient
+from .shvclient import SHVClient
 from .value import SHVMapType, SHVType, shvmeta, shvmeta_eq
 
 logger = logging.getLogger(__name__)
 
 
-class ValueClient(SimpleClient, collections.abc.Mapping):
-    """SHV client made to track values more easily.
+class SHVValueClient(SHVClient, collections.abc.Mapping):
+    """SHV client made to track values of properties more easily.
 
     This tailors to the use case of tracking and accessing various values more
     easily. You need to subscribe to specific path and this class automatically
@@ -30,7 +32,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
         super().__init__(*args, **kwargs)  # notype
         self._cache: dict[str, tuple[float, SHVType]] = {}
         self._handlers: dict[
-            str, collections.abc.Callable[[ValueClient, str, SHVType], None]
+            str, collections.abc.Callable[[SHVValueClient, str, SHVType], None]
         ] = {}
         self._futures: dict[str, list[asyncio.Future]] = {}
 
@@ -57,7 +59,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
 
     def _get_handler(
         self, path: str
-    ) -> None | collections.abc.Callable[["ValueClient", str, SHVType], None]:
+    ) -> None | collections.abc.Callable[[SHVValueClient, str, SHVType], None]:
         """Get the handler for the longest path match."""
         split_key = path.split("/")
         paths = (
@@ -162,7 +164,7 @@ class ValueClient(SimpleClient, collections.abc.Mapping):
     def on_change(
         self,
         path: str,
-        callback: collections.abc.Callable[["ValueClient", str, SHVType], None] | None,
+        callback: collections.abc.Callable[[SHVValueClient, str, SHVType], None] | None,
     ) -> None:
         """Register callback handler called when value change is reported.
 

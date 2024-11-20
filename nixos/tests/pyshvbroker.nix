@@ -48,7 +48,7 @@ in {
       environment.systemPackages = [
         (shvTest "checkls" ''
           async def main():
-              client = await shv.SimpleClient.connect("tcp://admin@broker?password=admin!123")
+              client = await shv.SHVClient.connect("tcp://admin@broker?password=admin!123")
               assert await client.ls("") == [".app", ".broker"]
               await client.disconnect()
         '')

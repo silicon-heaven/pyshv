@@ -14,8 +14,8 @@ from shv import (
     RpcMethodFlags,
     RpcUrl,
     RpcUserIDRequiredError,
+    SHVClient,
     SHVType,
-    SimpleClient,
 )
 
 log_levels = (
@@ -27,7 +27,7 @@ log_levels = (
 )
 
 
-class ExampleDevice(SimpleClient):
+class ExampleDevice(SHVClient):
     """Simple device demostrating the way to implement request handling."""
 
     APP_NAME = "pyshv-example_device"

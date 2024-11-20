@@ -10,8 +10,8 @@ from shv import (
     RpcLoginType,
     RpcProtocol,
     RpcUrl,
-    SimpleClient,
-    ValueClient,
+    SHVClient,
+    SHVValueClient,
     broker,
 )
 
@@ -84,14 +84,14 @@ async def fixture_shvbroker(port, shvbroker_config):
 
 @pytest.fixture(name="client")
 async def fixture_client(shvbroker, url):
-    client = await SimpleClient.connect(url)
+    client = await SHVClient.connect(url)
     yield client
     await client.disconnect()
 
 
 @pytest.fixture(name="value_client")
 async def fixture_value_client(shvbroker, url_test):
-    client = await ValueClient.connect(url_test)
+    client = await SHVValueClient.connect(url_test)
     yield client
     await client.disconnect()
 

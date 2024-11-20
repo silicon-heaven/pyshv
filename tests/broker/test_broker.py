@@ -14,7 +14,7 @@ from shv import (
     RpcMethodDesc,
     RpcMethodFlags,
     RpcMethodNotFoundError,
-    SimpleClient,
+    SHVClient,
     shvmeta,
 )
 
@@ -308,7 +308,7 @@ async def test_invalid_login(shvbroker, url):
         url, login=dataclasses.replace(url.login, password="invalid")
     )
     with pytest.raises(RpcMethodCallExceptionError, match="Invalid login"):
-        await SimpleClient.connect(nurl)
+        await SHVClient.connect(nurl)
 
 
 async def test_invalid_hello_seq(shvbroker, url):
@@ -340,9 +340,9 @@ async def test_double_mount(shvbroker, url):
     nurl = dataclasses.replace(
         url, login=dataclasses.replace(url.login, opt_device_mount_point="test/client")
     )
-    c = await SimpleClient.connect(nurl)
+    c = await SHVClient.connect(nurl)
     with pytest.raises(RpcMethodCallExceptionError):
-        await SimpleClient.connect(nurl)
+        await SHVClient.connect(nurl)
     await c.disconnect()
 
 
@@ -356,9 +356,9 @@ async def test_sub_mount(shvbroker, url):
             url.login, opt_device_mount_point="test/client/under"
         ),
     )
-    c = await SimpleClient.connect(nurl1)
+    c = await SHVClient.connect(nurl1)
     with pytest.raises(RpcMethodCallExceptionError):
-        await SimpleClient.connect(nurl2)
+        await SHVClient.connect(nurl2)
     await c.disconnect()
 
 
