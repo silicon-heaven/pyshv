@@ -44,7 +44,7 @@ class RpcServerTCP(RpcServerStream):
     def __init__(
         self,
         client_connected_cb: collections.abc.Callable[
-            [RpcClient], None | collections.abc.Awaitable[None]
+            [RpcClient], collections.abc.Awaitable[None] | None
         ],
         location: str | None = None,
         port: int = 3755,

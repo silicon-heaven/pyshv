@@ -8,7 +8,7 @@ import functools
 import itertools
 import typing
 
-SHVNullType: typing.TypeAlias = typing.Union[None, "SHVNull"]
+SHVNullType: typing.TypeAlias = typing.Union["SHVNull", None]
 SHVBoolType: typing.TypeAlias = typing.Union[bool, "SHVBool"]
 SHVListType: typing.TypeAlias = collections.abc.Sequence["SHVType"]
 SHVMapType: typing.TypeAlias = collections.abc.Mapping[str, "SHVType"]

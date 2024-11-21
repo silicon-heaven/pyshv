@@ -83,7 +83,7 @@ class SHVBase:
         """Timeout in seconds before call is attempted again or abandoned."""
         self._calls_event: dict[int, asyncio.Event] = {}
         self._calls_msg: dict[int, RpcMessage] = {}
-        self.__peer_is_shv3: None | bool = None
+        self.__peer_is_shv3: bool | None = None
 
     async def disconnect(self) -> None:
         """Disconnect an existing connection.
@@ -263,7 +263,7 @@ class SHVBase:
         res = await self.call(path, "dir", name)
         # list, null and mapping is backward compatibility
         if not isinstance(
-            res, bool | None | collections.abc.Mapping | collections.abc.Sequence
+            res, bool | collections.abc.Mapping | collections.abc.Sequence | None
         ):  # pragma: no cover
             raise RpcMethodCallExceptionError(f"Invalid result returned: {res!r}")
         return bool(res)

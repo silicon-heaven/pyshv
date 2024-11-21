@@ -109,7 +109,7 @@ class _RpcServerWebSockets(RpcServer):
     def __init__(
         self,
         client_connected_cb: collections.abc.Callable[
-            [RpcClient], None | collections.abc.Awaitable[None]
+            [RpcClient], collections.abc.Awaitable[None] | None
         ],
     ) -> None:
         self.client_connected_cb = client_connected_cb
@@ -233,7 +233,7 @@ class RpcServerWebSockets(_RpcServerWebSockets):
     def __init__(
         self,
         client_connected_cb: collections.abc.Callable[
-            [RpcClient], None | collections.abc.Awaitable[None]
+            [RpcClient], collections.abc.Awaitable[None] | None
         ],
         location: str | None = None,
         port: int = 8001,
@@ -279,7 +279,7 @@ class RpcServerWebSocketsUnix(_RpcServerWebSockets):
     def __init__(
         self,
         client_connected_cb: collections.abc.Callable[
-            [RpcClient], None | collections.abc.Awaitable[None]
+            [RpcClient], collections.abc.Awaitable[None] | None
         ],
         location: str,
     ) -> None:
