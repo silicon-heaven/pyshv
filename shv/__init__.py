@@ -47,6 +47,7 @@ from .rpcurl import RpcProtocol, RpcUrl
 from .shvbase import SHVBase
 from .shvclient import SHVClient
 from .shvdevice import SHVDevice
+from .shvmethods import SHVMethods
 from .shvvalueclient import SHVValueClient
 from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
 from .value import (
@@ -146,6 +147,7 @@ __all__ = [
     "SHVMapType",
     "SHVMeta",
     "SHVMetaType",
+    "SHVMethods",
     "SHVNull",
     "SHVNullType",
     "SHVStr",

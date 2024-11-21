@@ -5,8 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- utility class `SHVMethods` providing easier and less error-prune way of
+  declaring methods and properties
+- User's ID for signal messages (this was added as an option in SHV standard)
+
 ### Changed
 - "Simple" API was renamed to SHV and thus `SimpleClient` is now `SHVClient`
+- `SHVBase._method_call` now accepts `SHVBase.Request` as a single argument
+  instead of previously passed five arguments.
+- `SHVBase._got_signal` now accepts `SHVBase.Signal` as a single argument
+  instead of previously passed four arguments.
+- method `_value_update` was moved from `SHVBase` to `SHVValueClient`
 
 
 ## [0.7.3] - 2024-10-31

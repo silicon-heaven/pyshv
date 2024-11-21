@@ -65,7 +65,7 @@ async def fixture_subdevice(shvsubbroker, url_subdevice):
     "path,method,result",
     (
         ("test/subbroker", "ls", [".app", ".broker", "..", "device"]),
-        ("test/subbroker/device", "ls", [".app", "track"]),
+        ("test/subbroker/device", "ls", [".app", "numberOfTracks", "track"]),
     ),
 )
 async def test_broker2subbroker(shvbroker, subdevice, client, path, method, result):

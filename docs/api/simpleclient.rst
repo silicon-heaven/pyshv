@@ -9,6 +9,6 @@ easy connection to the SHV RPC or as a base for the SHV device implementation.
 .. autoclass:: shv.SHVClient
    :private-members:
 .. autoclass:: shv.SHVValueClient
-   :private-members:
 .. autoclass:: shv.SHVDevice
    :private-members:
+.. autoclass:: shv.SHVMethods

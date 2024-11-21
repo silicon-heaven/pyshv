@@ -11,6 +11,7 @@ import typing
 
 from .rpcerrors import RpcMethodCallExceptionError, RpcMethodNotFoundError
 from .rpcri import rpcri_match
+from .shvbase import SHVBase
 from .shvclient import SHVClient
 from .value import SHVMapType, SHVType, shvmeta, shvmeta_eq
 
@@ -45,7 +46,16 @@ class SHVValueClient(SHVClient, collections.abc.Mapping):
     def __len__(self) -> int:
         return len(self._cache)
 
+    async def _got_signal(self, signal: SHVBase.Signal) -> None:
+        """Handle signal.
+
+        :param signal: SHV path to the node the signal is associated with.
+        """
+        if signal.signal.endswith("chng") and signal.source == "get":
+            await self._value_update(signal.path, signal.param)
+
     async def _value_update(self, path: str, value: SHVType) -> None:
+        """Handle value change (``*chng`` signal associated with ``get`` method)."""
         handler = self._get_handler(path)
         if handler is not None and not shvmeta_eq(self.get(path, None), value):
             handler(self, path, value)
