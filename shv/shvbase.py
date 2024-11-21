@@ -1,5 +1,7 @@
 """The base for the various high level SHV RPC interfaces."""
 
+from __future__ import annotations
+
 import asyncio
 import collections.abc
 import contextlib
@@ -283,6 +285,7 @@ class SHVBase:
         source: str = "get",
         value: SHVType = None,
         access: RpcMethodAccess = RpcMethodAccess.READ,
+        user_id: str | None = None,
     ) -> None:
         """Send signal from given path and method source and with given parameter.
 
@@ -300,22 +303,37 @@ class SHVBase:
         :param source: Method name this signal is associated with.
         :param value: Parameter that is the signaled value.
         :param access: Minimal access level needed to access the signal.
+        :param user_id: User ID of signal.
         """
-        await self._send(RpcMessage.signal(path, name, source, value, access))
+        await self._send(RpcMessage.signal(path, name, source, value, access, user_id))
+
+    async def _lsmod(
+        self, path: str, nodes: collections.abc.Mapping[str, bool]
+    ) -> None:
+        """Report change in the ls method.
+
+        This provides implementation for "lsmod" signal that must be used when
+        you are changing the nodes tree to signal clients about that. The
+        argument specifies top level nodes added or removed (based on the
+        mapping value).
+
+        :param path: SHV path to the valid node which children were added or
+          removed.
+        :param nodes: Map where key is node name of the node that is top level
+          node, that was either added (for value ``True``) or removed (for value
+          ``False``).
+        """
+        await self._signal(path, "lsmod", "ls", nodes, RpcMethodAccess.BROWSE)
 
     async def _message(self, msg: RpcMessage) -> None:
-        """Handle every received message."""
+        """Handle every received message.
+
+        :param msg: Received message.
+        """
         if msg.is_request:
             resp = msg.make_response()
-            method = msg.method
             try:
-                resp.result = await self._method_call(
-                    msg.path,
-                    method,
-                    msg.param,
-                    msg.rpc_access or RpcMethodAccess.BROWSE,
-                    msg.user_id,
-                )
+                resp.result = await self._method_call(self.Request(msg))
             except RpcError as exp:
                 resp.rpc_error = exp
             except Exception as exc:
@@ -334,33 +352,20 @@ class SHVBase:
                 self._calls_msg[rid] = msg
                 self._calls_event.pop(rid).set()
         elif msg.is_signal:
-            await self._got_signal(msg.path, msg.signal_name, msg.source, msg.param)
+            await self._got_signal(self.Signal(msg))
 
-    async def _method_call(
-        self,
-        path: str,
-        method: str,
-        param: SHVType,
-        access: RpcMethodAccess,
-        user_id: str | None,
-    ) -> SHVType:
+    async def _method_call(self, request: SHVBase.Request) -> SHVType:
         """Handle request.
 
-        :param path: SHV path to the node the method is associated with.
-        :param method: method requested to be called.
-        :param param: Parameter to be passed to the called method.
-        :param access: access level of the client specified in the request.
-        :param client_id: The client's ID collected as message was passed
-          around. This can be ``None`` when request message contained no ID. You
-          can raise :class:`RpcUserIDRequiredError` if you need it.
+        :param request: SHV RPC request message info.
         :return: result of the method call. To report error you should raise
             :exc:`RpcError`.
         """
-        match path, method:
+        match request.path, request.method:
             case _, "ls":
-                return self._method_call_ls(path, param)
+                return self._method_call_ls(request.path, request.param)
             case _, "dir":
-                return self._method_call_dir(path, param)
+                return self._method_call_dir(request.path, request.param)
             case ".app", "shvVersionMajor":
                 return SHV_VERSION_MAJOR
             case ".app", "shvVersionMinor":
@@ -374,7 +379,7 @@ class SHVBase:
             case ".app", "ping":
                 return None
         raise RpcMethodNotFoundError(
-            f"No such path '{path}' or method '{method}' or access rights."
+            f"No such path '{request.path}' or method '{request.method}' or access rights."
         )
 
     def _method_call_ls(self, path: str, param: SHVType) -> SHVType:
@@ -449,18 +454,92 @@ class SHVBase:
             yield RpcMethodDesc.getter("date", "Null", "DateTime")
             yield RpcMethodDesc("ping")
 
-    async def _got_signal(
-        self, path: str, signal: str, source: str, value: SHVType
-    ) -> None:
+    async def _got_signal(self, signal: Signal) -> None:
         """Handle signal.
 
-        :param path: SHV path to the node the signal is associated with.
-        :param signal: Signal name.
-        :param source: Method name signal is associated with.
-        :param value: The value caried by signal.
+        :param signal: SHV path to the node the signal is associated with.
         """
-        if signal.endswith("chng") and source == "get":
-            await self._value_update(path, value)
 
-    async def _value_update(self, path: str, value: SHVType) -> None:
-        """Handle value change (``*chng`` signal associated with ``get`` method)."""
+    class Request:
+        """Set of parameters passed to the :meth:`_method_call`.
+
+        This is provided as one data class to allow easier method typing as
+        well as ability to more freely add or remove info items.
+        """
+
+        def __init__(self, msg: RpcMessage) -> None:
+            assert msg.is_request
+            self._msg = msg
+
+        @property
+        def path(self) -> str:
+            """SHV path to the node the method is associated with."""
+            return self._msg.path
+
+        @property
+        def method(self) -> str:
+            """SHV method name requested to be called."""
+            return self._msg.method
+
+        @property
+        def param(self) -> SHVType:
+            """Parameter provided for the method call."""
+            return self._msg.param
+
+        @property
+        def access(self) -> RpcMethodAccess:
+            """Access level of the client specified in this request."""
+            return self._msg.rpc_access or RpcMethodAccess.BROWSE
+
+        @property
+        def user_id(self) -> str | None:
+            """The user's ID collected as message was passed around.
+
+            This can be ``None`` when request message contained no ID. You can raise
+            :class:`RpcUserIDRequiredError` if you need it.
+            """
+            return self._msg.user_id
+
+    class Signal:
+        """Set of parameters passed to the :meth:`_got_signal`.
+
+        This is provided as one data class to allow easier method typing as
+        well as ability to more freely add or remove info items.
+        """
+
+        def __init__(self, msg: RpcMessage) -> None:
+            assert msg.is_signal
+            self._msg = msg
+
+        @property
+        def path(self) -> str:
+            """SHV path signal is associated with."""
+            return self._msg.path
+
+        @property
+        def signal(self) -> str:
+            """Signal name."""
+            return self._msg.signal_name
+
+        @property
+        def source(self) -> str:
+            """SHV method name signal is associated with."""
+            return self._msg.source
+
+        @property
+        def param(self) -> SHVType:
+            """Value caried by signal."""
+            return self._msg.param
+
+        @property
+        def access(self) -> RpcMethodAccess:
+            """Access level of the signal."""
+            return self._msg.rpc_access or RpcMethodAccess.READ
+
+        @property
+        def user_id(self) -> str | None:
+            """User's ID recorded in the signal.
+
+            This can be ``None`` when request message contained no ID.
+            """
+            return self._msg.user_id

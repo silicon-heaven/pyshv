@@ -13,21 +13,14 @@ from shv import (
     RpcMethodDesc,
     RpcMethodFlags,
     RpcUrl,
-    RpcUserIDRequiredError,
+    SHVBase,
     SHVClient,
+    SHVMethods,
     SHVType,
 )
 
-log_levels = (
-    logging.DEBUG,
-    logging.INFO,
-    logging.WARNING,
-    logging.ERROR,
-    logging.CRITICAL,
-)
 
-
-class ExampleDevice(SHVClient):
+class ExampleDevice(SHVClient, SHVMethods):
     """Simple device demostrating the way to implement request handling."""
 
     APP_NAME = "pyshv-example_device"
@@ -36,6 +29,55 @@ class ExampleDevice(SHVClient):
         super().__init__(*args, **kwargs)
         self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
         self.last_reset_user: None | str = None
+
+    @SHVMethods.property("numberOfTracks", signal=True)
+    def number_of_tracks(self, oldness: int | None) -> SHVType:
+        """SHV property getter numberOfTrack."""
+        return len(self.tracks)
+
+    @SHVMethods.property_setter(number_of_tracks)
+    async def number_of_tracks_set(self, param: SHVType, user_id: str | None) -> None:
+        """SHV property getter numberOfTrack."""
+        if not isinstance(param, int) or param < 1:
+            raise RpcInvalidParamError("Int greater than 0 expected")
+        oldlen = len(self.tracks)
+        if oldlen != param:
+            self.tracks = {
+                str(i): self.tracks[str(i)] if oldlen > i else list(range(i))
+                for i in range(1, param + 1)
+            }
+            await self.number_of_tracks.signal(param, user_id=user_id)
+            await self._lsmod(
+                "track",
+                {
+                    str(i): oldlen < param
+                    for i in range(min(oldlen, param), max(oldlen, param))
+                },
+            )
+
+    @SHVMethods.method(
+        "track",
+        RpcMethodDesc(
+            "reset",
+            RpcMethodFlags.USER_ID_REQUIRED,
+            access=RpcMethodAccess.COMMAND,
+            extra={"description": "Reset all tracks to their initial state"},
+        ),
+    )
+    async def track_reset(self, request: SHVBase.Request) -> SHVType:
+        """SHV method track:reset."""
+        self.last_reset_user = request.user_id
+        old = self.tracks
+        self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
+        for k in old:
+            if old[k] != self.tracks[k]:
+                await self._signal(f"track/{k}", value=self.tracks[k])
+        return None
+
+    @SHVMethods.method("track", RpcMethodDesc.getter("lastResetUser", result="s|n"))
+    async def track_last_reset_user(self, request: SHVBase.Request) -> SHVType:
+        """SHV method track:lastResetUser."""
+        return self.last_reset_user
 
     def _ls(self, path: str) -> collections.abc.Iterator[str]:
         yield from super()._ls(path)
@@ -48,63 +90,36 @@ class ExampleDevice(SHVClient):
     def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:
         yield from super()._dir(path)
         match path.split("/"):
-            case ["track"]:
-                yield RpcMethodDesc(
-                    "reset",
-                    RpcMethodFlags.USER_ID_REQUIRED,
-                    access=RpcMethodAccess.COMMAND,
-                    extra={"dependencies": "Reset all tracks to their initial state"},
-                )
-                yield RpcMethodDesc.getter("lastResetUser", result="StringOrNull")
             case ["track", track] if track in self.tracks:
                 yield RpcMethodDesc.getter(
                     result="List[Int]", description="List of tracks", signal=True
                 )
                 yield RpcMethodDesc.setter(param="List[Int]", description="Set track")
 
-    async def _method_call(
-        self,
-        path: str,
-        method: str,
-        param: SHVType,
-        access: RpcMethodAccess,
-        user_id: str | None,
-    ) -> SHVType:
-        match path.split("/"), method:
-            case [["track"], "reset"] if access >= RpcMethodAccess.COMMAND:
-                if user_id is None:
-                    raise RpcUserIDRequiredError
-                self.last_reset_user = user_id
-                old = self.tracks
-                self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
-                for k in old:
-                    if old[k] != self.tracks[k]:
-                        await self._signal(f"track/{k}", value=self.tracks[k])
-                return None
-            case [["track"], "lastResetUser"] if access >= RpcMethodAccess.READ:
-                return self.last_reset_user
+    async def _method_call(self, request: SHVBase.Request) -> SHVType:
+        match request.path.split("/"), request.method:
             case [["track", track], _] if track in self.tracks:
-                if method == "get" and access >= RpcMethodAccess.READ:
+                if request.method == "get" and request.access >= RpcMethodAccess.READ:
                     return self.tracks[track]
-                if method == "set" and access >= RpcMethodAccess.WRITE:
-                    if not isinstance(param, list) or not all(
-                        isinstance(v, int) for v in param
+                if request.method == "set" and request.access >= RpcMethodAccess.WRITE:
+                    if not isinstance(request.param, list) or not all(
+                        isinstance(v, int) for v in request.param
                     ):
                         raise RpcInvalidParamError("Only list of ints is accepted.")
                     old_track = self.tracks[track]
-                    self.tracks[track] = param
-                    if old_track != param:
-                        await self._signal(f"track/{track}", value=param)
+                    self.tracks[track] = request.param
+                    if old_track != request.param:
+                        await self._signal(f"track/{track}", value=request.param)
                     return None
-        return await super()._method_call(path, method, param, access, user_id)
+        return await super()._method_call(request)
 
-
-async def example_device(url: RpcUrl) -> None:
-    """Coroutine that starts example device and waits for its termination."""
-    client = await ExampleDevice.connect(url)
-    if client is not None:
-        await client.task
-        await client.disconnect()
+    @classmethod
+    async def run(cls, url: RpcUrl) -> None:
+        """Coroutine that starts example device and waits for its termination."""
+        client = await cls.connect(url)
+        if client is not None:
+            await client.task
+            await client.disconnect()
 
 
 def parse_args() -> argparse.Namespace:
@@ -136,7 +151,7 @@ def parse_args() -> argparse.Namespace:
 if __name__ == "__main__":
     pargs = parse_args()
     logging.basicConfig(
-        level=log_levels[sorted([1 - pargs.v + pargs.q, 0, len(log_levels) - 1])[1]],
+        level=logging.WARNING + 10 * (pargs.q - pargs.v),
         format="[%(asctime)s] [%(levelname)s] - %(message)s",
     )
-    asyncio.run(example_device(RpcUrl.parse(pargs.URL)))
+    asyncio.run(ExampleDevice.run(RpcUrl.parse(pargs.URL)))

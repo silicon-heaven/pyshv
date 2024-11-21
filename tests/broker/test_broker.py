@@ -219,7 +219,7 @@ async def test_client_info(client, path, method, param, result):
         (".broker/client", ["0", "1"]),
         ("", [".app", ".broker", "test"]),
         ("test", ["device"]),
-        ("test/device", [".app", "track"]),
+        ("test/device", [".app", "numberOfTracks", "track"]),
         ("test/device/track", ["1", "2", "3", "4", "5", "6", "7", "8"]),
     ),
 )
