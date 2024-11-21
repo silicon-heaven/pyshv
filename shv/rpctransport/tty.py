@@ -35,7 +35,7 @@ class RpcClientTTY(RpcClient):
         self.port = port
         self.baudrate = baudrate
         self.protocol = protocol
-        self.serial: None | aioserial.AioSerial = None
+        self.serial: aioserial.AioSerial | None = None
         self._eof = asyncio.Event()
         self._eof.set()
 
@@ -100,7 +100,7 @@ class RpcServerTTY(RpcServer):
     def __init__(
         self,
         client_connected_cb: collections.abc.Callable[
-            [RpcClient], None | collections.abc.Awaitable[None]
+            [RpcClient], collections.abc.Awaitable[None] | None
         ],
         port: str,
         baudrate: int = 115200,

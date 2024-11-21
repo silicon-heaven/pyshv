@@ -52,7 +52,7 @@ async def connect_rpc_client(url: RpcUrl | str) -> RpcClient:
 
 async def create_rpc_server(
     client_connected_cb: collections.abc.Callable[
-        [RpcClient], None | collections.abc.Awaitable[None]
+        [RpcClient], collections.abc.Awaitable[None] | None
     ],
     url: RpcUrl | str,
 ) -> RpcServer:
