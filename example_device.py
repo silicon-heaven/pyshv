@@ -28,7 +28,7 @@ class ExampleDevice(SHVClient, SHVMethods):
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:  # noqa ANN401
         super().__init__(*args, **kwargs)
         self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
-        self.last_reset_user: None | str = None
+        self.last_reset_user: str | None = None
 
     @SHVMethods.property("numberOfTracks", signal=True)
     def number_of_tracks(self, oldness: int | None) -> SHVType:

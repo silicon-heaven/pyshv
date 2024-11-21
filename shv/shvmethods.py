@@ -163,7 +163,7 @@ class SHVMethods(SHVBase):
     """
     SetMethodT = collections.abc.Callable[
         [typing.Any, SHVType, str | None],
-        None | collections.abc.Coroutine[None, None, None],
+        collections.abc.Coroutine[None, None, None] | None,
     ]
     """
     Type definition for the methods that can be used with decorator
