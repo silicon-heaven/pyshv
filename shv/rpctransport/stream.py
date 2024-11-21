@@ -215,8 +215,8 @@ class RpcClientStream(RpcClient):
         protocol: type[RpcTransportProtocol] = RpcProtocolStream,
     ) -> None:
         super().__init__()
-        self._reader: None | asyncio.StreamReader = None
-        self._writer: None | asyncio.StreamWriter = None
+        self._reader: asyncio.StreamReader | None = None
+        self._writer: asyncio.StreamWriter | None = None
         self.protocol = protocol
         """Stream communication protocol."""
 
@@ -278,7 +278,7 @@ class RpcServerStream(RpcServer):
     def __init__(
         self,
         client_connected_cb: collections.abc.Callable[
-            [RpcClient], None | collections.abc.Awaitable[None]
+            [RpcClient], collections.abc.Awaitable[None] | None
         ],
         protocol: type[RpcTransportProtocol] = RpcProtocolStream,
     ) -> None:

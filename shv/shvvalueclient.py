@@ -69,7 +69,7 @@ class SHVValueClient(SHVClient, collections.abc.Mapping):
 
     def _get_handler(
         self, path: str
-    ) -> None | collections.abc.Callable[[SHVValueClient, str, SHVType], None]:
+    ) -> collections.abc.Callable[[SHVValueClient, str, SHVType], None] | None:
         """Get the handler for the longest path match."""
         split_key = path.split("/")
         paths = (

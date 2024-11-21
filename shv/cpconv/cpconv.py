@@ -20,7 +20,7 @@ class CPFormat(enum.Enum):
 def convert(
     inp: str | bytes | pathlib.Path | typing.IO,
     inf: CPFormat,
-    outp: None | pathlib.Path | typing.IO,
+    outp: pathlib.Path | typing.IO | None,
     outf: CPFormat,
     cpon_options: CponWriter.Options | None = None,
 ) -> bytes | None:
