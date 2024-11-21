@@ -429,6 +429,26 @@ class SHVBase:
         if not path:
             yield ".app"
 
+    @staticmethod
+    def _ls_node_for_path(
+        path: str,
+        full_path: str | collections.abc.Iterator[str],
+    ) -> collections.abc.Iterator[str]:
+        """Help with :meth:`_ls` implementation.
+
+        This is helper designed to be called from :meth:`_ls` and simplifies a
+        common operation that is extraction of the node name from the full path.
+
+        :param path: ``path`` parameter passed to :meth:`_ls`.
+        :param full_path: Path or iterator over paths the node name should be
+          extracted from.
+        """
+        if path:
+            path = f"{path}/"
+        for pth in (full_path,) if isinstance(full_path, str) else full_path:
+            if pth.startswith(path):
+                yield pth[len(path) :].partition("/")[0]
+
     def _valid_path(self, path: str) -> bool:
         """Check that :meth:`_ls` reports this path as existing.
 

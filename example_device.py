@@ -81,11 +81,9 @@ class ExampleDevice(SHVClient, SHVMethods):
 
     def _ls(self, path: str) -> collections.abc.Iterator[str]:
         yield from super()._ls(path)
-        match path:
-            case "":
-                yield "track"
-            case "track":
-                yield from self.tracks.keys()
+        yield from self._ls_node_for_path(
+            path, (f"track/{i}" for i in self.tracks.keys())
+        )
 
     def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:
         yield from super()._dir(path)
