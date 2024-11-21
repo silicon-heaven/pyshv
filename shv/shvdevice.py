@@ -3,6 +3,7 @@
 import collections.abc
 
 from .rpcmethod import RpcMethodAccess, RpcMethodDesc
+from .shvbase import SHVBase
 from .shvclient import SHVClient
 from .value import SHVType
 
@@ -21,22 +22,15 @@ class SHVDevice(SHVClient):
     DEVICE_SERIAL_NUMBER: str | None = None
     """Serial number of the physical device."""
 
-    async def _method_call(
-        self,
-        path: str,
-        method: str,
-        param: SHVType,
-        access: RpcMethodAccess,
-        user_id: str | None,
-    ) -> SHVType:
-        match path, method:
+    async def _method_call(self, request: SHVBase.Request) -> SHVType:
+        match request.path, request.method:
             case ".device", "name":
                 return self.DEVICE_NAME
             case ".device", "version":
                 return self.DEVICE_VERSION
-            case ".device", "serialNumber" if access >= RpcMethodAccess.READ:
+            case ".device", "serialNumber" if request.access >= RpcMethodAccess.READ:
                 return self.DEVICE_SERIAL_NUMBER
-        return await super()._method_call(path, method, param, access, user_id)
+        return await super()._method_call(request)
 
     def _ls(self, path: str) -> collections.abc.Iterator[str]:
         yield from super()._ls(path)
@@ -55,21 +49,3 @@ class SHVDevice(SHVClient):
             yield RpcMethodDesc.getter(
                 "serialNumber", "Null", "OptionalString", access=RpcMethodAccess.BROWSE
             )
-
-    async def _lsmod(
-        self, path: str, nodes: collections.abc.Mapping[str, bool]
-    ) -> None:
-        """Report change in the ls method.
-
-        This provides implementation for "lsmod" signal that must be used when
-        you are changing the nodes tree to signal clients about that. The
-        argument specifies top level nodes added or removed (based on the
-        mapping value).
-
-        :param path: SHV path to the valid node which children were added or
-          removed.
-        :param nodes: Map where key is node name of the node that is top level
-          node, that was either added (for value ``True``) or removed (for value
-          ``False``).
-        """
-        await self._signal(path, "lsmod", "ls", nodes, RpcMethodAccess.BROWSE)

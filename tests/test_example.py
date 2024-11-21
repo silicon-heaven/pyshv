@@ -11,7 +11,7 @@ from shv import RpcMethodAccess, RpcMethodNotFoundError, shvmeta
     (
         ("", "ls", "test", True),
         ("test", "ls", None, ["device"]),
-        ("test/device", "ls", None, [".app", "track"]),
+        ("test/device", "ls", None, [".app", "numberOfTracks", "track"]),
         ("test/device/track", "ls", None, [str(i) for i in range(1, 9)]),
         ("test/device/track", "ls", "1", True),
         ("test/device/track", "ls", "8", True),
@@ -70,17 +70,17 @@ from shv import RpcMethodAccess, RpcMethodNotFoundError, shvmeta
                     6: {"lsmod": "olsmod"},
                 },
                 {
-                    1: "reset",
-                    2: 32,
-                    5: RpcMethodAccess.COMMAND,
-                    63: {"dependencies": "Reset all tracks to their initial state"},
-                },
-                {
                     1: "lastResetUser",
                     2: 2,
                     3: "Int",
-                    4: "StringOrNull",
+                    4: "s|n",
                     5: RpcMethodAccess.READ,
+                },
+                {
+                    1: "reset",
+                    2: 32,
+                    5: RpcMethodAccess.COMMAND,
+                    63: {"description": "Reset all tracks to their initial state"},
                 },
             ],
         ),
