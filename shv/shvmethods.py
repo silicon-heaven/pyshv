@@ -63,9 +63,7 @@ class SHVMethods(SHVBase):
     def _ls(self, path: str) -> collections.abc.Iterator[str]:
         """Implement `ls` method for registered methods."""
         yield from super()._ls(path)
-        for pth in self._methods:
-            if not path or pth.startswith(path + "/"):
-                yield pth[len(path) :].partition("/")[0]
+        yield from self._ls_node_for_path(path, iter(self._methods))
 
     def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:
         """Provide method description for registered methods."""

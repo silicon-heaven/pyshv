@@ -411,6 +411,38 @@ class SHVBase:
         if not path:
             yield ".app"
 
+    @staticmethod
+    def _ls_node_for_path(
+        path: str,
+        full_path: str | collections.abc.Iterator[str],
+    ) -> collections.abc.Iterator[str]:
+        """Help with :meth:`_ls` implementation.
+
+        This is helper designed to be called from :meth:`_ls` and simplifies a
+        common operation that is extraction of the node name from the full path.
+
+        With this function you effectively can remove the code like this from
+        your codebase::
+
+            fpath = "some/path/to/the/node"
+            path = f"{path}/" if path else ""
+            if fpath.startswith(path):
+                yield fpath[len(path) :].partition("/")[0]
+
+        And replace it with just::
+
+            yield from self._ls_node_for_path(path, "some/path/to/the/node")
+
+        :param path: ``path`` parameter passed to :meth:`_ls`.
+        :param full_path: Path or iterator over paths the node name should be
+          extracted from.
+        """
+        if path:
+            path = f"{path}/"
+        for pth in (full_path,) if isinstance(full_path, str) else full_path:
+            if pth.startswith(path):
+                yield pth[len(path) :].partition("/")[0]
+
     def _valid_path(self, path: str) -> bool:
         """Check that :meth:`_ls` reports this path as existing.
 
@@ -501,7 +533,7 @@ class SHVBase:
             return self._msg.user_id
 
     class Signal:
-        """Set of parameters passed to the :meth:`_got_signal`.
+        """Set of parameters passed to the :meth:`SHVBase._got_signal`.
 
         This is provided as one data class to allow easier method typing as
         well as ability to more freely add or remove info items.

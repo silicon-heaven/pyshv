@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - utility class `SHVMethods` providing easier and less error-prone way of
   declaring methods and properties
 - User's ID for signal messages (this was added as an option in SHV standard)
+- `SHVBase._ls_node_for_path` helper
 
 ### Changed
 - "Simple" API was renamed to SHV and thus `SimpleClient` is now `SHVClient`

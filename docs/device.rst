@@ -105,6 +105,10 @@ The simple example for tree like this follows::
             yield "1"
             yield "2"
 
+There is also an helper :meth:`shv.SHVBase._ls_node_for_path` to implement
+:meth:`shv.SHVBase._ls` that you might want to use to not have to write code
+that correctly splits paths to the nodes.
+
 
 Listing methods
 ^^^^^^^^^^^^^^^
