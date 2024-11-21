@@ -435,6 +435,7 @@ class RpcMessage:
         source: str = "get",
         value: SHVType = None,
         access: RpcMethodAccess = RpcMethodAccess.READ,
+        user_id: str | None = None,
     ) -> RpcMessage:
         """Create signal message.
 
@@ -443,6 +444,7 @@ class RpcMessage:
         :param source: Name of the method this signal is associated with.
         :param value: Value to be sent in the message.
         :param access: Minimal access level needed to get this signal.
+        :param user_id: User ID associated with this signal.
         """
         res = cls()
         res.signal_name = name
@@ -450,4 +452,5 @@ class RpcMessage:
         res.path = path
         res.param = value
         res.rpc_access = access
+        res.user_id = user_id
         return res

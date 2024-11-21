@@ -276,29 +276,22 @@ class RpcBroker:
                         access=RpcMethodAccess.BROWSE,
                     )
 
-        async def _method_call(
-            self,
-            path: str,
-            method: str,
-            param: SHVType,
-            access: RpcMethodAccess,
-            user_id: str | None,
-        ) -> SHVType:
+        async def _method_call(self, request: SHVBase.Request) -> SHVType:
             assert self.role is not None  # Otherwise handled in _message
-            match path.split("/"):
-                case [".broker"] if access >= RpcMethodAccess.SUPER_SERVICE:
-                    match method:
+            match request.path.split("/"):
+                case [".broker"] if request.access >= RpcMethodAccess.SUPER_SERVICE:
+                    match request.method:
                         case "name":
                             return self.__broker.config.name
                         case "clientInfo":
-                            if not isinstance(param, int):
+                            if not isinstance(request.param, int):
                                 raise RpcInvalidParamError("Use Int")
-                            client = self.broker.get_client(param)
+                            client = self.broker.get_client(request.param)
                             return client.infomap() if client is not None else None
                         case "mountedClientInfo":
-                            if not isinstance(param, str):
+                            if not isinstance(request.param, str):
                                 raise RpcInvalidParamError("Use String with SHV path")
-                            client_pth = self.broker.client_on_path(param)
+                            client_pth = self.broker.client_on_path(request.param)
                             if client_pth is not None:
                                 return client_pth[0].infomap()
                             return None
@@ -309,32 +302,32 @@ class RpcBroker:
                         case "mounts":
                             return [mnt for mnt, _ in self.broker.mounted_clients()]
                         case "disconnectClient":
-                            if not isinstance(param, int):
+                            if not isinstance(request.param, int):
                                 raise RpcInvalidParamError("Use Int")
-                            client = self.broker.get_client(param)
+                            client = self.broker.get_client(request.param)
                             if client is None:
                                 raise RpcMethodCallExceptionError(
-                                    f"No such client with ID: {param}"
+                                    f"No such client with ID: {request.param}"
                                 )
                             await client.disconnect()
                             return None
                 case [".broker", "currentClient"]:
-                    match method:
+                    match request.method:
                         case "info":
                             return self.infomap()
                         case "subscriptions":
                             return self._subscriptions()
                         case "subscribe":
-                            sub = shvargt(param, 0, str)
-                            ttl = shvargt(param, 1, int, -1)
+                            sub = shvargt(request.param, 0, str)
+                            ttl = shvargt(request.param, 1, int, -1)
                             return await self.__broker.subscribe(
                                 self, sub, None if ttl < 0 else ttl
                             )
                         case "unsubscribe":
-                            if not isinstance(param, str):
+                            if not isinstance(request.param, str):
                                 raise RpcInvalidParamError("Use string")
-                            return await self.__broker.unsubscribe(self, param)
-            return await super()._method_call(path, method, param, access, user_id)
+                            return await self.__broker.unsubscribe(self, request.param)
+            return await super()._method_call(request)
 
         def infomap(self) -> dict[str, SHVType]:
             """Produce Map with client's info.
