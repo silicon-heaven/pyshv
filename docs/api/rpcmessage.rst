@@ -22,3 +22,12 @@ Parameter parser helpers
 ------------------------
 
 .. automodule:: shv.rpcparam
+
+
+Additional types defined by SHV standard
+----------------------------------------
+
+Alerts
+^^^^^^
+
+.. automodule:: shv.rpcalert
