@@ -8,6 +8,7 @@ from shv import (
     SHV_VERSION_MAJOR,
     SHV_VERSION_MINOR,
     VERSION,
+    RpcAlert,
     RpcMethodAccess,
     RpcMethodDesc,
     RpcMethodNotFoundError,
@@ -68,7 +69,8 @@ async def test_invalid_call(client):
     (
         ("test/device", [".app", ".device"]),
         ("test/device/.app", []),
-        ("test/device/.device", []),
+        ("test/device/.device", ["alerts"]),
+        ("test/device/.device/alerts", []),
     ),
 )
 async def test_ls(client, device, path, result):
@@ -99,9 +101,48 @@ async def test_ls(client, device, path, result):
                 ),
             ],
         ),
+        (
+            "test/device/.device/alerts",
+            [
+                RpcMethodDesc.stddir(),
+                RpcMethodDesc.stdls(),
+                RpcMethodDesc.getter(result="[i{...},...]", signal=True),
+            ],
+        ),
     ),
 )
 async def test_dir(client, device, path, result):
     """Verify that we can use dir method."""
     res = await client.dir(path)
     assert res == result
+
+
+async def test_alerts(value_client, device):
+    """Check that we correctly manage alerts."""
+    await value_client.subscribe("test/device/.device/alerts:get:chng")
+    assert await value_client.prop_get("test/device/.device/alerts") == []
+
+    now1 = datetime.datetime.now().replace(microsecond=0, tzinfo=datetime.UTC)
+    test1 = RpcAlert.new(RpcAlert.WARNING_MIN, "Test1", now1)
+    change = value_client.wait_for_change("test/device/.device/alerts")
+    await device.change_alerts()  # Just to ensure that we do not send signal
+    await device.change_alerts(add=test1)
+    alerts = await change
+    assert len(alerts) == 1
+    assert alerts[0] == test1.value
+
+    now2 = datetime.datetime.now().replace(microsecond=0, tzinfo=datetime.UTC)
+    test2 = RpcAlert.new(RpcAlert.WARNING_MIN, "Test2", now2)
+    change = value_client.wait_for_change("test/device/.device/alerts")
+    await device.change_alerts(add=test2, rem=test1)
+    alerts = await change
+    assert len(alerts) == 1
+    assert alerts[0] == test2.value
+
+    assert list(device.alerts) == [test2]
+
+
+async def test_no_alerts(client, device):
+    """Check that you alerts can't be accessed if they are disabled."""
+    device.DEVICE_ALERTS = False
+    assert await client.call("test/device/.device", "ls") == []
