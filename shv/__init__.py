@@ -3,6 +3,7 @@
 from .__version__ import VERSION
 from .chainpack import ChainPack, ChainPackReader, ChainPackWriter
 from .cpon import Cpon, CponReader, CponWriter
+from .rpcalert import RpcAlert
 from .rpcerrors import (
     RpcError,
     RpcErrorCode,
@@ -91,6 +92,7 @@ __all__ = [
     "Cpon",
     "CponReader",
     "CponWriter",
+    "RpcAlert",
     "RpcClient",
     "RpcClientPipe",
     "RpcClientTCP",
