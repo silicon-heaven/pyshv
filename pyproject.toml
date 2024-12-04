@@ -1,5 +1,5 @@
 [project]
-name = "template-python"
+name = "project-template-python"
 version = "0.0.0"
 description = "Project Template Python"
 readme = "README.rst"
@@ -14,7 +14,9 @@ requires-python = ">=3.11"
 dependencies = []
 
 [project.urls]
-repository = "http://gitlab.elektroline.cz/emb/template/python"
+source = "https://gitlab.elektroline.cz/emb/template/python"
+changelog = "https://gitlab.elektroline.cz/emb/template/python/-/blob/master/CHANGELOG.md"
+issues = "https://gitlab.elektroline.cz/emb/template/python/-/issues"
 
 [project.optional-dependencies]
 test = [
@@ -24,6 +26,7 @@ test = [
 docs = [
   "sphinx",
   "sphinx_rtd_theme",
+  "sphinx-mdinclude",
 ]
 
 [project.scripts]

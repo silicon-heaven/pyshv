@@ -1,5 +1,5 @@
 {
-  description = "Project template for Python";
+  description = "Project Template Python";
 
   outputs = {
     self,

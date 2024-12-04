@@ -7,8 +7,8 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path("..").absolute()))
 
-project = "Elektroline Python project Template"
-copyright = "2023, Elektroline a.s."
+project = "Project Template Python"
+copyright = "2024, Elektroline a.s."
 author = "Elektroline a.s."
 
 
@@ -19,6 +19,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.todo",
     "sphinx_rtd_theme",
+    "sphinx_mdinclude",
 ]
 
 templates_path = ["_templates"]
