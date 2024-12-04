@@ -2,28 +2,21 @@
 root = true
 
 [*]
-encoding = utf-8
+charset = utf-8
 end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.sh]
+indent_style = tab
 
 [*.py]
-indent_style = space
-tab_width = 4
-ident_size = 4
-max_line_length = 80
+max_line_length = 79
 
-[*.toml]
-indent_style = space
-tab_width = 2
-ident_size = 2
-
-[.gitlab-ci.yml]
-indent_style  = space
-indent_size = 2
-
-[*.nix]
-indent_style = space
+# Usually config files
+[*.{toml,yml,nix}]
 indent_size = 2
 
 [*.{diff,patch}]
