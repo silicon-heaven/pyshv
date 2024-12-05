@@ -215,7 +215,7 @@ class ChainPackReader(commonpack.CommonReader):
 
     def _read_blob(self) -> bytes:
         dlen = self.read_uint_data()
-        return self._read(dlen)
+        return self._read(dlen) if dlen else b""
 
     def _read_string(self) -> str:
         slen = self.read_uint_data()

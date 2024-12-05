@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instead of previously passed four arguments.
 - method `_value_update` was moved from `SHVBase` to `SHVValueClient`
 
+### Fixed
+- Unpacking blobs of zero length from ChainPack
+
 
 ## [0.7.3] - 2024-10-31
 ### Fixed
