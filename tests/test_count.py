@@ -4,7 +4,7 @@ import io
 
 import pytest
 
-from foo import count_foo
+from template_package_name import count_foo
 
 
 @pytest.mark.parametrize(

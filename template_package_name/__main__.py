@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 
 def parse_args() -> argparse.Namespace:
     """Parse passed arguments and return result."""
-    parser = argparse.ArgumentParser(prog="foo", description="Foo counter")
-    parser.add_argument("--version", action="version", version="%(prog)s " + VERSION)
+    parser = argparse.ArgumentParser(description="Foo counter")
+    parser.add_argument("--version", action="version", version="%(prog)'s " + VERSION)
     parser.add_argument(
         "file",
         nargs=argparse.REMAINDER,

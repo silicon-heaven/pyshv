@@ -46,7 +46,7 @@
         propagatedBuildInputs = requires pythonPackages;
         nativeBuildInputs = [sphinxHook] ++ requires-docs pythonPackages;
         nativeCheckInputs = [pytestCheckHook] ++ requires-test pythonPackages;
-        meta.mainProgram = "foo";
+        meta.mainProgram = "template_package_name";
       };
   in
     {

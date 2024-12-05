@@ -30,7 +30,7 @@ docs = [
 ]
 
 [project.scripts]
-foo = "foo.__main__:main"
+template_package_name = "template_package_name.__main__:main"
 
 [build-system]
 requires = ["setuptools"]

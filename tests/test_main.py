@@ -7,7 +7,7 @@ import sys
 def subprocess_foo(*args):
     """Run foo as subprocess and return subprocess handle for it."""
     return subprocess.Popen(
-        [sys.executable, "-m", "foo", *args],
+        [sys.executable, "-m", "template_package_name", *args],
         env={"PYTHONPATH": ":".join(sys.path)},
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
