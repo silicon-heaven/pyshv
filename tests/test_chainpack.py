@@ -62,6 +62,7 @@ DATA: list = [
         b"\x8bD\x86\x05svete\xff\x8aB\x8bD\x86\x05svete\xff\x88@A\xff\xff",
         SHVMeta.new({2: SHVMeta.new([0, 1], {4: "svete"})}, {4: "svete"}),
     ),
+    (b"\x85\x00", b""),
     (b"\x85\x06ab\xcd\t\r\n", b"ab\xcd\t\r\n"),
     (
         b"\x8d\x04",
