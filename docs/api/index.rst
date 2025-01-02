@@ -10,6 +10,7 @@ API reference
    rpcri
    rpccom
    simpleclient
+   rpcfile
    broker
    cp
    rpctypes
