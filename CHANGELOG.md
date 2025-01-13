@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SHVBase._ls_node_for_path` helper
 - Support for alerts in `SHVDevice`
 - `RpcAlert` as abstraction for device alerts
+- `shvtypes` module with utilites to work with RPC type hints
 
 ### Changed
 - "Simple" API was renamed to SHV and thus `SimpleClient` is now `SHVClient`

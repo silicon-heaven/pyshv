@@ -12,3 +12,4 @@ API reference
    simpleclient
    broker
    cp
+   rpctypes

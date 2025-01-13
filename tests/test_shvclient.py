@@ -28,17 +28,17 @@ from shv import (
                 {
                     1: "dir",
                     2: 0,
-                    3: "idir",
-                    4: "odir",
+                    3: "n|b|s",
+                    4: "!dir",
                     5: 1,
                 },
                 {
                     1: "ls",
                     2: 0,
-                    3: "ils",
-                    4: "ols",
+                    3: "s|n",
+                    4: "[s]|b",
                     5: 1,
-                    6: {"lsmod": "olsmod"},
+                    6: {"lsmod": "{b}"},
                 },
             ],
         ),
@@ -90,34 +90,27 @@ async def test_ls_has_child(client, path, name, result):
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
-                RpcMethodDesc.getter(
-                    "name", "Null", "String", access=RpcMethodAccess.BROWSE
-                ),
+                RpcMethodDesc.getter("name", "n", "s", access=RpcMethodAccess.BROWSE),
                 RpcMethodDesc(
                     "clientInfo",
-                    param="Int",
-                    result="ClientInfo",
+                    param="i",
+                    result="!clientInfo|n",
                     access=RpcMethodAccess.SUPER_SERVICE,
                 ),
                 RpcMethodDesc(
                     "mountedClientInfo",
-                    param="String",
-                    result="ClientInfo",
+                    param="s",
+                    result="!clientInfo|n",
                     access=RpcMethodAccess.SUPER_SERVICE,
                 ),
                 RpcMethodDesc.getter(
-                    "clients", "Null", "List[Int]", access=RpcMethodAccess.SUPER_SERVICE
+                    "clients", "n", "[i]", access=RpcMethodAccess.SUPER_SERVICE
                 ),
                 RpcMethodDesc.getter(
-                    "mounts",
-                    "Null",
-                    "List[String]",
-                    access=RpcMethodAccess.SUPER_SERVICE,
+                    "mounts", "n", "[s]", access=RpcMethodAccess.SUPER_SERVICE
                 ),
                 RpcMethodDesc(
-                    "disconnectClient",
-                    param="Int",
-                    access=RpcMethodAccess.SUPER_SERVICE,
+                    "disconnectClient", param="i", access=RpcMethodAccess.SUPER_SERVICE
                 ),
             ],
         ),
@@ -126,13 +119,11 @@ async def test_ls_has_child(client, path, name, result):
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
-                RpcMethodDesc("info", RpcMethodFlags.GETTER, result="ClientInfo"),
-                RpcMethodDesc("subscribe", param="String", result="Bool"),
-                RpcMethodDesc("unsubscribe", param="String", result="Bool"),
+                RpcMethodDesc("info", RpcMethodFlags.GETTER, result="!clientInfo"),
+                RpcMethodDesc("subscribe", param="s|[s:RPCRI,i:TTL]", result="b"),
+                RpcMethodDesc("unsubscribe", param="s", result="b"),
                 RpcMethodDesc.getter(
-                    "subscriptions",
-                    result="List[String]",
-                    access=RpcMethodAccess.BROWSE,
+                    "subscriptions", result="{i|n}", access=RpcMethodAccess.BROWSE
                 ),
             ],
         ),

@@ -62,11 +62,11 @@ async def test_empty_ls_invalid(client, path):
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
-                RpcMethodDesc.getter("shvVersionMajor", "Null", "Int"),
-                RpcMethodDesc.getter("shvVersionMinor", "Null", "Int"),
-                RpcMethodDesc.getter("name", "Null", "String"),
-                RpcMethodDesc.getter("version", "Null", "String"),
-                RpcMethodDesc.getter("date", "Null", "DateTime"),
+                RpcMethodDesc.getter("shvVersionMajor", "n", "i"),
+                RpcMethodDesc.getter("shvVersionMinor", "n", "i"),
+                RpcMethodDesc.getter("name", "n", "s"),
+                RpcMethodDesc.getter("version", "n", "s"),
+                RpcMethodDesc.getter("date", "n", "t"),
                 RpcMethodDesc("ping"),
             ],
         ),
@@ -75,34 +75,27 @@ async def test_empty_ls_invalid(client, path):
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
-                RpcMethodDesc.getter(
-                    "name", "Null", "String", access=RpcMethodAccess.BROWSE
-                ),
+                RpcMethodDesc.getter("name", "n", "s", access=RpcMethodAccess.BROWSE),
                 RpcMethodDesc(
                     "clientInfo",
-                    param="Int",
-                    result="ClientInfo",
+                    param="i",
+                    result="!clientInfo|n",
                     access=RpcMethodAccess.SUPER_SERVICE,
                 ),
                 RpcMethodDesc(
                     "mountedClientInfo",
-                    param="String",
-                    result="ClientInfo",
+                    param="s",
+                    result="!clientInfo|n",
                     access=RpcMethodAccess.SUPER_SERVICE,
                 ),
                 RpcMethodDesc.getter(
-                    "clients", "Null", "List[Int]", access=RpcMethodAccess.SUPER_SERVICE
+                    "clients", "n", "[i]", access=RpcMethodAccess.SUPER_SERVICE
                 ),
                 RpcMethodDesc.getter(
-                    "mounts",
-                    "Null",
-                    "List[String]",
-                    access=RpcMethodAccess.SUPER_SERVICE,
+                    "mounts", "n", "[s]", access=RpcMethodAccess.SUPER_SERVICE
                 ),
                 RpcMethodDesc(
-                    "disconnectClient",
-                    param="Int",
-                    access=RpcMethodAccess.SUPER_SERVICE,
+                    "disconnectClient", param="i", access=RpcMethodAccess.SUPER_SERVICE
                 ),
             ],
         ),
@@ -114,25 +107,20 @@ async def test_empty_ls_invalid(client, path):
                 RpcMethodDesc(
                     "info",
                     RpcMethodFlags.GETTER,
-                    result="ClientInfo",
+                    result="!clientInfo",
                     access=RpcMethodAccess.BROWSE,
                 ),
                 RpcMethodDesc(
                     "subscribe",
-                    param="String",
-                    result="Bool",
+                    param="s|[s:RPCRI,i:TTL]",
+                    result="b",
                     access=RpcMethodAccess.BROWSE,
                 ),
                 RpcMethodDesc(
-                    "unsubscribe",
-                    param="String",
-                    result="Bool",
-                    access=RpcMethodAccess.BROWSE,
+                    "unsubscribe", param="s", result="b", access=RpcMethodAccess.BROWSE
                 ),
                 RpcMethodDesc.getter(
-                    "subscriptions",
-                    result="List[String]",
-                    access=RpcMethodAccess.BROWSE,
+                    "subscriptions", result="{i|n}", access=RpcMethodAccess.BROWSE
                 ),
             ],
         ),
