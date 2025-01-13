@@ -98,8 +98,8 @@ class RpcMethodDesc:
 
     name: str
     flags: RpcMethodFlags = dataclasses.field(default=RpcMethodFlags(0))
-    param: str = "Null"
-    result: str = "Null"
+    param: str = "n"
+    result: str = "n"
     access: RpcMethodAccess = RpcMethodAccess.BROWSE
     signals: dict[str, str] = dataclasses.field(default_factory=dict)
     extra: dict[str, SHVType] = dataclasses.field(default_factory=dict)
@@ -110,9 +110,9 @@ class RpcMethodDesc:
             self.Key.NAME: self.name,
             self.Key.FLAGS: self.flags,
         }
-        if self.param != "Null":
+        if self.param != "n":
             res[self.Key.PARAM] = self.param
-        if self.result != "Null":
+        if self.result != "n":
             res[self.Key.RESULT] = self.result
         res[self.Key.ACCESS] = self.access
         if self.signals:
@@ -160,8 +160,8 @@ class RpcMethodDesc:
     def getter(
         cls,
         name: str = "get",
-        param: str = "Int",
-        result: str = "Any",
+        param: str = "i",
+        result: str = "?",
         access: RpcMethodAccess = RpcMethodAccess.READ,
         signal: bool | str = False,
         description: str = "",
@@ -191,8 +191,8 @@ class RpcMethodDesc:
     def setter(
         cls,
         name: str = "set",
-        param: str = "Any",
-        result: str = "Null",
+        param: str = "?",
+        result: str = "n",
         access: RpcMethodAccess = RpcMethodAccess.WRITE,
         description: str = "",
     ) -> RpcMethodDesc:
@@ -217,10 +217,10 @@ class RpcMethodDesc:
     @functools.lru_cache(maxsize=1)
     def stddir(cls) -> RpcMethodDesc:
         """Get description of standard 'dir' method."""
-        return cls("dir", param="idir", result="odir")
+        return cls("dir", param="n|b|s", result="!dir")
 
     @classmethod
     @functools.lru_cache(maxsize=1)
     def stdls(cls) -> RpcMethodDesc:
         """Get description of standard 'ls' method."""
-        return cls("ls", param="ils", result="ols", signals={"lsmod": "olsmod"})
+        return cls("ls", param="s|n", result="[s]|b", signals={"lsmod": "{b}"})

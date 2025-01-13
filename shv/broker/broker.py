@@ -220,60 +220,49 @@ class RpcBroker:
             match path:
                 case ".broker":
                     yield RpcMethodDesc.getter(
-                        "name",
-                        "Null",
-                        "String",
-                        access=RpcMethodAccess.BROWSE,
+                        "name", "n", "s", access=RpcMethodAccess.BROWSE
                     )
                     yield RpcMethodDesc(
                         "clientInfo",
-                        param="Int",
-                        result="ClientInfo",
+                        param="i",
+                        result="!clientInfo|n",
                         access=RpcMethodAccess.SUPER_SERVICE,
                     )
                     yield RpcMethodDesc(
                         "mountedClientInfo",
-                        param="String",
-                        result="ClientInfo",
+                        param="s",
+                        result="!clientInfo|n",
                         access=RpcMethodAccess.SUPER_SERVICE,
                     )
                     yield RpcMethodDesc.getter(
-                        "clients",
-                        "Null",
-                        "List[Int]",
-                        access=RpcMethodAccess.SUPER_SERVICE,
+                        "clients", "n", "[i]", access=RpcMethodAccess.SUPER_SERVICE
                     )
                     yield RpcMethodDesc.getter(
-                        "mounts",
-                        "Null",
-                        "List[String]",
-                        access=RpcMethodAccess.SUPER_SERVICE,
+                        "mounts", "n", "[s]", access=RpcMethodAccess.SUPER_SERVICE
                     )
                     yield RpcMethodDesc(
                         "disconnectClient",
-                        param="Int",
+                        param="i",
                         access=RpcMethodAccess.SUPER_SERVICE,
                     )
                 case ".broker/currentClient":
                     yield RpcMethodDesc(
-                        "info", RpcMethodFlags.GETTER, result="ClientInfo"
+                        "info", RpcMethodFlags.GETTER, result="!clientInfo"
                     )
                     yield RpcMethodDesc(
                         "subscribe",
-                        param="String",
-                        result="Bool",
+                        param="s|[s:RPCRI,i:TTL]",
+                        result="b",
                         access=RpcMethodAccess.BROWSE,
                     )
                     yield RpcMethodDesc(
                         "unsubscribe",
-                        param="String",
-                        result="Bool",
+                        param="s",
+                        result="b",
                         access=RpcMethodAccess.BROWSE,
                     )
                     yield RpcMethodDesc.getter(
-                        "subscriptions",
-                        result="List[String]",
-                        access=RpcMethodAccess.BROWSE,
+                        "subscriptions", result="{i|n}", access=RpcMethodAccess.BROWSE
                     )
 
         async def _method_call(self, request: SHVBase.Request) -> SHVType:

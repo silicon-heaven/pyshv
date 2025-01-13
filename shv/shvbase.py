@@ -439,11 +439,11 @@ class SHVBase:
         yield RpcMethodDesc.stddir()
         yield RpcMethodDesc.stdls()
         if path == ".app":
-            yield RpcMethodDesc.getter("shvVersionMajor", "Null", "Int")
-            yield RpcMethodDesc.getter("shvVersionMinor", "Null", "Int")
-            yield RpcMethodDesc.getter("name", "Null", "String")
-            yield RpcMethodDesc.getter("version", "Null", "String")
-            yield RpcMethodDesc.getter("date", "Null", "DateTime")
+            yield RpcMethodDesc.getter("shvVersionMajor", "n", "i")
+            yield RpcMethodDesc.getter("shvVersionMinor", "n", "i")
+            yield RpcMethodDesc.getter("name", "n", "s")
+            yield RpcMethodDesc.getter("version", "n", "s")
+            yield RpcMethodDesc.getter("date", "n", "t")
             yield RpcMethodDesc("ping")
 
     async def _got_signal(self, signal: Signal) -> None:
