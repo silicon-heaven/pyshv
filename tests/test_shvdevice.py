@@ -87,17 +87,12 @@ async def test_ls(client, device, path, result):
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
+                RpcMethodDesc.getter("name", "n", "s", access=RpcMethodAccess.BROWSE),
                 RpcMethodDesc.getter(
-                    "name", "Null", "String", access=RpcMethodAccess.BROWSE
+                    "version", "n", "s", access=RpcMethodAccess.BROWSE
                 ),
                 RpcMethodDesc.getter(
-                    "version", "Null", "String", access=RpcMethodAccess.BROWSE
-                ),
-                RpcMethodDesc.getter(
-                    "serialNumber",
-                    "Null",
-                    "OptionalString",
-                    access=RpcMethodAccess.BROWSE,
+                    "serialNumber", "n", "s|n", access=RpcMethodAccess.BROWSE
                 ),
             ],
         ),
@@ -106,7 +101,7 @@ async def test_ls(client, device, path, result):
             [
                 RpcMethodDesc.stddir(),
                 RpcMethodDesc.stdls(),
-                RpcMethodDesc.getter(result="[i{...},...]", signal=True),
+                RpcMethodDesc.getter(result="[!alert]", signal=True),
             ],
         ),
     ),

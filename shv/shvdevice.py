@@ -94,16 +94,13 @@ class SHVDevice(SHVClient):
         match path:
             case ".device":
                 yield RpcMethodDesc.getter(
-                    "name", "Null", "String", access=RpcMethodAccess.BROWSE
+                    "name", "n", "s", access=RpcMethodAccess.BROWSE
                 )
                 yield RpcMethodDesc.getter(
-                    "version", "Null", "String", access=RpcMethodAccess.BROWSE
+                    "version", "n", "s", access=RpcMethodAccess.BROWSE
                 )
                 yield RpcMethodDesc.getter(
-                    "serialNumber",
-                    "Null",
-                    "OptionalString",
-                    access=RpcMethodAccess.BROWSE,
+                    "serialNumber", "n", "s|n", access=RpcMethodAccess.BROWSE
                 )
             case ".device/alerts" if self.DEVICE_ALERTS:
-                yield RpcMethodDesc.getter(result="[i{...},...]", signal=True)
+                yield RpcMethodDesc.getter(result="[!alert]", signal=True)

@@ -93,9 +93,9 @@ class ExampleDevice(SHVClient, SHVMethods):
         match path.split("/"):
             case ["track", track] if track in self.tracks:
                 yield RpcMethodDesc.getter(
-                    result="List[Int]", description="List of tracks", signal=True
+                    result="[i]", description="List of tracks", signal=True
                 )
-                yield RpcMethodDesc.setter(param="List[Int]", description="Set track")
+                yield RpcMethodDesc.setter(param="[i]", description="Set track")
 
     async def _method_call(self, request: SHVBase.Request) -> SHVType:
         match request.path.split("/"), request.method:
