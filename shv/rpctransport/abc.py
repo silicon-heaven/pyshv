@@ -100,7 +100,7 @@ class RpcClient(abc.ABC):
                 logger.debug("%s <= Control message RESET", self)
                 return self.Control.RESET
             elif logger.isEnabledFor(logging.DEBUG):
-                logger.debug("%s <= Invalid message received: %s", self, data)
+                logger.debug("%s <= Invalid message received: %s", self, bytes(data))
 
     @abc.abstractmethod
     async def _receive(self) -> bytes:

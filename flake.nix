@@ -20,7 +20,10 @@
         optional-dependencies,
         nativeCheckInputs,
       }: {
-        nativeCheckInputs = nativeCheckInputs ++ optional-dependencies.websockets;
+        nativeCheckInputs =
+          nativeCheckInputs
+          ++ optional-dependencies.canbus
+          ++ optional-dependencies.websockets;
         meta = {
           inherit (pyproject.pyproject.project) description;
           homepage = "https://silicon-heaven.gitlab.io/";

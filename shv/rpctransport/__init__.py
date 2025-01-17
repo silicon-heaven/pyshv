@@ -1,6 +1,7 @@
 """Implementation of SHV RPC message trasport between peers."""
 
 from .abc import RpcClient, RpcServer
+from .can import SHVCAN, RpcClientCAN, RpcServerCAN
 from .pipe import RpcClientPipe
 from .stream import (
     RpcProtocolBlock,
@@ -15,7 +16,9 @@ from .url import connect_rpc_client, create_rpc_server, init_rpc_client
 from .ws import RpcClientWebSockets, RpcServerWebSockets, RpcServerWebSocketsUnix
 
 __all__ = [
+    "SHVCAN",
     "RpcClient",
+    "RpcClientCAN",
     "RpcClientPipe",
     "RpcClientTCP",
     "RpcClientTTY",
@@ -25,6 +28,7 @@ __all__ = [
     "RpcProtocolSerial",
     "RpcProtocolSerialCRC",
     "RpcServer",
+    "RpcServerCAN",
     "RpcServerTCP",
     "RpcServerTTY",
     "RpcServerUnix",

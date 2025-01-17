@@ -85,10 +85,24 @@ DATA = [
         "serial:/dev/ttyX?baudrate=1152000",
         RpcUrl("/dev/ttyX", protocol=RpcProtocol.TTY, baudrate=1152000),
     ),
+    (
+        "ws:example.com",
+        RpcUrl("example.com", protocol=RpcProtocol.WS),
+    ),
     ("ws:/var/ws", RpcUrl("/var/ws", protocol=RpcProtocol.WS)),
     (
         "ws://user@[::]:8081",
         RpcUrl("::", port=8081, protocol=RpcProtocol.WS, login=RpcLogin("user")),
+    ),
+    (
+        "can://vcan0:65?user=test",
+        RpcUrl(
+            "vcan0", protocol=RpcProtocol.CAN, port=65, login=RpcLogin(username="test")
+        ),
+    ),
+    (
+        "can://vcan0:1?caddr=63",
+        RpcUrl("vcan0", protocol=RpcProtocol.CAN, port=1, can_address=63),
     ),
 ]
 

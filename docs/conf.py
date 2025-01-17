@@ -81,6 +81,7 @@ autodoc_type_aliases = {v: v for v in type_vars}
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "websockets": ("https://websockets.readthedocs.io/en/stable/", None),
+    "can": ("https://python-can.readthedocs.io/en/stable/", None),
 }
 nitpick_ignore = {
     # These are undocumented in upstread Python documentation

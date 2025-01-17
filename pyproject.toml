@@ -27,6 +27,7 @@ requires-python = ">=3.11"
 
 [project.optional-dependencies]
 websockets = ["websockets >= 13.0"]
+canbus = ["python-can"]
 extra = ["asyncinotify; sys_platform == \"linux\""]
 test = [
   "pytest",

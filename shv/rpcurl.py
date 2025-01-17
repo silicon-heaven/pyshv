@@ -45,6 +45,8 @@ class RpcProtocol(enum.Enum):
     """WebSockets transport layer."""
     WSS = enum.auto()
     """WebSockets secure transport layer."""
+    CAN = enum.auto()
+    """CAN Bus (socketcan) transport layer."""
 
 
 @dataclasses.dataclass
@@ -63,7 +65,10 @@ class RpcUrl:
     location: str
     """Hostname of the SHV RPC server or path to the socket."""
     port: int = -1
-    """Port the SHV RPC server is listening on."""
+    """Port the SHV RPC server is listening on.
+
+    In case of CAN Bus this is CAN address (0-127).
+    """
     protocol: RpcProtocol = RpcProtocol.TCP
     """SHV RPC protocol used to communicate (This is scheme in URL therminology)"""
     login: RpcLogin = dataclasses.field(default_factory=RpcLogin)
@@ -93,6 +98,10 @@ class RpcUrl:
     # TTY
     baudrate: int = 115200
     """Baudrate used for some of the link protocols."""
+
+    # CAN
+    can_address: int | None = None
+    """The local address (1-63) used by CAN client."""
 
     default_port: typing.ClassVar[dict[RpcProtocol, int]] = {
         RpcProtocol.TCP: 3755,
@@ -168,6 +177,7 @@ class RpcUrl:
             "tty": RpcProtocol.TTY,
             "ws": RpcProtocol.WS,
             "wss": RpcProtocol.WSS,
+            "can": RpcProtocol.CAN,
         }
         if sr.scheme not in protocols:
             raise ValueError(f"Invalid scheme: {sr.scheme}")
@@ -198,6 +208,17 @@ class RpcUrl:
                     res.location = sr.hostname or ""
                     if sr.port is not None:
                         res.port = int(sr.port)
+            case RpcProtocol.CAN:
+                res.location = sr.hostname or ""
+                if sr.port is None:
+                    raise ValueError("CAN server address must be specified")
+                res.port = int(sr.port)
+                if not 0 < res.port < 128:
+                    raise ValueError(f"Invalid CAN server address: {res.port}")
+                if sr.path:
+                    raise ValueError(
+                        f"Path is not supported for {sr.scheme}: {sr.path}"
+                    )
             case protocol:
                 raise NotImplementedError(f"Protocol: {protocol}")  # pragma: no cover
 
@@ -267,6 +288,11 @@ class RpcUrl:
         if self.protocol is RpcProtocol.TTY:
             if opts := pqs.pop("baudrate", []):
                 self.baudrate = int(opts[0])
+        if self.protocol is RpcProtocol.CAN:
+            if opts := pqs.pop("caddr", []):
+                self.can_address = int(opts[0])
+                if not 0 < self.can_address < 64:
+                    raise ValueError("CAN address must be in range <1,64>")
 
     def to_url(self, public: bool = False) -> str:
         """Convert to string URL.
@@ -284,6 +310,7 @@ class RpcUrl:
             RpcProtocol.TTY: "serial",
             RpcProtocol.WS: "ws",
             RpcProtocol.WSS: "wss",
+            RpcProtocol.CAN: "can",
         }
         user_added = not self.login.username or self.login.username == RpcLogin.username
         match self.protocol:
@@ -315,6 +342,8 @@ class RpcUrl:
                     else:
                         netloc += self.location
                     netloc += f":{self.port}"
+            case RpcProtocol.CAN:
+                netloc = f"//{self.location}:{self.port}"
             case protocol:
                 raise NotImplementedError(f"Protocol: {protocol}")  # pragma: no cover
 
@@ -351,6 +380,8 @@ class RpcUrl:
                     raise NotImplementedError  # pragma: no cover
         if self.baudrate != type(self).baudrate:
             yield f"baudrate={self.baudrate}"
+        if self.can_address != type(self).can_address:
+            yield f"caddr={self.can_address}"
         if self.ca != type(self).ca:
             yield f"{'cafile' if isinstance(self.ca, pathlib.Path) else 'ca'}={self.ca}"
         if self.cert != type(self).cert:

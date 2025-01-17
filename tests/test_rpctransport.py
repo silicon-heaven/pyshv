@@ -11,6 +11,7 @@ import logging
 import os
 import pathlib
 import pty
+import random
 import select
 import ssl
 import threading
@@ -19,12 +20,15 @@ import pytest
 
 from shv.rpcmessage import RpcMessage
 from shv.rpctransport import (
+    SHVCAN,
     RpcClient,
+    RpcClientCAN,
     RpcClientPipe,
     RpcClientTCP,
     RpcClientTTY,
     RpcClientUnix,
     RpcClientWebSockets,
+    RpcServerCAN,
     RpcServerTCP,
     RpcServerTTY,
     RpcServerUnix,
@@ -361,3 +365,68 @@ class TestWebSocketsUnix(ServerLink):
         client.disconnect()
         await server_client.wait_disconnect()
         await client.wait_disconnect()
+
+
+class TestCAN(ServerLink):
+    """Check that CAN Bus transport protocol works."""
+
+    @pytest.fixture(name="server")
+    async def fixture_server(self, port):
+        queue = asyncio.Queue()
+        server = RpcServerCAN(queue.put, SHVCAN.virtualcan("test"), 42)
+        await server.listen()
+        yield server, queue
+        server.close()
+        await server.wait_closed()
+
+    @pytest.fixture(name="clients")
+    async def fixture_clients(self, server, port):
+        client = await RpcClientCAN.connect(SHVCAN.virtualcan("test"), 42)
+        server_client = await server[1].get()
+        yield server_client, client
+        client.disconnect()
+        server_client.disconnect()
+        await client.wait_disconnect()
+        await server_client.wait_disconnect()
+
+    @pytest.mark.xfail(reason="Reconnect after disconnect closes CAN bus")
+    async def test_reconnect(self, clients, server):
+        super().test_reconnect(clients, server)
+
+    @pytest.mark.parametrize(
+        "size",
+        [*range(64), 125, 126, 127, 128, 129, 250, 251, 252, 253, 254, 255, 1039],
+    )
+    async def test_msg_sizes(self, clients, size):
+        """Test that CAN can transmit various message sizes without mangle."""
+        random.seed(42)
+        msg = RpcMessage.signal(
+            ".app", value=bytes(random.getrandbits(8) for _ in range(size))
+        )
+        await clients[0].send(msg)
+        assert await clients[1].receive() == msg
+
+    async def test_dynamic_address_single(self) -> None:
+        """Check that we can assign all dynamic addresses."""
+        dynamic = [await SHVCAN.virtualcan("test").dynamic_local() for _ in range(128)]
+        assert sorted(local.address for local in dynamic) == list(range(128, 256))
+
+        lastone = SHVCAN.virtualcan("test")
+        with pytest.raises(RuntimeError, match="No free dynamic address is available"):
+            await lastone.dynamic_local()
+
+        for local in dynamic:
+            await local.deactivate()
+        await lastone.terminate()
+
+    async def test_dynamic_address_concurrent(self) -> None:
+        """Check that we can assign dynamic addresses concurrently."""
+        # We don't do full 128 here because it takes a lot of time to negotiate
+        # all of them in parallel.
+        dynamic = await asyncio.gather(
+            *(SHVCAN.virtualcan("test").dynamic_local() for _ in range(100))
+        )
+        assert len(set(con.address for con in dynamic)) == 100
+
+        for local in dynamic:
+            await local.deactivate()
