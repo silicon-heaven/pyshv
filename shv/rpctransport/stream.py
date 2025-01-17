@@ -343,8 +343,14 @@ class RpcServerStream(RpcServer):
             super().__init__()
             self._reader = reader
             self._writer = writer
+            self._server = server
             self.protocol = server.protocol
             """Stream communication protocol."""
+
+        @property
+        def server(self) -> RpcServerStream:
+            """Access to the associated server."""
+            return self._server
 
         async def _send(self, msg: bytes) -> None:
             try:

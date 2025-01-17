@@ -75,6 +75,7 @@ class RpcClientTTY(RpcClient):
             self._loop = asyncio.get_running_loop()
             self._eof.clear()
             logger.debug("%s: Connected", self)
+        # Always send reset message
         await super().reset()
 
     def _read_cb(self) -> None:
