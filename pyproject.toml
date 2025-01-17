@@ -23,6 +23,7 @@ dependencies = [
   "pyserial",
   "aioserial",
   "websockets >= 13.0",
+  "python-can",
   "asyncinotify; sys_platform == \"linux\"",
 ]
 

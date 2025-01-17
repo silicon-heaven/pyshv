@@ -10,6 +10,7 @@ import io
 import logging
 import os
 import pty
+import random
 import select
 import threading
 
@@ -17,12 +18,15 @@ import pytest
 
 from shv import RpcMessage
 from shv.rpctransport import (
+    RpcCAN,
     RpcClient,
+    RpcClientCAN,
     RpcClientPipe,
     RpcClientTCP,
     RpcClientTTY,
     RpcClientUnix,
     RpcClientWebSockets,
+    RpcServerCAN,
     RpcServerTCP,
     RpcServerTTY,
     RpcServerUnix,
@@ -327,3 +331,92 @@ class TestWebSocketsUnix(ServerLink):
         client.disconnect()
         await server_client.wait_disconnect()
         await client.wait_disconnect()
+
+
+class TestCAN(ServerLink):
+    """Check that CAN Bus transport protocol works."""
+
+    @pytest.fixture(name="server")
+    async def fixture_server(self, port):
+        queue = asyncio.Queue()
+        server = RpcServerCAN(queue.put, RpcCAN.virtualcan("test"), 42)
+        await server.listen()
+        yield server, queue
+        server.close()
+        await server.wait_closed()
+
+    @pytest.fixture(name="clients")
+    async def fixture_clients(self, server, port):
+        client = await RpcClientCAN.connect(RpcCAN.virtualcan("test"), 42)
+        server_client = await server[1].get()
+        yield server_client, client
+        client.disconnect()
+        server_client.disconnect()
+        await client.wait_disconnect()
+        await server_client.wait_disconnect()
+
+    @pytest.mark.parametrize(
+        "size",
+        [*range(64), 125, 126, 127, 128, 129, 250, 251, 252, 253, 254, 255, 1039],
+    )
+    async def test_msg_sizes(self, clients, size):
+        """Test that CAN can transmit various message sizes without mangle."""
+        random.seed(42)
+        msg = RpcMessage.signal(
+            ".app", value=bytes(random.getrandbits(8) for _ in range(size))
+        )
+        await clients[0].send(msg)
+        assert await clients[1].receive() == msg
+
+    async def test_discovery(self):
+        """Check that we can discover new and existing servers."""
+        queue = asyncio.Queue()
+        s1 = RpcServerCAN(queue.put, RpcCAN.virtualcan("test"), 42)
+        await s1.listen()
+        can = RpcCAN.virtualcan("test")
+        await can.expect_announce(queue.put)
+        await asyncio.sleep(0)
+        assert queue.empty()
+        await can.discover()
+        assert await queue.get() == 42
+        s2 = RpcServerCAN(queue.put, RpcCAN.virtualcan("test"), 24)
+        await s2.listen()
+        assert await queue.get() == 24
+        can.unexpect_announce(queue.put)
+        s1.close()
+        s2.close()
+
+    async def test_dynamic_address(self) -> None:
+        """Check that we can assign all dynamic addresses."""
+        cons = []
+        for _ in range(63):
+            can = RpcCAN.virtualcan("test")
+            cons.append(await can.connect(None, 42))
+        assert sorted(con.local_address for con in cons) == list(range(192, 255))
+        for con in cons:
+            con.disconnect()
+            await con.wait_disconnect()
+            con.rpccan.bus.shutdown()
+
+    async def test_dynamic_address_concurent(self) -> None:
+        """Check that we can assign dynamic addresses concurrently."""
+        # We don't do full 63 here because it takes a lot of time to negotiate
+        # last few in a concurrent way.
+        cans = [RpcCAN.virtualcan("test") for _ in range(50)]
+        cons = await asyncio.gather(*(can.connect(None, 42) for can in cans))
+        assert len(set(con.local_address for con in cons)) == 50
+        for con in cons:
+            con.disconnect()
+            await con.wait_disconnect()
+            con.rpccan.bus.shutdown()
+
+    async def test_dynamic_address_reuse(self) -> None:
+        """Check that we reuse dynamic address for multiple servers."""
+        can = RpcCAN.virtualcan("test")
+        cons = await asyncio.gather(*(can.connect(None, i) for i in range(5, 20, 5)))
+        assert all(con.local_address == cons[0].local_address for con in cons)
+        for con in cons:
+            con.disconnect()
+            await con.wait_disconnect()
+        assert can._dynaddrs == {}
+        can.bus.shutdown()
