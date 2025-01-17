@@ -4,6 +4,7 @@ import collections.abc
 
 from ..rpcurl import RpcProtocol, RpcUrl
 from .abc import RpcClient, RpcServer
+from .can import RpcClientCAN, RpcServerCAN
 from .stream import RpcProtocolSerial, RpcProtocolSerialCRC, RpcProtocolStream
 from .tcp import RpcClientTCP, RpcServerTCP
 from .tty import RpcClientTTY, RpcServerTTY
@@ -32,6 +33,8 @@ def init_rpc_client(url: RpcUrl | str) -> RpcClient:
             return RpcClientTTY(url.location, url.baudrate, RpcProtocolSerialCRC)
         case RpcProtocol.WS:
             return RpcClientWebSockets(url.location)
+        case RpcProtocol.CAN:
+            return RpcClientCAN(url.location, url.port, url.can_address)
         case _:
             raise NotImplementedError(f"Unimplemented protocol: {url.protocol}")
 
@@ -86,6 +89,8 @@ async def create_rpc_server(
                 res = RpcServerWebSockets(client_connected_cb, url.location, url.port)
             else:
                 res = RpcServerWebSocketsUnix(client_connected_cb, url.location)
+        case RpcProtocol.CAN:
+            res = RpcServerCAN(client_connected_cb, url.location, url.port)
         case _:
             raise NotImplementedError(f"Unimplemented protocol: {url.protocol}")
     await res.listen()
