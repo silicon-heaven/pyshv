@@ -115,16 +115,8 @@ class RpcServerTCP(RpcServerStream):
     class Client(RpcServerStream.Client):
         """RPC client for TCP server connection."""
 
-        def __init__(
-            self,
-            reader: asyncio.StreamReader,
-            writer: asyncio.StreamWriter,
-            server: RpcServerTCP,
-        ) -> None:
-            super().__init__(reader, writer, server)
-            self._server = server
-
         def __str__(self) -> str:
+            assert isinstance(self._server, RpcServerTCP)
             proto = "tcp" if self._server.ssl is None else "ssl"
             if self.protocol is RpcProtocolSerial:
                 proto += "s"
@@ -134,4 +126,5 @@ class RpcServerTCP(RpcServerStream):
 
         @property
         def secure(self) -> bool:  # noqa: D102
+            assert isinstance(self._server, RpcServerTCP)
             return self._server.ssl is not None

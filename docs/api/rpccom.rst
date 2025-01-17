@@ -15,6 +15,7 @@ connection to some other client.
 .. autoclass:: shv.rpctransport.RpcClientPipe
 .. autoclass:: shv.rpctransport.RpcClientTTY
 .. autoclass:: shv.rpctransport.RpcClientWebSockets
+.. autoclass:: shv.rpctransport.RpcClientCAN
 
 Server
 ------
@@ -29,9 +30,10 @@ sever side to communicate with newly connected peer.
 .. autoclass:: shv.rpctransport.RpcServerTTY
 .. autoclass:: shv.rpctransport.RpcServerWebSockets
 .. autoclass:: shv.rpctransport.RpcServerWebSocketsUnix
+.. autoclass:: shv.rpctransport.RpcServerCAN
 
-Transport protocols
--------------------
+Stream transport protocols
+--------------------------
 
 SHV RPC is based on messages and these protocols are for sending these messages
 over data stream. Please do not confuse this with :class:`shv.RpcProtocol`.
@@ -40,6 +42,13 @@ over data stream. Please do not confuse this with :class:`shv.RpcProtocol`.
 .. autoclass:: shv.rpctransport.RpcProtocolSerial
 .. autoclass:: shv.rpctransport.RpcProtocolSerialCRC
 .. autoclass:: shv.rpctransport.RpcTransportProtocol
+
+CAN transport protocol
+----------------------
+
+The common CAN Bus access for multiple clients and servers.
+
+.. autoclass:: shv.rpctransport.RpcCAN
 
 Stream client and server bases
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
