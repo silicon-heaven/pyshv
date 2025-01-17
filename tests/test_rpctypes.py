@@ -387,7 +387,7 @@ def test_integer_attr():
     assert rpctype_integer.minimum is None
     assert rpctype_integer.maximum is None
     assert not rpctype_integer.unit
-    with pytest.raises(ValueError, match="^Unit contains forbidden characters$"):
+    with pytest.raises(ValueError, match=r"^Unit contains forbidden characters$"):
         RpcTypeInteger(unit="]")
 
 
@@ -395,7 +395,7 @@ def test_unsigned_attr():
     assert rpctype_unsigned.minimum == 0
     assert rpctype_unsigned.maximum is None
     assert not rpctype_unsigned.unit
-    with pytest.raises(ValueError, match="^Unit contains forbidden characters$"):
+    with pytest.raises(ValueError, match=r"^Unit contains forbidden characters$"):
         RpcTypeUnsigned(unit="]")
 
 
@@ -404,13 +404,13 @@ def test_decimal_attr():
     assert rpctype_decimal.maximum is None
     assert rpctype_decimal.precision is None
     assert not rpctype_decimal.unit
-    with pytest.raises(ValueError, match="^Unit contains forbidden characters$"):
+    with pytest.raises(ValueError, match=r"^Unit contains forbidden characters$"):
         RpcTypeDecimal(unit="]")
 
 
 def test_double_attr():
     assert not rpctype_double.unit
-    with pytest.raises(ValueError, match="^Unit contains forbidden characters$"):
+    with pytest.raises(ValueError, match=r"^Unit contains forbidden characters$"):
         RpcTypeDouble(unit="]")
 
 
