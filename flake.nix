@@ -29,27 +29,6 @@
     requires-test = pypi2nix pyproject.project.optional-dependencies.test;
     requires-docs = pypi2nix pyproject.project.optional-dependencies.docs;
 
-    multiversion = {
-      buildPythonPackage,
-      fetchFromGitHub,
-      setuptools,
-      sphinx,
-    }:
-      buildPythonPackage {
-        pname = "sphinx-multiversion";
-        version = "0.2.4";
-        pyproject = true;
-        build-system = [setuptools];
-        src = fetchFromGitHub {
-          owner = "Holzhaus";
-          repo = "sphinx-multiversion";
-          rev = "v0.2.4";
-          hash = "sha256-ZFEELAeZ/m1pap1DmS4PogL3eZ3VuhTdmwDOg5rKOPA=";
-        };
-        propagatedBuildInputs = [sphinx];
-        doCheck = false;
-      };
-
     types-serial = {
       buildPythonPackage,
       fetchPypi,
@@ -89,7 +68,6 @@
     {
       overlays = {
         pythonPackagesExtension = final: _: {
-          sphinx-multiversion = final.callPackage multiversion {};
           types-pyserial = final.callPackage types-serial {};
           "${name}" = final.callPackage pypackage {};
         };
