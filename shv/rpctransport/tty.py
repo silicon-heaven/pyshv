@@ -64,6 +64,7 @@ class RpcClientTTY(RpcClient):
             )
             self._eof.clear()
             logger.debug("%s: Connected", self)
+        # Always send reset message
         await super().reset()
 
     async def _read_exactly(self, n: int) -> bytes:

@@ -10,6 +10,7 @@ import io
 import logging
 import os
 import pty
+import random
 import select
 import threading
 
@@ -17,12 +18,15 @@ import pytest
 
 from shv import RpcMessage
 from shv.rpctransport import (
+    RpcCAN,
     RpcClient,
+    RpcClientCAN,
     RpcClientPipe,
     RpcClientTCP,
     RpcClientTTY,
     RpcClientUnix,
     RpcClientWebSockets,
+    RpcServerCAN,
     RpcServerTCP,
     RpcServerTTY,
     RpcServerUnix,
@@ -327,3 +331,41 @@ class TestWebSocketsUnix(ServerLink):
         client.disconnect()
         await server_client.wait_disconnect()
         await client.wait_disconnect()
+
+
+class TestCAN(ServerLink):
+    """Check that CAN Bus transport protocol works."""
+
+    @pytest.fixture(name="server")
+    async def fixture_server(self, port):
+        queue = asyncio.Queue()
+        server = RpcServerCAN(queue.put, RpcCAN.virtualcan("test"), 42)
+        # server = RpcServerCAN(queue.put, RpcCAN.socketcan("can0"), 42)
+        await server.listen()
+        yield server, queue
+        server.close()
+        await server.wait_closed()
+
+    @pytest.fixture(name="clients")
+    async def fixture_clients(self, server, port):
+        client = await RpcClientCAN.connect(RpcCAN.virtualcan("test"), 42)
+        # client = await RpcClientCAN.connect(RpcCAN.socketcan("can1"), 42)
+        server_client = await server[1].get()
+        yield server_client, client
+        client.disconnect()
+        server_client.disconnect()
+        await client.wait_disconnect()
+        await server_client.wait_disconnect()
+
+    @pytest.mark.parametrize(
+        "size",
+        [*range(64), 125, 126, 127, 128, 129, 250, 251, 252, 253, 254, 255, 1039],
+    )
+    async def test_msg_sizes(self, clients, size):
+        """Test that CAN can trasmit various message sizes without mangle."""
+        random.seed(42)
+        msg = RpcMessage.signal(
+            ".app", value=bytes(random.getrandbits(8) for _ in range(size))
+        )
+        await clients[0].send(msg)
+        assert await clients[1].receive() == msg
