@@ -15,6 +15,7 @@ from .rpcerrors import (
     RpcMethodCallExceptionError,
     RpcMethodCallTimeoutError,
     RpcMethodNotFoundError,
+    RpcNotImplementedError,
     RpcParseError,
     RpcUserIDRequiredError,
 )
@@ -116,6 +117,7 @@ __all__ = [
     "RpcMethodDesc",
     "RpcMethodFlags",
     "RpcMethodNotFoundError",
+    "RpcNotImplementedError",
     "RpcParseError",
     "RpcProtocol",
     "RpcProtocolSerial",
