@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
 set -eu
 
-check_name()
-{
+check_name() {
 	# https://packaging.python.org/en/latest/specifications/name-normalization/
-	if ! echo $1 | grep -Ei '^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$'
-	then
+	if ! grep -Ei '^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$' <<<"$1"; then
 		echo "Name not allowed."
 		echo "Please, keep it regexp '^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$',"
 		echo "where case does not matter."
@@ -13,23 +11,22 @@ check_name()
 	fi
 }
 
-normalize_name()
-{
+normalize_name() {
 	# https://packaging.python.org/en/latest/specifications/name-normalization/
-	echo "$1" | sed -Ee 's/[-_.]+/-/g' | tr '[:upper:]' '[:lower:]'
+	sed -Ee 's/[-_.]+/-/g' <<<"$1" | tr '[:upper:]' '[:lower:]'
 }
 
-read -p "New project name: " project_name
-project_name=$(check_name "$project_name")
-read -p "One line project description: " project_oneliner
-read -p "New package name: " package_name
-package_name=$(normalize_name $(check_name "$package_name"))
+read -rp "New project name: " project_name
+project_name="$(check_name "$project_name")"
+read -rp "One line project description: " project_oneliner
+read -rp "New package name: " package_name
+package_name="$(normalize_name "$(check_name "$package_name")")"
 # $package_name is also used as the name of the executable
 
-project_url=$(git remote get-url origin)
-project_url=${project_url%.git}
-project_url=${project_url//://}
-project_url=${project_url//git@/https://}
+project_url="$(git remote get-url origin)"
+project_url="${project_url%.git}"
+project_url="${project_url//://}"
+project_url="${project_url//git@/https://}"
 
 # Update project info
 #
@@ -51,4 +48,4 @@ sed -i "s|template_package_name|${package_name}|g" \
 	docs/api.rst pyproject.toml flake.nix \
 	tests/test_* \
 	template_package_name/__init__.py
-mv template_package_name/ ${package_name}
+mv template_package_name/ "${package_name}"
