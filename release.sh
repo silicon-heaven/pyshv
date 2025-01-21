@@ -6,7 +6,7 @@ set -eu
 cd "${0%/*}"
 
 # This should be set to the appropriate project name.
-project_name="CHANGE THIS IN release.sh!"
+project_name="project-template-python"
 
 fail() {
 	echo "$@" >&2

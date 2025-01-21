@@ -43,7 +43,7 @@ sed -i "s|https://gitlab.elektroline.cz/emb/template/python|$project_url|g" \
 	pyproject.toml README.rst
 
 sed -i "s|project-template-python|${project_name}|g" \
-	pyproject.toml
+	pyproject.toml release.sh
 
 # Update package name
 #
