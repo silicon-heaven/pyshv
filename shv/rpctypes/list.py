@@ -27,6 +27,10 @@ class RpcTypeList(RpcType):
     def __init__(
         self, tp: RpcType = rpctype_any, minlen: int = 0, maxlen: int | None = None
     ) -> None:
+        if maxlen is not None and minlen > maxlen:
+            raise ValueError("Minimum is greater than maximum")
+        if minlen < 0 or (maxlen is not None and maxlen < 0):
+            raise ValueError("List size can be only positive number")
         self._tp = tp
         self._min = minlen
         self._max = maxlen
@@ -47,7 +51,12 @@ class RpcTypeList(RpcType):
         return self._max
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, RpcTypeList) and self._tp == other._tp
+        return (
+            isinstance(other, RpcTypeList)
+            and self._tp == other._tp
+            and self._min == other._min
+            and self._max == other._max
+        )
 
     def __str__(self) -> str:
         lim = ""
@@ -55,7 +64,7 @@ class RpcTypeList(RpcType):
             if self._min == self._max:
                 lim = f"({self._max})"
             else:
-                lim = f"({self._min if self._min else ''},{self._max})"
+                lim = f"({self._min or ''},{self._max or ''})"
         return f"[{self._tp}]{lim}"
 
     def validate(self, value: SHVType) -> typing.TypeGuard[collections.abc.Sequence]:  # noqa: D102

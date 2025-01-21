@@ -1,4 +1,4 @@
-"""Tge SHV RPC type Unsigned integer."""
+"""The SHV RPC type Unsigned integer."""
 
 from __future__ import annotations
 
@@ -32,6 +32,10 @@ class RpcTypeUnsigned(RpcType):
         maximum: int | None = None,
         unit: str = "",
     ) -> None:
+        if maximum is not None and minimum > maximum:
+            raise ValueError("Minimum is greater than maximum")
+        if minimum < 0 or (maximum is not None and maximum < 0):
+            raise ValueError("Unsigned limit can't be negative number")
         self._min = minimum
         self._max = maximum
         if any(c in "[]{}():,|" for c in unit):

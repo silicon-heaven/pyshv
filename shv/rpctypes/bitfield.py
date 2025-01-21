@@ -20,6 +20,8 @@ class RpcTypeBitfield(RpcType, collections.abc.Sequence[tuple[int, RpcType, str]
         self._mask = 0
         end = -1
         for i in self._items:
+            if i[0] < 0:
+                raise ValueError("Bit index can't be negative number")
             if i[0] <= end:
                 raise ValueError(f"Bit {i[0]} is used in multiple items")
             size = self.bitsize(i[1])

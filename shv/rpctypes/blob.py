@@ -29,6 +29,10 @@ class RpcTypeBlob(RpcType):
         minlen: int = 0,
         maxlen: int | None = None,
     ) -> None:
+        if maxlen is not None and minlen > maxlen:
+            raise ValueError("Minimum is greater than maximum")
+        if minlen < 0 or (maxlen is not None and maxlen < 0):
+            raise ValueError("Blob size can be only positive number")
         self._min = minlen
         self._max = maxlen
 
@@ -55,7 +59,7 @@ class RpcTypeBlob(RpcType):
             if self._min == self._max:
                 lim = f"({self._max})"
             else:
-                lim = f"({self._min if self._min else ''},{self._max})"
+                lim = f"({self._min or ''},{self._max or ''})"
         return f"x{lim}"
 
     def validate(self, value: SHVType) -> typing.TypeGuard[bytes]:  # noqa: D102

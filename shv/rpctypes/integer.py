@@ -32,6 +32,8 @@ class RpcTypeInteger(RpcType):
         maximum: int | None = None,
         unit: str = "",
     ) -> None:
+        if minimum is not None and maximum is not None and minimum > maximum:
+            raise ValueError("Minimum is greater than maximum")
         self._min = minimum
         self._max = maximum
         if any(c in "[]{}():,|" for c in unit):
@@ -46,7 +48,7 @@ class RpcTypeInteger(RpcType):
     @property
     def maximum(self) -> int | None:
         """Maximum value allowed for this Int."""
-        return self._min
+        return self._max
 
     @property
     def unit(self) -> str:

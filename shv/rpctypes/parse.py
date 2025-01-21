@@ -40,7 +40,7 @@ _decimal_re = re.compile(r"-?(?:0|(?:[1-9][0-9]*))?(?:\.[0-9]+)?")
 
 
 def rpctype_parse(rpctype: str) -> RpcType:
-    """Parse the given value as RTC Type string.
+    """Parse the given value as RPC Type string.
 
     :param rpctype: The string representation of the RPC type hint.
     :return: The object representation.

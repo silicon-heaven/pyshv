@@ -28,10 +28,10 @@ class RpcTypeEnum(RpcType, collections.abc.Mapping[int, str]):
     def __seqiter(
         iiter: collections.abc.Iterator[int],
     ) -> collections.abc.Iterator[tuple[bool, int]]:
-        prev = 0
+        expected = 0
         for i in iiter:
-            yield prev == i, i
-            prev = i + 1
+            yield expected == i, i
+            expected = i + 1
 
     def __getitem__(self, key: int) -> str:
         return self._items[key]

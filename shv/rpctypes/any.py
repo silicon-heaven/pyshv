@@ -24,7 +24,7 @@ class RpcTypeAny(RpcType):
         self._alias = alias
 
     @property
-    def alias(self) -> str | None:
+    def alias(self) -> str:
         """The alias of this any type if provided."""
         return self._alias
 

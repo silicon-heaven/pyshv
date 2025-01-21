@@ -36,6 +36,8 @@ class RpcTypeDecimal(RpcType):
         precision: int | None = None,
         unit: str = "",
     ) -> None:
+        if minimum is not None and maximum is not None and minimum > maximum:
+            raise ValueError("Minimum is greater than maximum")
         self._min = minimum
         self._max = maximum
         self._precs = precision
@@ -51,7 +53,7 @@ class RpcTypeDecimal(RpcType):
     @property
     def maximum(self) -> decimal.Decimal | None:
         """Maximum value allowed for this Decimal."""
-        return self._min
+        return self._max
 
     @property
     def precision(self) -> int | None:

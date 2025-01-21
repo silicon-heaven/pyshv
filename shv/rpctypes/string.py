@@ -29,6 +29,10 @@ class RpcTypeString(RpcType):
         minlen: int = 0,
         maxlen: int | None = None,
     ) -> None:
+        if maxlen is not None and minlen > maxlen:
+            raise ValueError("Minimum is greater than maximum")
+        if minlen < 0 or (maxlen is not None and maxlen < 0):
+            raise ValueError("String size can be only positive number")
         self._min = minlen
         self._max = maxlen
 
@@ -55,7 +59,7 @@ class RpcTypeString(RpcType):
             if self._min == self._max:
                 lim = f"({self._max})"
             else:
-                lim = f"({self._min if self._min else ''},{self._max})"
+                lim = f"({self._min or ''},{self._max or ''})"
         return f"s{lim}"
 
     def validate(self, value: SHVType) -> typing.TypeGuard[str]:  # noqa: D102
