@@ -2,9 +2,11 @@
 
 import collections.abc
 import itertools
+import time
 import typing
 
 from .rpcalert import RpcAlert
+from .rpcerrors import RpcNotImplementedError
 from .rpcmessage import RpcMessage
 from .rpcmethod import RpcMethodAccess, RpcMethodDesc
 from .shvbase import SHVBase
@@ -75,6 +77,11 @@ class SHVDevice(SHVClient):
                 return self.DEVICE_VERSION
             case ".device", "serialNumber" if request.access >= RpcMethodAccess.READ:
                 return self.DEVICE_SERIAL_NUMBER
+            case ".device", "uptime":
+                return int(time.monotonic())
+            case ".device", "reset" if request.access >= RpcMethodAccess.COMMAND:
+                self._device_reset()
+                return None  # pragma: no cover
             case ".device/alerts", "get" if (
                 self.DEVICE_ALERTS and request.access >= RpcMethodAccess.READ
             ):
@@ -102,5 +109,13 @@ class SHVDevice(SHVClient):
                 yield RpcMethodDesc.getter(
                     "serialNumber", "n", "s|n", access=RpcMethodAccess.BROWSE
                 )
+                yield RpcMethodDesc.getter(
+                    "uptime", "n", "u|n", access=RpcMethodAccess.BROWSE
+                )
+                yield RpcMethodDesc("reset", access=RpcMethodAccess.COMMAND)
             case ".device/alerts" if self.DEVICE_ALERTS:
                 yield RpcMethodDesc.getter(result="[!alert]", signal=True)
+
+    def _device_reset(self) -> None:  # noqa: PLR6301
+        """Trigger called to perform the device reset."""
+        raise RpcNotImplementedError

@@ -1,6 +1,7 @@
 """Check implementation of SimpleDevice."""
 
 import datetime
+import time
 
 import pytest
 
@@ -12,6 +13,7 @@ from shv import (
     RpcMethodAccess,
     RpcMethodDesc,
     RpcMethodNotFoundError,
+    RpcNotImplementedError,
     SHVDevice,
     shvmeta,
 )
@@ -94,6 +96,10 @@ async def test_ls(client, device, path, result):
                 RpcMethodDesc.getter(
                     "serialNumber", "n", "s|n", access=RpcMethodAccess.BROWSE
                 ),
+                RpcMethodDesc.getter(
+                    "uptime", "n", "u|n", access=RpcMethodAccess.BROWSE
+                ),
+                RpcMethodDesc("reset", access=RpcMethodAccess.COMMAND),
             ],
         ),
         (
@@ -110,6 +116,18 @@ async def test_dir(client, device, path, result):
     """Verify that we can use dir method."""
     res = await client.dir(path)
     assert res == result
+
+
+async def test_reset(client, device):
+    """Check if reset can be called and we get the not implemented error."""
+    with pytest.raises(RpcNotImplementedError):
+        await client.call("test/device/.device", "reset")
+
+
+async def test_uptime(client, device):
+    """We can't test uptime in general but at least be reasonable with it."""
+    uptime = int(time.monotonic())
+    assert await client.call("test/device/.device", "uptime") >= uptime
 
 
 async def test_alerts(value_client, device):
