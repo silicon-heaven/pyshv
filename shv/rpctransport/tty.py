@@ -75,7 +75,10 @@ class RpcClientTTY(RpcClient):
         while len(res) < n:
             try:
                 res += await self.serial.read_async(n - len(res))
-            except aioserial.SerialException as exc:
+            # Note: TypeError is raised because serial.close() clears some
+            # variables that are still used in the task. This is bug in
+            # aioserial.
+            except (aioserial.SerialException, TypeError) as exc:
                 self._eof.set()
                 raise EOFError from exc
         return res
