@@ -46,7 +46,7 @@ class SHVMethods(SHVBase):
                 case self.Method():
                     self._methods[attr.path][attr.desc.name] = attr
                 case self.Property():
-                    self._methods[attr.path].update(attr._methods())
+                    self._methods[attr.path].update(attr._get_methods())
         super().__init__(*args, **kwargs)
 
     async def _method_call(self, request: SHVBase.Request) -> SHVType:
@@ -270,7 +270,7 @@ class SHVMethods(SHVBase):
                 self.access,
             )
 
-        def _methods(self) -> dict[str, SHVMethods.Method]:
+        def _get_methods(self) -> dict[str, SHVMethods.Method]:
             """Get methods for property implementation."""
             res = {
                 "get": SHVMethods.Method(
