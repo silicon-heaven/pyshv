@@ -6,7 +6,7 @@ set -eu
 cd "$(dirname "$0")"
 
 # This should be set to the appropriate project name.
-project_name="project-template-python"
+project_name="Project Template Python"
 
 fail() {
 	echo "$@" >&2
