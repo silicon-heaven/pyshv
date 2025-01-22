@@ -54,54 +54,53 @@ class ExampleDevice:
         self.tracks[k] = v
 
 
+async def run_example_device(url: str) -> None:
+    """Coroutine that starts SHV and waits..."""
+    client = await ExampleDevice.connect(RpcUrl.parse(url))
+    if client is not None:
+        await client.task
+        await client.disconnect()
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse passed arguments and return result."""
+    parser = argparse.ArgumentParser(description="Silicon Heaven example client")
+    parser.add_argument(
+        "-v",
+        action="count",
+        default=0,
+        help="Increase verbosity level of logging",
+    )
+    parser.add_argument(
+        "-q",
+        action="count",
+        default=0,
+        help="Decrease verbosity level of logging",
+    )
+    parser.add_argument(
+        "URL",
+        nargs="?",
+        default="tcp://test@localhost?password=test",
+        help="SHV RPC URL specifying connection to the broker.",
+    )
+    return parser.parse_args()
+
+
+LOG_LEVELS = (
+    logging.DEBUG,
+    logging.INFO,
+    logging.WARNING,
+    logging.ERROR,
+    logging.CRITICAL,
+)
+
+
 if __name__ == "__main__":
-    e = ExampleDevice()
-    assert e.get_number_of_tracks() == 8
-    assert e.tracks == {
-            '1': [0],
-            '2': [0, 1],
-            '3': [0, 1, 2],
-            '4': [0, 1, 2, 3],
-            '5': [0, 1, 2, 3, 4],
-            '6': [0, 1, 2, 3, 4, 5],
-            '7': [0, 1, 2, 3, 4, 5, 6],
-            '8': [0, 1, 2, 3, 4, 5, 6, 7]}
-    e.tracks["2"] = [2 for _ in range(4)]
-    assert e.tracks == {
-            '1': [0],
-            '2': [2, 2, 2, 2],
-            '3': [0, 1, 2],
-            '4': [0, 1, 2, 3],
-            '5': [0, 1, 2, 3, 4],
-            '6': [0, 1, 2, 3, 4, 5],
-            '7': [0, 1, 2, 3, 4, 5, 6],
-            '8': [0, 1, 2, 3, 4, 5, 6, 7]}
-    e.set_number_of_tracks(4)
-    assert e.tracks == {
-            '1': [0],
-            '2': [2, 2, 2, 2],
-            '3': [0, 1, 2],
-            '4': [0, 1, 2, 3]}
-    assert e.get_number_of_tracks() == 4
-    assert e.get_last_reset_user() is None
-    e.reset_tracks("foo")
-    assert e.get_last_reset_user() == "foo"
-    assert e.tracks == {
-            '1': [0],
-            '2': [0, 1],
-            '3': [0, 1, 2],
-            '4': [0, 1, 2, 3],
-            '5': [0, 1, 2, 3, 4],
-            '6': [0, 1, 2, 3, 4, 5],
-            '7': [0, 1, 2, 3, 4, 5, 6],
-            '8': [0, 1, 2, 3, 4, 5, 6, 7]}
-    e.set_track("2", [2 for _ in range(4)])
-    assert e.tracks == {
-            '1': [0],
-            '2': [2, 2, 2, 2],
-            '3': [0, 1, 2],
-            '4': [0, 1, 2, 3],
-            '5': [0, 1, 2, 3, 4],
-            '6': [0, 1, 2, 3, 4, 5],
-            '7': [0, 1, 2, 3, 4, 5, 6],
-            '8': [0, 1, 2, 3, 4, 5, 6, 7]}
+    # The original __main__ from the original example:
+    args = parse_args()
+    logging.basicConfig(
+        level=LOG_LEVELS[sorted(
+            [1 - args.v + args.q, 0, len(LOG_LEVELS) - 1])[1]],
+        format="[%(asctime)s] [%(levelname)s] - %(message)s",
+    )
+    asyncio.run(run_example_device("tcp://test@localhost?password=test"))
