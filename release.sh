@@ -3,7 +3,7 @@
 # * It creates the release commit and tag
 # * It creates Gitlab release from Gitlab CI
 set -eu
-cd "${0%/*}"
+cd "$(dirname "$0")"
 
 # This should be set to the appropriate project name.
 project_name="project-template-python"
@@ -80,7 +80,7 @@ if ! in_ci; then
 		esac
 	done
 
-	{ python3 -m build && twine check build/*; } || {
+	{ python3 -m build && twine check dist/*; } || {
 		git reset --merge HEAD^
 		fail "Invalid pypi release"
 	}
