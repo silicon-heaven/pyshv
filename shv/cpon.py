@@ -11,8 +11,10 @@ import typing
 
 from . import commonpack
 from .value import (
+    SHVIMap,
     SHVIMapType,
     SHVListType,
+    SHVMap,
     SHVMapType,
     SHVMeta,
     SHVMetaType,
@@ -97,12 +99,16 @@ class CponReader(commonpack.CommonReader):
             value = self._read_list()
         elif b == ord("{"):
             value = typing.cast(SHVMapType, self._read_map())
+            if not value:
+                value = SHVMap()  # Remove confusin between map and imap
         elif b == ord("i"):
             self._peek_drop()
             b = self._peek_byte()
             if b != ord("{"):
                 raise ValueError("Invalid IMap prefix.")
             value = typing.cast(SHVIMapType, self._read_map())
+            if not value:
+                value = SHVIMap()  # Remove confusin between map and imap
         elif b == ord("d"):
             self._peek_drop()
             b = self._peek_byte()

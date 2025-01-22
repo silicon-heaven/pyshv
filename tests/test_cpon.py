@@ -5,7 +5,7 @@ import decimal
 
 import pytest
 
-from shv import CponReader, CponWriter, SHVMeta, SHVUInt, shvmeta
+from shv import CponReader, CponWriter, SHVIMap, SHVMap, SHVMeta, SHVUInt, shvmeta
 
 DATA: list = [
     ("null", None),
@@ -183,3 +183,10 @@ def test_writer(cpon, data):
 def test_style(cpon, res):
     data = CponReader.unpack(cpon)
     assert CponWriter.pack(data) == res
+
+
+def test_unpack_empty_map_imap():
+    assert isinstance(
+        CponReader.unpack(CponWriter.pack(SHVMeta.new(SHVIMap()))), SHVIMap
+    )
+    assert isinstance(CponReader.unpack(CponWriter.pack(SHVMeta.new(SHVMap()))), SHVMap)

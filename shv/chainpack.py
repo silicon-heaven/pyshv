@@ -11,8 +11,10 @@ import typing
 
 from . import commonpack
 from .value import (
+    SHVIMap,
     SHVIMapType,
     SHVListType,
+    SHVMap,
     SHVMapType,
     SHVMeta,
     SHVMetaType,
@@ -135,8 +137,12 @@ class ChainPackReader(commonpack.CommonReader):
             value = self._read_datetime()
         elif packing_schema == ChainPack.Schema.CP_Map:
             value = typing.cast(SHVMapType, self._read_map())
+            if not value:
+                value = SHVMap()  # Remove confusin between map and imap
         elif packing_schema == ChainPack.Schema.CP_IMap:
             value = typing.cast(SHVIMapType, self._read_map())
+            if not value:
+                value = SHVIMap()  # Remove confusin between map and imap
         elif packing_schema == ChainPack.Schema.CP_List:
             value = self._read_list()
         elif packing_schema == ChainPack.Schema.CP_Blob:

@@ -5,7 +5,15 @@ import decimal
 
 import pytest
 
-from shv import ChainPackReader, ChainPackWriter, SHVMeta, SHVUInt, shvmeta
+from shv import (
+    ChainPackReader,
+    ChainPackWriter,
+    SHVIMap,
+    SHVMap,
+    SHVMeta,
+    SHVUInt,
+    shvmeta,
+)
 
 # You can get chainpack using this shell command:
 #   echo 'null' | cp2cp --ip --oc \
@@ -117,3 +125,12 @@ def test_writer_cstring():
     obj = ChainPackWriter()
     obj.write_cstring("foo")
     assert obj.stream.getvalue() == b"\x8efoo\x00"
+
+
+def test_unpack_empty_map_imap():
+    assert isinstance(
+        ChainPackReader.unpack(ChainPackWriter.pack(SHVMeta.new(SHVIMap()))), SHVIMap
+    )
+    assert isinstance(
+        ChainPackReader.unpack(ChainPackWriter.pack(SHVMeta.new(SHVMap()))), SHVMap
+    )
