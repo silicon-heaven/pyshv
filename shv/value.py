@@ -245,15 +245,19 @@ def is_shvlist(value: object) -> typing.TypeGuard[SHVListType]:
 
 def is_shvmap(value: object) -> typing.TypeGuard[SHVMapType]:
     """Check if given value can be SHV Map."""
-    return isinstance(value, collections.abc.Mapping) and all(
-        isinstance(k, str) and is_shvtype(v) for k, v in value.items()
+    return (
+        isinstance(value, collections.abc.Mapping)
+        and not isinstance(value, SHVIMap)
+        and all(isinstance(k, str) and is_shvtype(v) for k, v in value.items())
     )
 
 
 def is_shvimap(value: object) -> typing.TypeGuard[SHVIMapType]:
     """Check if given value can be SHV IMap."""
-    return isinstance(value, collections.abc.Mapping) and all(
-        isinstance(k, int) and is_shvtype(v) for k, v in value.items()
+    return (
+        isinstance(value, collections.abc.Mapping)
+        and not isinstance(value, SHVMap)
+        and all(isinstance(k, int) and is_shvtype(v) for k, v in value.items())
     )
 
 
