@@ -9,6 +9,7 @@ from collections.abc import Callable, Iterator
 from typing import Any
 
 from shv import (
+    RpcInvalidParamError,
     RpcMethodAccess,
     RpcMethodDesc,
     RpcMethodFlags,
@@ -278,7 +279,7 @@ class ExampleDevice(SHVClient, SHVMethods):
         return len(self.tracks)
 
     @shv_method("numberOfTracks", "set")
-    def set_number_of_tracks(self, n: int) -> None:
+    async def set_number_of_tracks(self, n: int) -> None:
         """Set number of tracks to ``n``."""
         if n < 1:
             raise ValueError("At least 1 track needed.")
@@ -287,6 +288,11 @@ class ExampleDevice(SHVClient, SHVMethods):
             new_tracks = {str(i): list(range(i)) for i in range(1, n + 1)}
             self.tracks = new_tracks | {
                     k: v for k, v in self.tracks.items() if int(k) <= n}
+            # We changed track's nodes, so signal "lsmod".
+            await self._lsmod(
+                "track",
+                {str(i): oldlen < n
+                 for i in range(min(oldlen, n), max(oldlen, n))})
 
     @shv_method("track", "lastResetUser")
     def get_last_reset_user(self) -> str | None:
@@ -298,18 +304,75 @@ class ExampleDevice(SHVClient, SHVMethods):
         name="reset",
         flags=RpcMethodFlags.USER_ID_REQUIRED,
         access=RpcMethodAccess.COMMAND)
-    def reset_tracks(self, by: str) -> None:  # signal=True -> path change
+    async def reset_tracks(self, by: str) -> None:
         """Reset all the tracks ``by`` to their default values."""
-        self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
         self.last_reset_user = by
+        old = self.tracks
+        self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
+        # "get" and "set" for tracks is implemented manually (overriden _ls,
+        # _dir, and _method_call). Therefore, we need to implement signals for
+        # these methods manually, too.
+        for ((old_k, old_v), new_v) in zip(
+            old.items(), self.tracks.values(), strict=False
+        ):
+            if old_v != new_v:
+                await self._signal(
+                    path=f"track/{old_k}",
+                    value=new_v)
+        # We also potentially change nodes, so signal "lsmod" when appropriate.
+        oldlen = len(old)
+        newlen = len(self.tracks)
+        if oldlen != newlen:
+            minlen = min(oldlen, newlen)
+            maxlen = max(oldlen, newlen)
+            await self._lsmod(
+                "track",
+                {str(i): oldlen < newlen
+                 for i in range(minlen, maxlen)})
 
-    def get_track(self, k: str) -> list:  # TODO getters/setters for each k
+    def get_track(self, k: str) -> list:
         """Return track ``k``."""
         return self.tracks[k]
 
     def set_track(self, k: str, v: list) -> None:
         """Set track ``k`` to value ``v``."""
         self.tracks[k] = v
+
+    def _ls(self, path: str) -> Iterator[str]:
+        yield from super()._ls(path)
+        yield from self._ls_node_for_path(
+            path,
+            [f"track/{i}" for i in self.tracks.keys()])
+
+    def _dir(self, path: str) -> Iterator[RpcMethodDesc]:
+        yield from super()._dir(path)
+        match path.split("/"):
+            case ["track", track] if track in self.tracks:
+                yield RpcMethodDesc.getter(
+                    result="[i]",
+                    description="List of tracks",
+                    signal=True)
+                yield RpcMethodDesc.setter(
+                    param="[i]",
+                    description="Set track")
+
+    async def _method_call(self, req: SHVBase.Request) -> SHVType:
+        match req.path.split("/"), req.method:
+            case [["track", track], "get"] if req.access >= RpcMethodAccess.READ:
+                return self.get_track(track)
+            case [["track", track], "set"] if req.access >= RpcMethodAccess.WRITE:
+                if not isinstance(req.param, list) or not all(
+                    isinstance(v, int) for v in req.param
+                ):
+                    raise RpcInvalidParamError("Only list of ints is accepted.")
+                old = self.get_track(track)
+                self.set_track(track, req.param)
+                if old != self.get_track(track):
+                    await self._signal(
+                        path=f"track/{track}",
+                        value=self.get_track(track))
+                return None
+        return await super()._method_call(req)
 
 
 async def run_example_device(url: str) -> None:
