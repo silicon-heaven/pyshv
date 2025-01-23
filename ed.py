@@ -244,6 +244,41 @@ class SHVMethods(SHVBase):
         else:
             return await super()._method_call(req)
 
+    async def send_signal(
+        self,
+        path: str,
+        method: str,
+        value: SHVType | None = None
+    ) -> None:
+        """Send signal calling instance.
+
+        :param path: Signal's node path.
+        :param method: Signal's source method.
+        :param value: Value to be sent. If ``None`` (default,) first call
+                      ``self._end_app_fn[path][method]`` and use the result
+                      as the value.
+        """
+        if value is None:
+            # TODO may fail when fn needs arguments. This was solved by
+            # auxilliary function _execute_fn in _method_call.
+            value = self._end_app_fn[path][method]()
+            if asyncio.iscoroutine(value):
+                value = await value
+        md = self._shv_method_desc[path][method]
+        for signal in md.signals:
+            await self._signal(
+                path=path,
+                name="chng" if signal is True else signal,
+                source=md.name,
+                value=value,
+                access=md.access)
+            print(f"just sent {value} as signal {signal} of {path} {method}")
+
+    async def send_signal_by_fn(self, fn: Callable) -> None:
+        """Send signal corresponding to the method ``fn``."""
+        print("identified by fn: ", end="")
+        await self.send_signal(fn._shv["path"], fn._shv["name"])
+
 
 class ExampleDevice(SHVClient, SHVMethods):
     """Example device for testing purposes.
@@ -375,11 +410,28 @@ class ExampleDevice(SHVClient, SHVMethods):
         return await super()._method_call(req)
 
 
+async def loop_send_signal_1(c: ExampleDevice) -> None:
+    """Loop sending signal."""
+    while True:
+        await c.send_signal("numberOfTracks", "get")
+        await asyncio.sleep(2.0)
+
+
+async def loop_send_signal_2(c: ExampleDevice) -> None:
+    """Loop sending signal."""
+    while True:
+        await c.send_signal_by_fn(c.get_number_of_tracks)
+        await asyncio.sleep(2.0)
+
+
 async def run_example_device(url: str) -> None:
     """Coroutine that starts SHV and waits..."""
     client = await ExampleDevice.connect(RpcUrl.parse(url))
     if client is not None:
-        await client.task
+        await asyncio.gather(
+            client.task,
+            loop_send_signal_1(client),
+            loop_send_signal_2(client))
         await client.disconnect()
 
 
