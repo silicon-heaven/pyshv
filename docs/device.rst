@@ -38,12 +38,13 @@ classes based on :class:`shv.SHVMethods`.
    def custom(self, request: SHVBase.Request) -> SHVType:
         return "CustomResult"
 
-Methods can also have signals associated with them. Such method can be then
-called to send that signal. Thus in case of demonstrated example you would use
-``await mclient.custom(value="NewCustomValue")`` to send ``chng`` signal with
-provided value. This will send first defined signal but you can also specify
-which signal to send as first argument if multiple signals were defined for the
-method in its descriptor.
+Methods can also have signals associated with them. Decorated method provides
+:meth:`shv.SHVMethods.Method.signal` that can be called to send that signal.
+Thus in case of demonstrated example you would use ``await
+mclient.custom.signal("NewCustomValue")`` to send ``chng`` signal with provided
+value. This will send first defined signal but you can also specify which signal
+to send with ``signal`` argument if multiple signals were defined for the method
+in its descriptor.
 
 Properties
 ----------
@@ -51,9 +52,7 @@ Properties
 Properties are the most notable repeated pattern of methods that SHV RPC define.
 They consists of node with ``get`` method and optional ``set`` method.
 
-:class:`shv.SHVMethods` provides convenient way to define them. It is consistent
-with standard Python's :func:`property` with difference that it is not property
-accessed from the current Python application but SHV RPC property.
+:class:`shv.SHVMethods` provides convenient way to define them.
 
 .. sourcecode::
 
@@ -61,12 +60,12 @@ accessed from the current Python application but SHV RPC property.
    def custom_prop(self, oldness: int | None) -> SHVType:
        return self.prop
 
-   @custom_prop.setter  # type: ignore[no-redef]
-   async def custom_prop(self, param: SHVType, user_id: str | None) -> None:
+   @SHVMethods.property_setter(custom_prop)
+   async def custom_prop_set(self, param: SHVType, user_id: str | None) -> None:
        self.prop = param
 
-The signal associated with the property can be sent by calling the property:
-``await mclient.custom_prop("NewPropValue")``.
+The signal associated with the property can be sent the same way as for other
+methods: ``await mclient.custom_prop.signal("NewPropValue")``.
 
 Dynamic methods definition
 --------------------------
@@ -130,10 +129,10 @@ implement them. This is done by overriding method
 :meth:`shv.SHVBase._method_call`.
 
 The implementation is pretty strait forward. You get SHV path and method name,
-parameter, optional user's ID, and access level in :class:`SHVBase.Request`. The
-access level needs to be checked if user has required access level. The
+parameter, optional user's ID, and access level in :class:`shv.SHVBase.Request`.
+The access level needs to be checked if user has required access level. The
 implementation needs to return result or raise exception (preferably one of
-:class:`shv.RpcError` children) or call the parent's implementation.
+:class:`shv.shv.RpcError` children) or call the parent's implementation.
 
 For an example see the next section.
 
