@@ -35,8 +35,8 @@ class ExampleDevice(SHVClient, SHVMethods):
         """SHV property getter numberOfTrack."""
         return len(self.tracks)
 
-    @number_of_tracks.setter  # type: ignore[no-redef]
-    async def number_of_tracks(self, param: SHVType, user_id: str | None) -> None:
+    @SHVMethods.property_setter(number_of_tracks)
+    async def number_of_tracks_set(self, param: SHVType, user_id: str | None) -> None:
         """SHV property getter numberOfTrack."""
         if not isinstance(param, int) or param < 1:
             raise RpcInvalidParamError("Int greater than 0 expected")
@@ -46,7 +46,7 @@ class ExampleDevice(SHVClient, SHVMethods):
                 str(i): self.tracks[str(i)] if oldlen > i else list(range(i))
                 for i in range(1, param + 1)
             }
-            await self.number_of_tracks(param, user_id=user_id)
+            await self.number_of_tracks.signal(param, user_id=user_id)
             await self._lsmod(
                 "track",
                 {
