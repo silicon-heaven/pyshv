@@ -439,6 +439,18 @@ class SHVBase:
         This is helper designed to be called from :meth:`_ls` and simplifies a
         common operation that is extraction of the node name from the full path.
 
+        With this function you effectively can remove the code like this from
+        your codebase::
+
+            fpath = "some/path/to/the/node"
+            path = f"{path}/" if path else ""
+            if fpath.startswith(path):
+                yield fpath[len(path) :].partition("/")[0]
+
+        And replace it with just::
+
+            yield from self._ls_node_for_path(path, "some/path/to/the/node")
+
         :param path: ``path`` parameter passed to :meth:`_ls`.
         :param full_path: Path or iterator over paths the node name should be
           extracted from.
@@ -523,7 +535,7 @@ class SHVBase:
 
     @dataclasses.dataclass(frozen=True)
     class Signal:
-        """Set of parameters passed to the :meth:`_got_signal`.
+        """Set of parameters passed to the :meth:`SHVBase._got_signal`.
 
         This is provided as one data class to allow easier method typing as
         well as ability to more freely add or remove info items.
