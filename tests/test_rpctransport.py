@@ -22,8 +22,8 @@ from shv import (
     RpcClientTTY,
     RpcClientUnix,
     RpcClientWebSockets,
-    RpcInvalidRequestError,
     RpcMessage,
+    RpcNotImplementedError,
     RpcServerTCP,
     RpcServerTTY,
     RpcServerUnix,
@@ -105,15 +105,15 @@ class Link:
 
     async def test_error_receive(self, clients):
         msg = RpcMessage.request(".app", "dir").make_response()
-        msg.rpc_error = RpcInvalidRequestError("Fake error")
+        msg.rpc_error = RpcNotImplementedError("Fake error")
         await clients[0].send(msg)
         assert await clients[1].receive(False) == msg
 
     async def test_error_raise(self, clients):
         msg = RpcMessage.request(".app", "dir").make_response()
-        msg.rpc_error = RpcInvalidRequestError("Fake error")
+        msg.rpc_error = RpcNotImplementedError("Fake error")
         await clients[0].send(msg)
-        with pytest.raises(RpcInvalidRequestError):
+        with pytest.raises(RpcNotImplementedError):
             await clients[1].receive(True)
 
     @pytest.mark.parametrize("a,b", ((0, 1), (1, 0)))

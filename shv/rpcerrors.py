@@ -10,13 +10,8 @@ class RpcErrorCode(enum.IntEnum):
     """Number representing an SHV RPC error code."""
 
     NO_ERROR = 0
-    INVALID_REQUEST = 1
     METHOD_NOT_FOUND = 2
     INVALID_PARAM = 3
-    INTERNAL_ERR = 4
-    PARSE_ERR = 5
-    METHOD_CALL_TIMEOUT = 6
-    METHOD_CALL_CANCELLED = 7
     METHOD_CALL_EXCEPTION = 8
     UNKNOWN = 9
     LOGIN_REQUIRED = 10
@@ -68,14 +63,7 @@ class RpcError(RuntimeError):
     @property
     def error_code(self) -> RpcErrorCode:
         """Provides access to the :class:`RpcErrorCode`."""
-        assert isinstance(self.args[1], RpcErrorCode)
-        return self.args[1]
-
-
-class RpcInvalidRequestError(RpcError):
-    """The sent data are not valid request object."""
-
-    shv_error_code = RpcErrorCode.INVALID_REQUEST
+        return RpcErrorCode(self.args[1])
 
 
 class RpcMethodNotFoundError(RpcError):
@@ -88,30 +76,6 @@ class RpcInvalidParamError(RpcError):
     """Invalid method parameter were provided."""
 
     shv_error_code = RpcErrorCode.INVALID_PARAM
-
-
-class RpcInternalError(RpcError):
-    """Internal JSON-RPC error."""
-
-    shv_error_code = RpcErrorCode.INTERNAL_ERR
-
-
-class RpcParseError(RpcError):
-    """Invalid data were recived and were not possible to parse them."""
-
-    shv_error_code = RpcErrorCode.PARSE_ERR
-
-
-class RpcMethodCallTimeoutError(RpcError):
-    """Method call timed out without providing result."""
-
-    shv_error_code = RpcErrorCode.METHOD_CALL_TIMEOUT
-
-
-class RpcMethodCallCancelledError(RpcError):
-    """Method call was cancelled."""
-
-    shv_error_code = RpcErrorCode.METHOD_CALL_CANCELLED
 
 
 class RpcMethodCallExceptionError(RpcError):

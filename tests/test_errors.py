@@ -4,25 +4,21 @@ import pytest
 
 from shv import (
     RpcError,
-    RpcInternalError,
     RpcInvalidParamError,
-    RpcInvalidRequestError,
-    RpcMethodCallCancelledError,
+    RpcLoginRequiredError,
     RpcMethodCallExceptionError,
-    RpcMethodCallTimeoutError,
     RpcMethodNotFoundError,
-    RpcParseError,
+    RpcNotImplementedError,
+    RpcUserIDRequiredError,
 )
 
 errors = (
-    RpcInternalError,
-    RpcInvalidParamError,
-    RpcInvalidRequestError,
-    RpcMethodCallCancelledError,
-    RpcMethodCallExceptionError,
-    RpcMethodCallTimeoutError,
     RpcMethodNotFoundError,
-    RpcParseError,
+    RpcInvalidParamError,
+    RpcMethodCallExceptionError,
+    RpcLoginRequiredError,
+    RpcUserIDRequiredError,
+    RpcNotImplementedError,
 )
 
 
