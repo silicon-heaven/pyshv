@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import dataclasses
 import enum
+import typing
 
 
 class RpcErrorCode(enum.IntEnum):
@@ -37,8 +37,8 @@ class RpcError(RuntimeError):
     :param code: Error code.
     """
 
-    shv_error_code: RpcErrorCode = RpcErrorCode.UNKNOWN
-    shv_error_map: dict[int, type[RpcError]] = dataclasses.field(default_factory=dict)
+    shv_error_code: typing.ClassVar[RpcErrorCode] = RpcErrorCode.UNKNOWN
+    shv_error_map: typing.ClassVar[dict[int, type[RpcError]]] = {}
 
     def __new__(
         cls, msg: str | None = None, code: RpcErrorCode | None = None
@@ -51,6 +51,12 @@ class RpcError(RuntimeError):
         self, msg: str | None = None, code: RpcErrorCode | None = None
     ) -> None:
         super().__init__(msg, self.shv_error_code if code is None else code)
+
+    def __init_subclass__(cls, *args: typing.Any, **kwargs: typing.Any) -> None:  # noqa: ANN401
+        super().__init_subclass__(*args, **kwargs)
+        if cls.shv_error_code in RpcError.shv_error_map:
+            raise TypeError(f"RPC Error already defined for {cls.shv_error_code}")
+        RpcError.shv_error_map[cls.shv_error_code] = cls
 
     @property
     def message(self) -> str | None:
@@ -130,21 +136,3 @@ class RpcNotImplementedError(RpcError):
     """Called method that is not implemented right now but valid."""
 
     shv_error_code = RpcErrorCode.NOT_IMPLEMENTED
-
-
-RpcError.shv_error_map = {
-    e.shv_error_code: e
-    for e in (
-        RpcInvalidRequestError,
-        RpcMethodNotFoundError,
-        RpcInvalidParamError,
-        RpcInternalError,
-        RpcParseError,
-        RpcMethodCallTimeoutError,
-        RpcMethodCallCancelledError,
-        RpcMethodCallExceptionError,
-        RpcLoginRequiredError,
-        RpcUserIDRequiredError,
-        RpcNotImplementedError,
-    )
-}
