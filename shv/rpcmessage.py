@@ -454,3 +454,26 @@ class RpcMessage:
         res.rpc_access = access
         res.user_id = user_id
         return res
+
+    @classmethod
+    def lsmod(cls, path: str, nodes: collections.abc.Mapping[str, bool]) -> RpcMessage:
+        """Create ``lsmod`` signal message.
+
+        This provides creation of "lsmod" signal message that must be used when
+        you are changing the nodes tree to signal clients about that. The
+        argument specifies top level nodes added or removed (based on the
+        mapping value).
+
+        :param path: SHV path to the valid node which children were added or
+          removed.
+        :param nodes: Map where key is node name of the node that is top level
+          node, that was either added (for value ``True``) or removed (for value
+          ``False``).
+        """
+        res = cls()
+        res.signal_name = "lsmod"
+        res.source = "ls"
+        res.path = path
+        res.param = nodes
+        res.rpc_access = RpcMethodAccess.BROWSE
+        return res

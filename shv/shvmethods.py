@@ -10,6 +10,7 @@ import typing
 import weakref
 
 from .rpcerrors import RpcInvalidParamError, RpcUserIDRequiredError
+from .rpcmessage import RpcMessage
 from .rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodFlags
 from .shvbase import SHVBase
 from .value import SHVType
@@ -124,8 +125,10 @@ class SHVMethods(SHVBase):
                 signal = next(iter(self.desc.signals.keys()))
             elif signal not in self.desc.signals:
                 raise ValueError(f"Invalid signal name: {signal}")
-            await shvmethods._signal(
-                self.path, signal, self.desc.name, value, access, user_id
+            await shvmethods._send(
+                RpcMessage.signal(
+                    self.path, signal, self.desc.name, value, access, user_id
+                )
             )
 
         async def _func_call(self, request: SHVBase.Request) -> SHVType:

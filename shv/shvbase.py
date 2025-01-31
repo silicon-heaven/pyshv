@@ -129,13 +129,20 @@ class SHVBase:
     async def _send(self, msg: RpcMessage) -> None:
         """Send message.
 
-        Use this only if you want send a generic message (such as when you are
-        passing message along). :meth:`call` or :meth:`_signal` should be
-        prefered when ever possible.
-
         You should be using this method instead of ``self.client.send`` to
         ensure that send can be correctly overwritten and optionally postponed
         or blocked by child implementations.
+
+        This is intentionally marked as protected (accessible only by class and
+        its children methods) because generic message must be send only for
+        valid paths and methods and that is something only class itself can
+        ensure. Your implemntation should provide public methods that protects
+        against call with invalid path or method.
+
+        Note that this is coroutine and thus it is up to you if you await it or
+        use asyncio tasks.
+
+        :param msg: The message to be send.
         """
         # TODO possibly lock to prevent from spliting this call
         await self.client.send(msg)
@@ -277,53 +284,6 @@ class SHVBase:
             except RpcError:
                 self.__peer_is_shv3 = False
         return self.__peer_is_shv3
-
-    async def _signal(
-        self,
-        path: str,
-        name: str = "chng",
-        source: str = "get",
-        value: SHVType = None,
-        access: RpcMethodAccess = RpcMethodAccess.READ,
-        user_id: str | None = None,
-    ) -> None:
-        """Send signal from given path and method source and with given parameter.
-
-        Note that this is coroutine and thus it is up to you if you await it or
-        use asyncio tasks.
-
-        This is intentionally marked as accessible only by class methods because
-        signals must be raised only for valid paths and methods and that is
-        something only class itself can ensure. Your implemntation should
-        provide public methods that protects against call with invalid path or
-        method.
-
-        :param path: SHV path signal is associated with.
-        :param name: Signal name to be raised.
-        :param source: Method name this signal is associated with.
-        :param value: Parameter that is the signaled value.
-        :param access: Minimal access level needed to access the signal.
-        :param user_id: User ID of signal.
-        """
-        await self._send(RpcMessage.signal(path, name, source, value, access, user_id))
-
-    async def _lsmod(
-        self, path: str, nodes: collections.abc.Mapping[str, bool]
-    ) -> None:
-        """Report change in the ls method.
-
-        This provides implementation for "lsmod" signal that must be used when
-        you are changing the nodes tree to signal clients about that. The
-        argument specifies top level nodes added or removed (based on the
-        mapping value).
-
-        :param path: SHV path to the valid node which children were added or
-          removed.
-        :param nodes: Map where key is node name of the node that is top level
-          node, that was either added (for value ``True``) or removed (for value
-          ``False``).
-        """
-        await self._signal(path, "lsmod", "ls", nodes, RpcMethodAccess.BROWSE)
 
     async def _message(self, msg: RpcMessage) -> None:
         """Handle every received message.
