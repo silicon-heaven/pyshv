@@ -29,10 +29,10 @@ Discovering SHV tree
 --------------------
 
 Once you are connected you can discover tree of nodes and its associated
-methods. There is :func:`shv.SHVClient.ls` method for this purpose available.
+methods. There is :func:`shv.SHVBase.ls` method for this purpose available.
 Methods associated with some node can be listed with
-:func:`shv.SHVClient.dir`. There are also methods
-:func:`shv.SHVClient.ls_has_child` and :func:`shv.SHVClient.dir_exists`
+:func:`shv.SHVBase.dir`. There are also methods
+:func:`shv.SHVBase.ls_has_child` and :func:`shv.SHVBase.dir_exists`
 for respective node and method existence validation.
 
 This is all you need to iterate over the whole SHV tree of the SHV broker.

@@ -40,3 +40,9 @@ over data stream. Please do not confuse this with :class:`shv.RpcProtocol`.
 .. autoclass:: shv.RpcProtocolSerial
 .. autoclass:: shv.RpcProtocolSerialCRC
 .. autoclass:: shv.RpcTransportProtocol
+
+Stream client and server bases
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: shv.rpctransport.stream.RpcClientStream
+.. autoclass:: shv.rpctransport.stream.RpcServerStream

@@ -53,17 +53,45 @@ html_theme_options = {
 }
 
 
-autodoc_typehints = "description"
+# Sphinx has issues with type aliases. We want them to be referenced but it
+# instead expands them. This is hack to convince him to correcly link them.
+type_vars = {
+    "SHVType",
+    "SHVNullType",
+    "SHVBoolType",
+    "SHVListType",
+    "SHVMapType",
+    "SHVIMapType",
+    "SHVMetaType",
+    "SHVMethodT",
+    "SHVGetMethodT",
+    "SHVSetMethodT",
+    "NamedT",
+}
+
 autodoc_member_order = "bysource"
 autodoc_default_options = {
     "members": True,
     "undoc-members": True,
     "show-inheritance": True,
 }
+autodoc_type_aliases = {
+    "shv.rpcerrors.RpcError": "shv.RpcError",
+    "shv.rpcerrors.RpcErrorCode": "shv.RpcErrorCode",
+    **{v: v for v in type_vars},
+}
 
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
+    "websockets": ("https://websockets.readthedocs.io/en/stable/", None),
+}
+nitpick_ignore = {
+    # These are undocumented in upstread Python documentation
+    ("py:class", "asyncio.streams.StreamReader"),
+    ("py:class", "asyncio.streams.StreamWriter"),
+    ("py:class", "weakref.ReferenceType"),
+    ("py:class", "dataclasses.InitVar"),
 }
 
 smv_tag_whitelist = r"^v.*$"
@@ -78,5 +106,14 @@ def build_finished_gitignore(app, exception):  # type: ignore
         (outpath / ".gitignore").write_text("**\n")
 
 
+def resolve_type_aliases(app, env, node, contnode):  # type: ignore
+    """Resolve :class: references to our type aliases as :attr: instead."""
+    if node["refdomain"] == "py" and node["reftarget"] in type_vars:
+        return app.env.get_domain("py").resolve_xref(
+            env, node["refdoc"], app.builder, "data", node["reftarget"], node, contnode
+        )
+
+
 def setup(app):  # type: ignore
     app.connect("build-finished", build_finished_gitignore)
+    app.connect("missing-reference", resolve_type_aliases)

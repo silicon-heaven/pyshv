@@ -15,7 +15,11 @@ from .value import SHVIMap, SHVIMapType, SHVType, is_shvimap, shvmeta_eq
 
 
 class RpcMessage:
-    """Single SHV RPC message representation."""
+    """Single SHV RPC message representation.
+
+    :param rpc_val: The value of the received and unpacked SHV RPC message or
+      ``None`` in case you want to create a new message instead.
+    """
 
     _last_request_id: typing.ClassVar[int] = 0
     _last_request_id_rollover: typing.ClassVar[float] = time.monotonic()

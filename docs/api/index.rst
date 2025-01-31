@@ -5,11 +5,9 @@ API reference
    :maxdepth: 4
 
    value
-   rpcmessage
+   highapi
+   lowapi
+   broker
    rpcurl
    rpcri
-   rpccom
-   simpleclient
-   broker
-   cp
    rpctypes

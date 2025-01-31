@@ -12,7 +12,7 @@ Table of contents
 
    valueclient
    device
-   broker
+   broker/index
    api/index
 
 :ref:`genindex`

@@ -1,5 +1,7 @@
 """RPC client manager that provides facitility to simply connect to the broker."""
 
+from __future__ import annotations
+
 import asyncio
 import collections.abc
 import contextlib
@@ -106,6 +108,11 @@ class SHVClient(SHVBase):
         await super().disconnect()
 
     async def _loop(self) -> None:
+        """Loop run in asyncio task to receive messages.
+
+        On top of the parent implementation this also performs reconnection
+        attempts.
+        """
         reconnect_attempt = 0
         while self.reconnects < 0 or self.reconnects >= reconnect_attempt:
             if self.client.connected:
@@ -144,6 +151,15 @@ class SHVClient(SHVBase):
                 await self.ping()
 
     async def _send(self, msg: RpcMessage) -> None:
+        """Send message.
+
+        You should be using this method instead of ``self.client.send`` to
+        ensure that send can be correctly overwritten and optionally postponed
+        or blocked by child implementations.
+
+        This class adds login sequence and thus it is ensured that login is
+        performed before any other message is sent to the peer.
+        """
         await self._connected.wait()
         if not msg.is_request or msg.path or msg.method not in {"hello", "login"}:
             await self._login_task
@@ -163,7 +179,8 @@ class SHVClient(SHVBase):
 
         This includes subscribes restoration after connection reset.
 
-        Be aware when you are overwriting this as this is running in the
+        Be aware when you are overwriting or extending this method as this is
+        running on every reset and holds off any other messages.
         """
         res = await self.call("", "hello")
         nonce = shvgett(res, "nonce", str, "")

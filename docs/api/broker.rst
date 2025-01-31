@@ -1,7 +1,9 @@
 SHV RPC Broker API
 ==================
 
+.. toctree::
+   :maxdepth: 2
+
+   broker_config
+
 .. autoclass:: shv.broker.RpcBroker
-.. autoclass:: shv.broker.RpcBrokerConfig
-.. autoclass:: shv.broker.RpcBrokerConfigABC
-.. autoclass:: shv.broker.RpcBrokerRoleABC

@@ -1,7 +1,10 @@
 """Chainpack data format reader and writer."""
 
+from __future__ import annotations
+
 import datetime
 import decimal
+import enum
 import io
 import struct
 import typing
@@ -24,23 +27,26 @@ class ChainPack:
 
     ProtocolType = 1
 
-    CP_Null = 128
-    CP_UInt = 129
-    CP_Int = 130
-    CP_Double = 131
-    CP_Bool = 132
-    CP_Blob = 133
-    CP_String = 134  # utf8 encoded string
-    CP_List = 136
-    CP_Map = 137
-    CP_IMap = 138
-    CP_MetaMap = 139
-    CP_Decimal = 140
-    CP_DateTime = 141
-    CP_CString = 142
-    CP_FALSE = 253
-    CP_TRUE = 254
-    CP_TERM = 255
+    class Schema(enum.IntEnum):
+        """The packing schema type association."""
+
+        CP_Null = 128
+        CP_UInt = 129
+        CP_Int = 130
+        CP_Double = 131
+        CP_Bool = 132
+        CP_Blob = 133
+        CP_String = 134  # utf8 encoded string
+        CP_List = 136
+        CP_Map = 137
+        CP_IMap = 138
+        CP_MetaMap = 139
+        CP_Decimal = 140
+        CP_DateTime = 141
+        CP_CString = 142
+        CP_FALSE = 253
+        CP_TRUE = 254
+        CP_TERM = 255
 
     # UTC msec since 2.2. 2018
     # Fri Feb 02 2018 00:00:00 == 1517529600 EPOCH
@@ -96,7 +102,7 @@ class ChainPackReader(commonpack.CommonReader):
     """Read data in ChainPack format."""
 
     def read_meta(self) -> SHVMetaType | None:  # noqa: D102
-        if self._peek_byte() != ChainPack.CP_MetaMap:
+        if self._peek_byte() != ChainPack.Schema.CP_MetaMap:
             return None
         self._peek_drop()
         return self._read_map()
@@ -111,33 +117,33 @@ class ChainPackReader(commonpack.CommonReader):
             value = packing_schema & 63
             if not packing_schema & 64:
                 value = SHVUInt(value)
-        elif packing_schema == ChainPack.CP_Null:
+        elif packing_schema == ChainPack.Schema.CP_Null:
             value = None
-        elif packing_schema == ChainPack.CP_TRUE:
+        elif packing_schema == ChainPack.Schema.CP_TRUE:
             value = True
-        elif packing_schema == ChainPack.CP_FALSE:
+        elif packing_schema == ChainPack.Schema.CP_FALSE:
             value = False
-        elif packing_schema == ChainPack.CP_Int:
+        elif packing_schema == ChainPack.Schema.CP_Int:
             value = self._read_int_data()
-        elif packing_schema == ChainPack.CP_UInt:
+        elif packing_schema == ChainPack.Schema.CP_UInt:
             value = SHVUInt(self.read_uint_data())
-        elif packing_schema == ChainPack.CP_Double:
+        elif packing_schema == ChainPack.Schema.CP_Double:
             value = self._read_double()
-        elif packing_schema == ChainPack.CP_Decimal:
+        elif packing_schema == ChainPack.Schema.CP_Decimal:
             value = self._read_decimal()
-        elif packing_schema == ChainPack.CP_DateTime:
+        elif packing_schema == ChainPack.Schema.CP_DateTime:
             value = self._read_datetime()
-        elif packing_schema == ChainPack.CP_Map:
+        elif packing_schema == ChainPack.Schema.CP_Map:
             value = typing.cast(SHVMapType, self._read_map())
-        elif packing_schema == ChainPack.CP_IMap:
+        elif packing_schema == ChainPack.Schema.CP_IMap:
             value = typing.cast(SHVIMapType, self._read_map())
-        elif packing_schema == ChainPack.CP_List:
+        elif packing_schema == ChainPack.Schema.CP_List:
             value = self._read_list()
-        elif packing_schema == ChainPack.CP_Blob:
+        elif packing_schema == ChainPack.Schema.CP_Blob:
             value = self._read_blob()
-        elif packing_schema == ChainPack.CP_String:
+        elif packing_schema == ChainPack.Schema.CP_String:
             value = self._read_string()
-        elif packing_schema == ChainPack.CP_CString:
+        elif packing_schema == ChainPack.Schema.CP_CString:
             value = self._read_cstring()
         else:
             raise ValueError(f"ChainPack - Invalid type: {packing_schema}")
@@ -245,7 +251,7 @@ class ChainPackReader(commonpack.CommonReader):
         lst = []
         while True:
             b = self._peek_byte()
-            if b == ChainPack.CP_TERM:
+            if b == ChainPack.Schema.CP_TERM:
                 self._read_byte()
                 break
             lst.append(self.read())
@@ -255,7 +261,7 @@ class ChainPackReader(commonpack.CommonReader):
         mmap: dict[str | int, SHVType] = {}
         while True:
             b = self._peek_byte()
-            if b == ChainPack.CP_TERM:
+            if b == ChainPack.Schema.CP_TERM:
                 self._read_byte()
                 break
             key = self.read()
@@ -321,32 +327,32 @@ class ChainPackWriter(commonpack.CommonWriter):
             self._write(data[i])
 
     def write_meta(self, meta: SHVMetaType) -> None:  # noqa: D102
-        self._write(ChainPack.CP_MetaMap)
+        self._write(ChainPack.Schema.CP_MetaMap)
         for k, v in meta.items():
             self.write(k)
             self.write(v)
-        self._write(ChainPack.CP_TERM)
+        self._write(ChainPack.Schema.CP_TERM)
 
     def write_null(self) -> None:  # noqa: D102
-        self._write(ChainPack.CP_Null)
+        self._write(ChainPack.Schema.CP_Null)
 
     def write_bool(self, value: bool) -> None:  # noqa: D102
-        self._write(ChainPack.CP_TRUE if value else ChainPack.CP_FALSE)
+        self._write(ChainPack.Schema.CP_TRUE if value else ChainPack.Schema.CP_FALSE)
 
     def write_blob(self, value: bytes | bytearray) -> None:  # noqa: D102
-        self._write(ChainPack.CP_Blob)
+        self._write(ChainPack.Schema.CP_Blob)
         self.write_uint_data(len(value))
         self._write(value)
 
     def write_string(self, value: str) -> None:  # noqa: D102
         bstring = value.encode("utf-8")
-        self._write(ChainPack.CP_String)
+        self._write(ChainPack.Schema.CP_String)
         self.write_uint_data(len(bstring))
         self._write(bstring)
 
     def write_cstring(self, value: str) -> None:  # noqa: D102
         bstring = value.encode("utf-8")
-        self._write(ChainPack.CP_CString)
+        self._write(ChainPack.Schema.CP_CString)
         self._write(bstring)
         self._write(b"\0")
 
@@ -354,7 +360,7 @@ class ChainPackWriter(commonpack.CommonWriter):
         if value < 64:
             self._write(value % 64)
         else:
-            self._write(ChainPack.CP_UInt)
+            self._write(ChainPack.Schema.CP_UInt)
             self.write_uint_data(value)
 
     def write_uint_data(self, value: int) -> None:  # noqa: D102
@@ -365,7 +371,7 @@ class ChainPackWriter(commonpack.CommonWriter):
         if 0 <= value < 64:
             self._write((value % 64) + 64)
         else:
-            self._write(ChainPack.CP_Int)
+            self._write(ChainPack.Schema.CP_Int)
             self.write_int_data(value)
 
     def write_int_data(self, value: int) -> None:  # noqa: D102
@@ -381,37 +387,37 @@ class ChainPackWriter(commonpack.CommonWriter):
         self._write_uint_data_helper(num, bitlen)
 
     def write_double(self, value: float) -> None:  # noqa: D102
-        self._write(ChainPack.CP_Double)
+        self._write(ChainPack.Schema.CP_Double)
         self._write(struct.pack("<d", value))  # little endian
 
     def write_decimal(self, value: decimal.Decimal) -> None:  # noqa: D102
         mantissa, exponent = decimal_rexp(value)
-        self._write(ChainPack.CP_Decimal)
+        self._write(ChainPack.Schema.CP_Decimal)
         self.write_int_data(mantissa)
         self.write_int_data(exponent)
 
     def write_list(self, value: SHVListType) -> None:  # noqa: D102
-        self._write(ChainPack.CP_List)
+        self._write(ChainPack.Schema.CP_List)
         for val in value:
             self.write(val)
-        self._write(ChainPack.CP_TERM)
+        self._write(ChainPack.Schema.CP_TERM)
 
     def write_map(self, value: SHVMapType) -> None:  # noqa: D102
-        self._write(ChainPack.CP_Map)
+        self._write(ChainPack.Schema.CP_Map)
         for k, v in value.items():
             self.write(k)
             self.write(v)
-        self._write(ChainPack.CP_TERM)
+        self._write(ChainPack.Schema.CP_TERM)
 
     def write_imap(self, value: SHVIMapType) -> None:  # noqa: D102
-        self._write(ChainPack.CP_IMap)
+        self._write(ChainPack.Schema.CP_IMap)
         for k, v in value.items():
             self.write(k)
             self.write(v)
-        self._write(ChainPack.CP_TERM)
+        self._write(ChainPack.Schema.CP_TERM)
 
     def write_datetime(self, value: datetime.datetime) -> None:  # noqa: D102
-        self._write(ChainPack.CP_DateTime)
+        self._write(ChainPack.Schema.CP_DateTime)
         res = int(value.timestamp() * 1000) - (ChainPack.SHV_EPOCH_SEC * 1000)
         tzdelta = value.utcoffset()
         tzoff = int(tzdelta.total_seconds() // 60 // 15) if tzdelta is not None else 0

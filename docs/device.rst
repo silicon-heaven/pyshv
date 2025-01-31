@@ -140,7 +140,7 @@ The implementation is pretty strait forward. You get SHV path and method name,
 parameter, optional user's ID, and access level in :class:`shv.SHVBase.Request`.
 The access level needs to be checked if user has required access level. The
 implementation needs to return result or raise exception (preferably one of
-:class:`shv.shv.RpcError` children) or call the parent's implementation.
+:class:`shv.RpcError` children) or call the parent's implementation.
 
 For an example see the next section.
 

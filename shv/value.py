@@ -1,5 +1,7 @@
 """Values used in SHV communication."""
 
+from __future__ import annotations
+
 import abc
 import collections.abc
 import datetime
@@ -108,28 +110,26 @@ def shvmeta(value: object) -> SHVMetaType:
     return {}
 
 
-def shvmeta_eq(v1: object, v2: object) -> bool:
+def shvmeta_eq(a: object, b: object) -> bool:
     """Perform comparison including the :class:`SHVMeta` not just plain values."""
-    if shvmeta(v1) != shvmeta(v2):
+    if shvmeta(a) != shvmeta(b):
         return False
-    if isinstance(v1, SHVUInt) != isinstance(v2, SHVUInt):
+    if isinstance(a, SHVUInt) != isinstance(b, SHVUInt):
         return False
     if (
-        isinstance(v1, collections.abc.Sequence)
-        and isinstance(v2, collections.abc.Sequence)
-        and not (isinstance(v1, str | bytes) or isinstance(v2, str | bytes))
+        isinstance(a, collections.abc.Sequence)
+        and isinstance(b, collections.abc.Sequence)
+        and not (isinstance(a, str | bytes) or isinstance(b, str | bytes))
     ):
-        return len(v1) == len(v2) and all(
-            shvmeta_eq(v1[i], v2[i]) for i in range(len(v1))
-        )
-    if isinstance(v1, collections.abc.Mapping) and isinstance(
-        v2, collections.abc.Mapping
+        return len(a) == len(b) and all(shvmeta_eq(a[i], b[i]) for i in range(len(a)))
+    if isinstance(a, collections.abc.Mapping) and isinstance(
+        b, collections.abc.Mapping
     ):
         return all(
-            k in v1 and k in v2 and shvmeta_eq(v1[k], v2[k])
-            for k in set(itertools.chain(v1.keys(), v2.keys()))
+            k in a and k in b and shvmeta_eq(a[k], b[k])
+            for k in set(itertools.chain(a.keys(), b.keys()))
         )
-    return bool(v1 == v2)
+    return bool(a == b)
 
 
 class SHVNull(SHVMeta):

@@ -349,7 +349,7 @@ class RpcBroker:
         """Name reported as application name for pyshvbroker."""
 
         IDLE_TIMEOUT_LOGIN: float = 5
-        """:attr:`IDLE_TIMEOUT` set for clients without user.
+        """:attr:`shv.SHVBase.IDLE_TIMEOUT` set for clients without user.
 
         This is intentionally shorter to quickly disconnect inactive clients
         that are not participating in SHV RPC.

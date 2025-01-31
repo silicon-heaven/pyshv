@@ -71,7 +71,7 @@ class RpcClientPipe(RpcClientStream):
         """Create pair of clients that are interconnected over the pipe.
 
         :param protocol: The protocol factory to be used.
-        :param flags: Flags passed to :meth:`os.pipe2`.
+        :param flags: Flags passed to :func:`os.pipe2`.
         :return: Pair of clients that are interconnected over Unix pipes.
         """
         pr1, pw1 = os.pipe2(flags)

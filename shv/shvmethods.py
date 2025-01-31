@@ -15,6 +15,19 @@ from .rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodFlags
 from .shvbase import SHVBase
 from .value import SHVType
 
+SHVMethodT: typing.TypeAlias = collections.abc.Callable[
+    [typing.Any, SHVBase.Request],
+    SHVType | collections.abc.Coroutine[None, None, SHVType],
+]
+SHVGetMethodT: typing.TypeAlias = collections.abc.Callable[
+    [typing.Any, int | None],
+    collections.abc.Coroutine[None, None, SHVType] | SHVType,
+]
+SHVSetMethodT: typing.TypeAlias = collections.abc.Callable[
+    [typing.Any, SHVType, str | None],
+    collections.abc.Coroutine[None, None, None] | None,
+]
+
 
 class SHVMethods(SHVBase):
     """SHV RPC methods and signals implementation helper.
@@ -73,15 +86,6 @@ class SHVMethods(SHVBase):
             for method in self._methods[path].values():
                 yield method.desc
 
-    MethodT = collections.abc.Callable[
-        [typing.Any, SHVBase.Request],
-        SHVType | collections.abc.Coroutine[None, None, SHVType],
-    ]
-    """
-    Type definition for the methods that can be used with decorator
-    :meth:`SHVMethods.method`.
-    """
-
     @dataclasses.dataclass(frozen=True)
     class Method:
         """The definition of the RPC Method.
@@ -89,6 +93,23 @@ class SHVMethods(SHVBase):
         This allows you to define methods as attributes of the object and such
         methods are automatically discovered and used. Note that the discovery
         is performed on object initialization.
+
+        The following is provided and thus not required to be performed in the
+        method itself:
+
+        - Check if SHV path and method name matches as otherwise this method
+          would not be called.
+        - Verification of the access level.
+        - Verifies if user's ID is required (based on the
+          :attr:`shv.RpcMethodDesc.flags`) and sends
+          :class:`shv.RpcUserIDRequiredError` error.
+
+        What application has to do on its own:
+
+        - Implement the method behavior and return the method result.
+        - Validate parameter and raise :class:`shv.RpcInvalidParamError` for
+          invalid values.
+        - Explicitly send signals.
         """
 
         path: str
@@ -99,7 +120,7 @@ class SHVMethods(SHVBase):
         This defines method name, acceess level as well as other options that
         are considered on method call request.
         """
-        func: SHVMethods.MethodT
+        func: SHVMethodT
         """Python method providing the implementation."""
 
         _bound: weakref.ReferenceType[SHVMethods] | None = None
@@ -143,22 +164,13 @@ class SHVMethods(SHVBase):
     @classmethod
     def method(
         cls, path: str, desc: RpcMethodDesc
-    ) -> collections.abc.Callable[[MethodT], SHVMethods.Method]:
-        """Decorate method to turn it to :class:`SHVMethods.Method`.
+    ) -> collections.abc.Callable[[SHVMethodT], SHVMethods.Method]:
+        """Decorate method to turn it to :class:`shv.SHVMethods.Method`.
 
         :param path: SHV path this method is associated with.
         :param desc: Method description.
         """
         return lambda func: cls.Method(path, desc, func)
-
-    GetMethodT = collections.abc.Callable[
-        [typing.Any, int | None],
-        SHVType | collections.abc.Coroutine[None, None, SHVType],
-    ]
-    """
-    Type definition for the methods that can be used with decorator
-    :meth:`SHVMethods.property`.
-    """
 
     @classmethod
     def property(
@@ -167,12 +179,15 @@ class SHVMethods(SHVBase):
         tp: str = "Any",
         access: RpcMethodAccess = RpcMethodAccess.READ,
         signal: bool | str = False,
-    ) -> collections.abc.Callable[[GetMethodT], SHVMethods.Method]:
+    ) -> collections.abc.Callable[[SHVGetMethodT], SHVMethods.Method]:
         """Decorate method to use method as ``get`` property method.
 
         The properties are common standard ways to organize access to the values
         exposed over SHV. This decorator provides an easier way to implement
         these common methods by validating the parameter.
+
+        The decorated function is called in wrapper that on top of the
+        :class:`Method` handling also verifies the parameter.
 
         :param path: SHV path for this property.
         :param tp: Type description provided by this property.
@@ -182,9 +197,9 @@ class SHVMethods(SHVBase):
           default) is used for no signal at all.
         """
 
-        def wrapper(func: SHVMethods.GetMethodT) -> SHVMethods.Method:
+        def wrapper(func: SHVGetMethodT) -> SHVMethods.Method:
             def substitut(
-                obj: object, request: SHVBase.Request
+                obj: SHVMethods, request: SHVBase.Request
             ) -> collections.abc.Coroutine[None, None, SHVType] | SHVType:
                 if request.param is not None and not isinstance(request.param, int):
                     raise RpcInvalidParamError("Only Int or Null allowed")
@@ -198,24 +213,15 @@ class SHVMethods(SHVBase):
 
         return wrapper
 
-    SetMethodT = collections.abc.Callable[
-        [typing.Any, SHVType, str | None],
-        collections.abc.Coroutine[None, None, None] | None,
-    ]
-    """
-    Type definition for the methods that can be used with decorator
-    :meth:`SHVMethods.property_setter`.
-    """
-
     @classmethod
     def property_setter(
         cls,
         getter: Method,
         access: RpcMethodAccess = RpcMethodAccess.WRITE,
-    ) -> collections.abc.Callable[[SetMethodT], SHVMethods.Method]:
+    ) -> collections.abc.Callable[[SHVSetMethodT], SHVMethods.Method]:
         """Decorate method to make it set method for the property node.
 
-        This is a companion decorator to the :method:`property` that allows
+        This is a companion decorator to the :meth:`property` that allows
         addition of the ``set`` method to the property node.
 
         :param getter: The reference to the ``get`` method.
@@ -224,9 +230,9 @@ class SHVMethods(SHVBase):
         if getter.desc.name != "get":
             raise ValueError("Can be used only on method get")
 
-        def wrapper(func: SHVMethods.SetMethodT) -> SHVMethods.Method:
+        def wrapper(func: SHVSetMethodT) -> SHVMethods.Method:
             def substitut(
-                obj: object, request: SHVBase.Request
+                obj: SHVMethods, request: SHVBase.Request
             ) -> collections.abc.Coroutine[None, None, None] | None:
                 return func(obj, request.param, request.user_id)
 

@@ -1,5 +1,7 @@
 """RPC client that represents device in a physical sense."""
 
+from __future__ import annotations
+
 import collections.abc
 import itertools
 import time
