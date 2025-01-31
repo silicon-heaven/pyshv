@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import collections.abc
 import enum
+import time
 import typing
 
 from .chainpack import ChainPackWriter
@@ -16,18 +17,30 @@ from .value import SHVIMap, SHVIMapType, SHVType, is_shvimap, shvmeta_eq
 class RpcMessage:
     """Single SHV RPC message representation."""
 
-    last_request_id: typing.ClassVar[int] = 0
-    """Counter of request IDs to ensure that every request has unique ID."""
+    _last_request_id: typing.ClassVar[int] = 0
+    _last_request_id_rollover: typing.ClassVar[float] = time.monotonic()
 
     @classmethod
     def next_request_id(cls) -> int:
         """Provide unique request identifier.
 
-        The identifier won't repeat for this application as it is just simple
-        counter that should never wrap.
+        The identifier won't repeat for this application in a reasonable time as
+        it is just simple counter that wrap after a long time.
+
+        In most cases we could get away with not wrapping the counter at all
+        because it is unlikely that we would run out of common implementation
+        limit of 64 bits (this is limit in other implementations not Python).
+        But further messages would be increased in size. Instead we choose to
+        rollover counter every now often (every 15 minutes). That is because of
+        a reasonable expectation that request ID is used right away and call
+        timeout won't be in minutes.
         """
-        cls.last_request_id += 1
-        return cls.last_request_id
+        tmono = time.monotonic()
+        if cls._last_request_id_rollover + (15 * 60) < tmono:
+            cls._last_request_id = 0
+            cls._last_request_id_rollover = tmono
+        cls._last_request_id += 1
+        return cls._last_request_id
 
     def __init__(self, rpc_val: SHVIMapType | None = None) -> None:
         if rpc_val is None:

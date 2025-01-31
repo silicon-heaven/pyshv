@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SHVBase._got_signal` now accepts `SHVBase.Signal` as a single argument
   instead of previously passed four arguments.
 - method `_value_update` was moved from `SHVBase` to `SHVValueClient`
+- `RpcMessage.next_request_id` now roll overs after fifteen minutes
+
+### Removed
+- `RpcMessage.last_request_id`
 
 ### Removed
 - `SHVBase._signal` as it can be easily replaced by `SHVBase._send` in
