@@ -9,6 +9,7 @@ import typing
 
 from shv import (
     RpcInvalidParamError,
+    RpcMessage,
     RpcMethodAccess,
     RpcMethodDesc,
     RpcMethodFlags,
@@ -47,12 +48,14 @@ class ExampleDevice(SHVClient, SHVMethods):
                 for i in range(1, param + 1)
             }
             await self.number_of_tracks.signal(param, user_id=user_id)
-            await self._lsmod(
-                "track",
-                {
-                    str(i): oldlen < param
-                    for i in range(min(oldlen, param), max(oldlen, param))
-                },
+            await self._send(
+                RpcMessage.lsmod(
+                    "track",
+                    {
+                        str(i): oldlen < param
+                        for i in range(min(oldlen, param), max(oldlen, param))
+                    },
+                )
             )
 
     @SHVMethods.method(
@@ -71,7 +74,7 @@ class ExampleDevice(SHVClient, SHVMethods):
         self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
         for k in old:
             if old[k] != self.tracks[k]:
-                await self._signal(f"track/{k}", value=self.tracks[k])
+                await self._send(RpcMessage.signal(f"track/{k}", value=self.tracks[k]))
         return None
 
     @SHVMethods.method("track", RpcMethodDesc.getter("lastResetUser", result="s|n"))
@@ -107,7 +110,9 @@ class ExampleDevice(SHVClient, SHVMethods):
                     old_track = self.tracks[track]
                     self.tracks[track] = request.param
                     if old_track != request.param:
-                        await self._signal(f"track/{track}", value=request.param)
+                        await self._send(
+                            RpcMessage.signal(f"track/{track}", value=request.param)
+                        )
                     return None
         return await super()._method_call(request)
 

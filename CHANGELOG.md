@@ -21,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instead of previously passed four arguments.
 - method `_value_update` was moved from `SHVBase` to `SHVValueClient`
 
+### Removed
+- `SHVBase._signal` as it can be easily replaced by `SHVBase._send` in
+  combination with `RpcMessage.signal`
+- `SHVBase._lsmod` and replaced by `RpcMessage.lsmod` in combination with
+  `SHVBase._send`
+
 ### Fixed
 - Close of TTY client causing `TypeError` to be raised in receive task
 - Unpacking blobs of zero length from ChainPack

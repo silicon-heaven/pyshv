@@ -5,6 +5,7 @@ import itertools
 import typing
 
 from .rpcalert import RpcAlert
+from .rpcmessage import RpcMessage
 from .rpcmethod import RpcMethodAccess, RpcMethodDesc
 from .shvbase import SHVBase
 from .shvclient import SHVClient
@@ -60,8 +61,10 @@ class SHVDevice(SHVClient):
             )
         )
         self._alerts.sort(key=lambda a: a.id)
-        await self._signal(
-            ".device/alerts", value=[alert.value for alert in self._alerts]
+        await self._send(
+            RpcMessage.signal(
+                ".device/alerts", value=[alert.value for alert in self._alerts]
+            )
         )
 
     async def _method_call(self, request: SHVBase.Request) -> SHVType:
