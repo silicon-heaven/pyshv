@@ -21,12 +21,14 @@ from .utils import nmax
 logger = logging.getLogger(__name__)
 
 
-class _NamedProto(typing.Protocol):
+class NamedProtocol(typing.Protocol):
+    """The typing protocol for the objects with ``name`` property."""
+
     @property
-    def name(self) -> str: ...
+    def name(self) -> str: ...  # noqa: D102
 
 
-NamedT = typing.TypeVar("NamedT", bound=_NamedProto)
+NamedT = typing.TypeVar("NamedT", bound=NamedProtocol)
 
 
 class NamedMap(collections.abc.Mapping[str, NamedT]):
@@ -352,7 +354,7 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
 
         :param file: Path to the configuration file.
         :return: Broker configuration instance.
-        :raise ConfigurationError: When there is an issue in the configuration.
+        :raise RpcBrokerConfigurationError: When there is an issue in the configuration.
         """
         with path.open("rb") as f:
             data = tomllib.load(f)
@@ -362,13 +364,13 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
 
         if connects := data.pop("connect", {}):
             if not isinstance(connects, collections.abc.Sequence):
-                raise ConfigurationError("'connect' must be array")
+                raise RpcBrokerConfigurationError("'connect' must be array")
             for i, connect in enumerate(connects):
                 if not isinstance(connect, collections.abc.MutableMapping):
-                    raise ConfigurationError(f"'connect[{i}]' must be table")
+                    raise RpcBrokerConfigurationError(f"'connect[{i}]' must be table")
                 url = connect.pop("url", None)
                 if not isinstance(url, str):
-                    raise ConfigurationError(
+                    raise RpcBrokerConfigurationError(
                         f"'connect[{i}].url' must be string and provided"
                     )
                 con = cls.Connect(RpcUrl.parse(url))
@@ -384,47 +386,51 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
 
         if users := data.pop("user", {}):
             if not isinstance(users, collections.abc.Mapping):
-                raise ConfigurationError("'user' must be table")
+                raise RpcBrokerConfigurationError("'user' must be table")
             for name, user in users.items():
                 if (password := user.pop("password", None)) is not None:
                     login_type = RpcLoginType.PLAIN
                 elif (password := user.pop("sha1pass", None)) is not None:
                     login_type = RpcLoginType.SHA1
                 else:
-                    raise ConfigurationError(f"'user.{name}.password' must be specfied")
+                    raise RpcBrokerConfigurationError(
+                        f"'user.{name}.password' must be specfied"
+                    )
                 uroles = cls._load_strlist(
                     user.pop("role", []), f"user.{name}.role"
                 ) or ["default"]
                 res.users.add(cls.User(name, str(password), uroles, login_type))
                 if user:
-                    raise ConfigurationError(
+                    raise RpcBrokerConfigurationError(
                         f"'user.{name}' invalid table keys: {', '.join(user)}"
                     )
 
         if roles := data.pop("role", {}):
             if not isinstance(roles, collections.abc.Mapping):
-                raise ConfigurationError("'role' must be table")
+                raise RpcBrokerConfigurationError("'role' must be table")
             for name, role in roles.items():
                 r = cls.Role(name)
                 if (mount_points := role.pop("mountPoints", None)) is not None:
                     if isinstance(mount_points, str):
                         mount_points = [mount_points]
                     if not isinstance(mount_points, collections.abc.Sequence):
-                        raise ConfigurationError(
+                        raise RpcBrokerConfigurationError(
                             f"'role.{name}.mountPoints' must be array of strings"
                         )
                     r.mount_points = {str(v) for v in mount_points}
                 if (access := role.pop("access", None)) is not None:
                     if not isinstance(access, collections.abc.Mapping):
-                        raise ConfigurationError(f"'role.{name}.access' must be table")
+                        raise RpcBrokerConfigurationError(
+                            f"'role.{name}.access' must be table"
+                        )
                     for level, paths in access.items():
                         nlevel = RpcMethodAccess.strmap().get(level)
                         if nlevel is None:
-                            raise ConfigurationError(
+                            raise RpcBrokerConfigurationError(
                                 f"'{level} is not allowed in 'role.{name}.access'"
                             )
                         if not isinstance(paths, collections.abc.Sequence):
-                            raise ConfigurationError(
+                            raise RpcBrokerConfigurationError(
                                 f"'role.{name}.access.{level}' must be array"
                             )
                         r.access[nlevel] = {
@@ -432,17 +438,17 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
                             for v in ([paths] if isinstance(paths, str) else paths)
                         }
                 if role:
-                    raise ConfigurationError(
+                    raise RpcBrokerConfigurationError(
                         f"'role.{name}' invalid table keys: {', '.join(role)}"
                     )
                 res.roles.add(r)
 
         if autosetups := data.pop("autosetup", []):
             if not isinstance(autosetups, collections.abc.Sequence):
-                raise ConfigurationError("'role' must be array")
+                raise RpcBrokerConfigurationError("'role' must be array")
             for i, autosetup in enumerate(autosetups):
                 if not isinstance(autosetup, collections.abc.MutableMapping):
-                    raise ConfigurationError(f"'autosetup[{i}]' must be table")
+                    raise RpcBrokerConfigurationError(f"'autosetup[{i}]' must be table")
                 ast = cls.Autosetup(
                     cls._load_strset(
                         autosetup.pop("deviceId", []), f"autosetup[{i}].deviceId"
@@ -459,7 +465,7 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
                 res.autosetups.append(ast)
 
         if data:
-            raise ConfigurationError(f"Invalid table keys: {', '.join(data)}")
+            raise RpcBrokerConfigurationError(f"Invalid table keys: {', '.join(data)}")
 
         return res
 
@@ -470,7 +476,7 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
         if not isinstance(value, collections.abc.Sequence) or any(
             not isinstance(v, str) for v in value
         ):
-            raise ConfigurationError(f"'{location}' must be array of strings")
+            raise RpcBrokerConfigurationError(f"'{location}' must be array of strings")
         yield from value
 
     @classmethod
@@ -491,5 +497,5 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
         return {sub for sub in cls._load_strarr(value, location)}
 
 
-class ConfigurationError(ValueError):
+class RpcBrokerConfigurationError(ValueError):
     """The error in the configuration."""

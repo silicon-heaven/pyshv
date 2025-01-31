@@ -27,11 +27,11 @@ logger = logging.getLogger(__name__)
 
 
 class SHVBase:
-    """SHV RPC made simple to use.
+    """SHV RPC object API base class.
 
-    You want to use this if you plan to implement your own specific RPC handler
-    but in most cases you might want to use :class:`SHVClient` or
-    :class:`SHVDevice` instead.
+    You want to use this if you plan to implement your own specific RPC message
+    handler but in most cases you might want to use :class:`shv.SHVClient` or
+    :class:`shv.SHVDevice` instead.
 
     Messages are handled in an asyncio loop and based on the type of the message
     the different operation is performed.
@@ -428,7 +428,8 @@ class SHVBase:
     def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:  # noqa: PLR6301
         """Implement ``dir`` method for all nodes.
 
-        This implementation is called only for valid paths (:meth:`_valid_path`).
+        This implementation is called only for valid paths
+        (:meth:`shv.SHVBase._valid_path`).
 
         Always call this as first before you yield your own methods to provide
         users with standard ones.
@@ -453,7 +454,7 @@ class SHVBase:
         """
 
     class Request:
-        """Set of parameters passed to the :meth:`_method_call`.
+        """Set of parameters passed to the :meth:`shv.SHVBase._method_call`.
 
         This is provided as one data class to allow easier method typing as
         well as ability to more freely add or remove info items.

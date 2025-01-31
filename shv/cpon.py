@@ -1,5 +1,7 @@
 """Cpon data format reader and writer."""
 
+from __future__ import annotations
+
 import collections.abc
 import dataclasses
 import datetime
@@ -30,9 +32,7 @@ class Cpon:
         return CponReader.unpack(data)
 
     @classmethod
-    def pack(
-        cls, value: SHVType, options: typing.Optional["CponWriter.Options"] = None
-    ) -> str:
+    def pack(cls, value: SHVType, options: CponWriter.Options | None = None) -> str:
         """Pack given value and return string."""
         stream = io.BytesIO()
         self = CponWriter(stream, options)
