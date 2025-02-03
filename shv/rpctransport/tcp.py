@@ -1,13 +1,17 @@
 """Connection over TCP/IP."""
 
+from __future__ import annotations
+
 import asyncio
 import collections.abc
 import logging
+import ssl
 
 from .abc import RpcClient
 from .stream import (
     RpcClientStream,
     RpcProtocolBlock,
+    RpcProtocolSerial,
     RpcServerStream,
     RpcTransportProtocol,
 )
@@ -23,19 +27,24 @@ class RpcClientTCP(RpcClientStream):
         location: str = "localhost",
         port: int = 3755,
         protocol: type[RpcTransportProtocol] = RpcProtocolBlock,
+        ssl: ssl.SSLContext | None = None,
     ) -> None:
         super().__init__(protocol)
         self.location = location
         self.port = port
+        self.ssl = ssl
 
     def __str__(self) -> str:
+        proto = "tcp" if self.ssl is None else "ssl"
+        if self.protocol is RpcProtocolSerial:
+            proto += "s"
         location = f"[{self.location}]" if ":" in self.location else self.location
-        return f"tcp:{location}:{self.port}"
+        return f"{proto}:{location}:{self.port}"
 
     async def _open_connection(
         self,
     ) -> tuple[asyncio.StreamReader, asyncio.StreamWriter]:
-        return await asyncio.open_connection(self.location, self.port)
+        return await asyncio.open_connection(self.location, self.port, ssl=self.ssl)
 
 
 class RpcServerTCP(RpcServerStream):
@@ -49,12 +58,17 @@ class RpcServerTCP(RpcServerStream):
         location: str | None = None,
         port: int = 3755,
         protocol: type[RpcTransportProtocol] = RpcProtocolBlock,
+        ssl: ssl.SSLContext | None = None,
     ) -> None:
         super().__init__(client_connected_cb, protocol)
         self.location = location
         self.port = port
+        self.ssl = ssl
 
     def __str__(self) -> str:
+        proto = "tcp" if self.ssl is None else "ssl"
+        if self.protocol is RpcProtocolSerial:
+            proto += "s"
         location = (
             "locahost"
             if self.location is None
@@ -62,15 +76,16 @@ class RpcServerTCP(RpcServerStream):
             if ":" in self.location
             else self.location
         )
-        return f"server.tcp:{location}:{self.port}"
+        return f"server.{proto}:{location}:{self.port}"
 
     async def _create_server(self) -> asyncio.Server:
         # Note: The hack for '::' here is to allow really bind to all
-        # interfaces as that is what this should do and  not just loopback.
+        # interfaces as that is what this should do and not just loopback.
         return await asyncio.start_server(
             self._client_connect,
             host=None if self.location == "::" else self.location,
             port=self.port,
+            ssl=self.ssl,
         )
 
     async def listen(self) -> None:  # noqa: D102
@@ -96,7 +111,19 @@ class RpcServerTCP(RpcServerStream):
     class Client(RpcServerStream.Client):
         """RPC client for TCP server connection."""
 
+        def __init__(
+            self,
+            reader: asyncio.StreamReader,
+            writer: asyncio.StreamWriter,
+            server: RpcServerTCP,
+        ) -> None:
+            super().__init__(reader, writer, server)
+            self._server = server
+
         def __str__(self) -> str:
+            proto = "tcp" if self._server.ssl is None else "ssl"
+            if self.protocol is RpcProtocolSerial:
+                proto += "s"
             peername = self._writer.get_extra_info("peername")
             location = f"[{peername[0]}]" if ":" in peername[0] else peername[0]
             return f"tcp:{location}:{peername[1]}"

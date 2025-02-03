@@ -24,6 +24,14 @@ def init_rpc_client(url: RpcUrl | str) -> RpcClient:
             return RpcClientTCP(url.location, url.port, RpcProtocolBlock)
         case RpcProtocol.TCPS:
             return RpcClientTCP(url.location, url.port, RpcProtocolSerial)
+        case RpcProtocol.SSL:
+            return RpcClientTCP(
+                url.location, url.port, RpcProtocolBlock, url.ssl_client()
+            )
+        case RpcProtocol.SSLS:
+            return RpcClientTCP(
+                url.location, url.port, RpcProtocolSerial, url.ssl_client()
+            )
         case RpcProtocol.UNIX:
             return RpcClientUnix(url.location, RpcProtocolBlock)
         case RpcProtocol.UNIXS:
@@ -72,6 +80,22 @@ async def create_rpc_server(
         case RpcProtocol.TCPS:
             res = RpcServerTCP(
                 client_connected_cb, url.location, url.port, RpcProtocolSerial
+            )
+        case RpcProtocol.SSL:
+            res = RpcServerTCP(
+                client_connected_cb,
+                url.location,
+                url.port,
+                RpcProtocolBlock,
+                url.ssl_server(),
+            )
+        case RpcProtocol.SSLS:
+            res = RpcServerTCP(
+                client_connected_cb,
+                url.location,
+                url.port,
+                RpcProtocolSerial,
+                url.ssl_server(),
             )
         case RpcProtocol.UNIX:
             res = RpcServerUnix(client_connected_cb, url.location, RpcProtocolBlock)

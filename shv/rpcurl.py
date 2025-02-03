@@ -4,6 +4,8 @@ import dataclasses
 import enum
 import functools
 import getpass
+import pathlib
+import ssl
 import typing
 import urllib.parse
 
@@ -64,6 +66,27 @@ class RpcUrl:
     login: RpcLogin = dataclasses.field(default_factory=RpcLogin)
     """Parameters for RPC Broker login."""
 
+    # SSL
+    ca: str | pathlib.Path | None = None
+    """CA certificates."""
+    cert: str | pathlib.Path | None = None
+    """Certificate."""
+    key: str | pathlib.Path | None = None
+    """Secret part of client certificate."""
+    crl: str | pathlib.Path | None = None
+    """Certificate revocation list for server."""
+    verify: bool | None = None
+    """If peer verifies is required.
+
+    For server this enforces clients verification (clients need their own
+    certificate).
+
+    For client this enforces server verification.
+
+    The default is different between server and client. It is ``true`` for
+    client and ``false`` for server and thus default is ``None``.
+    """
+
     # TTY
     baudrate: int = 115200
     """Baudrate used for some of the link protocols."""
@@ -82,6 +105,43 @@ class RpcUrl:
 
     def __str__(self) -> str:
         return self.to_url()
+
+    def ssl_server(self) -> ssl.SSLContext:
+        """Create :class:`ssl.SSLContext` for server."""
+        if self.protocol not in {RpcProtocol.SSL, RpcProtocol.SSLS}:
+            raise ValueError("Not supported for this protocol")
+        if self.ca is None:
+            raise ValueError("'ca' must be provided")
+        if self.cert is None:
+            raise ValueError("'cert' must be provided")
+        if self.key is None:
+            raise ValueError("'key' must be provided")
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(certfile=self.cert, keyfile=self.key)
+        context.load_verify_locations(cafile=self.ca)
+        if self.crl is not None:
+            context.load_verify_locations(cafile=self.crl)
+            context.verify_flags = ssl.VERIFY_CRL_CHECK_LEAF
+        context.verify_mode = (
+            ssl.CERT_REQUIRED if self.verify is True else ssl.CERT_OPTIONAL
+        )
+        return context
+
+    def ssl_client(self) -> ssl.SSLContext:
+        """Create :class:`ssl.SSLContext` for client."""
+        if self.protocol not in {RpcProtocol.SSL, RpcProtocol.SSLS}:
+            raise ValueError("Not supported for this protocol")
+        cacheck = self.verify is not False
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        if cacheck:
+            if self.ca is None:
+                raise ValueError("'ca' must be provided")
+            context.load_verify_locations(cafile=self.ca)
+        if self.cert is not None and self.key is not None:
+            context.load_cert_chain(certfile=self.cert, keyfile=self.key)
+        context.check_hostname = cacheck
+        context.verify_mode = ssl.CERT_REQUIRED if cacheck else ssl.CERT_NONE
+        return context
 
     @classmethod
     def parse(cls, url: str) -> "RpcUrl":
@@ -158,6 +218,30 @@ class RpcUrl:
             res.login.device_id = opts[0]
         if opts := pqs.pop("devmount", []):
             res.login.device_mount_point = opts[0]
+        if protocol in {RpcProtocol.SSL, RpcProtocol.SSLS}:
+            if opts := pqs.pop("ca", []):
+                res.ca = opts[0]
+            if opts := pqs.pop("cafile", []):
+                res.ca = pathlib.Path(opts[0])
+            if opts := pqs.pop("cert", []):
+                res.cert = opts[0]
+            if opts := pqs.pop("certfile", []):
+                res.cert = pathlib.Path(opts[0])
+            if opts := pqs.pop("key", []):
+                res.key = opts[0]
+            if opts := pqs.pop("keyfile", []):
+                res.key = pathlib.Path(opts[0])
+            if opts := pqs.pop("crl", []):
+                res.crl = opts[0]
+            if opts := pqs.pop("crlfile", []):
+                res.crl = pathlib.Path(opts[0])
+            if opts := pqs.pop("verify", []):
+                if opts[0] in {"true", "t"}:
+                    res.verify = True
+                elif opts[0] in {"false", "f"}:
+                    res.verify = False
+                else:
+                    raise ValueError(f"Invalid for verify: {opts[0]}")
         if protocol is RpcProtocol.TTY:
             if opts := pqs.pop("baudrate", []):
                 res.baudrate = int(opts[0])
@@ -237,6 +321,24 @@ class RpcUrl:
                     raise NotImplementedError()  # pragma: no cover
         if self.baudrate != type(self).baudrate:
             opts.append(f"baudrate={self.baudrate}")
+        if self.ca != type(self).ca:
+            opts.append(
+                f"{'cafile' if isinstance(self.ca, pathlib.Path) else 'ca'}={self.ca}"
+            )
+        if self.cert != type(self).cert:
+            opts.append(
+                f"{'certfile' if isinstance(self.cert, pathlib.Path) else 'cert'}={self.cert}"
+            )
+        if self.key != type(self).key:
+            opts.append(
+                f"{'keyfile' if isinstance(self.key, pathlib.Path) else 'key'}={self.key}"
+            )
+        if self.crl != type(self).crl:
+            opts.append(
+                f"{'crlfile' if isinstance(self.crl, pathlib.Path) else 'crl'}={self.crl}"
+            )
+        if self.verify != type(self).verify:
+            opts.append(f"verify={'true' if self.verify else 'false'}")
 
         return (
             f"{protocols[self.protocol]}:{netloc}{'?' if opts else ''}{'&'.join(opts)}"

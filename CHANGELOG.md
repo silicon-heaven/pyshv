@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- Support for `ssl` and `ssls` transports
 - Support for token logins in `RpcUrl` and in `RpcLogin`
 
 ### Changed
@@ -90,6 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `shvtypes` module with utilites to work with RPC type hints
 - `.device:uptime` and `.device:reset`
 - Support for RPC Files (both accessing and providing)
+- Support for SSL and SSLS protocols for both client and server
 
 ### Changed
 - "Simple" API was renamed to SHV and thus `SimpleClient` is now `SHVClient`

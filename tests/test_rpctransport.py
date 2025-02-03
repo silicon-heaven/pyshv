@@ -9,8 +9,10 @@ import dataclasses
 import io
 import logging
 import os
+import pathlib
 import pty
 import select
+import ssl
 import threading
 
 import pytest
@@ -156,18 +158,22 @@ class TestPipe(Link):
 class TestTCP(ServerLink):
     """Check that TCP/IP transport protocol works."""
 
+    @pytest.fixture(name="ssl")
+    def fixture_ssl(self):
+        return None, None
+
     @pytest.fixture(name="server")
-    async def fixture_server(self, port):
+    async def fixture_server(self, port, ssl):
         queue = asyncio.Queue()
-        server = RpcServerTCP(queue.put, "localhost", port)
+        server = RpcServerTCP(queue.put, "localhost", port, ssl=ssl[1])
         await server.listen()
         yield server, queue
         server.close()
         await server.wait_closed()
 
     @pytest.fixture(name="clients")
-    async def fixture_clients(self, server, port):
-        client = await RpcClientTCP.connect("localhost", port)
+    async def fixture_clients(self, server, port, ssl):
+        client = await RpcClientTCP.connect("localhost", port, ssl=ssl[0])
         server_client = await server[1].get()
         yield server_client, client
         client.disconnect()
@@ -183,6 +189,26 @@ class TestTCP(ServerLink):
             await client.send(RpcMessage.request(".app", "ping"))
         client.disconnect()
         await client.wait_disconnect()
+
+
+class TestSSL(TestTCP):
+    """Check that TCP/IP SSL transport protocol works."""
+
+    @pytest.fixture(name="ssl")
+    def fixture_ssl(self):
+        ca = pathlib.Path(__file__).parent / "ca"
+
+        client = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        client.load_verify_locations(cafile=ca / "ca.crt")
+        client.check_hostname = False
+        client.verify_mode = ssl.CERT_REQUIRED
+
+        server = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        server.load_cert_chain(certfile=ca / "server.crt", keyfile=ca / "server.key")
+        server.load_verify_locations(cafile=ca / "ca.crt")
+        server.verify_mode = ssl.CERT_OPTIONAL
+
+        return client, server
 
 
 class TestUnix(ServerLink):
