@@ -3,6 +3,7 @@
 import asyncio
 import collections.abc
 import logging
+import ssl
 
 from .abc import RpcClient
 from .stream import (
@@ -23,10 +24,12 @@ class RpcClientTCP(RpcClientStream):
         location: str = "localhost",
         port: int = 3755,
         protocol: type[RpcTransportProtocol] = RpcProtocolStream,
+        ssl: ssl.SSLContext | None = None,
     ) -> None:
         super().__init__(protocol)
         self.location = location
         self.port = port
+        self.ssl = ssl
 
     def __str__(self) -> str:
         location = f"[{self.location}]" if ":" in self.location else self.location
@@ -35,7 +38,7 @@ class RpcClientTCP(RpcClientStream):
     async def _open_connection(
         self,
     ) -> tuple[asyncio.StreamReader, asyncio.StreamWriter]:
-        return await asyncio.open_connection(self.location, self.port)
+        return await asyncio.open_connection(self.location, self.port, ssl=self.ssl)
 
 
 class RpcServerTCP(RpcServerStream):
@@ -49,10 +52,12 @@ class RpcServerTCP(RpcServerStream):
         location: str | None = None,
         port: int = 3755,
         protocol: type[RpcTransportProtocol] = RpcProtocolStream,
+        ssl: ssl.SSLContext | None = None,
     ) -> None:
         super().__init__(client_connected_cb, protocol)
         self.location = location
         self.port = port
+        self.ssl = ssl
 
     def __str__(self) -> str:
         location = (
@@ -66,11 +71,12 @@ class RpcServerTCP(RpcServerStream):
 
     async def _create_server(self) -> asyncio.Server:
         # Note: The hack for '::' here is to allow really bind to all
-        # interfaces as that is what this should do and  not just loopback.
+        # interfaces as that is what this should do and not just loopback.
         return await asyncio.start_server(
             self._client_connect,
             host=None if self.location == "::" else self.location,
             port=self.port,
+            ssl=self.ssl,
         )
 
     async def listen(self) -> None:  # noqa: D102
