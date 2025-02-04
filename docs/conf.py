@@ -19,6 +19,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.todo",
     "sphinx_book_theme",
+    "sphinx_mdinclude",
     "sphinx_multiversion",
 ]
 

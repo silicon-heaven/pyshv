@@ -82,6 +82,11 @@ mypy:
     - mkdir .mypy-cache
     - nix develop --quiet -c mypy --cache-dir .mypy-cache .
 
+shellcheck:
+  extends: .lint
+  script:
+    - git ls-files '**.sh' | xargs nix develop --quiet -c shellcheck
+
 statix:
   extends: .lint
   script:
@@ -99,6 +104,12 @@ format:
   script:
     - nix develop --quiet -c ruff format --diff .
     - nix develop --quiet -c ruff check --diff .
+
+shell-format:
+  extends: .style
+  script:
+    - git ls-files '**.sh' | xargs nix develop --quiet -c shfmt -w
+    - git diff --exit-code
 
 nixfmt:
   extends: .style
@@ -139,7 +150,7 @@ release:
     - apk add bash curl jq py3-pip
     - pip install yq
   script:
-    - bash .release.sh
+    - bash release.sh
 
 gitlab-pypi:
   extends: [.nix, .deploy]

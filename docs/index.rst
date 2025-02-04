@@ -14,5 +14,6 @@ Table of contents
    device
    broker/index
    api/index
+   CHANGELOG
 
 :ref:`genindex`
