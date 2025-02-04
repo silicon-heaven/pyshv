@@ -41,7 +41,7 @@ See the `pytest documentation <https://docs.pytest.org/>`__ for more info.
 Documentation
 -------------
 
-The documentation is available in ``docs`` directory. You can build it using::
+The documentation is available in ``docs`` directory. You can build it using:
 
 .. code-block:: console
 
