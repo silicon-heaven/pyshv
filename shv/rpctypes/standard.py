@@ -1,5 +1,7 @@
 """The definition of standard SHV types."""
 
+from __future__ import annotations
+
 import typing
 
 from .. import SHVType

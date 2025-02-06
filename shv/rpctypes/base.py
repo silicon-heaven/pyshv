@@ -1,5 +1,7 @@
 """The base for the other RPC Types."""
 
+from __future__ import annotations
+
 import abc
 
 from .. import SHVType
