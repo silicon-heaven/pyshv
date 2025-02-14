@@ -3,6 +3,7 @@
 from .__version__ import VERSION
 from .chainpack import ChainPack, ChainPackReader, ChainPackWriter
 from .cpon import Cpon, CponReader, CponWriter
+from .path import SHVPath, SHVPathParents
 from .rpcalert import RpcAlert
 from .rpcerrors import (
     RpcError,
@@ -161,6 +162,8 @@ __all__ = [
     "SHVMethods",
     "SHVNull",
     "SHVNullType",
+    "SHVPath",
+    "SHVPathParents",
     "SHVStr",
     "SHVType",
     "SHVUInt",

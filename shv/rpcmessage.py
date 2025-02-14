@@ -9,6 +9,7 @@ import typing
 
 from .chainpack import ChainPackWriter
 from .cpon import CponWriter
+from .path import SHVPath
 from .rpcerrors import RpcError, RpcErrorCode
 from .rpcmethod import RpcMethodAccess
 from .value import SHVIMap, SHVIMapType, SHVType, is_shvimap, shvmeta_eq
@@ -194,6 +195,16 @@ class RpcMessage:
             self.value.meta[self.Tag.PATH] = path
         else:
             self.value.meta.pop(self.Tag.PATH, None)
+
+    @property
+    def shvpath(self) -> SHVPath:
+        """SHV path specified for this message as :class:`SHVPath`."""
+        return SHVPath(self.path)
+
+    @shvpath.setter
+    def shvpath(self, path: SHVPath) -> None:
+        """Set given :class:`SHVPath` as SHV path for this message."""
+        self.path = str(path)
 
     @property
     def has_method(self) -> bool:
@@ -421,7 +432,7 @@ class RpcMessage:
     @classmethod
     def request(
         cls,
-        path: str,
+        path: str | SHVPath,
         method: str,
         param: SHVType = None,
         rid: int | None = None,
@@ -439,7 +450,7 @@ class RpcMessage:
         res = cls()
         res.request_id = rid or cls.next_request_id()
         res.method = method
-        res.path = path
+        res.path = str(path)
         res.param = param
         res.user_id = user_id
         return res
@@ -447,7 +458,7 @@ class RpcMessage:
     @classmethod
     def signal(
         cls,
-        path: str,
+        path: str | SHVPath,
         name: str = "chng",
         source: str = "get",
         value: SHVType = None,
@@ -466,14 +477,16 @@ class RpcMessage:
         res = cls()
         res.signal_name = name
         res.source = source
-        res.path = path
+        res.path = str(path)
         res.param = value
         res.rpc_access = access
         res.user_id = user_id
         return res
 
     @classmethod
-    def lsmod(cls, path: str, nodes: collections.abc.Mapping[str, bool]) -> RpcMessage:
+    def lsmod(
+        cls, path: str | SHVPath, nodes: collections.abc.Mapping[str, bool]
+    ) -> RpcMessage:
         """Create ``lsmod`` signal message.
 
         This provides creation of "lsmod" signal message that must be used when
@@ -490,7 +503,7 @@ class RpcMessage:
         res = cls()
         res.signal_name = "lsmod"
         res.source = "ls"
-        res.path = path
+        res.path = str(path)
         res.param = nodes
         res.rpc_access = RpcMethodAccess.BROWSE
         return res

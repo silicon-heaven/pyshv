@@ -12,3 +12,4 @@ connection to the SHV RPC or as a base for the SHV device implementation.
    shvvalueclient
    shvdevice
    shvmethods
+   shvpath

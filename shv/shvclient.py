@@ -9,6 +9,7 @@ import logging
 import time
 import typing
 
+from .path import SHVPath
 from .rpclogin import RpcLogin
 from .rpcmessage import RpcMessage
 from .rpcparam import shvgett
@@ -195,7 +196,7 @@ class SHVClient(SHVBase):
 
     async def call(  # noqa: D102
         self,
-        path: str,
+        path: str | SHVPath,
         method: str,
         param: SHVType = None,
         call_attempts: int | None = None,
