@@ -10,6 +10,7 @@ import logging
 import traceback
 
 from .__version__ import VERSION
+from .path import SHVPath
 from .rpcerrors import (
     RpcError,
     RpcInvalidParamError,
@@ -153,7 +154,7 @@ class SHVBase:
 
     async def call(
         self,
-        path: str,
+        path: str | SHVPath,
         method: str,
         param: SHVType = None,
         call_attempts: int | None = None,
@@ -229,7 +230,7 @@ class SHVBase:
         """Ping the peer to check the connection."""
         await self.call(".app" if await self.peer_is_shv3() else ".broker/app", "ping")
 
-    async def ls(self, path: str) -> list[str]:
+    async def ls(self, path: str | SHVPath) -> list[str]:
         """List child nodes of the node on the specified path.
 
         :param path: SHV path to the node we want children to be listed for.
@@ -241,7 +242,7 @@ class SHVBase:
             raise RpcMethodCallExceptionError(f"Invalid result returned: {res!r}")
         return res
 
-    async def ls_has_child(self, path: str, name: str) -> bool:
+    async def ls_has_child(self, path: str | SHVPath, name: str) -> bool:
         """Use ``ls`` method to check for child.
 
         :param path: SHV path to the node with possible child of given name.
@@ -254,7 +255,9 @@ class SHVBase:
             raise RpcMethodCallExceptionError(f"Invalid result returned: {res!r}")
         return res
 
-    async def dir(self, path: str, details: bool = False) -> list[RpcMethodDesc]:
+    async def dir(
+        self, path: str | SHVPath, details: bool = False
+    ) -> list[RpcMethodDesc]:
         """List methods associated with node on the specified path.
 
         :param path: SHV path to the node we want methods to be listed for.
@@ -267,7 +270,7 @@ class SHVBase:
             return [RpcMethodDesc.from_shv(m) for m in res]
         raise RpcMethodCallExceptionError(f"Invalid result returned: {res!r}")
 
-    async def dir_exists(self, path: str, name: str) -> bool:
+    async def dir_exists(self, path: str | SHVPath, name: str) -> bool:
         """Check if method exists using ``dir`` method.
 
         :param path: SHV path to the node we want methods to be listed for.
