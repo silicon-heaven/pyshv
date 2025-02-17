@@ -1,58 +1,29 @@
 {
   description = "Project Template Python";
 
+  inputs.flakepy.url = "gitlab:Cynerd/flakepy";
+
   outputs = {
     self,
-    flake-utils,
+    flakepy,
     nixpkgs,
   }: let
-    inherit (builtins) match;
-    inherit (flake-utils.lib) eachDefaultSystem filterPackages;
-    inherit (nixpkgs.lib) head trivial hasSuffix attrValues getAttrs composeManyExtensions;
+    inherit (flakepy.inputs.flake-utils.lib) eachDefaultSystem;
+    inherit (nixpkgs.lib) composeManyExtensions;
 
-    pyproject = trivial.importTOML ./pyproject.toml;
-    inherit (pyproject.project) name version;
-    src = builtins.path {
-      path = ./.;
-      filter = path: _: ! hasSuffix ".nix" path;
+    pyproject = flakepy.lib.readPyproject ./. {
+      # This extends mapping of python to nixpkgs package names, such as:
+      # pytest-asyncio = "pytest-asyncio_0_21";
     };
 
-    pypi2nix = list: pypkgs:
-      attrValues (getAttrs (map (n: let
-          pyname = head (match "([^ =<>;~]*).*" n);
-          pymap = {
-          };
-        in
-          pymap."${pyname}" or pyname)
-        list)
-        pypkgs);
-    requires = pypi2nix pyproject.project.dependencies;
-    requires-test = pypi2nix pyproject.project.optional-dependencies.test;
-    requires-docs = pypi2nix pyproject.project.optional-dependencies.docs;
-
-    pypackage = {
-      buildPythonPackage,
-      python,
-      pytestCheckHook,
-      setuptools,
-      sphinxHook,
-    }:
-      buildPythonPackage {
-        pname = pyproject.project.name;
-        inherit version src;
-        pyproject = true;
-        build-system = [setuptools];
-        outputs = ["out" "doc"];
-        propagatedBuildInputs = requires python.pkgs;
-        nativeBuildInputs = [sphinxHook] ++ requires-docs python.pkgs;
-        nativeCheckInputs = [pytestCheckHook] ++ requires-test python.pkgs;
-        meta.mainProgram = "template_package_name";
-      };
+    pypackage = pyproject.buildPackage {
+      meta.mainProgram = "template_package_name";
+    };
   in
     {
       overlays = {
         pythonPackages = final: _: {
-          "${name}" = final.callPackage pypackage {};
+          "${pyproject.pname}" = final.callPackage pypackage {};
         };
         pkgs = _: prev: {
           pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [self.overlays.pythonPackages];
@@ -65,26 +36,24 @@
     // eachDefaultSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system}.extend self.overlays.default;
     in {
-      packages.default = pkgs.python3Packages."${name}";
+      packages.default = pkgs.python3Packages."${pyproject.pname}";
       legacyPackages = pkgs;
 
-      devShells = filterPackages system {
-        default = pkgs.mkShell {
-          packages = with pkgs; [
-            deadnix
-            editorconfig-checker
-            gitlint
-            mypy
-            ruff
-            shellcheck
-            shfmt
-            statix
-            twine
-            (python3.withPackages (p:
-                with p; [build sphinx-autobuild]))
-          ];
-          inputsFrom = [self.packages.${system}.default];
-        };
+      devShells.default = pkgs.mkShell {
+        packages = with pkgs; [
+          deadnix
+          editorconfig-checker
+          gitlint
+          mypy
+          ruff
+          shellcheck
+          shfmt
+          statix
+          twine
+          (python3.withPackages (pypkgs:
+              with pypkgs; [build sphinx-autobuild]))
+        ];
+        inputsFrom = [self.packages.${system}.default];
       };
 
       checks.default = self.packages.${system}.default;
