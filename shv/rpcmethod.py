@@ -217,7 +217,7 @@ class RpcMethodDesc:
     @functools.lru_cache(maxsize=1)
     def stddir(cls) -> RpcMethodDesc:
         """Get description of standard 'dir' method."""
-        return cls("dir", param="n|b|s", result="!dir")
+        return cls("dir", param="n|b|s", result="[!dir]|b")
 
     @classmethod
     @functools.lru_cache(maxsize=1)

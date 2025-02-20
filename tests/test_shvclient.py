@@ -29,7 +29,7 @@ from shv import (
                     1: "dir",
                     2: 0,
                     3: "n|b|s",
-                    4: "!dir",
+                    4: "[!dir]|b",
                     5: 1,
                 },
                 {

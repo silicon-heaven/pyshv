@@ -22,7 +22,7 @@ from shv import RpcMethodAccess, RpcMethodNotFoundError, shvmeta
             "dir",
             None,
             [
-                {1: "dir", 2: 0, 3: "n|b|s", 4: "!dir", 5: RpcMethodAccess.BROWSE},
+                {1: "dir", 2: 0, 3: "n|b|s", 4: "[!dir]|b", 5: RpcMethodAccess.BROWSE},
                 {
                     1: "ls",
                     2: 0,
@@ -38,7 +38,7 @@ from shv import RpcMethodAccess, RpcMethodNotFoundError, shvmeta
             "dir",
             None,
             [
-                {1: "dir", 2: 0, 3: "n|b|s", 4: "!dir", 5: RpcMethodAccess.BROWSE},
+                {1: "dir", 2: 0, 3: "n|b|s", 4: "[!dir]|b", 5: RpcMethodAccess.BROWSE},
                 {
                     1: "ls",
                     2: 0,
@@ -60,7 +60,7 @@ from shv import RpcMethodAccess, RpcMethodNotFoundError, shvmeta
             "dir",
             None,
             [
-                {1: "dir", 2: 0, 3: "n|b|s", 4: "!dir", 5: RpcMethodAccess.BROWSE},
+                {1: "dir", 2: 0, 3: "n|b|s", 4: "[!dir]|b", 5: RpcMethodAccess.BROWSE},
                 {
                     1: "ls",
                     2: 0,
@@ -89,7 +89,7 @@ from shv import RpcMethodAccess, RpcMethodNotFoundError, shvmeta
             "dir",
             None,
             [
-                {1: "dir", 2: 0, 3: "n|b|s", 4: "!dir", 5: RpcMethodAccess.BROWSE},
+                {1: "dir", 2: 0, 3: "n|b|s", 4: "[!dir]|b", 5: RpcMethodAccess.BROWSE},
                 {
                     1: "ls",
                     2: 0,
