@@ -5,11 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Support for scientific notation for SHV Double in CPON.
+
 ### Fixed
 - type hint for `dir` result (corrected against SHV standard).
 - default parameter type hint for getters is now correctly `i(0,)|n` instead of
   plain `i`.
 - type hint `!getLogP` being Struct instead of KeyStruct
+- SHV Map no longer accept SHV UInt as key (SHV standard correct).
+- CPON now represents SHV Double in hexadecimal format thus bypassing float to
+  decimal conversion issue
 
 
 ## [0.8.0] - 2025-02-04

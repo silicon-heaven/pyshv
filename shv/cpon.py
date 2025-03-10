@@ -271,60 +271,57 @@ class CponReader(commonpack.CommonReader):
             res[key] = val
         return res
 
-    def _new_read_number(self) -> int | SHVUInt | decimal.Decimal:
+    def _new_read_number(self) -> int | SHVUInt | float | decimal.Decimal:
         bval = bytearray()
 
-        def accept(possib: bytes) -> int | None:
+        def accept(possib: bytes) -> bool:
             b = self._peek_byte()
             if b not in possib:
-                return None
+                return False
             bval.append(self._read_byte())
-            return b
+            return b is not None
 
-        tp: type = int
-        parsed = False
-        nonempty = False
+        def multiaccept(possib: bytes) -> None:
+            while accept(possib):
+                pass
+
+        cset_dec = b"0123456789"
+        cset_hex = b"0123456789AaBbCcDdEeFf"
+        cset_bin = b"01"
+
+        cset = cset_dec
         accept(b"-+")
-        if accept(b"0") is not None:
-            if accept(b"x") is not None:
-                while accept(b"0123456789AaBbCcDdEeFf") is not None:
-                    nonempty = True
-                parsed = True
+        if accept(b"0"):
+            if accept(b"x"):
+                cset = cset_hex
             elif accept(b"b"):
-                while accept(b"01"):
-                    nonempty = True
-                parsed = True
-        if not parsed:
-            exp = False
-            while True:
-                lb = accept(
-                    b"0123456789.ueE"
-                    if tp is int
-                    else b"0123456789"
-                    if exp
-                    else b"0123456789eE"
-                )
-                if lb == ord("."):
-                    tp = decimal.Decimal
-                elif lb in {ord("e"), ord("E")}:
-                    tp = decimal.Decimal
-                    accept(b"-+")
-                    exp = True
-                elif lb == ord("u"):
-                    tp = SHVUInt
-                    bval.pop()  # remove "u" from bytes
-                    break
-                elif lb is None:
-                    break
-                nonempty = True
-        if not nonempty:
-            bval.append(ord("0"))
+                cset = cset_bin
+        multiaccept(cset)
+        if dot := accept(b"."):
+            multiaccept(cset)
+        tp: type = int
+        if accept(b"pP"):
+            tp = float
+            accept(b"+-")
+            multiaccept(cset_dec)
+        elif accept(b"eE"):
+            if cset is not cset_dec:
+                raise ValueError("Decimal number must be decimal")
+            tp = decimal.Decimal
+            accept(b"+-")
+            multiaccept(cset_dec)
+        elif dot:
+            tp = decimal.Decimal
+        elif self._peek_byte() == ord("u"):
+            self._read_byte()
+            tp = SHVUInt
 
-        if tp in {int, SHVUInt}:
-            return tp(bval, 0)  # type: ignore
-        if tp == decimal.Decimal:
+        if tp is float:
+            sval = bval.decode("ascii")
+            return float.fromhex(sval) if cset is cset_hex else float(sval)
+        if tp is decimal.Decimal:
             return tp(bval.decode("ascii"))  # type: ignore
-        assert False  # should be unreachable
+        return tp(bval, 0)  # type: ignore
 
 
 class CponWriter(commonpack.CommonWriter):
@@ -421,7 +418,8 @@ class CponWriter(commonpack.CommonWriter):
         self._writestr(f"{value}u")
 
     def write_double(self, value: float) -> None:  # noqa: D102
-        self._writestr(str(value))
+        mant, p, exp = value.hex().partition("p")
+        self._writestr(f"{mant.rstrip('0')}{p}{exp}")
 
     def write_decimal(self, value: decimal.Decimal) -> None:  # noqa: D102
         sval = str(value)
