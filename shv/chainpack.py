@@ -271,7 +271,7 @@ class ChainPackReader(commonpack.CommonReader):
                 self._read_byte()
                 break
             key = self.read()
-            if not isinstance(key, str | int):
+            if not isinstance(key, str | int) or isinstance(key, SHVUInt):
                 raise ValueError(f"Invalid Map key: {type(key)}")
             val = self.read()
             mmap[key] = val

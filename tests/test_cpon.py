@@ -5,7 +5,16 @@ import decimal
 
 import pytest
 
-from shv import CponReader, CponWriter, SHVIMap, SHVMap, SHVMeta, SHVUInt, shvmeta
+from shv import (
+    CponReader,
+    CponWriter,
+    SHVIMap,
+    SHVInt,
+    SHVMap,
+    SHVMeta,
+    SHVUInt,
+    shvmeta,
+)
 
 DATA: list = [
     ("null", None),
@@ -24,7 +33,8 @@ DATA: list = [
     (str(2**32 - 1), 2**32 - 1),
     (str(2**53 - 1), 2**53 - 1),
     (str(1 - 2**53), 1 - 2**53),
-    ("223.0", 223.0),
+    ("0x1.bep+7", 223.0),
+    ("-0x1.cp+0", -1.75),
     ("2.3", decimal.Decimal((0, (2, 3), -1))),
     ("-0.00012", decimal.Decimal((1, (1, 2), -5))),
     ("3E+2", decimal.Decimal((0, (3,), 2))),
@@ -83,11 +93,11 @@ DATA: list = [
     [
         *DATA,
         ("0x42", 0x42),
-        ("223.", 223.0),
+        ("223.", decimal.Decimal("223.0")),
         ("2.30", decimal.Decimal("2.3")),
         ("-1234567890.", decimal.Decimal((1, (1, 2, 3, 4, 5, 6, 7, 8, 9), 1))),
         ("[1, 2, 3]", [1, 2, 3]),
-        ("<>1", 1),
+        ("<>1", SHVInt(1)),
         (
             'd"2017-05-03T18:30:00Z"',
             datetime.datetime(2017, 5, 3, 18, 30, tzinfo=datetime.UTC),
@@ -129,6 +139,7 @@ DATA: list = [
 def test_reader(cpon, data):
     res = CponReader.unpack(cpon)
     assert res == data
+    assert type(res) is type(data)
     assert shvmeta(res) == shvmeta(data)
 
 
