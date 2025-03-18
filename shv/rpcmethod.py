@@ -160,7 +160,7 @@ class RpcMethodDesc:
     def getter(
         cls,
         name: str = "get",
-        param: str = "i",
+        param: str = "i(0,)|n",
         result: str = "?",
         access: RpcMethodAccess = RpcMethodAccess.READ,
         signal: bool | str = False,
