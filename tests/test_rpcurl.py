@@ -77,6 +77,12 @@ DATA = [
         "serial:/dev/ttyX?baudrate=1152000",
         RpcUrl("/dev/ttyX", protocol=RpcProtocol.TTY, baudrate=1152000),
     ),
+    (
+        "can://test@vcan0:65",
+        RpcUrl(
+            "vcan0", protocol=RpcProtocol.CAN, port=65, login=RpcLogin(username="test")
+        ),
+    ),
 ]
 
 

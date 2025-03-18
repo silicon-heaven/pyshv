@@ -39,6 +39,8 @@ class RpcProtocol(enum.Enum):
     """WebSockets transport layer."""
     WSS = enum.auto()
     """WebSockets secure transport layer."""
+    CAN = enum.auto()
+    """CAN Bus (socketcan) transport layer."""
 
 
 @dataclasses.dataclass
@@ -57,7 +59,10 @@ class RpcUrl:
     location: str
     """Hostname of the SHV RPC server or path to the socket."""
     port: int = -1
-    """Port the SHV RPC server is listening on."""
+    """Port the SHV RPC server is listening on.
+
+    In case of CAN Bus this is CAN address (0-127).
+    """
     protocol: RpcProtocol = RpcProtocol.TCP
     """SHV RPC protocol used to communicate (This is scheme in URL therminology)"""
     login: RpcLogin = dataclasses.field(default_factory=RpcLogin)
@@ -102,6 +107,7 @@ class RpcUrl:
             "tty": RpcProtocol.TTY,
             "ws": RpcProtocol.WS,
             "wss": RpcProtocol.WSS,
+            "can": RpcProtocol.CAN,
         }
         if sr.scheme not in protocols:
             raise ValueError(f"Invalid scheme: {sr.scheme}")
@@ -125,6 +131,12 @@ class RpcUrl:
             res.location = f"/{sr.netloc}{sr.path}" if sr.netloc else sr.path
         elif protocol in {RpcProtocol.WS, RpcProtocol.WSS}:
             res.location = f"{sr.netloc}{sr.path}"
+        elif protocol is RpcProtocol.CAN:
+            res.location = sr.hostname or ""
+            if sr.port is not None:
+                res.port = int(sr.port)
+            if sr.path:
+                raise ValueError(f"Path is not supported for {sr.scheme}: {sr.path}")
         else:
             raise NotImplementedError  # pragma: no cover
 
@@ -169,6 +181,7 @@ class RpcUrl:
             RpcProtocol.TTY: "serial",
             RpcProtocol.WS: "ws",
             RpcProtocol.WSS: "wss",
+            RpcProtocol.CAN: "can",
         }
         user_added = not self.login.username or self.login.username == RpcLogin.username
         if self.protocol in {
@@ -194,6 +207,14 @@ class RpcUrl:
             RpcProtocol.WSS,
         }:
             netloc = self.location
+        elif self.protocol is RpcProtocol.CAN:
+            netloc = "//"
+            if not user_added:
+                netloc += f"{self.login.username}@"
+                user_added = True
+            netloc += self.location
+            if self.port >= 0:
+                netloc += f":{self.port}"
         else:
             raise NotImplementedError  # pragma: no cover
 

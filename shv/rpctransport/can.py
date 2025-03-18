@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import collections.abc
 import logging
 import random
+import typing
+import weakref
 
 import can
 
@@ -13,15 +16,128 @@ from .abc import RpcClient, RpcServer
 logger = logging.getLogger(__name__)
 
 
+class RpcCAN:
+    """The SHV RPC CAN Bus management operations."""
+
+    socketcan_map: typing.ClassVar[weakref.WeakValueDictionary[str, RpcCAN]] = (
+        weakref.WeakValueDictionary()
+    )
+    """Map of the socket can bus."""
+
+    def __init__(self, bus: can.BusABC) -> None:
+        self.bus = bus
+        self._registered = False
+
+    def __str__(self) -> str:
+        return self.bus.channel_info
+
+    @classmethod
+    def socketcan(cls, interface: str) -> RpcCAN:
+        """Get :class:`RpcCAN` for given socket CAN interface."""
+        res = cls.socketcan_map.get(interface)
+        if res is None:
+            res = RpcCAN(can.Bus(channel=interface, interface="socketcan"))
+            cls.socketcan_map[interface] = res
+        return res
+
+    def _receive(self) -> None:
+        if msg := self.bus.recv(0):
+            print(msg)
+
+    def send(self, src: int, dest: int, data: bytes) -> None:
+        """Send SHV RPC message in multiple CAN frames."""
+        assert 0 <= dest <= 255
+        count = -1
+        off = 0
+        datalen = len(data)
+        for siz in (64, 48, 32, 24, 20, 16, 12, 8, 7, 6, 5, 4, 3, 2, 1):
+            while (datalen + 1) // siz:
+                datalen -= siz - 1
+                self.bus.send(
+                    can.Message(
+                        arbitration_id=(0x80 if datalen else 0)  # NotLast
+                        + (0x40 if count < 0 else 0)  # First
+                        + 0x20  # QoS
+                        + src,
+                        is_extended_id=False,
+                        data=bytes([dest if count < 0 else count])
+                        + data[off : siz - 1],
+                        is_fd=True,
+                    )
+                )
+                count = (count + 1) % 0x100
+                off += siz - 1
+
+    async def listen(self, callback: collections.abc.Callable, address: int) -> None:
+        pass
+
+
+class RpcClientCAN(RpcClient):
+    """RPC client communicating over CAN bus."""
+
+    def __init__(
+        self, location: str | RpcCAN, address: int, local_address: int | None = None
+    ) -> None:
+        self._location = location
+        self._can: RpcCAN | None = None
+        self._src: int | None = local_address
+        self._dest = address
+        self._recv: asyncio.Queue[bytes] = asyncio.Queue()
+
+    def __str__(self) -> str:
+        return f"can://{self._location}:{self._dest}[{self._src}]"
+
+    async def _send(self, msg: bytes) -> None:
+        if self._can is None:
+            raise EOFError("Not connected")
+        assert self._src is not None
+        self._can.send(self._src, self._dest, msg)
+
+    async def _receive(self) -> bytes:
+        return await self._recv.get()
+
+    async def reset(self) -> None:
+        if not self.connected:
+            self._can = (
+                RpcCAN.socketcan(self._location)
+                if isinstance(self._location, str)
+                else self._location
+            )
+            assert self._src is not None  # TODO
+            await self._can.listen(self._recv.put, self._src)
+            logger.debug("%s: Connected", self)
+        else:
+            await super().reset()
+
+    @property
+    def connected(self) -> bool:
+        return self._can is not None
+
+    def _disconnect(self) -> None:
+        pass
+
+
 class RpcServerCAN(RpcServer):
     """RPC server listening on CAN bus."""
 
-    def __init__(self, bus: can.Bus, address: int | None = None) -> None:
-        self.bus = bus
+    def __init__(
+        self,
+        client_connected_cb: collections.abc.Callable[
+            [RpcClient], collections.abc.Awaitable[None] | None
+        ],
+        location: str | RpcCAN,
+        address: int | None = None,
+    ) -> None:
+        if isinstance(location, str):
+            location = RpcCAN(can.Bus(channel=location, interface="socketcan"))
+        self.rpccan = location
         self._address = address
         self._close = asyncio.Event()
         self._notifier: can.Notifier | None = None
         self._clients: dict[int, tuple[RpcServerCAN.Client, asyncio.Queue[bytes]]] = {}
+
+    def __str__(self) -> str:
+        return f"server.can://{self._location}:{self._address}"
 
     @property
     def address(self) -> int | None:
