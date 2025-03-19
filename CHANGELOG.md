@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - type hint for `dir` result (corrected against SHV standard).
 - default parameter type hint for getters is now correctly `i(0,)|n` instead of
   plain `i`.
+- type hint `!getLogP` being Struct instead of KeyStruct
 
 
 ## [0.8.0] - 2025-02-04

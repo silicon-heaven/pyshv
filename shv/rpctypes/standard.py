@@ -14,6 +14,7 @@ from .datetime import rpctype_datetime
 from .enum import RpcTypeEnum
 from .imap import RpcTypeIMap
 from .integer import RpcTypeInteger, rpctype_integer
+from .keystruct import RpcTypeKeyStruct
 from .list import RpcTypeList
 from .map import RpcTypeMap, rpctype_map
 from .null import rpctype_null
@@ -165,12 +166,12 @@ i{u|n:readyToReceive:1,u|n:readyToSend}
 
 rpctype_getlog_p = RpcTypeStandard(
     "getLogP",
-    RpcTypeStruct({
-        0: (RpcTypeOneOf(rpctype_datetime, rpctype_null), "since"),
-        1: (RpcTypeOneOf(rpctype_datetime, rpctype_null), "until"),
-        2: (RpcTypeOneOf(RpcTypeInteger(0), rpctype_null), "count"),
-        3: (RpcTypeOneOf(rpctype_bool, rpctype_null), "snapshot"),
-        4: (RpcTypeOneOf(rpctype_string, rpctype_null), "ri"),
+    RpcTypeKeyStruct({
+        "since": RpcTypeOneOf(rpctype_datetime, rpctype_null),
+        "until": RpcTypeOneOf(rpctype_datetime, rpctype_null),
+        "count": RpcTypeOneOf(RpcTypeInteger(0), rpctype_null),
+        "snapshot": RpcTypeOneOf(rpctype_bool, rpctype_null),
+        "ri": RpcTypeOneOf(rpctype_string, rpctype_null),
     }),
 )
 """
