@@ -32,8 +32,8 @@
 
     pypackage = {
       buildPythonPackage,
+      python,
       pytestCheckHook,
-      pythonPackages,
       setuptools,
       sphinxHook,
     }:
@@ -43,21 +43,23 @@
         pyproject = true;
         build-system = [setuptools];
         outputs = ["out" "doc"];
-        propagatedBuildInputs = requires pythonPackages;
-        nativeBuildInputs = [sphinxHook] ++ requires-docs pythonPackages;
-        nativeCheckInputs = [pytestCheckHook] ++ requires-test pythonPackages;
+        propagatedBuildInputs = requires python.pkgs;
+        nativeBuildInputs = [sphinxHook] ++ requires-docs python.pkgs;
+        nativeCheckInputs = [pytestCheckHook] ++ requires-test python.pkgs;
         meta.mainProgram = "template_package_name";
       };
   in
     {
       overlays = {
-        pythonPackagesExtension = final: _: {
+        pythonPackages = final: _: {
           "${name}" = final.callPackage pypackage {};
         };
-        noInherit = _: prev: {
-          pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [self.overlays.pythonPackagesExtension];
+        pkgs = _: prev: {
+          pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [self.overlays.pythonPackages];
         };
-        default = composeManyExtensions [self.overlays.noInherit];
+        default = composeManyExtensions [
+          self.overlays.pkgs
+        ];
       };
     }
     // eachDefaultSystem (system: let
