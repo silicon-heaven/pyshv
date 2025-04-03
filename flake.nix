@@ -8,7 +8,7 @@
   }: let
     inherit (builtins) match;
     inherit (flake-utils.lib) eachDefaultSystem filterPackages;
-    inherit (nixpkgs.lib) head foldl trivial hasSuffix attrValues getAttrs composeManyExtensions;
+    inherit (nixpkgs.lib) head trivial hasSuffix attrValues getAttrs composeManyExtensions;
 
     pyproject = trivial.importTOML ./pyproject.toml;
     inherit (pyproject.project) name version;
@@ -74,18 +74,16 @@
             deadnix
             editorconfig-checker
             gitlint
+            mypy
             ruff
             shellcheck
             shfmt
             statix
+            twine
             (python3.withPackages (p:
-              [p.build p.twine p.sphinx-autobuild p.mypy]
-              ++ foldl (prev: f: prev ++ f p) [] [
-                requires
-                requires-docs
-                requires-test
-              ]))
+                with p; [build sphinx-autobuild]))
           ];
+          inputsFrom = [self.packages.${system}.default];
         };
       };
 
