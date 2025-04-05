@@ -1,80 +1,40 @@
 {
   description = "Flake for Pure Python SHV implementation";
 
+  inputs.flakepy.url = "gitlab:Cynerd/flakepy";
+
   outputs = {
     self,
     flake-utils,
     nixpkgs,
+    flakepy,
   }: let
-    inherit (builtins) match;
-    inherit (flake-utils.lib) eachDefaultSystem filterPackages;
-    inherit (nixpkgs.lib) head foldl trivial hasSuffix attrValues getAttrs composeManyExtensions;
+    inherit (flake-utils.lib) eachDefaultSystem;
+    inherit (nixpkgs.lib) composeManyExtensions;
 
-    pyproject = trivial.importTOML ./pyproject.toml;
-    inherit (pyproject.project) name version;
-    src = builtins.path {
-      path = ./.;
-      filter = path: _: ! hasSuffix ".nix" path;
-    };
-
-    pypi2nix = list: pypkgs:
-      attrValues (getAttrs (map (n: let
-          pyname = head (match "([^ =<>;]*).*" n);
-          pymap = {};
-        in
-          pymap."${pyname}" or pyname)
-        list)
-        pypkgs);
-    requires = pypi2nix pyproject.project.dependencies;
-    requires-test = pypi2nix pyproject.project.optional-dependencies.test;
-    requires-docs = pypi2nix pyproject.project.optional-dependencies.docs;
-
-    types-serial = {
-      buildPythonPackage,
-      fetchPypi,
-      setuptools,
-    }:
-      buildPythonPackage rec {
-        pname = "types-pyserial";
-        version = "3.5.0.10";
-        pyproject = true;
-        build-system = [setuptools];
-        src = fetchPypi {
-          inherit pname version;
-          hash = "sha256-libfaTGzM0gtBZZrMupSoUGj0ZyccPs8/vkX9x97bS0=";
-        };
-        doCheck = false;
-        pythonImportsCheck = ["serial-stubs"];
-      };
+    pyproject = flakepy.lib.pyproject ./. {};
 
     pypackage = {
-      buildPythonPackage,
+      python,
       pytestCheckHook,
-      pythonPackages,
-      setuptools,
       sphinxHook,
     }:
-      buildPythonPackage {
-        pname = pyproject.project.name;
-        inherit version src;
-        pyproject = true;
-        build-system = [setuptools];
+      pyproject.buildPackage python {
         outputs = ["out" "doc"];
-        propagatedBuildInputs = requires pythonPackages;
-        nativeBuildInputs = [sphinxHook] ++ requires-docs pythonPackages;
-        nativeCheckInputs = [pytestCheckHook] ++ requires-test pythonPackages;
+        nativeBuildInputs = [sphinxHook] ++ pyproject.optional-dependencies.docs python.pkgs;
+        nativeCheckInputs = [pytestCheckHook] ++ pyproject.optional-dependencies.test python.pkgs;
       };
   in
     {
       overlays = {
-        pythonPackagesExtension = final: _: {
-          types-pyserial = final.callPackage types-serial {};
-          "${name}" = final.callPackage pypackage {};
+        pythonPackages = final: _: {
+          "${pyproject.pname}" = final.callPackage pypackage {};
         };
-        noInherit = _: prev: {
-          pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [self.overlays.pythonPackagesExtension];
+        packages = _: prev: {
+          pythonPackagesExtensions =
+            prev.pythonPackagesExtensions ++ [self.overlays.pythonPackages];
         };
-        default = composeManyExtensions [self.overlays.noInherit];
+        default = composeManyExtensions [self.overlays.packages];
       };
 
       nixosModules = import ./nixos/modules {
@@ -85,28 +45,23 @@
     // eachDefaultSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system}.extend self.overlays.default;
     in {
-      packages.default = pkgs.python3Packages."${name}";
+      packages.default = pkgs.python3Packages."${pyproject.pname}";
       legacyPackages = pkgs;
 
-      devShells = filterPackages system {
-        default = pkgs.mkShell {
-          packages = with pkgs; [
-            deadnix
-            editorconfig-checker
-            gitlint
-            ruff
-            shellcheck
-            shfmt
-            statix
-            (python3.withPackages (p:
-              [p.build p.twine p.sphinx-autobuild p.mypy]
-              ++ foldl (prev: f: prev ++ f p) [] [
-                requires
-                requires-docs
-                requires-test
-              ]))
-          ];
-        };
+      devShells.default = pkgs.mkShell {
+        packages = with pkgs; [
+          deadnix
+          editorconfig-checker
+          gitlint
+          mypy
+          ruff
+          shellcheck
+          shfmt
+          statix
+          twine
+          (python3.withPackages (pypkgs: with pypkgs; [build sphinx-autobuild]))
+        ];
+        inputsFrom = [self.packages.${system}.default];
       };
 
       apps = {
