@@ -22,7 +22,7 @@ requires-python = ">=3.11"
 dependencies = [
   "pyserial",
   "aioserial",
-  "websockets",
+  "websockets >= 13.0",
   "asyncinotify; sys_platform == \"linux\"",
 ]
 

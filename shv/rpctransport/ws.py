@@ -9,8 +9,8 @@ import logging
 import typing
 import weakref
 
-import websockets.client
-import websockets.server
+import websockets.asyncio.client
+import websockets.asyncio.server
 
 from .abc import RpcClient, RpcServer
 
@@ -31,7 +31,7 @@ class RpcClientWebSockets(RpcClient):
         super().__init__()
         self.location = location
         self.port = port
-        self._wsp: websockets.client.WebSocketClientProtocol | None = None
+        self._wsp: websockets.asyncio.client.ClientConnection | None = None
         self._close_task: asyncio.Task | None = None
 
     def __str__(self) -> str:
@@ -74,11 +74,11 @@ class RpcClientWebSockets(RpcClient):
         """
         if not self.connected:
             if self.port != -1:
-                self._wsp = await websockets.client.connect(
+                self._wsp = await websockets.asyncio.client.connect(
                     f"ws://{self.location}:{self.port}"
                 )
             else:
-                self._wsp = await websockets.client.unix_connect(self.location)
+                self._wsp = await websockets.asyncio.client.unix_connect(self.location)
             self._close_task = None
             logger.debug("%s: Connected", self)
         else:
@@ -87,7 +87,10 @@ class RpcClientWebSockets(RpcClient):
     @property
     def connected(self) -> bool:
         """Check if client is still connected."""
-        return self._wsp is not None and self._wsp.open
+        return self._wsp is not None and self._wsp.state in {
+            websockets.protocol.State.CONNECTING,
+            websockets.protocol.State.OPEN,
+        }
 
     def _disconnect(self) -> None:
         if self._close_task is None and self._wsp is not None:
@@ -114,15 +117,15 @@ class _RpcServerWebSockets(RpcServer):
     ) -> None:
         self.client_connected_cb = client_connected_cb
         """Callbact that is called when new client is connected."""
-        self._server: websockets.server.WebSocketServer | None = None
+        self._server: websockets.asyncio.server.Server | None = None
         self._clients: weakref.WeakSet[_RpcServerWebSockets.Client] = weakref.WeakSet()
 
     @abc.abstractmethod
-    async def _create_server(self) -> websockets.server.WebSocketServer:
+    async def _create_server(self) -> websockets.asyncio.server.Server:
         pass
 
     async def _client_connect(
-        self, wsp: websockets.server.WebSocketServerProtocol
+        self, wsp: websockets.asyncio.server.ServerConnection
     ) -> None:
         client = self.Client(wsp, self)
         self._clients.add(client)
@@ -173,7 +176,7 @@ class _RpcServerWebSockets(RpcServer):
     class Client(RpcClient):
         def __init__(
             self,
-            wsp: websockets.server.WebSocketServerProtocol,
+            wsp: websockets.asyncio.server.ServerConnection,
             server: _RpcServerWebSockets,
         ) -> None:
             super().__init__()
@@ -206,9 +209,10 @@ class _RpcServerWebSockets(RpcServer):
 
         @property
         def connected(self) -> bool:
-            # We are using not closed because open is false in the initial
-            # connection phase.
-            return not self.wsp.closed
+            return self.wsp.state in {
+                websockets.protocol.State.CONNECTING,
+                websockets.protocol.State.OPEN,
+            }
 
         def _disconnect(self) -> None:
             if self._close_task is None and self.wsp is not None:
@@ -244,8 +248,8 @@ class RpcServerWebSockets(_RpcServerWebSockets):
         self.port = port
         """Port websocket server should listen on."""
 
-    async def _create_server(self) -> websockets.server.WebSocketServer:
-        return await websockets.server.serve(
+    async def _create_server(self) -> websockets.asyncio.server.Server:
+        return await websockets.asyncio.server.serve(
             self._client_connect, self.location, self.port, start_serving=False
         )
 
@@ -287,8 +291,10 @@ class RpcServerWebSocketsUnix(_RpcServerWebSockets):
         self.location = location
         """Path to Unix socket server should listen on."""
 
-    async def _create_server(self) -> websockets.server.WebSocketServer:
-        return await websockets.server.unix_serve(self._client_connect, self.location)
+    async def _create_server(self) -> websockets.asyncio.server.Server:
+        return await websockets.asyncio.server.unix_serve(
+            self._client_connect, self.location
+        )
 
     def __str__(self) -> str:
         return f"server.ws:{self.location}"
