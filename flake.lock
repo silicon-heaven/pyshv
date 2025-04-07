@@ -40,11 +40,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1743876030,
-        "narHash": "sha256-IeHPjCWjHRvDH7ttVSaHMWRMqnKZsPrFAqQXySA2kcI=",
+        "lastModified": 1744031766,
+        "narHash": "sha256-clSAfGYX6OVdZv4SUE13yc/uMNPpX+AJSuIt1Sf73lI=",
         "owner": "Cynerd",
         "repo": "flakepy",
-        "rev": "41b873087f6d8e59b6f6361775cf5436aec3eeb8",
+        "rev": "e98c0c050b42c6fbc0b54de69035972921615338",
         "type": "gitlab"
       },
       "original": {
@@ -69,11 +69,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1743689281,
-        "narHash": "sha256-y7Hg5lwWhEOgflEHRfzSH96BOt26LaYfrYWzZ+VoVdg=",
+        "lastModified": 1743938762,
+        "narHash": "sha256-UgFYn8sGv9B8PoFpUfCa43CjMZBl1x/ShQhRDHBFQdI=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "2bfc080955153be0be56724be6fa5477b4eefabb",
+        "rev": "74a40410369a1c35ee09b8a1abee6f4acbedc059",
         "type": "github"
       },
       "original": {

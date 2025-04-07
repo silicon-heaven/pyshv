@@ -10,25 +10,16 @@
     flakepy,
   }: let
     inherit (flake-utils.lib) eachDefaultSystem;
-    inherit (nixpkgs.lib) composeManyExtensions;
+    inherit (nixpkgs.lib) composeManyExtensions getExe';
 
     pyproject = flakepy.lib.pyproject ./. {};
 
-    pypackage = {
-      python,
-      pytestCheckHook,
-      sphinxHook,
-    }:
-      pyproject.buildPackage python {
-        outputs = ["out" "doc"];
-        nativeBuildInputs = [sphinxHook] ++ pyproject.optional-dependencies.docs python.pkgs;
-        nativeCheckInputs = [pytestCheckHook] ++ pyproject.optional-dependencies.test python.pkgs;
-      };
+    pypkg = pyproject.package {};
   in
     {
       overlays = {
         pythonPackages = final: _: {
-          "${pyproject.pname}" = final.callPackage pypackage {};
+          "${pyproject.pname}" = final.callPackage pypkg {};
         };
         packages = _: prev: {
           pythonPackagesExtensions =
@@ -68,11 +59,11 @@
         default = self.apps.${system}.pyshvbroker;
         pycp2cp = {
           type = "app";
-          program = "${self.packages.${system}.default}/bin/pycp2cp";
+          program = getExe' self.packages.${system}.default "pycp2cp";
         };
         pyshvbroker = {
           type = "app";
-          program = "${self.packages.${system}.default}/bin/pyshvbroker";
+          program = getExe' self.packages.${system}.default "pyshvbroker";
         };
       };
 
