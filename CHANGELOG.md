@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- `SHVBase` now has `user_id` property that is default user ID used with `call`
+  method
+
 ### Fixed
 - type hint for `dir` result (corrected against SHV standard).
 - default parameter type hint for getters is now correctly `i(0,)|n` instead of

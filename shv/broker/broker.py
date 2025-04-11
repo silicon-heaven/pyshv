@@ -68,7 +68,7 @@ class RpcBroker:
             return self.__broker_client_id
 
         @property
-        def user_id(self) -> str:
+        def local_user_id(self) -> str:
             """Provide user ID for this Broker client."""
             # The minimal is the broker's name (child must extend this)
             return self.__broker.config.name
@@ -148,7 +148,7 @@ class RpcBroker:
                 )
                 # Append user ID
                 if msg.user_id is not None:
-                    msg.user_id += (";" if msg.user_id else "") + self.user_id
+                    msg.user_id += (";" if msg.user_id else "") + self.local_user_id
                 # Check if we should handle it ourself (else propagate it)
                 if (cpath := self.__broker.client_on_path(msg.path)) is None:
                     await super()._message(msg)
@@ -368,9 +368,9 @@ class RpcBroker:
             return self._role
 
         @property
-        def user_id(self) -> str:
+        def local_user_id(self) -> str:
             """Provide user ID for this Broker client."""
-            s = super().user_id
+            s = super().local_user_id
             n = self._login.username if self._login else "?"
             return f"{n}{':' if s else ''}{s}"
 

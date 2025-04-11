@@ -59,6 +59,7 @@ class SHVBase:
     :param call_timeout: Timeout in seconds before call is attempted again or
       abandoned (if there was too much call attempts). This is time before we
       consider response to be lost.
+    :param user_id: The default user ID to be used.
     """
 
     def __init__(
@@ -66,6 +67,7 @@ class SHVBase:
         client: RpcClient,
         call_attempts: int = 1,
         call_timeout: float | None = 300.0,
+        user_id: str = "",
     ) -> None:
         self.client = client
         """The underlaying RPC client instance.
@@ -81,6 +83,8 @@ class SHVBase:
         """
         self.call_timeout = call_timeout
         """Timeout in seconds before call is attempted again or abandoned."""
+        self.user_id = user_id
+        """The default user ID provided if method should be requested with it."""
         self._calls_event: dict[int, asyncio.Event] = {}
         self._calls_msg: dict[int, RpcMessage] = {}
         self.__peer_is_shv3: bool | None = None
@@ -178,7 +182,8 @@ class SHVBase:
           ``call_attempts``) with User ID ``""``. If you know that method needs
           User ID then you can prevent this round trip by setting this argument
           to ``""``. On the other hand sending all requests with User ID wastes
-          with bandwidth.
+          with bandwidth. In general usage you should use ``self.user_id``
+          instead of just ``""`` to use the object default.
         :return: Return value on successful method call.
         :raise RpcError: The call result in error that is propagated by raising
             `RpcError` or its children based on the failure.
@@ -207,10 +212,13 @@ class SHVBase:
             response = self._calls_msg.pop(request.request_id)
             if response.is_error:
                 rpc_error = response.rpc_error
-                if not isinstance(rpc_error, RpcUserIDRequiredError):
+                if (
+                    not isinstance(rpc_error, RpcUserIDRequiredError)
+                    or user_id is not None
+                ):
                     raise response.rpc_error
                 attempt -= 1  # Annul this attempt
-                request.user_id = ""
+                request.user_id = self.user_id
                 event.clear()
                 self._calls_event[request.new_request_id()] = event
                 continue
