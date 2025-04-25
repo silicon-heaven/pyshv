@@ -13,6 +13,8 @@ from .rpcerrors import (
     RpcMethodCallExceptionError,
     RpcMethodNotFoundError,
     RpcNotImplementedError,
+    RpcRequestInvalidError,
+    RpcTryAgainLaterError,
     RpcUserIDRequiredError,
 )
 from .rpcfile import (
@@ -131,6 +133,7 @@ __all__ = [
     "RpcProtocolSerial",
     "RpcProtocolSerialCRC",
     "RpcProtocolStream",
+    "RpcRequestInvalidError",
     "RpcServer",
     "RpcServerTCP",
     "RpcServerTTY",
@@ -138,6 +141,7 @@ __all__ = [
     "RpcServerWebSockets",
     "RpcServerWebSocketsUnix",
     "RpcTransportProtocol",
+    "RpcTryAgainLaterError",
     "RpcUrl",
     "RpcUserIDRequiredError",
     "SHVBase",

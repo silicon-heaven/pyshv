@@ -17,6 +17,8 @@ class RpcErrorCode(enum.IntEnum):
     LOGIN_REQUIRED = 10
     USER_ID_REQUIRED = 11
     NOT_IMPLEMENTED = 12
+    TRY_AGAIN_LATER = 13
+    REQUEST_INVALID = 14
     USER_CODE = 32
 
 
@@ -100,3 +102,15 @@ class RpcNotImplementedError(RpcError):
     """Called method that is not implemented right now but valid."""
 
     shv_error_code = RpcErrorCode.NOT_IMPLEMENTED
+
+
+class RpcTryAgainLaterError(RpcError):
+    """The resource to fullfill request are temporally unavailable."""
+
+    shv_error_code = RpcErrorCode.TRY_AGAIN_LATER
+
+
+class RpcRequestInvalidError(RpcError):
+    """There is no such known request (in response to abort request)."""
+
+    shv_error_code = RpcErrorCode.REQUEST_INVALID

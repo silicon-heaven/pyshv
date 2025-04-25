@@ -9,6 +9,8 @@ from shv import (
     RpcMethodCallExceptionError,
     RpcMethodNotFoundError,
     RpcNotImplementedError,
+    RpcRequestInvalidError,
+    RpcTryAgainLaterError,
     RpcUserIDRequiredError,
 )
 
@@ -19,6 +21,8 @@ errors = (
     RpcLoginRequiredError,
     RpcUserIDRequiredError,
     RpcNotImplementedError,
+    RpcTryAgainLaterError,
+    RpcRequestInvalidError,
 )
 
 
