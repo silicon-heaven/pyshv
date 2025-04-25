@@ -7,9 +7,9 @@ import time
 import typing
 
 from ..chainpack import ChainPack
+from ..cpon import CponWriter
 from ..rpcmessage import RpcMessage
 from ..value import SHVIMap
-from ..cpon import CponWriter
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ class RpcClient(abc.ABC):
                                 logger.debug("%s <= %s", self, msg.to_string())
                                 return msg
                         logger.debug(
-                            f"<= Invalid RPC message: {CponWriter.pack(shvdata)}"
+                            f"<= Invalid RPC message: {CponWriter.pack(shvdata).decode('UTF-8')}"
                         )
             elif len(data) == 1 and data[0] == 0:
                 logger.debug("%s <= Control message RESET", self)

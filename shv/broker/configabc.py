@@ -6,8 +6,8 @@ import abc
 import collections
 import collections.abc
 
+from ..rpcaccess import RpcAccess
 from ..rpclogin import RpcLogin
-from ..rpcmethod import RpcMethodAccess
 from ..rpcurl import RpcUrl
 
 
@@ -45,9 +45,7 @@ class RpcBrokerRoleABC(abc.ABC):
         """
         return iter([])
 
-    def access_level(  # noqa PLR6301
-        self, path: str, method: str
-    ) -> RpcMethodAccess | None:
+    def access_level(self, path: str, method: str) -> RpcAccess | None:  # noqa PLR6301
         """Deduce the access level (if any) for given method.
 
         Note that all users have implicit browse access to the root node,
