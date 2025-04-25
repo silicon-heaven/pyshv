@@ -9,6 +9,7 @@ import typing
 from ..chainpack import ChainPack
 from ..rpcmessage import RpcMessage
 from ..value import SHVIMap
+from ..cpon import CponWriter
 
 logger = logging.getLogger(__name__)
 
@@ -58,13 +59,11 @@ class RpcClient(abc.ABC):
     async def _send(self, msg: bytes) -> None:
         """Child's implementation of message sending."""
 
-    async def receive(self, raise_error: bool = True) -> RpcMessage | Control:
+    async def receive(self) -> RpcMessage | Control:
         """Read next received RPC message or wait for next to be received.
 
-        :param raise_error: If RpcError should be raised or not.
         :return: Next RPC message is returned or :class:`Control` for special control
           messages.
-        :raise RpcError: When mesasge is error and ``raise_error`` is `True`.
         :raise EOFError: in case EOF is encountered.
         """
         while True:
@@ -74,19 +73,21 @@ class RpcClient(abc.ABC):
                 if data[0] == ChainPack.ProtocolType:
                     try:
                         shvdata = ChainPack.unpack(data[1:])
-                    except ValueError:
-                        pass
+                    except ValueError as exc:
+                        logger.debug("<= Invalid ChainPack", exc_info=exc)
                     else:
                         if isinstance(shvdata, SHVIMap):
-                            msg = RpcMessage(shvdata)
-                            logger.debug("%s <= %s", self, msg.to_string())
-                            if raise_error and msg.is_error:
-                                raise msg.rpc_error
-                            return msg
+                            if (msg := RpcMessage(shvdata)).is_valid():
+                                logger.debug("%s <= %s", self, msg.to_string())
+                                return msg
+                        logger.debug(
+                            f"<= Invalid RPC message: {CponWriter.pack(shvdata)}"
+                        )
             elif len(data) == 1 and data[0] == 0:
                 logger.debug("%s <= Control message RESET", self)
                 return self.Control.RESET
-            logger.debug("%s <= Invalid message received: %s", self, data)
+            else:
+                logger.debug("%s <= Invalid message received: %s", self, data)
 
     @abc.abstractmethod
     async def _receive(self) -> bytes:
