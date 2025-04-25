@@ -80,7 +80,7 @@ class NotifClient(SHVClient):
 
     async def _message(self, msg: RpcMessage) -> None:
         await super()._message(msg)
-        if msg.is_signal:
+        if msg.type is RpcMessage.Type.SIGNAL:
             await self.signals.put(msg)
 
 

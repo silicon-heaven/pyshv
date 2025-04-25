@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import collections.abc
 import dataclasses
 import enum
 import functools
 import typing
 
 from .rpcparam import SHVGetKey, shvget, shvgett
-from .value import SHVMapType, SHVType, is_shvmap
+from .value import SHVMapType, SHVType, is_shvimap, is_shvmap
 
 
 class RpcMethodFlags(enum.IntFlag):
@@ -126,8 +125,8 @@ class RpcMethodDesc:
     @classmethod
     def from_shv(cls, value: SHVType) -> RpcMethodDesc:
         """Create from SHV RPC representation."""
-        if not isinstance(value, collections.abc.Mapping):
-            raise ValueError(f"Expected Map but got {value!r}.")
+        if not is_shvimap(value):
+            raise ValueError(f"Expected IMap but got {value!r}.")
         raccess = shvget(value, SHVGetKey("access", cls.Key.ACCESS), cls.access)
         rsignals = shvget(
             value, SHVGetKey("source", cls.Key.SIGNALS), typing.cast(SHVMapType, {})
