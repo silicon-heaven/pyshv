@@ -7,7 +7,6 @@ import collections.abc
 import contextlib
 import datetime
 import logging
-import traceback
 
 from .__version__ import VERSION
 from .path import SHVPath
@@ -107,7 +106,7 @@ class SHVBase:
         """Loop run in asyncio task to receive messages."""
         async with asyncio.TaskGroup() as tg:
             with contextlib.suppress(EOFError):
-                while msg := await self.client.receive(raise_error=False):
+                while msg := await self.client.receive():
                     if msg is RpcClient.Control.RESET:
                         self._reset()
                     elif msg.is_valid():
@@ -211,18 +210,16 @@ class SHVBase:
                 self._calls_event[request.request_id].clear()
                 continue
             response = self._calls_msg.pop(request.request_id)
-            if response.is_error:
-                rpc_error = response.rpc_error
-                if (
-                    not isinstance(rpc_error, RpcUserIDRequiredError)
-                    or user_id is not None
-                ):
-                    raise response.rpc_error
-                attempt -= 1  # Annul this attempt
-                request.user_id = self.user_id
-                event.clear()
-                self._calls_event[request.new_request_id()] = event
-                continue
+            if response.type == RpcMessage.Type.RESPONSE_ERROR:
+                error = response.error
+                # TODO support RpcTryAgainLaterError
+                if isinstance(error, RpcUserIDRequiredError) and user_id is None:
+                    attempt -= 1  # Annul this attempt
+                    request.user_id = self.user_id
+                    event.clear()
+                    self._calls_event[request.new_request_id()] = event
+                    continue
+                raise error
             return response.result
         raise TimeoutError
 
@@ -301,29 +298,32 @@ class SHVBase:
 
         :param msg: Received message.
         """
-        if msg.is_request:
-            resp = msg.make_response()
-            try:
-                resp.result = await self._method_call(self.Request(msg))
-            except RpcError as exp:
-                resp.rpc_error = exp
-            except Exception as exc:
-                resp.rpc_error = RpcMethodCallExceptionError(
-                    "".join(traceback.format_exception(exc))
-                )
-            try:
-                await self._send(resp)
-            except EOFError:
-                return  # No need to spam logs on disconnect
-            except Exception as exc:
-                logger.warning("%s: Failed to send response", self.client, exc_info=exc)
-        elif msg.is_response:
-            rid = msg.request_id
-            if rid in self._calls_event:
-                self._calls_msg[rid] = msg
-                self._calls_event.pop(rid).set()
-        elif msg.is_signal:
-            await self._got_signal(self.Signal(msg))
+        match msg.type:
+            case RpcMessage.Type.REQUEST:
+                resp = msg.make_response()
+                try:
+                    resp.result = await self._method_call(self.Request(msg))
+                except Exception as exc:
+                    resp.error = RpcError.from_exception(exc)
+                try:
+                    await self._send(resp)
+                except EOFError:
+                    return  # No need to spam logs on disconnect
+                except Exception as exc:
+                    logger.warning(
+                        "%s: Failed to send response", self.client, exc_info=exc
+                    )
+            case RpcMessage.Type.REQUEST_ABORT:
+                pass  # TODO
+            case RpcMessage.Type.RESPONSE | RpcMessage.Type.RESPONSE_ERROR:
+                rid = msg.request_id
+                if rid in self._calls_event:
+                    self._calls_msg[rid] = msg
+                    self._calls_event.pop(rid).set()
+            case RpcMessage.Type.RESPONSE_DELAY:
+                pass  # TODO
+            case RpcMessage.Type.SIGNAL:
+                await self._got_signal(self.Signal(msg))
 
     async def _method_call(self, request: SHVBase.Request) -> SHVType:
         """Handle request.
@@ -472,7 +472,7 @@ class SHVBase:
         """
 
         def __init__(self, msg: RpcMessage) -> None:
-            assert msg.is_request
+            assert msg.type is RpcMessage.Type.REQUEST
             self._msg = msg
 
         @property
@@ -512,7 +512,7 @@ class SHVBase:
         """
 
         def __init__(self, msg: RpcMessage) -> None:
-            assert msg.is_signal
+            assert msg.type is RpcMessage.Type.SIGNAL
             self._msg = msg
 
         @property

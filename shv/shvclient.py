@@ -162,7 +162,11 @@ class SHVClient(SHVBase):
         performed before any other message is sent to the peer.
         """
         await self._connected.wait()
-        if not msg.is_request or msg.path or msg.method not in {"hello", "login"}:
+        if (
+            msg.type != RpcMessage.Type.REQUEST
+            or msg.path
+            or msg.method not in {"hello", "login"}
+        ):
             await self._login_task
         await super()._send(msg)
 

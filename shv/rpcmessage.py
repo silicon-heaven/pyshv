@@ -12,7 +12,12 @@ from .cpon import CponWriter
 from .path import SHVPath
 from .rpcerrors import RpcError, RpcErrorCode
 from .rpcmethod import RpcMethodAccess
-from .value import SHVIMap, SHVIMapType, SHVType, is_shvimap, shvmeta_eq
+from .value import (
+    SHVIMap,
+    SHVType,
+    is_shvlist,
+    shvmeta_eq,
+)
 
 
 class RpcMessage:
@@ -47,11 +52,9 @@ class RpcMessage:
         cls._last_request_id += 1
         return cls._last_request_id
 
-    def __init__(self, rpc_val: SHVIMapType | None = None) -> None:
+    def __init__(self, rpc_val: SHVIMap | None = None) -> None:
         if rpc_val is None:
             rpc_val = SHVIMap()
-        if not isinstance(rpc_val, SHVIMap):
-            rpc_val = SHVIMap(rpc_val)
         self.value: SHVIMap = rpc_val
 
     def __eq__(self, other: object) -> bool:
@@ -63,106 +66,136 @@ class RpcMessage:
     class Tag(enum.IntEnum):
         """Tags in Meta for RPC message."""
 
+        META_TYPE_ID = 1
+        META_TYPE_NAMESPACE_ID = 2
         REQUEST_ID = 8
-        PATH = 9
+        SHV_PATH = 9
         METHOD = 10
         SIGNAL = 10
         CALLER_IDS = 11
-        RESP_CALLER_IDS = 13
+        REV_CALLER_IDS = 13
         ACCESS = 14
         USER_ID = 16
         ACCESS_LEVEL = 17
-        PART = 18
         SOURCE = 19
+        REPEAT = 20
 
     class Key(enum.IntEnum):
         """Keys in the toplevel IMap of the RPC message."""
 
-        PARAMS = 1
+        PARAM = 1
         RESULT = 2
         ERROR = 3
+        DELAY = 4
+        ABORT = 5
 
-    class ErrorKey(enum.IntEnum):
-        """Keys in the error IMap."""
+    class Type(enum.Enum):
+        """The message type definition.
 
-        CODE = 1
-        MESSAGE = 2
+        This is defined to allow message differenciate in ``match``. It is more
+        specific than SHV standard to allow easier implementation of different
+        messages handling.
+        """
+
+        REQUEST = enum.auto()
+        REQUEST_ABORT = enum.auto()
+        RESPONSE = enum.auto()
+        RESPONSE_DELAY = enum.auto()
+        RESPONSE_ERROR = enum.auto()
+        SIGNAL = enum.auto()
 
     def is_valid(self) -> bool:
         """Check if message is valid RPC message."""
         return (
-            isinstance(self.value, SHVIMap)
-            and bool(set(self.value) ^ set(self.Key))
-            and (self.is_request or self.is_response or self.is_signal)
+            isinstance(self.value, SHVIMap)  # Must be IMap
+            and len(self.value) <= 1  # Only at most one Key is allowed
+            and self.type is not None
+            and self.value.meta.get(self.Tag.META_TYPE_ID, 1) == 1
+            and self.value.meta.get(self.Tag.META_TYPE_NAMESPACE_ID, 0) == 0
+            and isinstance(self._request_id, int | None)
             and isinstance(self._path, str)
-            and isinstance(self._signal_name, str)
+            and isinstance(self._signal_name, str)  # Also covers method
+            and (
+                isinstance(self._caller_ids, int | None)
+                or (
+                    is_shvlist(self._caller_ids)
+                    and all(isinstance(v, int) for v in self._caller_ids)
+                )
+            )
+            and isinstance(self._access, str)
+            and isinstance(self._user_id, str | None)
+            and isinstance(self._access_level, int | None)
             and isinstance(self._source, str)
+            and isinstance(self._repeat, bool)
+            # TODO check value content
         )
 
     @property
-    def is_request(self) -> bool:
-        """Check if message is request."""
-        return bool(self.has_request_id and self.has_method)
+    def type(self) -> Type | None:
+        """The message type or ``None`` if unknown."""
+        if self.Tag.REQUEST_ID in self.value.meta:
+            if self.Tag.METHOD in self.value.meta:
+                if self.Key.ABORT in self.value:
+                    return self.Type.REQUEST_ABORT
+                if not self.value or self.Key.PARAM in self.value:
+                    return self.Type.REQUEST
+            elif self.Key.ERROR in self.value:
+                return self.Type.RESPONSE_ERROR
+            elif self.Key.DELAY in self.value:
+                return self.Type.RESPONSE_DELAY
+            elif not self.value or self.Key.RESULT in self.value:
+                return self.Type.RESPONSE
+        elif not self.value or self.Key.PARAM in self.value:
+            return self.Type.SIGNAL
+        return None
 
-    @property
-    def is_response(self) -> bool:
-        """Check if message is a response."""
-        return bool(self.has_request_id and not self.has_method)
-
-    @property
-    def is_error(self) -> bool:
-        """Check if message is an error response."""
-        return bool(
-            self.is_response
-            and self.error is not None
-            and self.rpc_error.error_code != RpcErrorCode.NO_ERROR
-        )
-
-    @property
-    def is_signal(self) -> bool:
-        """Check if message is a signal."""
-        return not self.has_request_id
-
-    def make_response(
-        self, result: SHVType = None, error: RpcError | SHVType = None
-    ) -> RpcMessage:
+    def make_response(self, result: SHVType | RpcError = None) -> RpcMessage:
         """Create new message that is response to this one.
 
-        :param result: The result value to be set in the response.
-        :param error: The error to be set to the response message. You should
-          use either *result* or *error* not both.
+        :param result: The result value to be set in the response or
+          :py:class:`RpcError` to be reported as error result.
         :return: The new message that is response to this one.
         """
-        if not self.is_request:
+        if self.type not in {self.Type.REQUEST, self.Type.REQUEST_ABORT}:
             raise ValueError("Response can be created from request only.")
         resp = RpcMessage()
         resp.request_id = self.request_id
         resp.caller_ids = self.caller_ids
-        resp.result = result
-        if isinstance(error, RpcError):
-            resp.rpc_error = error
+        if isinstance(result, RpcError):
+            resp.error = result
         else:
-            resp.error = error
+            resp.result = result
+        return resp
+
+    def make_response_delay(self, progress: float = 0.0) -> RpcMessage:
+        """Create new message that is response delay for this one.
+
+        :param progress: The progress to be reported.
+        :return: The new message that is response delay to this one.
+        """
+        if self.type not in {self.Type.REQUEST, self.Type.REQUEST_ABORT}:
+            raise ValueError("Response delay can be created from request only.")
+        resp = RpcMessage()
+        resp.request_id = self.request_id
+        resp.caller_ids = self.caller_ids
+        resp.delay = progress
         return resp
 
     @property
-    def has_request_id(self) -> bool:
-        """Check if valid request ID was provided in this message."""
-        return self.Tag.REQUEST_ID in self.value.meta and isinstance(
-            self.value.meta[self.Tag.REQUEST_ID], int
-        )
+    def _request_id(self) -> SHVType:
+        return self.value.meta.get(self.Tag.REQUEST_ID)
 
     @property
     def request_id(self) -> int:
-        """Request identificator of this message."""
-        res = self.value.meta[self.Tag.REQUEST_ID]
+        """Request identifier of this message."""
+        res = self._request_id
         if not isinstance(res, int):
-            raise ValueError(f"Invalid request ID type: {type(res)}")
+            raise ValueError(f"Invalid RequestId type: {type(res)}")
         return res
 
     @request_id.setter
     def request_id(self, rqid: int | None) -> None:
-        """Set given request identicator to this message."""
+        """Set given request identifier to this message."""
         if rqid is None:
             self.value.meta.pop(self.Tag.REQUEST_ID, None)
         else:
@@ -178,23 +211,23 @@ class RpcMessage:
 
     @property
     def _path(self) -> SHVType:
-        return self.value.meta.get(self.Tag.PATH, "")
+        return self.value.meta.get(self.Tag.SHV_PATH, "")
 
     @property
     def path(self) -> str:
         """SHV path specified for this message or empty string."""
         res = self._path
         if not isinstance(res, str):
-            raise ValueError(f"Invalid path type: {type(res)}")
+            raise ValueError(f"Invalid ShvPath type: {type(res)}")
         return res
 
     @path.setter
     def path(self, path: str) -> None:
         """Set given path as SHV path for this message."""
         if path:
-            self.value.meta[self.Tag.PATH] = path
+            self.value.meta[self.Tag.SHV_PATH] = path
         else:
-            self.value.meta.pop(self.Tag.PATH, None)
+            self.value.meta.pop(self.Tag.SHV_PATH, None)
 
     @property
     def shvpath(self) -> SHVPath:
@@ -207,18 +240,11 @@ class RpcMessage:
         self.path = str(path)
 
     @property
-    def has_method(self) -> bool:
-        """Check if valid method name was provided in this message."""
-        return self.Tag.METHOD in self.value.meta and isinstance(
-            self.value.meta[self.Tag.METHOD], str
-        )
-
-    @property
     def method(self) -> str:
         """SHV method name for this message."""
-        res = self.value.meta[self.Tag.METHOD]
+        res = self.value.meta.get(self.Tag.METHOD)
         if not isinstance(res, str):
-            raise ValueError(f"Invalid method type: {type(res)}")
+            raise ValueError(f"Invalid Method type: {type(res)}")
         return res
 
     @method.setter
@@ -238,7 +264,7 @@ class RpcMessage:
         """SHV signal name for this message."""
         res = self._signal_name
         if not isinstance(res, str):
-            raise ValueError(f"Invalid method type: {type(res)}")
+            raise ValueError(f"Invalid Signal type: {type(res)}")
         return res
 
     @signal_name.setter
@@ -257,7 +283,7 @@ class RpcMessage:
         """SHV signal source method name for this message."""
         res = self._source
         if not isinstance(res, str):
-            raise ValueError(f"Invalid method type: {type(res)}")
+            raise ValueError(f"Invalid Source type: {type(res)}")
         return res
 
     @source.setter
@@ -269,33 +295,44 @@ class RpcMessage:
             self.value.meta.pop(self.Tag.SOURCE, None)
 
     @property
+    def _caller_ids(self) -> SHVType:
+        return self.value.meta.get(self.Tag.CALLER_IDS, None)
+
+    @property
     def caller_ids(self) -> collections.abc.Sequence[int]:
-        """Caller idenfieiers associated with this message."""
-        res = self.value.meta.get(self.Tag.CALLER_IDS, None)
+        """Caller identifiers associated with this message."""
+        res = self._caller_ids
+        if res is None:
+            return []
         if isinstance(res, int):
             return [res]
-        if not isinstance(res, list):
-            return []
-        return list(filter(lambda v: isinstance(v, int), res))
+        if not is_shvlist(res) or any(not isinstance(v, int) for v in res):
+            raise ValueError(f"Invalid CallerIds type: {type(res)}")
+        # Mypy doesn't understand the any check and thus we have to type cast
+        return typing.cast(collections.abc.Sequence[int], res)
 
     @caller_ids.setter
     def caller_ids(self, cids: collections.abc.Sequence[int]) -> None:
-        """Set caller idenfieiers associated with this message."""
+        """Set caller identifiers associated with this message."""
         if not cids:
             self.value.meta.pop(self.Tag.CALLER_IDS, None)
+        elif len(cids) == 1:
+            self.value.meta[self.Tag.CALLER_IDS] = cids[0]
         else:
-            some: SHVType = cids
-            if len(cids) == 1:
-                some = cids[0]
-            self.value.meta[self.Tag.CALLER_IDS] = some
+            self.value.meta[self.Tag.CALLER_IDS] = cids
+
+    @property
+    def _access(self) -> SHVType:
+        return self.value.meta.get(self.Tag.ACCESS, "")
 
     @property
     def access(self) -> collections.abc.Sequence[str]:
         """Granted access sequence."""
-        res = self.value.meta.get(self.Tag.ACCESS, "")
-        if isinstance(res, str):
-            if res:
-                return res.split(",")
+        res = self._access
+        if not isinstance(res, str):
+            raise ValueError(f"Invalid access type: {type(res)}")
+        if res:
+            return res.split(",")
         return []
 
     @access.setter
@@ -307,12 +344,17 @@ class RpcMessage:
             self.value.meta.pop(self.Tag.ACCESS, None)
 
     @property
+    def _access_level(self) -> SHVType:
+        return self.value.get(self.Tag.ACCESS_LEVEL)
+
+    @property
     def rpc_access(self) -> RpcMethodAccess | None:
         """Access level as :class:`shv.RpcMethodAccess`."""
+        if (level := self._access_level) is not None:
+            if not isinstance(level, int):
+                raise ValueError(f"Invalid AccessLevel type: {type(level)}")
+            return RpcMethodAccess(level)
         m = RpcMethodAccess.strmap()
-        if level := self.value.meta.get(self.Tag.ACCESS_LEVEL):
-            if isinstance(level, int):
-                return RpcMethodAccess(level)
         for access in self.access:
             if access in m:
                 return m[access]
@@ -328,13 +370,18 @@ class RpcMessage:
             self.value.meta.pop(self.Tag.ACCESS, None)
 
     @property
-    def user_id(self) -> str | None:
-        """User's ID caried by message."""
+    def _user_id(self) -> SHVType:
         res = self.value.meta.get(self.Tag.USER_ID, None)
         if isinstance(res, dict):  # Note: backward compatibility
             res = f"{res.get('brokerId')}:{res.get('shvUser')}"
-        if res is not None and not isinstance(res, str):
-            res = str(res)
+        return res
+
+    @property
+    def user_id(self) -> str | None:
+        """User's ID carried by message."""
+        res = self._user_id
+        if not isinstance(res, str | None):
+            raise ValueError(f"Invalid UserId type: {type(res)}")
         return res
 
     @user_id.setter
@@ -346,22 +393,64 @@ class RpcMessage:
             self.value.meta.pop(self.Tag.USER_ID, None)
 
     @property
+    def _repeat(self) -> SHVType:
+        return self.value.meta.get(self.Tag.REPEAT, False)
+
+    @property
+    def repeat(self) -> bool:
+        """Signal is possibly a repeat of some previous signal."""
+        res = self._repeat
+        if not isinstance(res, bool):
+            raise ValueError(f"Invalid Repeat type: {type(res)}")
+        return res
+
+    @repeat.setter
+    def repeat(self, value: bool | None) -> None:
+        """Set repeat."""
+        if value is not None:
+            self.value.meta[self.Tag.REPEAT] = value
+        else:
+            self.value.meta.pop(self.Tag.REPEAT, None)
+
+    @property
     def param(self) -> SHVType:
-        """SHV parameters for the method call."""
-        return self.value.get(self.Key.PARAMS, None) if is_shvimap(self.value) else None
+        """SHV parameters for the method call.
+
+        Usable only for :py:data:`Type.REQUEST` and :py:data:`Type.SIGNAL`.
+        """
+        return self.value.get(self.Key.PARAM, None)
 
     @param.setter
     def param(self, param: SHVType) -> None:
         """Set SHV parameters for this method call."""
         if param is None:
-            self.value.pop(self.Key.PARAMS, None)
+            self.value.pop(self.Key.PARAM, None)
         else:
-            self.value[self.Key.PARAMS] = param
+            self.value[self.Key.PARAM] = param
+
+    @property
+    def abort(self) -> bool:
+        """The delay progress for the :py:data:`Type.REQUEST_ABORT`."""
+        res = self.value.get(self.Key.ABORT)
+        if not isinstance(res, bool):
+            raise ValueError(f"Invalid Abort: {res!r}")
+        return res
+
+    @abort.setter
+    def abort(self, abort: bool | None) -> None:
+        """Set SHV Request Delay progress."""
+        if abort is None:
+            self.value.pop(self.Key.ABORT, None)
+        else:
+            self.value[self.Key.ABORT] = abort
 
     @property
     def result(self) -> SHVType:
-        """SHV method call result."""
-        return self.value.get(self.Key.RESULT, None) if is_shvimap(self.value) else None
+        """SHV method call result.
+
+        Usable only for :py:data:`Type.RESPONSE`.
+        """
+        return self.value.get(self.Key.RESULT, None)
 
     @result.setter
     def result(self, result: SHVType) -> None:
@@ -372,50 +461,36 @@ class RpcMessage:
             self.value[self.Key.RESULT] = result
 
     @property
-    def error(self) -> SHVType:
-        """SHV method call error."""
-        return self.value.get(self.Key.ERROR, None) if is_shvimap(self.value) else None
+    def error(self) -> RpcError:
+        """SHV method call error.
+
+        Usable only for :py:data:`Type.ERROR`.
+        """
+        return RpcError.from_shv(self.value.get(self.Key.ERROR))
 
     @error.setter
-    def error(self, error: SHVType) -> None:
+    def error(self, error: RpcError | None) -> None:
         """Set SHV method call error."""
-        if error is None:
+        if error is None or error.error_code == RpcErrorCode.NO_ERROR:
             self.value.pop(self.Key.ERROR, None)
         else:
-            self.value[self.Key.ERROR] = error
+            self.value[self.Key.ERROR] = error.to_shv()
 
     @property
-    def rpc_error(self) -> RpcError:
-        """SHV method call error in standard SHV format :class:`RpcError`."""
-        res = self.error
-        if is_shvimap(res):
-            rcode = res.get(self.ErrorKey.CODE)
-            code: RpcErrorCode = RpcErrorCode.UNKNOWN
-            if isinstance(rcode, int):
-                try:
-                    code = RpcErrorCode(rcode)
-                except ValueError:
-                    pass
-            rmsg = res.get(self.ErrorKey.MESSAGE)
-            msg = rmsg if isinstance(rmsg, str) else ""
-            return RpcError(msg, code)
-        return RpcError(res if isinstance(res, str) else "", RpcErrorCode.UNKNOWN)
+    def delay(self) -> float:
+        """The delay progress for the :py:data:`Type.RESPONSE_DELAY`."""
+        res = self.value.get(self.Key.DELAY)
+        if not isinstance(res, float):
+            raise ValueError(f"Invalid Delay: {res!r}")
+        return res
 
-    @rpc_error.setter
-    def rpc_error(self, error: RpcError) -> None:
-        """Set SHV method call error in standard SHV format."""
-        if error.error_code == RpcErrorCode.NO_ERROR:
-            self.error = None
+    @delay.setter
+    def delay(self, progress: float | None) -> None:
+        """Set SHV Request Delay progress."""
+        if progress is None:
+            self.value.pop(self.Key.DELAY, None)
         else:
-            err: SHVIMapType = {
-                self.ErrorKey.CODE: error.error_code,
-                **(
-                    {}
-                    if error.message is None
-                    else {self.ErrorKey.MESSAGE: error.message}
-                ),
-            }
-            self.error = err
+            self.value[self.Key.DELAY] = progress
 
     def to_string(self) -> str:
         """Convert message to CPON and return it as string."""
@@ -436,6 +511,7 @@ class RpcMessage:
         method: str,
         param: SHVType = None,
         rid: int | None = None,
+        cids: collections.abc.Sequence[int] = tuple(),
         user_id: str | None = None,
     ) -> RpcMessage:
         """Create request message.
@@ -443,16 +519,46 @@ class RpcMessage:
         :param path: SHV path for signal.
         :param method: method name for signal.
         :param param: Parameters passed to the method.
-        :param rid: Request identifier for this message. It is automatically assigned if
-          ``None`` is passed.
+        :param rid: Request identifier for this message. It is automatically
+          assigned if ``None`` is passed.
+        :param cids: The caller IDs. This can be used with methods using a
+          unique CallerIds sequence to establish session.
         :param user_id: User's ID to be caried with request message.
         """
         res = cls()
         res.request_id = rid or cls.next_request_id()
+        res.caller_ids = cids
         res.method = method
         res.path = str(path)
         res.param = param
         res.user_id = user_id
+        return res
+
+    @classmethod
+    def request_abort(
+        cls,
+        path: str,
+        method: str,
+        rid: int,
+        cids: collections.abc.Sequence[int] = tuple(),
+        abort: bool = True,
+    ) -> RpcMessage:
+        """Create request abort message.
+
+        :param path: SHV path for signal.
+        :param method: method name for signal.
+        :param rid: Request identifier for this message. It is automatically
+          assigned if ``None`` is passed.
+        :param cids: The caller IDs. This can be used with methods using a
+          unique CallerIds sequence to establish session.
+        :param abort: If method call should be aborted or only queried.
+        """
+        res = cls()
+        res.request_id = rid
+        res.caller_ids = cids
+        res.method = method
+        res.path = path
+        res.abort = abort
         return res
 
     @classmethod
@@ -500,10 +606,4 @@ class RpcMessage:
           node, that was either added (for value ``True``) or removed (for value
           ``False``).
         """
-        res = cls()
-        res.signal_name = "lsmod"
-        res.source = "ls"
-        res.path = str(path)
-        res.param = nodes
-        res.rpc_access = RpcMethodAccess.BROWSE
-        return res
+        return cls.signal(path, "lsmod", "ls", nodes, RpcMethodAccess.BROWSE)

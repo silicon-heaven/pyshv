@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import contextlib
 import enum
+import traceback
 import typing
+
+from .value import SHVType, is_shvimap
 
 
 class RpcErrorCode(enum.IntEnum):
@@ -34,8 +38,14 @@ class RpcError(RuntimeError):
     :param code: Error code.
     """
 
+    class Key(enum.IntEnum):
+        """Keys in the error IMap."""
+
+        CODE = 1
+        MESSAGE = 2
+
     shv_error_code: typing.ClassVar[RpcErrorCode] = RpcErrorCode.UNKNOWN
-    shv_error_map: typing.ClassVar[dict[int, type[RpcError]]] = {}
+    shv_error_map: typing.Final[dict[int, type[RpcError]]] = {}
 
     def __new__(
         cls, msg: str | None = None, code: RpcErrorCode | None = None
@@ -58,14 +68,43 @@ class RpcError(RuntimeError):
     @property
     def message(self) -> str | None:
         """Provides access to the SHV RPC message."""
-        if not isinstance(self.args[0], str) and self.args[0] is not None:
-            raise ValueError(f"Must be string or None but is: {type(self.args[0])}")
-        return self.args[0]
+        return typing.cast(str | None, self.args[0])
 
     @property
     def error_code(self) -> RpcErrorCode:
         """Provides access to the :class:`RpcErrorCode`."""
         return RpcErrorCode(self.args[1])
+
+    def to_shv(self) -> SHVType:
+        """Convert to SHV RPC representation."""
+        res: dict[int, SHVType] = {
+            self.Key.CODE: self.error_code,
+            **({} if self.message is None else {self.Key.MESSAGE: self.message}),
+        }
+        return res
+
+    @classmethod
+    def from_shv(cls, value: SHVType) -> RpcError:
+        """Create from SHV RPC representation."""
+        if not is_shvimap(value):
+            raise ValueError(f"Expected IMap but got {value!r}.")
+        msg = value.get(cls.Key.MESSAGE)
+        if not isinstance(msg, str | None):
+            raise ValueError(f"Invalid Message format: {msg}")
+        rcode = value.get(cls.Key.CODE)
+        if not isinstance(rcode, int):
+            raise ValueError(f"Invalid Code format: {rcode}")
+        code = RpcErrorCode.UNKNOWN
+        with contextlib.suppress(ValueError):
+            code = RpcErrorCode(rcode)
+        return cls(msg, code)
+
+    @staticmethod
+    def from_exception(exc: Exception) -> RpcError:
+        """Create exception from other Python exception."""
+        if isinstance(exc, RpcError):
+            return exc
+        return RpcMethodCallExceptionError("".join(traceback.format_exception(exc)))
 
 
 class RpcMethodNotFoundError(RpcError):

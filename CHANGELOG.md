@@ -14,12 +14,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RpcRequestInvalidError` and `RpcTryAgainLaterError`
 - `RpcTypeOptional` as easier alternative to `RpcTypeOneOf` when combining only
   with `rpctype_null`.
+- properties `RpcMessage.abort`, `RpcMessage.delay`, and `RpcMessage.repeat`
+- `RpcMessage.make_response_delay` and `RpcMessage.request_abort` methods
 
 ### Changed
-- Updated `getLogR` type hint according to spefication, it is now Struct
-  instead of KeyStruct.
 - Websockets RPC Transport now requires `shv3` to be used as subprotocol.
   Connections failing to select this subprotocol won't be established.
+- `RpcClient.receive` no longer accepts argument `raise_error`.
+- `RpcMessage.is_*` methods are replaced with `RpcMessage.type`
+- `RpcMessage.is_valid` checks highly expanded
+- `RpcMessage.make_response` no longer accepts `error` argument. Pass `RpcError`
+  to `result` parameter instead.
+- `RpcMessage.request` has new parameter `cids` and `user_id` is moved.
+- `RpcMessage.rpc_error` is now `RpcMessage.error` and original error access is
+  no longer available.
 
 ### Fixed
 - type hint for `dir` result (corrected against SHV standard).
