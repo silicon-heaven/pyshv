@@ -2,7 +2,7 @@
 
 import pytest
 
-from shv import RpcLogin, RpcLoginType, RpcMethodAccess, RpcProtocol, RpcUrl
+from shv import RpcAccess, RpcLogin, RpcLoginType, RpcProtocol, RpcUrl
 from shv.broker import RpcBrokerConfig
 
 
@@ -17,14 +17,14 @@ def test_config(config):
             RpcBrokerConfig.Role(
                 "admin",
                 {"**"},
-                {RpcMethodAccess.DEVEL: {"**:*"}},
+                {RpcAccess.DEVEL: {"**:*"}},
             ),
             RpcBrokerConfig.Role(
-                "test", {"test/*"}, {RpcMethodAccess.COMMAND: {"test/**:*"}}
+                "test", {"test/*"}, {RpcAccess.COMMAND: {"test/**:*"}}
             ),
             RpcBrokerConfig.Role(
                 "browse",
-                access={RpcMethodAccess.BROWSE: {"**:ls", "**:dir"}},
+                access={RpcAccess.BROWSE: {"**:ls", "**:dir"}},
             ),
             RpcBrokerConfig.Role("nobody"),
         ],
@@ -68,8 +68,8 @@ def test_subconfig(subconfig):
             )
         ],
         roles=[
-            RpcBrokerConfig.Role("admin", {"**"}, {RpcMethodAccess.DEVEL: {"**:*"}}),
-            RpcBrokerConfig.Role("upper", access={RpcMethodAccess.COMMAND: {"**:*"}}),
+            RpcBrokerConfig.Role("admin", {"**"}, {RpcAccess.DEVEL: {"**:*"}}),
+            RpcBrokerConfig.Role("upper", access={RpcAccess.COMMAND: {"**:*"}}),
         ],
         users=[
             RpcBrokerConfig.User("admin", "admin!234", ["admin"]),
@@ -103,9 +103,9 @@ def test_login_invalid_mount(config):
 @pytest.mark.parametrize(
     "path,method,res",
     (
-        ("", "ls", RpcMethodAccess.BROWSE),
+        ("", "ls", RpcAccess.BROWSE),
         ("", "get", None),
-        ("test/device/track/1", "get", RpcMethodAccess.COMMAND),
+        ("test/device/track/1", "get", RpcAccess.COMMAND),
     ),
 )
 def test_access_level_test(config, path, method, res):
@@ -148,8 +148,8 @@ def test_role_history(config):
 @pytest.mark.parametrize(
     "path,method,res",
     (
-        ("", "ls", RpcMethodAccess.COMMAND),
-        ("test/device/track/1", "get", RpcMethodAccess.COMMAND),
+        ("", "ls", RpcAccess.COMMAND),
+        ("test/device/track/1", "get", RpcAccess.COMMAND),
     ),
 )
 def test_access_level_upper(subconfig, path, method, res):

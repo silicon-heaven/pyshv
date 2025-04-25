@@ -12,6 +12,8 @@ import secrets
 import time
 import typing
 
+from ..rpcaccess import RpcAccess
+from ..rpcdir import RpcDir
 from ..rpcerrors import (
     RpcError,
     RpcInvalidParamError,
@@ -21,7 +23,6 @@ from ..rpcerrors import (
 )
 from ..rpclogin import RpcLogin
 from ..rpcmessage import RpcMessage
-from ..rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodFlags
 from ..rpcparam import shvargt
 from ..rpcri import rpcri_match, rpcri_relative_to
 from ..rpctransport import RpcClient, RpcServer, create_rpc_server, init_rpc_client
@@ -144,7 +145,7 @@ class RpcBroker:
                                 msg.make_response(RpcMethodNotFoundError("No access"))
                             )
                             return
-                        access = RpcMethodAccess.BROWSE
+                        access = RpcAccess.BROWSE
                     # Limit access level in the message
                     msg.rpc_access = (
                         access
@@ -161,7 +162,7 @@ class RpcBroker:
                     # Protect sub-broker currentClient access
                     if cpath[1] == ".broker/currentClient" and (
                         msg.method in {"subscribe", "unsubscribe"}
-                        or msg.rpc_access < RpcMethodAccess.SUPER_SERVICE
+                        or msg.rpc_access < RpcAccess.SUPER_SERVICE
                     ):
                         await self._send(
                             msg.make_response(RpcMethodNotFoundError("No access"))
@@ -224,60 +225,51 @@ class RpcBroker:
                         elif mnt.startswith(path + "/"):
                             yield mnt[len(path) + 1 :].split("/", maxsplit=1)[0]
 
-        def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:
+        def _dir(self, path: str) -> collections.abc.Iterator[RpcDir]:
             yield from super()._dir(path)
             match path:
                 case ".broker":
-                    yield RpcMethodDesc.getter(
-                        "name", "n", "s", access=RpcMethodAccess.BROWSE
-                    )
-                    yield RpcMethodDesc(
+                    yield RpcDir.getter("name", "n", "s", access=RpcAccess.BROWSE)
+                    yield RpcDir(
                         "clientInfo",
                         param="i",
                         result="!clientInfo|n",
-                        access=RpcMethodAccess.SUPER_SERVICE,
+                        access=RpcAccess.SUPER_SERVICE,
                     )
-                    yield RpcMethodDesc(
+                    yield RpcDir(
                         "mountedClientInfo",
                         param="s",
                         result="!clientInfo|n",
-                        access=RpcMethodAccess.SUPER_SERVICE,
+                        access=RpcAccess.SUPER_SERVICE,
                     )
-                    yield RpcMethodDesc.getter(
-                        "clients", "n", "[i]", access=RpcMethodAccess.SUPER_SERVICE
+                    yield RpcDir.getter(
+                        "clients", "n", "[i]", access=RpcAccess.SUPER_SERVICE
                     )
-                    yield RpcMethodDesc.getter(
-                        "mounts", "n", "[s]", access=RpcMethodAccess.SUPER_SERVICE
+                    yield RpcDir.getter(
+                        "mounts", "n", "[s]", access=RpcAccess.SUPER_SERVICE
                     )
-                    yield RpcMethodDesc(
-                        "disconnectClient",
-                        param="i",
-                        access=RpcMethodAccess.SUPER_SERVICE,
+                    yield RpcDir(
+                        "disconnectClient", param="i", access=RpcAccess.SUPER_SERVICE
                     )
                 case ".broker/currentClient":
-                    yield RpcMethodDesc(
-                        "info", RpcMethodFlags.GETTER, result="!clientInfo"
-                    )
-                    yield RpcMethodDesc(
+                    yield RpcDir("info", RpcDir.Flag.GETTER, result="!clientInfo")
+                    yield RpcDir(
                         "subscribe",
                         param="s|[s:RPCRI,i:TTL]",
                         result="b",
-                        access=RpcMethodAccess.BROWSE,
+                        access=RpcAccess.BROWSE,
                     )
-                    yield RpcMethodDesc(
-                        "unsubscribe",
-                        param="s",
-                        result="b",
-                        access=RpcMethodAccess.BROWSE,
+                    yield RpcDir(
+                        "unsubscribe", param="s", result="b", access=RpcAccess.BROWSE
                     )
-                    yield RpcMethodDesc.getter(
-                        "subscriptions", result="{i|n}", access=RpcMethodAccess.BROWSE
+                    yield RpcDir.getter(
+                        "subscriptions", result="{i|n}", access=RpcAccess.BROWSE
                     )
 
         async def _method_call(self, request: SHVBase.Request) -> SHVType:
             assert self.role is not None  # Otherwise handled in _message
             match request.path.split("/"):
-                case [".broker"] if request.access >= RpcMethodAccess.SUPER_SERVICE:
+                case [".broker"] if request.access >= RpcAccess.SUPER_SERVICE:
                     match request.method:
                         case "name":
                             return self.__broker.config.name
@@ -709,7 +701,7 @@ class RpcBroker:
 
         :param msg: Signal message to be sent.
         """
-        msgaccess = msg.rpc_access or RpcMethodAccess.READ
+        msgaccess = msg.rpc_access or RpcAccess.READ
         cids: set[int] = set()
         for sub, clients in self._subs.items():
             if rpcri_match(sub, msg.path, msg.source, msg.signal_name):

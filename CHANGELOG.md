@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RpcMessage.request` has new parameter `cids` and `user_id` is moved.
 - `RpcMessage.rpc_error` is now `RpcMessage.error` and original error access is
   no longer available.
+- `RpcMethodDesc` was renamed to `RpcDir`
+- `RpcMethodFlags` was moved to `RpcDir.Flag`
+- `RpcMethodAccess` was renamed to `RpcAccess`
 
 ### Fixed
 - type hint for `dir` result (corrected against SHV standard).

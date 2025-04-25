@@ -11,8 +11,8 @@ import pathlib
 import tomllib
 import typing
 
+from ..rpcaccess import RpcAccess
 from ..rpclogin import RpcLogin, RpcLoginType
-from ..rpcmethod import RpcMethodAccess
 from ..rpcri import rpcri_match
 from ..rpcurl import RpcUrl
 from .configabc import RpcBrokerConfigABC, RpcBrokerRoleABC
@@ -73,14 +73,12 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
         """Name of this role."""
         mount_points: set[str] = dataclasses.field(default_factory=set)
         """Set of patterns for mount points allowed to this role."""
-        access: dict[RpcMethodAccess, set[str]] = dataclasses.field(
-            default_factory=dict
-        )
+        access: dict[RpcAccess, set[str]] = dataclasses.field(default_factory=dict)
         """Resource identifiers used to assign highest possible access level."""
 
-        def access_level(self, path: str, method: str) -> RpcMethodAccess | None:
+        def access_level(self, path: str, method: str) -> RpcAccess | None:
             """Deduce access level for method based on these rules."""
-            for level in sorted(RpcMethodAccess, reverse=True):
+            for level in sorted(RpcAccess, reverse=True):
                 if any(
                     rpcri_match(ri, path, method) for ri in self.access.get(level, [])
                 ):
@@ -227,9 +225,7 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
                 if autosetup := self._autosetup():
                     yield from autosetup.subscriptions
 
-            def access_level(  # noqa PLR6301
-                self, path: str, method: str
-            ) -> RpcMethodAccess | None:
+            def access_level(self, path: str, method: str) -> RpcAccess | None:  # noqa PLR6301
                 return nmax(
                     self.config.roles[r].access_level(path, method)
                     for r in self.user.roles
@@ -269,9 +265,7 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
             def initial_subscriptions(self) -> collections.abc.Iterator[str]:  # noqa D102
                 yield from self.connection.subscriptions
 
-            def access_level(  # noqa PLR6301
-                self, path: str, method: str
-            ) -> RpcMethodAccess | None:
+            def access_level(self, path: str, method: str) -> RpcAccess | None:  # noqa PLR6301
                 return nmax(
                     self.config.roles[r].access_level(path, method)
                     for r in self.connection.roles
@@ -424,7 +418,7 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
                             f"'role.{name}.access' must be table"
                         )
                     for level, paths in access.items():
-                        nlevel = RpcMethodAccess.strmap().get(level)
+                        nlevel = RpcAccess.strmap().get(level)
                         if nlevel is None:
                             raise RpcBrokerConfigurationError(
                                 f"'{level} is not allowed in 'role.{name}.access'"

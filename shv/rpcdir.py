@@ -1,4 +1,4 @@
-"""Types used in SHV RPC method description."""
+"""Types used in SHV RPC ``dir`` call for method description."""
 
 from __future__ import annotations
 
@@ -7,68 +7,13 @@ import enum
 import functools
 import typing
 
+from .rpcaccess import RpcAccess
 from .rpcparam import SHVGetKey, shvget, shvgett
 from .value import SHVMapType, SHVType, is_shvimap, is_shvmap
 
 
-class RpcMethodFlags(enum.IntFlag):
-    """Flags assigned to the SHV RPC methods."""
-
-    NOT_CALLABLE = 1 << 0
-    GETTER = 1 << 1
-    SETTER = 1 << 2
-    LARGE_RESULT_HINT = 1 << 3
-    NOT_IDEMPOTENT = 1 << 4
-    USER_ID_REQUIRED = 1 << 5
-
-
-class RpcMethodAccess(enum.IntEnum):
-    """Method access level."""
-
-    BROWSE = 1
-    READ = 8
-    WRITE = 16
-    COMMAND = 24
-    CONFIG = 32
-    SERVICE = 40
-    SUPER_SERVICE = 48
-    DEVEL = 56
-    ADMIN = 63
-
-    @classmethod
-    @functools.cache
-    def strmap(cls) -> dict[str, RpcMethodAccess]:
-        """Map from string to this enum."""
-        return {
-            "bws": cls.BROWSE,
-            "rd": cls.READ,
-            "wr": cls.WRITE,
-            "cmd": cls.COMMAND,
-            "cfg": cls.CONFIG,
-            "srv": cls.SERVICE,
-            "ssrv": cls.SUPER_SERVICE,
-            "dev": cls.DEVEL,
-            "su": cls.ADMIN,
-        }
-
-    @classmethod
-    @functools.cache
-    def strrmap(cls) -> dict[int, str]:
-        """Map from this enum to string."""
-        return {v.value: k for k, v in cls.strmap().items()}
-
-    def tostr(self) -> str:
-        """Convert to string representation."""
-        return self.strrmap().get(self.value, "bws")
-
-    @classmethod
-    def fromstr(cls, access: str) -> RpcMethodAccess:
-        """Convert to string representation."""
-        return cls.strmap().get(access, cls.BROWSE)
-
-
 @dataclasses.dataclass
-class RpcMethodDesc:
+class RpcDir:
     """Description of the SHV RPC method.
 
     This is implemented as :func:`dataclasses.dataclass`.
@@ -95,11 +40,23 @@ class RpcMethodDesc:
         SIGNALS = 6
         EXTRA = 63
 
+    class Flag(enum.IntFlag):
+        """Flags assigned to the SHV RPC methods."""
+
+        NONE = 0
+        NOT_CALLABLE = 1 << 0
+        GETTER = 1 << 1
+        SETTER = 1 << 2
+        LARGE_RESULT_HINT = 1 << 3
+        NOT_IDEMPOTENT = 1 << 4
+        USER_ID_REQUIRED = 1 << 5
+        IS_UPDATABLE = 1 << 6
+
     name: str
-    flags: RpcMethodFlags = dataclasses.field(default=RpcMethodFlags(0))
+    flags: Flag = dataclasses.field(default=Flag(0))
     param: str = "n"
     result: str = "n"
-    access: RpcMethodAccess = RpcMethodAccess.BROWSE
+    access: RpcAccess = RpcAccess.BROWSE
     signals: dict[str, str] = dataclasses.field(default_factory=dict)
     extra: dict[str, SHVType] = dataclasses.field(default_factory=dict)
 
@@ -123,7 +80,7 @@ class RpcMethodDesc:
         return res
 
     @classmethod
-    def from_shv(cls, value: SHVType) -> RpcMethodDesc:
+    def from_shv(cls, value: SHVType) -> RpcDir:
         """Create from SHV RPC representation."""
         if not is_shvimap(value):
             raise ValueError(f"Expected IMap but got {value!r}.")
@@ -135,14 +92,14 @@ class RpcMethodDesc:
         result: str = shvgett(value, cls.Key.RESULT, str, cls.result)
         return cls(
             name=shvgett(value, SHVGetKey("name", cls.Key.NAME), str, "UNSPECIFIED"),
-            flags=RpcMethodFlags(
+            flags=cls.Flag(
                 shvgett(value, SHVGetKey("flags", cls.Key.FLAGS), int, cls.flags)
             ),
             param=shvgett(value, cls.Key.PARAM, str, cls.param),
             result=result,
-            access=RpcMethodAccess(raccess)
+            access=RpcAccess(raccess)
             if isinstance(raccess, int)
-            else RpcMethodAccess.fromstr(raccess)
+            else RpcAccess.fromstr(raccess)
             if isinstance(raccess, str)
             else cls.access,
             signals={
@@ -161,10 +118,11 @@ class RpcMethodDesc:
         name: str = "get",
         param: str = "i(0,)|n",
         result: str = "?",
-        access: RpcMethodAccess = RpcMethodAccess.READ,
+        access: RpcAccess = RpcAccess.READ,
         signal: bool | str = False,
+        flags: Flag = Flag.NONE,
         description: str = "",
-    ) -> RpcMethodDesc:
+    ) -> RpcDir:
         """Create getter method description.
 
         :param name: Name of the method.
@@ -174,11 +132,13 @@ class RpcMethodDesc:
         :param signal: Allows specifying property change signal. You can specify
           `True` to get default `"chng"` signal or you can specify custom signal
           name (should end with *chng*).
+        :param flags: Flags assigned to the method. :py:data:`Flags.GETTER` is
+          always set.
         :param description: Short description of the value.
         """
         return cls(
             name,
-            RpcMethodFlags.GETTER,
+            cls.Flag.GETTER | flags,
             param,
             result,
             access,
@@ -192,20 +152,22 @@ class RpcMethodDesc:
         name: str = "set",
         param: str = "?",
         result: str = "n",
-        access: RpcMethodAccess = RpcMethodAccess.WRITE,
+        access: RpcAccess = RpcAccess.WRITE,
+        flags: Flag = Flag.NONE,
         description: str = "",
-    ) -> RpcMethodDesc:
+    ) -> RpcDir:
         """Create setter method description.
 
         :param name: Name of the method.
         :param param: Type of the parameter this setter expects.
         :param result: Type of the result this setter provides.
         :param access: Minimal granted access level for this setter.
+        :param flags: Flags assigned to the method.
         :param description: Short description of the value.
         """
         return cls(
             name,
-            RpcMethodFlags.SETTER,
+            flags,
             param,
             result,
             access,
@@ -214,12 +176,12 @@ class RpcMethodDesc:
 
     @classmethod
     @functools.lru_cache(maxsize=1)
-    def stddir(cls) -> RpcMethodDesc:
+    def stddir(cls) -> RpcDir:
         """Get description of standard 'dir' method."""
         return cls("dir", param="n|b|s", result="[!dir]|b")
 
     @classmethod
     @functools.lru_cache(maxsize=1)
-    def stdls(cls) -> RpcMethodDesc:
+    def stdls(cls) -> RpcDir:
         """Get description of standard 'ls' method."""
         return cls("ls", param="s|n", result="[s]|b", signals={"lsmod": "{b}"})
