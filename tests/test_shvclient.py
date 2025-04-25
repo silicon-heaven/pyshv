@@ -6,10 +6,9 @@ import dataclasses
 import pytest
 
 from shv import (
+    RpcAccess,
+    RpcDir,
     RpcLoginType,
-    RpcMethodAccess,
-    RpcMethodDesc,
-    RpcMethodFlags,
     SHVClient,
     shvmeta,
 )
@@ -83,48 +82,40 @@ async def test_ls_has_child(client, path, name, result):
     (
         (
             "",
-            [RpcMethodDesc.stddir(), RpcMethodDesc.stdls()],
+            [RpcDir.stddir(), RpcDir.stdls()],
         ),
         (
             ".broker",
             [
-                RpcMethodDesc.stddir(),
-                RpcMethodDesc.stdls(),
-                RpcMethodDesc.getter("name", "n", "s", access=RpcMethodAccess.BROWSE),
-                RpcMethodDesc(
+                RpcDir.stddir(),
+                RpcDir.stdls(),
+                RpcDir.getter("name", "n", "s", access=RpcAccess.BROWSE),
+                RpcDir(
                     "clientInfo",
                     param="i",
                     result="!clientInfo|n",
-                    access=RpcMethodAccess.SUPER_SERVICE,
+                    access=RpcAccess.SUPER_SERVICE,
                 ),
-                RpcMethodDesc(
+                RpcDir(
                     "mountedClientInfo",
                     param="s",
                     result="!clientInfo|n",
-                    access=RpcMethodAccess.SUPER_SERVICE,
+                    access=RpcAccess.SUPER_SERVICE,
                 ),
-                RpcMethodDesc.getter(
-                    "clients", "n", "[i]", access=RpcMethodAccess.SUPER_SERVICE
-                ),
-                RpcMethodDesc.getter(
-                    "mounts", "n", "[s]", access=RpcMethodAccess.SUPER_SERVICE
-                ),
-                RpcMethodDesc(
-                    "disconnectClient", param="i", access=RpcMethodAccess.SUPER_SERVICE
-                ),
+                RpcDir.getter("clients", "n", "[i]", access=RpcAccess.SUPER_SERVICE),
+                RpcDir.getter("mounts", "n", "[s]", access=RpcAccess.SUPER_SERVICE),
+                RpcDir("disconnectClient", param="i", access=RpcAccess.SUPER_SERVICE),
             ],
         ),
         (
             ".broker/currentClient",
             [
-                RpcMethodDesc.stddir(),
-                RpcMethodDesc.stdls(),
-                RpcMethodDesc("info", RpcMethodFlags.GETTER, result="!clientInfo"),
-                RpcMethodDesc("subscribe", param="s|[s:RPCRI,i:TTL]", result="b"),
-                RpcMethodDesc("unsubscribe", param="s", result="b"),
-                RpcMethodDesc.getter(
-                    "subscriptions", result="{i|n}", access=RpcMethodAccess.BROWSE
-                ),
+                RpcDir.stddir(),
+                RpcDir.stdls(),
+                RpcDir("info", RpcDir.Flag.GETTER, result="!clientInfo"),
+                RpcDir("subscribe", param="s|[s:RPCRI,i:TTL]", result="b"),
+                RpcDir("unsubscribe", param="s", result="b"),
+                RpcDir.getter("subscriptions", result="{i|n}", access=RpcAccess.BROWSE),
             ],
         ),
     ),

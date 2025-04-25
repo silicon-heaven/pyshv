@@ -7,10 +7,11 @@ import itertools
 import time
 import typing
 
+from .rpcaccess import RpcAccess
 from .rpcalert import RpcAlert
+from .rpcdir import RpcDir
 from .rpcerrors import RpcNotImplementedError
 from .rpcmessage import RpcMessage
-from .rpcmethod import RpcMethodAccess, RpcMethodDesc
 from .shvbase import SHVBase
 from .shvclient import SHVClient
 from .value import SHVType
@@ -77,15 +78,15 @@ class SHVDevice(SHVClient):
                 return self.DEVICE_NAME
             case ".device", "version":
                 return self.DEVICE_VERSION
-            case ".device", "serialNumber" if request.access >= RpcMethodAccess.READ:
+            case ".device", "serialNumber" if request.access >= RpcAccess.READ:
                 return self.DEVICE_SERIAL_NUMBER
             case ".device", "uptime":
                 return int(time.monotonic())
-            case ".device", "reset" if request.access >= RpcMethodAccess.COMMAND:
+            case ".device", "reset" if request.access >= RpcAccess.COMMAND:
                 self._device_reset()
                 return None  # pragma: no cover
             case ".device/alerts", "get" if (
-                self.DEVICE_ALERTS and request.access >= RpcMethodAccess.READ
+                self.DEVICE_ALERTS and request.access >= RpcAccess.READ
             ):
                 return [alert.value for alert in self._alerts]
         return await super()._method_call(request)
@@ -98,25 +99,17 @@ class SHVDevice(SHVClient):
             case ".device" if self.DEVICE_ALERTS:
                 yield "alerts"
 
-    def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:
+    def _dir(self, path: str) -> collections.abc.Iterator[RpcDir]:
         yield from super()._dir(path)
         match path:
             case ".device":
-                yield RpcMethodDesc.getter(
-                    "name", "n", "s", access=RpcMethodAccess.BROWSE
-                )
-                yield RpcMethodDesc.getter(
-                    "version", "n", "s", access=RpcMethodAccess.BROWSE
-                )
-                yield RpcMethodDesc.getter(
-                    "serialNumber", "n", "s|n", access=RpcMethodAccess.BROWSE
-                )
-                yield RpcMethodDesc.getter(
-                    "uptime", "n", "u|n", access=RpcMethodAccess.BROWSE
-                )
-                yield RpcMethodDesc("reset", access=RpcMethodAccess.COMMAND)
+                yield RpcDir.getter("name", "n", "s", access=RpcAccess.BROWSE)
+                yield RpcDir.getter("version", "n", "s", access=RpcAccess.BROWSE)
+                yield RpcDir.getter("serialNumber", "n", "s|n", access=RpcAccess.BROWSE)
+                yield RpcDir.getter("uptime", "n", "u|n", access=RpcAccess.BROWSE)
+                yield RpcDir("reset", access=RpcAccess.COMMAND)
             case ".device/alerts" if self.DEVICE_ALERTS:
-                yield RpcMethodDesc.getter(result="[!alert]", signal=True)
+                yield RpcDir.getter(result="[!alert]", signal=True)
 
     def _device_reset(self) -> None:  # noqa: PLR6301
         """Trigger called to perform the device reset."""

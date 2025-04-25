@@ -9,9 +9,9 @@ from shv import (
     SHV_VERSION_MAJOR,
     SHV_VERSION_MINOR,
     VERSION,
+    RpcAccess,
     RpcAlert,
-    RpcMethodAccess,
-    RpcMethodDesc,
+    RpcDir,
     RpcMethodNotFoundError,
     RpcNotImplementedError,
     SHVDevice,
@@ -87,27 +87,21 @@ async def test_ls(client, device, path, result):
         (
             "test/device/.device",
             [
-                RpcMethodDesc.stddir(),
-                RpcMethodDesc.stdls(),
-                RpcMethodDesc.getter("name", "n", "s", access=RpcMethodAccess.BROWSE),
-                RpcMethodDesc.getter(
-                    "version", "n", "s", access=RpcMethodAccess.BROWSE
-                ),
-                RpcMethodDesc.getter(
-                    "serialNumber", "n", "s|n", access=RpcMethodAccess.BROWSE
-                ),
-                RpcMethodDesc.getter(
-                    "uptime", "n", "u|n", access=RpcMethodAccess.BROWSE
-                ),
-                RpcMethodDesc("reset", access=RpcMethodAccess.COMMAND),
+                RpcDir.stddir(),
+                RpcDir.stdls(),
+                RpcDir.getter("name", "n", "s", access=RpcAccess.BROWSE),
+                RpcDir.getter("version", "n", "s", access=RpcAccess.BROWSE),
+                RpcDir.getter("serialNumber", "n", "s|n", access=RpcAccess.BROWSE),
+                RpcDir.getter("uptime", "n", "u|n", access=RpcAccess.BROWSE),
+                RpcDir("reset", access=RpcAccess.COMMAND),
             ],
         ),
         (
             "test/device/.device/alerts",
             [
-                RpcMethodDesc.stddir(),
-                RpcMethodDesc.stdls(),
-                RpcMethodDesc.getter(result="[!alert]", signal=True),
+                RpcDir.stddir(),
+                RpcDir.stdls(),
+                RpcDir.getter(result="[!alert]", signal=True),
             ],
         ),
     ),

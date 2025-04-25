@@ -9,8 +9,8 @@ import typing
 
 from .chainpack import ChainPackWriter
 from .cpon import CponWriter
+from .rpcaccess import RpcAccess
 from .rpcerrors import RpcError, RpcErrorCode
-from .rpcmethod import RpcMethodAccess
 from .value import (
     SHVIMap,
     SHVType,
@@ -337,23 +337,23 @@ class RpcMessage:
         return self.value.get(self.Tag.ACCESS_LEVEL)
 
     @property
-    def rpc_access(self) -> RpcMethodAccess | None:
-        """Access level as :class:`shv.RpcMethodAccess`."""
+    def rpc_access(self) -> RpcAccess | None:
+        """Access level as :class:`shv.RpcAccess`."""
         if (level := self._access_level) is not None:
             if not isinstance(level, int):
                 raise ValueError(f"Invalid AccessLevel type: {type(level)}")
-            return RpcMethodAccess(level)
-        m = RpcMethodAccess.strmap()
+            return RpcAccess(level)
+        m = RpcAccess.strmap()
         for access in self.access:
             if access in m:
                 return m[access]
         return None
 
     @rpc_access.setter
-    def rpc_access(self, access: RpcMethodAccess | None) -> None:
-        """Set access level with :class:`shv.RpcMethodAccess`."""
+    def rpc_access(self, access: RpcAccess | None) -> None:
+        """Set access level with :class:`shv.RpcAccess`."""
         if access is not None:
-            self.value.meta[self.Tag.ACCESS] = RpcMethodAccess.tostr(access)
+            self.value.meta[self.Tag.ACCESS] = RpcAccess.tostr(access)
             self.value.meta[self.Tag.ACCESS_LEVEL] = access.value
         else:
             self.value.meta.pop(self.Tag.ACCESS, None)
@@ -557,7 +557,7 @@ class RpcMessage:
         name: str = "chng",
         source: str = "get",
         value: SHVType = None,
-        access: RpcMethodAccess = RpcMethodAccess.READ,
+        access: RpcAccess = RpcAccess.READ,
         user_id: str | None = None,
     ) -> RpcMessage:
         """Create signal message.
@@ -593,4 +593,4 @@ class RpcMessage:
           node, that was either added (for value ``True``) or removed (for value
           ``False``).
         """
-        return cls.signal(path, "lsmod", "ls", nodes, RpcMethodAccess.BROWSE)
+        return cls.signal(path, "lsmod", "ls", nodes, RpcAccess.BROWSE)

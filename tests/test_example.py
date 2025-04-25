@@ -3,7 +3,7 @@
 import pytest
 
 import example_client
-from shv import RpcMethodAccess, RpcMethodNotFoundError, shvmeta
+from shv import RpcAccess, RpcMethodNotFoundError, shvmeta
 
 
 @pytest.mark.parametrize(
@@ -22,13 +22,13 @@ from shv import RpcMethodAccess, RpcMethodNotFoundError, shvmeta
             "dir",
             None,
             [
-                {1: "dir", 2: 0, 3: "n|b|s", 4: "[!dir]|b", 5: RpcMethodAccess.BROWSE},
+                {1: "dir", 2: 0, 3: "n|b|s", 4: "[!dir]|b", 5: RpcAccess.BROWSE},
                 {
                     1: "ls",
                     2: 0,
                     3: "s|n",
                     4: "[s]|b",
-                    5: RpcMethodAccess.BROWSE,
+                    5: RpcAccess.BROWSE,
                     6: {"lsmod": "{b}"},
                 },
             ],
@@ -38,21 +38,21 @@ from shv import RpcMethodAccess, RpcMethodNotFoundError, shvmeta
             "dir",
             None,
             [
-                {1: "dir", 2: 0, 3: "n|b|s", 4: "[!dir]|b", 5: RpcMethodAccess.BROWSE},
+                {1: "dir", 2: 0, 3: "n|b|s", 4: "[!dir]|b", 5: RpcAccess.BROWSE},
                 {
                     1: "ls",
                     2: 0,
                     3: "s|n",
                     4: "[s]|b",
-                    5: RpcMethodAccess.BROWSE,
+                    5: RpcAccess.BROWSE,
                     6: {"lsmod": "{b}"},
                 },
-                {1: "shvVersionMajor", 2: 2, 4: "i", 5: RpcMethodAccess.READ},
-                {1: "shvVersionMinor", 2: 2, 4: "i", 5: RpcMethodAccess.READ},
-                {1: "name", 2: 2, 4: "s", 5: RpcMethodAccess.READ},
-                {1: "version", 2: 2, 4: "s", 5: RpcMethodAccess.READ},
-                {1: "date", 2: 2, 4: "t", 5: RpcMethodAccess.READ},
-                {1: "ping", 2: 0, 5: RpcMethodAccess.BROWSE},
+                {1: "shvVersionMajor", 2: 2, 4: "i", 5: RpcAccess.READ},
+                {1: "shvVersionMinor", 2: 2, 4: "i", 5: RpcAccess.READ},
+                {1: "name", 2: 2, 4: "s", 5: RpcAccess.READ},
+                {1: "version", 2: 2, 4: "s", 5: RpcAccess.READ},
+                {1: "date", 2: 2, 4: "t", 5: RpcAccess.READ},
+                {1: "ping", 2: 0, 5: RpcAccess.BROWSE},
             ],
         ),
         (
@@ -60,13 +60,13 @@ from shv import RpcMethodAccess, RpcMethodNotFoundError, shvmeta
             "dir",
             None,
             [
-                {1: "dir", 2: 0, 3: "n|b|s", 4: "[!dir]|b", 5: RpcMethodAccess.BROWSE},
+                {1: "dir", 2: 0, 3: "n|b|s", 4: "[!dir]|b", 5: RpcAccess.BROWSE},
                 {
                     1: "ls",
                     2: 0,
                     3: "s|n",
                     4: "[s]|b",
-                    5: RpcMethodAccess.BROWSE,
+                    5: RpcAccess.BROWSE,
                     6: {"lsmod": "{b}"},
                 },
                 {
@@ -74,12 +74,12 @@ from shv import RpcMethodAccess, RpcMethodNotFoundError, shvmeta
                     2: 2,
                     3: "i(0,)|n",
                     4: "s|n",
-                    5: RpcMethodAccess.READ,
+                    5: RpcAccess.READ,
                 },
                 {
                     1: "reset",
                     2: 32,
-                    5: RpcMethodAccess.COMMAND,
+                    5: RpcAccess.COMMAND,
                     63: {"description": "Reset all tracks to their initial state"},
                 },
             ],
@@ -89,13 +89,13 @@ from shv import RpcMethodAccess, RpcMethodNotFoundError, shvmeta
             "dir",
             None,
             [
-                {1: "dir", 2: 0, 3: "n|b|s", 4: "[!dir]|b", 5: RpcMethodAccess.BROWSE},
+                {1: "dir", 2: 0, 3: "n|b|s", 4: "[!dir]|b", 5: RpcAccess.BROWSE},
                 {
                     1: "ls",
                     2: 0,
                     3: "s|n",
                     4: "[s]|b",
-                    5: RpcMethodAccess.BROWSE,
+                    5: RpcAccess.BROWSE,
                     6: {"lsmod": "{b}"},
                 },
                 {
@@ -103,15 +103,15 @@ from shv import RpcMethodAccess, RpcMethodNotFoundError, shvmeta
                     2: 2,
                     3: "i(0,)|n",
                     4: "[i]",
-                    5: RpcMethodAccess.READ,
+                    5: RpcAccess.READ,
                     6: {"chng": None},
                     63: {"description": "List of tracks"},
                 },
                 {
                     1: "set",
-                    2: 4,
+                    2: 0,
                     3: "[i]",
-                    5: RpcMethodAccess.WRITE,
+                    5: RpcAccess.WRITE,
                     63: {"description": "Set track"},
                 },
             ],

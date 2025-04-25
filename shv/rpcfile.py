@@ -13,8 +13,9 @@ import pathlib
 import types
 import typing
 
+from .rpcaccess import RpcAccess
+from .rpcdir import RpcDir
 from .rpcerrors import RpcInvalidParamError
-from .rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodFlags
 from .rpcparam import shvarg, shvargt, shvget, shvgett, shvt
 from .shvbase import SHVBase
 from .value import SHVType, is_shvimap
@@ -443,16 +444,16 @@ class FileProvider:
     and other method calls are delefated to this helper.
     """
 
-    access_read: RpcMethodAccess = RpcMethodAccess.READ
+    access_read: RpcAccess = RpcAccess.READ
     """Access level for ``read`` method."""
-    access_write: RpcMethodAccess | None = RpcMethodAccess.WRITE
+    access_write: RpcAccess | None = RpcAccess.WRITE
     """Access level for ``write`` method."""
-    access_truncate: RpcMethodAccess | None = RpcMethodAccess.WRITE
+    access_truncate: RpcAccess | None = RpcAccess.WRITE
     """Access level for ``truncate`` method."""
-    access_append: RpcMethodAccess | None = RpcMethodAccess.WRITE
+    access_append: RpcAccess | None = RpcAccess.WRITE
     """Access level for ``append`` method."""
 
-    def dir(self) -> collections.abc.Iterator[RpcMethodDesc]:
+    def dir(self) -> collections.abc.Iterator[RpcDir]:
         """Provide method descriptions for this file access.
 
         This should be called from :meth:`shv.SHVBase._dir` implementation for
@@ -461,35 +462,35 @@ class FileProvider:
         :return: Iterator over method descriptions appropriate for this
         provider.
         """
-        yield RpcMethodDesc.getter("stat", "n", "!stat", self.access_read)
-        yield RpcMethodDesc.getter("size", "n", "i(0,)", self.access_read)
-        yield RpcMethodDesc(
+        yield RpcDir.getter("stat", "n", "!stat", self.access_read)
+        yield RpcDir.getter("size", "n", "i(0,)", self.access_read)
+        yield RpcDir(
             "crc",
             param="[i(0,):offset,i(0,)|n:size]|n",
             result="u(>32)",
             access=self.access_read,
         )
-        yield RpcMethodDesc(
+        yield RpcDir(
             "sha1",
             param="[i(0,):offset,i(0,)|n:size]|n",
             result="b(20)",
             access=self.access_read,
         )
-        yield RpcMethodDesc(
+        yield RpcDir(
             "read",
-            RpcMethodFlags.LARGE_RESULT_HINT,
+            RpcDir.Flag.LARGE_RESULT_HINT,
             "[i(0,):offset,i(0,)size]",
             "b",
             self.access_read,
         )
         if self.access_write is not None:
-            yield RpcMethodDesc(
+            yield RpcDir(
                 "write", param="[i(0,):offset,b:data]", access=self.access_write
             )
         if self.access_truncate is not None:
-            yield RpcMethodDesc("truncate", param="i(0,)", access=self.access_truncate)
+            yield RpcDir("truncate", param="i(0,)", access=self.access_truncate)
         if self.access_append is not None:
-            yield RpcMethodDesc("append", param="b", access=self.access_append)
+            yield RpcDir("append", param="b", access=self.access_append)
 
     async def method_call(
         self, path: pathlib.Path, request: SHVBase.Request
@@ -595,30 +596,30 @@ class FileProvider:
 
 
 FileProviderRO: typing.Final = FileProvider(
-    access_read=RpcMethodAccess.READ,
+    access_read=RpcAccess.READ,
     access_write=None,
     access_truncate=None,
     access_append=None,
 )
 """RPC File provider for read-only file access."""
 FileProviderRW: typing.Final = FileProvider(
-    access_read=RpcMethodAccess.READ,
-    access_write=RpcMethodAccess.WRITE,
-    access_truncate=RpcMethodAccess.WRITE,
-    access_append=RpcMethodAccess.WRITE,
+    access_read=RpcAccess.READ,
+    access_write=RpcAccess.WRITE,
+    access_truncate=RpcAccess.WRITE,
+    access_append=RpcAccess.WRITE,
 )
 """RPC File provider for read-write access to the files."""
 FileProviderFixedSize: typing.Final = FileProvider(
-    access_read=RpcMethodAccess.READ,
-    access_write=RpcMethodAccess.WRITE,
+    access_read=RpcAccess.READ,
+    access_write=RpcAccess.WRITE,
     access_truncate=None,
     access_append=None,
 )
 """RPC File provider for read-write access to the files of fixed size."""
 FileProviderAppend: typing.Final = FileProvider(
-    access_read=RpcMethodAccess.READ,
+    access_read=RpcAccess.READ,
     access_write=None,
     access_truncate=None,
-    access_append=RpcMethodAccess.WRITE,
+    access_append=RpcAccess.WRITE,
 )
 """RPC File provider that aprovides write access but only through appends."""
