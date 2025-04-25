@@ -10,7 +10,7 @@
     flakepy,
   }: let
     inherit (flake-utils.lib) eachDefaultSystem;
-    inherit (nixpkgs.lib) composeManyExtensions getExe';
+    inherit (nixpkgs.lib) getExe';
 
     pyproject = flakepy.lib.pyproject ./. {};
 
@@ -21,11 +21,11 @@
         pythonPackages = final: _: {
           "${pyproject.pname}" = final.callPackage pypkg {};
         };
-        packages = _: prev: {
+        pkgs = _: prev: {
           pythonPackagesExtensions =
             prev.pythonPackagesExtensions ++ [self.overlays.pythonPackages];
         };
-        default = composeManyExtensions [self.overlays.packages];
+        default = self.overlays.pkgs;
       };
 
       nixosModules = import ./nixos/modules {
