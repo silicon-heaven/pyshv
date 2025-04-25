@@ -61,13 +61,13 @@ DATA = [
     ("i(-2,2)", RpcTypeInteger(-2, 2)),
     ("i(,2)", RpcTypeInteger(None, 2)),
     ("i(-2,)%", RpcTypeInteger(-2, None, "%")),
-    ("i(^4,>5)", RpcTypeInteger(16, 31)),
+    ("i(^7,>8)", RpcTypeInteger(128, 255)),
     ("u", RpcTypeUnsigned()),
     ("uK", RpcTypeUnsigned(unit="K")),
     ("u(2)", RpcTypeUnsigned(0, 2)),
     ("u(1,10)", RpcTypeUnsigned(1, 10)),
     ("u(125,)%", RpcTypeUnsigned(125, None, "%")),
-    ("u(^4,>5)", RpcTypeUnsigned(16, 31)),
+    ("u(^7,>8)", RpcTypeUnsigned(128, 255)),
     ("i[FALSE,TRUE]", RpcTypeEnum({0: "FALSE", 1: "TRUE"})),
     ("i[fail:-1,success]", RpcTypeEnum({-1: "fail", 0: "success"})),
     ("f", RpcTypeDouble()),
@@ -95,7 +95,7 @@ DATA = [
     ("i{?}", RpcTypeIMap(rpctype_any)),
     ("i{i(3,9)}", RpcTypeIMap(RpcTypeInteger(3, 9))),
     (
-        "i{t:date,i(0,>6):level,s:id,?:info}",
+        "i{t:date,i(0,63):level,s:id,?:info}",
         RpcTypeStruct({
             0: (rpctype_datetime, "date"),
             1: (RpcTypeInteger(0, 63), "level"),
@@ -486,6 +486,51 @@ def test_any_attr():
     assert not rpctype_any.alias
 
 
-def test_standard_attr():
-    assert rpctype_dir.name == "dir"
-    assert isinstance(rpctype_dir.type, RpcTypeStruct)
+@pytest.mark.parametrize(
+    ("tp", "name", "text"),
+    (
+        (
+            rpctype_dir,
+            "dir",
+            "i{s:name:1,u[b:isGetter:1,b:isSetter,b:largeResult,b:notIndempotent,b:userIDRequired,b:isUpdatable]|n:flags,s|n:paramType,s|n:resultType,i(0,63):accessLevel,{s|n}:signals,{?}:extra:63}",
+        ),
+        (rpctype_alert, "alert", "i{t:date,i(0,63):level,s:id,?:info}"),
+        (
+            rpctype_clientinfo,
+            "clientInfo",
+            "i{i:clientId:1,s|n:userName,s|n:mountPoint,{i|n}|n:subscriptions,{?}:extra:63}",
+        ),
+        (
+            rpctype_stat,
+            "stat",
+            "i{i:type,i:size,i:pageSize,t|n:accessTime,t|n:modTime,i|n:maxWrite}",
+        ),
+        (rpctype_exchange_p, "exchangeP", "i{u:counter,u|n:readyToReceive,x|n:data:3}"),
+        (
+            rpctype_exchange_r,
+            "exchangeR",
+            "i{u|n:readyToReceive:1,u|n:readyToSend,x|n:data}",
+        ),
+        (rpctype_exchange_v, "exchangeV", "i{u|n:readyToReceive:1,u|n:readyToSend}"),
+        (
+            rpctype_getlog_p,
+            "getLogP",
+            "{t|n:since,t|n:until,i(0,)|n:count,b|n:snapshot,s|n:ri}",
+        ),
+        (
+            rpctype_getlog_r,
+            "getLogR",
+            "[i{t:timestamp:1,i(0,)|n:ref,s|n:path,s|n:signal,s|n:source,?:value,s|n:userId,b|n:repeat}]",
+        ),
+        (
+            rpctype_history_records,
+            "historyRecords",
+            "[i{i[normal:1,keep,timeJump,timeAbig]:type,t:timestamp,s|n:path,s|n:signal,s|n:source,?:value,i(0,63):accessLevel,s|n:userId,b|n:repeat,i|n:timeJump:60}]",
+        ),
+    ),
+)
+def test_standard_repr(tp, name, text):
+    """Compare standard types against representation in standard."""
+    assert tp.name == name
+    assert str(tp) == f"!{name}"
+    assert str(tp.type) == text

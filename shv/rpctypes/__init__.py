@@ -20,7 +20,7 @@ from .keystruct import RpcTypeKeyStruct
 from .list import RpcTypeList, rpctype_list
 from .map import RpcTypeMap, rpctype_map
 from .null import RpcTypeNull, rpctype_null
-from .oneof import RpcTypeOneOf
+from .oneof import RpcTypeOneOf, RpcTypeOptional
 from .parse import RpcTypeParseError, rpctype_parse
 from .standard import (
     RpcTypeStandard,
@@ -57,6 +57,7 @@ __all__ = [
     "RpcTypeMap",
     "RpcTypeNull",
     "RpcTypeOneOf",
+    "RpcTypeOptional",
     "RpcTypeParseError",
     "RpcTypeStandard",
     "RpcTypeStandard",

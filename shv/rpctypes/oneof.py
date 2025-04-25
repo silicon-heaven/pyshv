@@ -7,6 +7,7 @@ import typing
 
 from .. import SHVType
 from .base import RpcType
+from .null import rpctype_null
 
 
 class RpcTypeOneOf(RpcType):
@@ -42,3 +43,13 @@ class RpcTypeOneOf(RpcType):
 
     def validate(self, value: SHVType) -> typing.TypeGuard[float]:  # noqa: D102
         return any(t.validate(value) for t in self._types)
+
+
+class RpcTypeOptional(RpcTypeOneOf):
+    """The variant of :py:class:`RpcTypeOneOf` that implicitly adds :data:`rpctype_null`."""
+
+    def __init__(self, *args: RpcType) -> None:
+        if rpctype_null not in args:
+            super().__init__(*args, rpctype_null)
+        else:
+            super().__init__(*args)

@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for scientific notation for SHV Double in CPON.
 - `SHVBase` now has `user_id` property that is default user ID used with `call`
   method
+- `RpcTypeOptional` as easier alternative to `RpcTypeOneOf` when combining only
+  with `rpctype_null`.
 
 ### Fixed
 - type hint for `dir` result (corrected against SHV standard).
@@ -20,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CPON now represents SHV Double in hexadecimal format thus bypassing float to
   decimal conversion issue
 - Error reported on Python 3.12 when `RpcClientPipe.fdopen` is used
+- SHV RPC Type representation for standard types `!historyRecords`, `!getLogR`.
 
 
 ## [0.8.0] - 2025-02-04

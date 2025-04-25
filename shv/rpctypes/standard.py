@@ -12,13 +12,11 @@ from .blob import rpctype_blob
 from .bool import rpctype_bool
 from .datetime import rpctype_datetime
 from .enum import RpcTypeEnum
-from .imap import RpcTypeIMap
 from .integer import RpcTypeInteger, rpctype_integer
 from .keystruct import RpcTypeKeyStruct
 from .list import RpcTypeList
 from .map import RpcTypeMap, rpctype_map
-from .null import rpctype_null
-from .oneof import RpcTypeOneOf
+from .oneof import RpcTypeOptional
 from .string import rpctype_string
 from .struct import RpcTypeStruct
 from .unsigned import rpctype_unsigned
@@ -60,24 +58,27 @@ rpctype_dir = RpcTypeStandard(
     RpcTypeStruct({
         1: (rpctype_string, "name"),
         2: (
-            RpcTypeBitfield(
-                (1, rpctype_bool, "isGetter"),
-                (2, rpctype_bool, "isSetter"),
-                (3, rpctype_bool, "largeResult"),
-                (4, rpctype_bool, "notIndempotent"),
-                (5, rpctype_bool, "userIDRequired"),
+            RpcTypeOptional(
+                RpcTypeBitfield(
+                    (1, rpctype_bool, "isGetter"),
+                    (2, rpctype_bool, "isSetter"),
+                    (3, rpctype_bool, "largeResult"),
+                    (4, rpctype_bool, "notIndempotent"),
+                    (5, rpctype_bool, "userIDRequired"),
+                    (6, rpctype_bool, "isUpdatable"),
+                )
             ),
             "flags",
         ),
-        3: (RpcTypeOneOf(rpctype_string, rpctype_null), "paramType"),
-        4: (RpcTypeOneOf(rpctype_string, rpctype_null), "resultType"),
-        5: (RpcTypeOneOf(RpcTypeInteger(0, 63), rpctype_null), "accessLevel"),
-        6: (RpcTypeOneOf(rpctype_string, rpctype_null), "signals"),
+        3: (RpcTypeOptional(rpctype_string), "paramType"),
+        4: (RpcTypeOptional(rpctype_string), "resultType"),
+        5: (RpcTypeInteger(0, 63), "accessLevel"),
+        6: (RpcTypeMap(RpcTypeOptional(rpctype_string)), "signals"),
         63: (rpctype_map, "extra"),
     }),
 )
 """
-i{s:name:1,u[b:isGetter:1,b:isSetter,b:largeResult,b:notIndempotent,b:userIDRequired]|n:flags,s|n:paramType,s|n:resultType,i(0,63):accessLevel,{s|n}:signals,{?}:extra:63}|b
+i{s:name:1,u[b:isGetter:1,b:isSetter,b:largeResult,b:notIndempotent,b:userIDRequired,b:isUpdatable]|n:flags,s|n:paramType,s|n:resultType,i(0,63):accessLevel,{s|n}:signals,{?}:extra:63}
 """
 
 
@@ -98,12 +99,10 @@ rpctype_clientinfo = RpcTypeStandard(
     "clientInfo",
     RpcTypeStruct({
         1: (rpctype_integer, "clientId"),
-        2: (RpcTypeOneOf(rpctype_string, rpctype_null), "userName"),
-        3: (RpcTypeOneOf(rpctype_string, rpctype_null), "mountPoint"),
+        2: (RpcTypeOptional(rpctype_string), "userName"),
+        3: (RpcTypeOptional(rpctype_string), "mountPoint"),
         4: (
-            RpcTypeOneOf(
-                RpcTypeMap(RpcTypeOneOf(rpctype_integer, rpctype_null)), rpctype_null
-            ),
+            RpcTypeOptional(RpcTypeMap(RpcTypeOptional(rpctype_integer))),
             "subscriptions",
         ),
         63: (rpctype_map, "extra"),
@@ -120,9 +119,9 @@ rpctype_stat = RpcTypeStandard(
         0: (rpctype_integer, "type"),
         1: (rpctype_integer, "size"),
         2: (rpctype_integer, "pageSize"),
-        3: (RpcTypeOneOf(rpctype_datetime, rpctype_null), "accessTime"),
-        4: (RpcTypeOneOf(rpctype_datetime, rpctype_null), "modTime"),
-        5: (RpcTypeOneOf(rpctype_integer, rpctype_null), "maxWrite"),
+        3: (RpcTypeOptional(rpctype_datetime), "accessTime"),
+        4: (RpcTypeOptional(rpctype_datetime), "modTime"),
+        5: (RpcTypeOptional(rpctype_integer), "maxWrite"),
     }),
 )
 """
@@ -133,8 +132,8 @@ rpctype_exchange_p = RpcTypeStandard(
     "exchangeP",
     RpcTypeStruct({
         0: (rpctype_unsigned, "counter"),
-        1: (RpcTypeOneOf(rpctype_unsigned, rpctype_null), "readyToReceive"),
-        3: (RpcTypeOneOf(rpctype_blob, rpctype_null), "data"),
+        1: (RpcTypeOptional(rpctype_unsigned), "readyToReceive"),
+        3: (RpcTypeOptional(rpctype_blob), "data"),
     }),
 )
 """
@@ -144,9 +143,9 @@ i{u:counter,u|n:readyToReceive,b|n:data:3}
 rpctype_exchange_r = RpcTypeStandard(
     "exchangeR",
     RpcTypeStruct({
-        1: (RpcTypeOneOf(rpctype_unsigned, rpctype_null), "readyToReceive"),
-        2: (RpcTypeOneOf(rpctype_unsigned, rpctype_null), "readyToSend"),
-        3: (RpcTypeOneOf(rpctype_blob, rpctype_null), "data"),
+        1: (RpcTypeOptional(rpctype_unsigned), "readyToReceive"),
+        2: (RpcTypeOptional(rpctype_unsigned), "readyToSend"),
+        3: (RpcTypeOptional(rpctype_blob), "data"),
     }),
 )
 """
@@ -156,8 +155,8 @@ i{u|n:readyToReceive:1,u|n:readyToSend,b|n:data}
 rpctype_exchange_v = RpcTypeStandard(
     "exchangeV",
     RpcTypeStruct({
-        1: (RpcTypeOneOf(rpctype_unsigned, rpctype_null), "readyToReceive"),
-        2: (RpcTypeOneOf(rpctype_unsigned, rpctype_null), "readyToSend"),
+        1: (RpcTypeOptional(rpctype_unsigned), "readyToReceive"),
+        2: (RpcTypeOptional(rpctype_unsigned), "readyToSend"),
     }),
 )
 """
@@ -167,11 +166,11 @@ i{u|n:readyToReceive:1,u|n:readyToSend}
 rpctype_getlog_p = RpcTypeStandard(
     "getLogP",
     RpcTypeKeyStruct({
-        "since": RpcTypeOneOf(rpctype_datetime, rpctype_null),
-        "until": RpcTypeOneOf(rpctype_datetime, rpctype_null),
-        "count": RpcTypeOneOf(RpcTypeInteger(0), rpctype_null),
-        "snapshot": RpcTypeOneOf(rpctype_bool, rpctype_null),
-        "ri": RpcTypeOneOf(rpctype_string, rpctype_null),
+        "since": RpcTypeOptional(rpctype_datetime),
+        "until": RpcTypeOptional(rpctype_datetime),
+        "count": RpcTypeOptional(RpcTypeInteger(0)),
+        "snapshot": RpcTypeOptional(rpctype_bool),
+        "ri": RpcTypeOptional(rpctype_string),
     }),
 )
 """
@@ -180,16 +179,18 @@ rpctype_getlog_p = RpcTypeStandard(
 
 rpctype_getlog_r = RpcTypeStandard(
     "getLogR",
-    RpcTypeStruct({
-        1: (rpctype_datetime, "timestamp"),
-        2: (RpcTypeOneOf(RpcTypeInteger(0), rpctype_null), "ref"),
-        3: (RpcTypeOneOf(rpctype_string, rpctype_null), "path"),
-        4: (RpcTypeOneOf(rpctype_string, rpctype_null), "signal"),
-        5: (RpcTypeOneOf(rpctype_string, rpctype_null), "source"),
-        6: (rpctype_null, "value"),
-        7: (RpcTypeOneOf(rpctype_string, rpctype_null), "userId"),
-        8: (RpcTypeOneOf(rpctype_bool, rpctype_null), "repeat"),
-    }),
+    RpcTypeList(
+        RpcTypeStruct({
+            1: (rpctype_datetime, "timestamp"),
+            2: (RpcTypeOptional(RpcTypeInteger(0)), "ref"),
+            3: (RpcTypeOptional(rpctype_string), "path"),
+            4: (RpcTypeOptional(rpctype_string), "signal"),
+            5: (RpcTypeOptional(rpctype_string), "source"),
+            6: (rpctype_any, "value"),
+            7: (RpcTypeOptional(rpctype_string), "userId"),
+            8: (RpcTypeOptional(rpctype_bool), "repeat"),
+        })
+    ),
 )
 """
 [i{t:timestamp:1,i(0,)|n:ref,s|n:path,s|n:signal,s|n:source,?:value,s|n:userId,b|n:repeat}]
@@ -199,23 +200,21 @@ rpctype_getlog_r = RpcTypeStandard(
 rpctype_history_records = RpcTypeStandard(
     "historyRecords",
     RpcTypeList(
-        RpcTypeIMap(
-            RpcTypeStruct({
-                0: (
-                    RpcTypeEnum({1: "normal", 2: "keep", 3: "timeJump", 4: "timeAbig"}),
-                    "type",
-                ),
-                1: (rpctype_datetime, "timestamp"),
-                2: (RpcTypeOneOf(rpctype_string, rpctype_null), "path"),
-                3: (RpcTypeOneOf(rpctype_string, rpctype_null), "signal"),
-                4: (RpcTypeOneOf(rpctype_string, rpctype_null), "source"),
-                5: (rpctype_any, "value"),
-                6: (RpcTypeInteger(0, 63), "accessLevel"),
-                7: (RpcTypeOneOf(rpctype_string, rpctype_null), "userId"),
-                8: (RpcTypeOneOf(rpctype_bool, rpctype_null), "repeat"),
-                60: (RpcTypeOneOf(rpctype_integer, rpctype_null), "timeJump"),
-            })
-        )
+        RpcTypeStruct({
+            0: (
+                RpcTypeEnum({1: "normal", 2: "keep", 3: "timeJump", 4: "timeAbig"}),
+                "type",
+            ),
+            1: (rpctype_datetime, "timestamp"),
+            2: (RpcTypeOptional(rpctype_string), "path"),
+            3: (RpcTypeOptional(rpctype_string), "signal"),
+            4: (RpcTypeOptional(rpctype_string), "source"),
+            5: (rpctype_any, "value"),
+            6: (RpcTypeInteger(0, 63), "accessLevel"),
+            7: (RpcTypeOptional(rpctype_string), "userId"),
+            8: (RpcTypeOptional(rpctype_bool), "repeat"),
+            60: (RpcTypeOptional(rpctype_integer), "timeJump"),
+        })
     ),
 )
 """
