@@ -9,9 +9,10 @@ import dataclasses
 import typing
 import weakref
 
+from .rpcaccess import RpcAccess
+from .rpcdir import RpcDir
 from .rpcerrors import RpcInvalidParamError, RpcUserIDRequiredError
 from .rpcmessage import RpcMessage
-from .rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodFlags
 from .shvbase import SHVBase
 from .value import SHVType
 
@@ -67,7 +68,7 @@ class SHVMethods(SHVBase):
             method = self._methods[request.path][request.method]
             if request.access >= method.desc.access:
                 if (
-                    RpcMethodFlags.USER_ID_REQUIRED in method.desc.flags
+                    RpcDir.Flag.USER_ID_REQUIRED in method.desc.flags
                     and request.user_id is None
                 ):
                     raise RpcUserIDRequiredError
@@ -79,7 +80,7 @@ class SHVMethods(SHVBase):
         yield from super()._ls(path)
         yield from self._ls_node_for_path(path, iter(self._methods))
 
-    def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:
+    def _dir(self, path: str) -> collections.abc.Iterator[RpcDir]:
         """Provide method description for registered methods."""
         yield from super()._dir(path)
         if path in self._methods:
@@ -101,7 +102,7 @@ class SHVMethods(SHVBase):
           would not be called.
         - Verification of the access level.
         - Verifies if user's ID is required (based on the
-          :attr:`shv.RpcMethodDesc.flags`) and sends
+          :attr:`shv.RpcDir.flags`) and sends
           :class:`shv.RpcUserIDRequiredError` error.
 
         What application has to do on its own:
@@ -114,7 +115,7 @@ class SHVMethods(SHVBase):
 
         path: str
         """The SHV path this method is associated with."""
-        desc: RpcMethodDesc
+        desc: RpcDir
         """Method description.
 
         This defines method name, acceess level as well as other options that
@@ -133,7 +134,7 @@ class SHVMethods(SHVBase):
             self,
             value: SHVType = None,
             signal: str | None = None,
-            access: RpcMethodAccess = RpcMethodAccess.READ,
+            access: RpcAccess = RpcAccess.READ,
             user_id: str | None = None,
         ) -> None:
             """External call is used to send signals."""
@@ -163,7 +164,7 @@ class SHVMethods(SHVBase):
 
     @classmethod
     def method(
-        cls, path: str, desc: RpcMethodDesc
+        cls, path: str, desc: RpcDir
     ) -> collections.abc.Callable[[SHVMethodT], SHVMethods.Method]:
         """Decorate method to turn it to :class:`shv.SHVMethods.Method`.
 
@@ -177,7 +178,7 @@ class SHVMethods(SHVBase):
         cls,
         path: str,
         tp: str = "Any",
-        access: RpcMethodAccess = RpcMethodAccess.READ,
+        access: RpcAccess = RpcAccess.READ,
         signal: bool | str = False,
     ) -> collections.abc.Callable[[SHVGetMethodT], SHVMethods.Method]:
         """Decorate method to use method as ``get`` property method.
@@ -207,7 +208,7 @@ class SHVMethods(SHVBase):
 
             return cls.Method(
                 path,
-                RpcMethodDesc.getter(result=tp, access=access, signal=signal),
+                RpcDir.getter(result=tp, access=access, signal=signal),
                 substitut,
             )
 
@@ -217,7 +218,7 @@ class SHVMethods(SHVBase):
     def property_setter(
         cls,
         getter: Method,
-        access: RpcMethodAccess = RpcMethodAccess.WRITE,
+        access: RpcAccess = RpcAccess.WRITE,
     ) -> collections.abc.Callable[[SHVSetMethodT], SHVMethods.Method]:
         """Decorate method to make it set method for the property node.
 
@@ -238,7 +239,7 @@ class SHVMethods(SHVBase):
 
             return cls.Method(
                 getter.path,
-                RpcMethodDesc.setter(param=getter.desc.result, access=access),
+                RpcDir.setter(param=getter.desc.result, access=access),
                 substitut,
             )
 

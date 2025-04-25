@@ -4,7 +4,9 @@ from .__version__ import VERSION
 from .chainpack import ChainPack, ChainPackReader, ChainPackWriter
 from .cpon import Cpon, CponReader, CponWriter
 from .path import SHVPath, SHVPathParents
+from .rpcaccess import RpcAccess
 from .rpcalert import RpcAlert
+from .rpcdir import RpcDir
 from .rpcerrors import (
     RpcError,
     RpcErrorCode,
@@ -28,7 +30,6 @@ from .rpcfile import (
 )
 from .rpclogin import RpcLogin, RpcLoginType
 from .rpcmessage import RpcMessage
-from .rpcmethod import RpcMethodAccess, RpcMethodDesc, RpcMethodFlags
 from .rpcparam import SHVGetKey, shvarg, shvargt, shvget, shvgett, shvt
 from .rpcri import rpcri_legacy_subscription, rpcri_match, rpcri_relative_to
 from .rpctransport import (
@@ -106,6 +107,7 @@ __all__ = [
     "FileProviderFixedSize",
     "FileProviderRO",
     "FileProviderRW",
+    "RpcAccess",
     "RpcAlert",
     "RpcClient",
     "RpcClientPipe",
@@ -113,6 +115,7 @@ __all__ = [
     "RpcClientTTY",
     "RpcClientUnix",
     "RpcClientWebSockets",
+    "RpcDir",
     "RpcError",
     "RpcErrorCode",
     "RpcFile",
@@ -123,10 +126,7 @@ __all__ = [
     "RpcLoginType",
     "RpcLoginType",
     "RpcMessage",
-    "RpcMethodAccess",
     "RpcMethodCallExceptionError",
-    "RpcMethodDesc",
-    "RpcMethodFlags",
     "RpcMethodNotFoundError",
     "RpcNotImplementedError",
     "RpcProtocol",

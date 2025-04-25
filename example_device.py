@@ -8,11 +8,10 @@ import logging
 import typing
 
 from shv import (
+    RpcAccess,
+    RpcDir,
     RpcInvalidParamError,
     RpcMessage,
-    RpcMethodAccess,
-    RpcMethodDesc,
-    RpcMethodFlags,
     RpcUrl,
     SHVBase,
     SHVClient,
@@ -60,10 +59,10 @@ class ExampleDevice(SHVClient, SHVMethods):
 
     @SHVMethods.method(
         "track",
-        RpcMethodDesc(
+        RpcDir(
             "reset",
-            RpcMethodFlags.USER_ID_REQUIRED,
-            access=RpcMethodAccess.COMMAND,
+            RpcDir.Flag.USER_ID_REQUIRED,
+            access=RpcAccess.COMMAND,
             extra={"description": "Reset all tracks to their initial state"},
         ),
     )
@@ -77,7 +76,7 @@ class ExampleDevice(SHVClient, SHVMethods):
                 await self._send(RpcMessage.signal(f"track/{k}", value=self.tracks[k]))
         return None
 
-    @SHVMethods.method("track", RpcMethodDesc.getter("lastResetUser", result="s|n"))
+    @SHVMethods.method("track", RpcDir.getter("lastResetUser", result="s|n"))
     async def track_last_reset_user(self, request: SHVBase.Request) -> SHVType:
         """SHV method track:lastResetUser."""
         return self.last_reset_user
@@ -88,21 +87,21 @@ class ExampleDevice(SHVClient, SHVMethods):
             path, (f"track/{i}" for i in self.tracks.keys())
         )
 
-    def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:
+    def _dir(self, path: str) -> collections.abc.Iterator[RpcDir]:
         yield from super()._dir(path)
         match path.split("/"):
             case ["track", track] if track in self.tracks:
-                yield RpcMethodDesc.getter(
+                yield RpcDir.getter(
                     result="[i]", description="List of tracks", signal=True
                 )
-                yield RpcMethodDesc.setter(param="[i]", description="Set track")
+                yield RpcDir.setter(param="[i]", description="Set track")
 
     async def _method_call(self, request: SHVBase.Request) -> SHVType:
         match request.path.split("/"), request.method:
             case [["track", track], _] if track in self.tracks:
-                if request.method == "get" and request.access >= RpcMethodAccess.READ:
+                if request.method == "get" and request.access >= RpcAccess.READ:
                     return self.tracks[track]
-                if request.method == "set" and request.access >= RpcMethodAccess.WRITE:
+                if request.method == "set" and request.access >= RpcAccess.WRITE:
                     if not isinstance(request.param, list) or not all(
                         isinstance(v, int) for v in request.param
                     ):

@@ -10,6 +10,8 @@ import logging
 
 from .__version__ import VERSION
 from .path import SHVPath
+from .rpcaccess import RpcAccess
+from .rpcdir import RpcDir
 from .rpcerrors import (
     RpcError,
     RpcInvalidParamError,
@@ -18,7 +20,6 @@ from .rpcerrors import (
     RpcUserIDRequiredError,
 )
 from .rpcmessage import RpcMessage
-from .rpcmethod import RpcMethodAccess, RpcMethodDesc
 from .rpctransport import RpcClient
 from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
 from .value import SHVType, is_shvbool, is_shvnull
@@ -252,9 +253,7 @@ class SHVBase:
             raise RpcMethodCallExceptionError(f"Invalid result returned: {res!r}")
         return res
 
-    async def dir(
-        self, path: str | SHVPath, details: bool = False
-    ) -> list[RpcMethodDesc]:
+    async def dir(self, path: str | SHVPath, details: bool = False) -> list[RpcDir]:
         """List methods associated with node on the specified path.
 
         :param path: SHV path to the node we want methods to be listed for.
@@ -264,7 +263,7 @@ class SHVBase:
         """
         res = await self.call(path, "dir", True if details else None)
         if isinstance(res, list):  # pragma: no cover
-            return [RpcMethodDesc.from_shv(m) for m in res]
+            return [RpcDir.from_shv(m) for m in res]
         raise RpcMethodCallExceptionError(f"Invalid result returned: {res!r}")
 
     async def dir_exists(self, path: str | SHVPath, name: str) -> bool:
@@ -436,7 +435,7 @@ class SHVBase:
             return any(v.name == param for v in self._dir(path))
         raise RpcInvalidParamError("Use Null or Bool or String with node name")
 
-    def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:  # noqa: PLR6301
+    def _dir(self, path: str) -> collections.abc.Iterator[RpcDir]:  # noqa: PLR6301
         """Implement ``dir`` method for all nodes.
 
         This implementation is called only for valid paths
@@ -448,15 +447,15 @@ class SHVBase:
         :param path: SHV path method should be listed for.
         :return: List of methods associated with given node.
         """
-        yield RpcMethodDesc.stddir()
-        yield RpcMethodDesc.stdls()
+        yield RpcDir.stddir()
+        yield RpcDir.stdls()
         if path == ".app":
-            yield RpcMethodDesc.getter("shvVersionMajor", "n", "i")
-            yield RpcMethodDesc.getter("shvVersionMinor", "n", "i")
-            yield RpcMethodDesc.getter("name", "n", "s")
-            yield RpcMethodDesc.getter("version", "n", "s")
-            yield RpcMethodDesc.getter("date", "n", "t")
-            yield RpcMethodDesc("ping")
+            yield RpcDir.getter("shvVersionMajor", "n", "i")
+            yield RpcDir.getter("shvVersionMinor", "n", "i")
+            yield RpcDir.getter("name", "n", "s")
+            yield RpcDir.getter("version", "n", "s")
+            yield RpcDir.getter("date", "n", "t")
+            yield RpcDir("ping")
 
     async def _got_signal(self, signal: Signal) -> None:
         """Handle signal.
@@ -491,9 +490,9 @@ class SHVBase:
             return self._msg.param
 
         @property
-        def access(self) -> RpcMethodAccess:
+        def access(self) -> RpcAccess:
             """Access level of the client specified in this request."""
-            return self._msg.rpc_access or RpcMethodAccess.BROWSE
+            return self._msg.rpc_access or RpcAccess.BROWSE
 
         @property
         def user_id(self) -> str | None:
@@ -536,9 +535,9 @@ class SHVBase:
             return self._msg.param
 
         @property
-        def access(self) -> RpcMethodAccess:
+        def access(self) -> RpcAccess:
             """Access level of the signal."""
-            return self._msg.rpc_access or RpcMethodAccess.READ
+            return self._msg.rpc_access or RpcAccess.READ
 
         @property
         def user_id(self) -> str | None:

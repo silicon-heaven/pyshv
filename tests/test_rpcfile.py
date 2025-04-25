@@ -10,11 +10,10 @@ import pytest
 
 from shv import (
     FileProviderRW,
+    RpcAccess,
+    RpcDir,
     RpcFile,
     RpcFileStat,
-    RpcMethodAccess,
-    RpcMethodDesc,
-    RpcMethodFlags,
     SHVBase,
     SHVClient,
     SHVType,
@@ -42,7 +41,7 @@ class FilesProvider(SHVClient):
             if pth.is_dir():
                 yield from sorted(spth.name for spth in pth.iterdir())
 
-    def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:
+    def _dir(self, path: str) -> collections.abc.Iterator[RpcDir]:
         yield from super()._dir(path)
         if path.startswith("files/"):
             pth = self.path / path[6:]
@@ -98,41 +97,37 @@ async def test_ls(client, device, seed_tmp, path, res):
         (
             "test/device/files/lorem.txt",
             [
-                RpcMethodDesc.stddir(),
-                RpcMethodDesc.stdls(),
-                RpcMethodDesc.getter("stat", "n", "!stat", RpcMethodAccess.READ),
-                RpcMethodDesc.getter("size", "n", "i(0,)", RpcMethodAccess.READ),
-                RpcMethodDesc(
+                RpcDir.stddir(),
+                RpcDir.stdls(),
+                RpcDir.getter("stat", "n", "!stat", RpcAccess.READ),
+                RpcDir.getter("size", "n", "i(0,)", RpcAccess.READ),
+                RpcDir(
                     "crc",
                     param="[i(0,):offset,i(0,)|n:size]|n",
                     result="u(>32)",
-                    access=RpcMethodAccess.READ,
+                    access=RpcAccess.READ,
                 ),
-                RpcMethodDesc(
+                RpcDir(
                     "sha1",
                     param="[i(0,):offset,i(0,)|n:size]|n",
                     result="b(20)",
-                    access=RpcMethodAccess.READ,
+                    access=RpcAccess.READ,
                 ),
-                RpcMethodDesc(
+                RpcDir(
                     "read",
-                    RpcMethodFlags.LARGE_RESULT_HINT,
+                    RpcDir.Flag.LARGE_RESULT_HINT,
                     "[i(0,):offset,i(0,)size]",
                     "b",
-                    RpcMethodAccess.READ,
+                    RpcAccess.READ,
                 ),
-                RpcMethodDesc(
+                RpcDir(
                     "write",
                     param="[i(0,):offset,b:data]",
                     result="n",
-                    access=RpcMethodAccess.WRITE,
+                    access=RpcAccess.WRITE,
                 ),
-                RpcMethodDesc(
-                    "truncate", param="i(0,)", result="n", access=RpcMethodAccess.WRITE
-                ),
-                RpcMethodDesc(
-                    "append", param="b", result="n", access=RpcMethodAccess.WRITE
-                ),
+                RpcDir("truncate", param="i(0,)", result="n", access=RpcAccess.WRITE),
+                RpcDir("append", param="b", result="n", access=RpcAccess.WRITE),
             ],
         ),
     ),
