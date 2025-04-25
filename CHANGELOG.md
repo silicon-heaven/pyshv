@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RpcRequestInvalidError` and `RpcTryAgainLaterError`
 - properties `RpcMessage.abort`, `RpcMessage.delay`, and `RpcMessage.repeat`
 - `RpcMessage.make_response_delay` and `RpcMessage.request_abort` methods
+- `RpcTypeOptional` as easier alternative to `RpcTypeOneOf` when combining only
+  with `rpctype_null`.
 
 ### Changed
 - `RpcClient.receive` no longer accepts argument `raise_error`.
@@ -32,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SHV Map no longer accept SHV UInt as key (SHV standard correct).
 - CPON now represents SHV Double in hexadecimal format thus bypassing float to
   decimal conversion issue
+- SHV RPC Type representation for standard types `!historyRecords`, `!getLogR`.
 
 
 ## [0.8.0] - 2025-02-04

@@ -7,7 +7,7 @@ def strnum(num: int | None) -> str:
     """Convert number to string representation."""
     if num is None:
         return ""
-    if abs(num) >= 10:  # Not worth it for single digits
+    if abs(num) >= 100:  # Not worth it for two digits
         blen = num.bit_length()
         if blen == num.bit_count():
             return f">{'-' if num < 0 else ''}{blen}"
