@@ -129,57 +129,66 @@ class RpcBroker:
 
         async def _message(self, msg: RpcMessage) -> None:
             assert self.role is not None
-
-            if msg.is_request:
-                # Set access granted to the level allowed by the role
-                access = self.role.access_level(msg.path, msg.method)
-                if access is None:
-                    if msg.path not in {"", ".app", ".broker", ".broker/currentClient"}:
+            match msg.type:
+                case RpcMessage.Type.REQUEST:
+                    # Set access granted to the level allowed by the role
+                    access = self.role.access_level(msg.path, msg.method)
+                    if access is None:
+                        if msg.path not in {
+                            "",
+                            ".app",
+                            ".broker",
+                            ".broker/currentClient",
+                        }:
+                            await self._send(
+                                msg.make_response(RpcMethodNotFoundError("No access"))
+                            )
+                            return
+                        access = RpcMethodAccess.BROWSE
+                    # Limit access level in the message
+                    msg.rpc_access = (
+                        access
+                        if msg.rpc_access is None or msg.rpc_access > access
+                        else msg.rpc_access
+                    )
+                    # Append user ID
+                    if msg.user_id is not None:
+                        msg.user_id += (";" if msg.user_id else "") + self.local_user_id
+                    # Check if we should handle it ourself (else propagate it)
+                    if (cpath := self.__broker.client_on_path(msg.path)) is None:
+                        await super()._message(msg)
+                        return
+                    # Protect sub-broker currentClient access
+                    if cpath[1] == ".broker/currentClient" and (
+                        msg.method in {"subscribe", "unsubscribe"}
+                        or msg.rpc_access < RpcMethodAccess.SUPER_SERVICE
+                    ):
                         await self._send(
-                            msg.make_response(error=RpcMethodNotFoundError("No access"))
+                            msg.make_response(RpcMethodNotFoundError("No access"))
                         )
                         return
-                    access = RpcMethodAccess.BROWSE
-                # Limit access level in the message
-                msg.rpc_access = (
-                    access
-                    if msg.rpc_access is None or msg.rpc_access > access
-                    else msg.rpc_access
-                )
-                # Append user ID
-                if msg.user_id is not None:
-                    msg.user_id += (";" if msg.user_id else "") + self.local_user_id
-                # Check if we should handle it ourself (else propagate it)
-                if (cpath := self.__broker.client_on_path(msg.path)) is None:
-                    await super()._message(msg)
-                    return
-                # Protect sub-broker currentClient access
-                if cpath[1] == ".broker/currentClient" and (
-                    msg.method in {"subscribe", "unsubscribe"}
-                    or msg.rpc_access < RpcMethodAccess.SUPER_SERVICE
-                ):
-                    await self._send(
-                        msg.make_response(error=RpcMethodNotFoundError("No access"))
-                    )
-                    return
-                # Propagate to some peer
-                assert self.__broker_client_id is not None
-                msg.caller_ids = [*msg.caller_ids, self.__broker_client_id]
-                msg.path = cpath[1]
-                cpath[0].send(msg)
+                    # Propagate to some peer
+                    assert self.__broker_client_id is not None
+                    msg.caller_ids = [*msg.caller_ids, self.__broker_client_id]
+                    msg.path = cpath[1]
+                    cpath[0].send(msg)
 
-            elif msg.is_response:
-                cids = list(msg.caller_ids)
-                if not cids:  # no caller IDs means this is message for us
-                    await super()._message(msg)
-                    return
-                cid = cids.pop()
-                msg.caller_ids = cids
-                if (peer := self.__broker.get_client(cid)) is not None:
-                    peer.send(msg)
+                case RpcMessage.Type.REQUEST_ABORT:
+                    pass  # TODO
+                case RpcMessage.Type.RESPONSE | RpcMessage.Type.RESPONSE_ERROR:
+                    cids = list(msg.caller_ids)
+                    if not cids:  # no caller IDs means this is message for us
+                        await super()._message(msg)
+                        return
+                    cid = cids.pop()
+                    msg.caller_ids = cids
+                    if (peer := self.__broker.get_client(cid)) is not None:
+                        peer.send(msg)
 
-            elif msg.is_signal:
-                self.__broker.signal_from(msg, self)
+                case RpcMessage.Type.RESPONSE_DELAY:
+                    pass  # TODO
+                case RpcMessage.Type.SIGNAL:
+                    self.__broker.signal_from(msg, self)
 
         def _reset(self) -> None:
             self.__peer_is_broker = None
@@ -403,7 +412,7 @@ class RpcBroker:
             # Login is required before we start handling messages as we would.
             if self._role is not None:
                 return await super()._message(msg)
-            if not msg.is_request:
+            if not msg.type == RpcMessage.Type.REQUEST:
                 return  # Ignore anything other than requests before login
             if not msg.path:
                 if msg.method == "hello":
@@ -416,17 +425,17 @@ class RpcBroker:
                         self._login = RpcLogin.from_shv(msg.param)
                         self._role = self.broker.config.login(self._login, self._nonce)
                     except RpcError as exp:
-                        await self._send(msg.make_response(error=exp))
+                        await self._send(msg.make_response(exp))
                         return
                     if self._role is None:
                         error = RpcMethodCallExceptionError("Invalid login")
-                        await self._send(msg.make_response(error=error))
+                        await self._send(msg.make_response(error))
                         return
                     try:
                         self._register()
                     except ValueError as exc:
                         error = RpcMethodCallExceptionError(str(exc))
-                        await self._send(msg.make_response(error=error))
+                        await self._send(msg.make_response(error))
                         return
                     self.IDLE_TIMEOUT = float(
                         self._login.idle_timeout or type(self).IDLE_TIMEOUT
@@ -442,7 +451,7 @@ class RpcBroker:
                     return
             await self._send(
                 msg.make_response(
-                    error=RpcLoginRequiredError(
+                    RpcLoginRequiredError(
                         "Use hello and login methods"
                         if self._nonce
                         else "Use hello method"

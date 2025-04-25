@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SHVBase` now has `user_id` property that is default user ID used with `call`
   method
 - `RpcRequestInvalidError` and `RpcTryAgainLaterError`
+- properties `RpcMessage.abort`, `RpcMessage.delay`, and `RpcMessage.repeat`
+- `RpcMessage.make_response_delay` and `RpcMessage.request_abort` methods
+
+### Changed
+- `RpcClient.receive` no longer accepts argument `raise_error`.
+- `RpcMessage.is_*` methods are replaced with `RpcMessage.type`
+- `RpcMessage.is_valid` checks highly expanded
+- `RpcMessage.make_response` no longer accepts `error` argument. Pass `RpcError`
+  to `result` parameter instead.
+- `RpcMessage.request` has new parameter `cids` and `user_id` is moved.
+- `RpcMessage.rpc_error` is now `RpcMessage.error` and original error access is
+  no longer available.
 
 ### Fixed
 - type hint for `dir` result (corrected against SHV standard).

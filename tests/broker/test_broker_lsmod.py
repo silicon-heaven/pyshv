@@ -16,7 +16,7 @@ class LSClient(SHVClient):
 
     async def _message(self, msg: RpcMessage) -> None:
         await super()._message(msg)
-        if msg.is_signal and msg.method == "lsmod":
+        if msg.type is RpcMessage.Type.SIGNAL and msg.method == "lsmod":
             await self.lsmods.put((msg.path, msg.param))
 
 

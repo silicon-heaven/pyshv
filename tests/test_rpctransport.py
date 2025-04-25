@@ -23,7 +23,6 @@ from shv import (
     RpcClientUnix,
     RpcClientWebSockets,
     RpcMessage,
-    RpcNotImplementedError,
     RpcServerTCP,
     RpcServerTTY,
     RpcServerUnix,
@@ -93,28 +92,15 @@ def fixture_pty():
 class Link:
     """Generic tests applied to link layers."""
 
-    async def test_call(self, clients):
+    async def test_msg_a(self, clients):
         msg = RpcMessage.request(".app", "dir")
         await clients[0].send(msg)
         assert await clients[1].receive() == msg
 
-    async def test_notify(self, clients):
+    async def test_msg_b(self, clients):
         msg = RpcMessage.signal(".app")
         await clients[1].send(msg)
         assert await clients[0].receive() == msg
-
-    async def test_error_receive(self, clients):
-        msg = RpcMessage.request(".app", "dir").make_response()
-        msg.rpc_error = RpcNotImplementedError("Fake error")
-        await clients[0].send(msg)
-        assert await clients[1].receive(False) == msg
-
-    async def test_error_raise(self, clients):
-        msg = RpcMessage.request(".app", "dir").make_response()
-        msg.rpc_error = RpcNotImplementedError("Fake error")
-        await clients[0].send(msg)
-        with pytest.raises(RpcNotImplementedError):
-            await clients[1].receive(True)
 
     @pytest.mark.parametrize("a,b", ((0, 1), (1, 0)))
     async def test_reset(self, clients, a, b):
