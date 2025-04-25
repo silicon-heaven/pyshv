@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for scientific notation for SHV Double in CPON.
 - `SHVBase` now has `user_id` property that is default user ID used with `call`
   method
+- `RpcRequestInvalidError` and `RpcTryAgainLaterError`
 
 ### Fixed
 - type hint for `dir` result (corrected against SHV standard).
