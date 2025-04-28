@@ -7,14 +7,14 @@ Client
 These are implementations if clients that connect to server or over some
 connection to some other client.
 
-.. autofunction:: shv.init_rpc_client
-.. autofunction:: shv.connect_rpc_client
-.. autoclass:: shv.RpcClient
-.. autoclass:: shv.RpcClientTCP
-.. autoclass:: shv.RpcClientUnix
-.. autoclass:: shv.RpcClientPipe
-.. autoclass:: shv.RpcClientTTY
-.. autoclass:: shv.RpcClientWebSockets
+.. autofunction:: shv.rpctransport.init_rpc_client
+.. autofunction:: shv.rpctransport.connect_rpc_client
+.. autoclass:: shv.rpctransport.RpcClient
+.. autoclass:: shv.rpctransport.RpcClientTCP
+.. autoclass:: shv.rpctransport.RpcClientUnix
+.. autoclass:: shv.rpctransport.RpcClientPipe
+.. autoclass:: shv.rpctransport.RpcClientTTY
+.. autoclass:: shv.rpctransport.RpcClientWebSockets
 
 Server
 ------
@@ -22,13 +22,13 @@ Server
 Servers are waiting for clients connection and provides you with client on the
 sever side to communicate with newly connected peer.
 
-.. autofunction:: shv.create_rpc_server
-.. autoclass:: shv.RpcServer
-.. autoclass:: shv.RpcServerTCP
-.. autoclass:: shv.RpcServerUnix
-.. autoclass:: shv.RpcServerTTY
-.. autoclass:: shv.RpcServerWebSockets
-.. autoclass:: shv.RpcServerWebSocketsUnix
+.. autofunction:: shv.rpctransport.create_rpc_server
+.. autoclass:: shv.rpctransport.RpcServer
+.. autoclass:: shv.rpctransport.RpcServerTCP
+.. autoclass:: shv.rpctransport.RpcServerUnix
+.. autoclass:: shv.rpctransport.RpcServerTTY
+.. autoclass:: shv.rpctransport.RpcServerWebSockets
+.. autoclass:: shv.rpctransport.RpcServerWebSocketsUnix
 
 Transport protocols
 -------------------
@@ -36,10 +36,10 @@ Transport protocols
 SHV RPC is based on messages and these protocols are for sending these messages
 over data stream. Please do not confuse this with :class:`shv.RpcProtocol`.
 
-.. autoclass:: shv.RpcProtocolBlock
-.. autoclass:: shv.RpcProtocolSerial
-.. autoclass:: shv.RpcProtocolSerialCRC
-.. autoclass:: shv.RpcTransportProtocol
+.. autoclass:: shv.rpctransport.RpcProtocolBlock
+.. autoclass:: shv.rpctransport.RpcProtocolSerial
+.. autoclass:: shv.rpctransport.RpcProtocolSerialCRC
+.. autoclass:: shv.rpctransport.RpcTransportProtocol
 
 Stream client and server bases
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -15,14 +15,14 @@ import threading
 
 import pytest
 
-from shv import (
+from shv import RpcMessage
+from shv.rpctransport import (
     RpcClient,
     RpcClientPipe,
     RpcClientTCP,
     RpcClientTTY,
     RpcClientUnix,
     RpcClientWebSockets,
-    RpcMessage,
     RpcServerTCP,
     RpcServerTTY,
     RpcServerUnix,
