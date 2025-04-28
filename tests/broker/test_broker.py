@@ -6,7 +6,6 @@ import pytest
 
 from shv import (
     RpcAccess,
-    RpcClientTCP,
     RpcDir,
     RpcInvalidParamError,
     RpcLoginRequiredError,
@@ -16,6 +15,7 @@ from shv import (
     SHVClient,
     shvmeta,
 )
+from shv.rpctransport import RpcClientTCP
 
 
 @pytest.mark.parametrize(
