@@ -340,7 +340,6 @@ class TestCAN(ServerLink):
     async def fixture_server(self, port):
         queue = asyncio.Queue()
         server = RpcServerCAN(queue.put, RpcCAN.virtualcan("test"), 42)
-        # server = RpcServerCAN(queue.put, RpcCAN.socketcan("can0"), 42)
         await server.listen()
         yield server, queue
         server.close()
@@ -349,7 +348,6 @@ class TestCAN(ServerLink):
     @pytest.fixture(name="clients")
     async def fixture_clients(self, server, port):
         client = await RpcClientCAN.connect(RpcCAN.virtualcan("test"), 42)
-        # client = await RpcClientCAN.connect(RpcCAN.socketcan("can1"), 42)
         server_client = await server[1].get()
         yield server_client, client
         client.disconnect()

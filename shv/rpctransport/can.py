@@ -104,8 +104,12 @@ class RpcCAN:
         """Data lenght for the RTR CAN frames used by the protocol."""
 
         MSGABORT = 0
+        """Abort partially sent out message."""
         ANNOUNCE = 5
+        """Anounce server."""
         DISCOVER = 6
+        """Requests servers to send announce."""
+        # TODO we are missing the way to autonegotiate the client address
 
     @dataclasses.dataclass
     class _Peer:
@@ -134,22 +138,16 @@ class RpcCAN:
                 [RpcCAN.Connection], collections.abc.Awaitable[None]
             ],
         ] = {}
-
-    def __str__(self) -> str:
-        if isinstance(self.bus, can.interfaces.socketcan.SocketcanBus):
-            return self.bus.channel
-        else:
-            return self.bus.channel_info
+        self._announcers: set[
+            collections.abc.Callable[[int], collections.abc.Awaitable[None] | None]
+        ] = set()
 
     @classmethod
     def socketcan(cls, interface: str) -> RpcCAN:
         """Get :class:`RpcCAN` for given socket CAN interface."""
         return cls(
             can.Bus(
-                channel=interface,
-                fd=True,
-                local_loopback=False,
-                interface="socketcan",
+                channel=interface, interface="socketcan", fd=True, local_loopback=False
             )
         )
 
@@ -161,6 +159,12 @@ class RpcCAN:
         CAN functionality. It works only in single process.
         """
         return cls(can.Bus(name, interface="virtual", protocol=can.CanProtocol.CAN_FD))
+
+    def __str__(self) -> str:
+        if isinstance(self.bus, can.interfaces.socketcan.SocketcanBus):
+            return self.bus.channel
+        else:
+            return self.bus.channel_info
 
     async def _receive(self, msg: can.Message) -> None:
         if msg.is_error_frame or msg.is_extended_id:
@@ -175,7 +179,10 @@ class RpcCAN:
                     if peer is not None:
                         peer.clear()
                 case self.RTR.ANNOUNCE:
-                    pass  # TODO
+                    for cb in self._announcers:
+                        callres = cb(src)
+                        if isinstance(callres, collections.abc.Awaitable):
+                            await callres
                 case self.RTR.DISCOVER:
                     for address in self._binds:
                         await self._send_rtr(address, self.RTR.ANNOUNCE)
@@ -185,7 +192,6 @@ class RpcCAN:
         first = aid & 1 << 9
         last = not aid & 1 << 10
         if len(msg.data) < (2 if first else 1):
-            # TODO probably log that this happened
             return  # Message with not enough bytes are invalid
         counter = msg.data[0]
         if last and counter >> 4:
@@ -301,7 +307,7 @@ class RpcCAN:
             raise ValueError(f"Invalid remote address: {remote}")
         if local is None:
             local = 150  # TODO we need to select address dynamically
-        if not 128 < local < 256:
+        elif not 128 < local < 192:
             raise ValueError(f"Invalid local address: {local}")
         if remote not in self._peers:
             self._peers[remote] = self._Peer()
@@ -335,6 +341,30 @@ class RpcCAN:
         """Stop listening for the CAN connections."""
         del self._binds[local]
         self._possibly_unregister()
+
+    async def expect_announce(
+        self,
+        callback: collections.abc.Callable[
+            [int], collections.abc.Awaitable[None] | None
+        ],
+    ) -> None:
+        """Add callback for servers announcements."""
+        self._announcers.add(callback)
+        await self._ensure_registration()
+
+    def unexpect_announce(
+        self,
+        callback: collections.abc.Callable[
+            [int], collections.abc.Awaitable[None] | None
+        ],
+    ) -> None:
+        """Remove callback for server announcements."""
+        self._announcers.remove(callback)
+        self._possibly_unregister()
+
+    async def discover(self) -> None:
+        """Send discovery request so all present servers emit announcement."""
+        await self._send_rtr(0xFF, self.RTR.DISCOVER)
 
 
 class RpcClientCAN(RpcClient):
