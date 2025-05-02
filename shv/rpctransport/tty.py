@@ -43,7 +43,8 @@ class RpcClientTTY(RpcClient):
         return f"tty:{self.port}"
 
     async def _send(self, msg: bytes) -> None:
-        await self.protocol.send(self._write_async, msg)
+        assert self.serial is not None
+        await self.serial.write_async(self.protocol.annotate(msg))
 
     async def _receive(self) -> bytes:
         return await self.protocol.receive(self._read_exactly)
@@ -64,10 +65,6 @@ class RpcClientTTY(RpcClient):
             self._eof.clear()
             logger.debug("%s: Connected", self)
         await super().reset()
-
-    async def _write_async(self, data: bytes) -> None:
-        assert self.serial is not None
-        await self.serial.write_async(data)
 
     async def _read_exactly(self, n: int) -> bytes:
         assert self.serial is not None

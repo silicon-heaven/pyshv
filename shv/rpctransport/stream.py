@@ -22,15 +22,24 @@ class RpcTransportProtocol(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    async def send(
-        cls,
-        write: collections.abc.Callable[[bytes], collections.abc.Awaitable[None]],
-        msg: bytes,
-    ) -> None:
-        """Send message.
+    def annotate(cls, msg: bytes) -> bytes:
+        """Annotate the message for the stream sending.
 
         :param msg: Bytes of a complete message to be sent.
+        :return: Bytes with annotated message.
         """
+
+    @classmethod
+    async def asyncio_send(cls, writer: asyncio.StreamWriter, msg: bytes) -> None:
+        """Variation on :meth:`send` that uses :class:`asyncio.StreamWriter`."""
+        # TODO: the split write is for some reason required for TCP to ensure
+        # that write detects disconnect. Otherwise only second write would
+        # cause exception. We should revisit this in the future. It smells like
+        # upstream library bug.
+        data = cls.annotate(msg)
+        writer.write(data[0:1])
+        writer.write(data[1:])
+        await writer.drain()
 
     @classmethod
     @abc.abstractmethod
@@ -43,16 +52,6 @@ class RpcTransportProtocol(abc.ABC):
         :return: Bytes of complete message.
         :raise EOFError: when EOF is encountered.
         """
-
-    @classmethod
-    async def asyncio_send(cls, writer: asyncio.StreamWriter, msg: bytes) -> None:
-        """Variation on :meth:`send` that uses :class:`asyncio.StreamWriter`."""
-
-        async def write(d: bytes) -> None:
-            writer.write(d)
-            await writer.drain()
-
-        await cls.send(write, msg)
 
     @classmethod
     async def asyncio_receive(cls, reader: asyncio.StreamReader) -> bytes:
@@ -71,13 +70,8 @@ class RpcProtocolStream(RpcTransportProtocol):
     """SHV RPC Stream protocol."""
 
     @classmethod
-    async def send(  # noqa: D102
-        cls,
-        write: collections.abc.Callable[[bytes], collections.abc.Awaitable[None]],
-        msg: bytes,
-    ) -> None:
-        await write(ChainPack.pack_uint_data(len(msg)))
-        await write(msg)
+    def annotate(cls, msg: bytes) -> bytes:  # noqa: D102
+        return ChainPack.pack_uint_data(len(msg)) + msg
 
     @classmethod
     async def receive(  # noqa: D102
@@ -98,26 +92,31 @@ class RpcProtocolStream(RpcTransportProtocol):
 class _RpcProtocolSerial(RpcTransportProtocol):
     """SHV RPC Serial protocol."""
 
-    STX = 0xA2
-    ETX = 0xA3
-    ATX = 0xA4
-    ESC = 0xAA
+    STX: typing.Final = 0xA2
+    ETX: typing.Final = 0xA3
+    ATX: typing.Final = 0xA4
+    ESC: typing.Final = 0xAA
     ESCMAP: typing.Final = {0x02: STX, 0x03: ETX, 0x04: ATX, 0x0A: ESC}
     ESCRMAP: typing.Final = {v: k for k, v in ESCMAP.items()}
 
     @classmethod
-    async def _send(
-        cls,
-        write: collections.abc.Callable[[bytes], collections.abc.Awaitable[None]],
-        msg: bytes,
-        use_crc: bool,
-    ) -> None:
-        await write(bytes((cls.STX,)))
+    @abc.abstractmethod
+    def uses_crc(cls) -> bool:
+        """Identify if CRC is used in protocol or not."""
+
+    @classmethod
+    def annotate(cls, msg: bytes) -> bytes:
         escmsg = cls.escape(msg)
-        await write(escmsg)
-        await write(bytes((cls.ETX,)))
-        if use_crc:
-            await write(cls.escape(binascii.crc32(escmsg).to_bytes(4, "big")))
+        return (
+            bytes((cls.STX,))
+            + escmsg
+            + bytes((cls.ETX,))
+            + (
+                cls.escape(binascii.crc32(escmsg).to_bytes(4, "big"))
+                if cls.uses_crc()
+                else b""
+            )
+        )
 
     @classmethod
     def escape(cls, data: bytes) -> bytes:
@@ -173,12 +172,8 @@ class RpcProtocolSerial(_RpcProtocolSerial):
     """SHV RPC Serial protocol."""
 
     @classmethod
-    async def send(  # noqa: D102
-        cls,
-        write: collections.abc.Callable[[bytes], collections.abc.Awaitable[None]],
-        msg: bytes,
-    ) -> None:
-        await cls._send(write, msg, False)
+    def uses_crc(cls) -> bool:  # noqa: D102
+        return False
 
     @classmethod
     async def receive(  # noqa: D102
@@ -192,12 +187,8 @@ class RpcProtocolSerialCRC(_RpcProtocolSerial):
     """SHV RPC Serial protocol with CRC32 message validation."""
 
     @classmethod
-    async def send(  # noqa: D102
-        cls,
-        write: collections.abc.Callable[[bytes], collections.abc.Awaitable[None]],
-        msg: bytes,
-    ) -> None:
-        await cls._send(write, msg, True)
+    def uses_crc(cls) -> bool:  # noqa: D102
+        return True
 
     @classmethod
     async def receive(  # noqa: D102
