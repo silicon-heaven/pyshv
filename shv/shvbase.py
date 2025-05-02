@@ -6,6 +6,7 @@ import asyncio
 import collections.abc
 import contextlib
 import datetime
+import functools
 import logging
 
 from .__version__ import VERSION
@@ -16,6 +17,7 @@ from .rpcerrors import (
     RpcInvalidParamError,
     RpcMethodCallExceptionError,
     RpcMethodNotFoundError,
+    RpcRequestInvalidError,
     RpcUserIDRequiredError,
 )
 from .rpcmessage import RpcMessage
@@ -70,7 +72,7 @@ class SHVBase:
         user_id: str = "",
     ) -> None:
         self.client = client
-        """The underlaying RPC client instance.
+        """The underlining RPC client instance.
 
         **Do not send messages by directly accessing this property. You must use
         implementations provided by this class!**
@@ -85,6 +87,7 @@ class SHVBase:
         """Timeout in seconds before call is attempted again or abandoned."""
         self.user_id = user_id
         """The default user ID provided if method should be requested with it."""
+        self._requests: dict[tuple[int, ...], tuple[asyncio.Task, SHVBase.Request]] = {}
         self._calls_event: dict[int, asyncio.Event] = {}
         self._calls_msg: dict[int, RpcMessage] = {}
         self.__peer_is_shv3: bool | None = None
@@ -104,20 +107,26 @@ class SHVBase:
 
     async def _loop(self) -> None:
         """Loop run in asyncio task to receive messages."""
-        async with asyncio.TaskGroup() as tg:
-            with contextlib.suppress(EOFError):
-                while msg := await self.client.receive():
-                    if msg is RpcClient.Control.RESET:
-                        self._reset()
-                    elif msg.is_valid():
-                        tg.create_task(self._message(msg))
-                    else:
-                        logger.info("%s: Dropped invalid message: %s", self.client, msg)
+        with contextlib.suppress(EOFError):
+            while msg := await self.client.receive():
+                if msg is RpcClient.Control.RESET:
+                    self._reset()
+                elif msg.is_valid():
+                    await self._message(msg)
+                else:
+                    logger.info("%s: Dropped invalid message: %s", self.client, msg)
+
+        for request_task, _ in self._requests.values():
+            request_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await request_task
 
     def _reset(self) -> None:
         """Handle peer's reset request."""
         logger.info("%s: Doing reset", self.client)
         self.__peer_is_shv3 = None
+        for request_task, _ in self._requests.values():
+            request_task.cancel()
         for event in self._calls_event.values():
             event.set()
 
@@ -298,21 +307,12 @@ class SHVBase:
         """
         match msg.type:
             case RpcMessage.Type.REQUEST:
-                resp = msg.make_response()
-                try:
-                    resp.result = await self._method_call(self.Request(msg))
-                except Exception as exc:
-                    resp.error = RpcError.from_exception(exc)
-                try:
-                    await self._send(resp)
-                except EOFError:
-                    return  # No need to spam logs on disconnect
-                except Exception as exc:
-                    logger.warning(
-                        "%s: Failed to send response", self.client, exc_info=exc
-                    )
+                key = (msg.request_id, *msg.caller_ids)
+                task = asyncio.create_task(self.__method_call(msg))
+                self._requests[key] = (task, self.Request(msg))
+                task.add_done_callback(functools.partial(self._requests.pop, key))
             case RpcMessage.Type.REQUEST_ABORT:
-                pass  # TODO
+                await self.__method_call(msg)
             case RpcMessage.Type.RESPONSE | RpcMessage.Type.RESPONSE_ERROR:
                 rid = msg.request_id
                 if rid in self._calls_event:
@@ -323,18 +323,41 @@ class SHVBase:
             case RpcMessage.Type.SIGNAL:
                 await self._got_signal(self.Signal(msg))
 
+    async def __method_call(self, msg: RpcMessage) -> None:
+        try:
+            key = (msg.request_id, *msg.caller_ids)
+            if msg.type == RpcMessage.Type.REQUEST:
+                resp = msg.make_response()
+                try:
+                    resp.result = await self._method_call(self._requests[key][1])
+                except Exception as exc:
+                    resp.error = RpcError.from_exception(exc)
+            elif key in self._requests and not msg.abort:
+                resp = msg.make_response_delay(self._requests[key][1].progress)
+            else:
+                resp = msg.make_response()
+                if key in self._requests:
+                    self._requests[key][0].cancel()
+                    resp.error = RpcRequestInvalidError("Request cancelled")
+                else:
+                    resp.error = RpcRequestInvalidError("No such request")
+
+            with contextlib.suppress(EOFError):  # No need to spam logs on disconnect
+                await self._send(resp)
+        except Exception as exc:
+            logger.warning("%s: Failed to respond: %s", self.client, msg, exc_info=exc)
+
     async def _method_call(self, request: SHVBase.Request) -> SHVType:
         """Handle request.
+
+        Be aware that :class:`asyncio.CancelledError` can be raised to abort
+        the request.
 
         :param request: SHV RPC request message info.
         :return: result of the method call. To report error you should raise
             :exc:`RpcError`.
         """
         match request.path, request.method:
-            case _, "ls":
-                return self._method_call_ls(request.path, request.param)
-            case _, "dir":
-                return self._method_call_dir(request.path, request.param)
             case ".app", "shvVersionMajor":
                 return SHV_VERSION_MAJOR
             case ".app", "shvVersionMinor":
@@ -347,6 +370,10 @@ class SHVBase:
                 return datetime.datetime.now().astimezone()
             case ".app", "ping":
                 return None
+            case _, "ls":
+                return self._method_call_ls(request.path, request.param)
+            case _, "dir":
+                return self._method_call_dir(request.path, request.param)
         raise RpcMethodNotFoundError(
             f"No such path '{request.path}' or method '{request.method}' or access rights."
         )
@@ -471,6 +498,8 @@ class SHVBase:
 
         def __init__(self, msg: RpcMessage) -> None:
             self._msg = msg
+            self._progress = 0.0
+            self._progress_dirty = False
 
         @property
         def path(self) -> str:
@@ -500,6 +529,26 @@ class SHVBase:
             :class:`RpcUserIDRequiredError` if you need it.
             """
             return self._msg.user_id
+
+        @property
+        def caller_ids(self) -> collections.abc.Sequence[int]:
+            """The sequence of the IDs for the caller.
+
+            This sequence uniquely identifies this caller for this
+            application, thus it can be used to have unique context specific to
+            the caller.
+            """
+            return self._msg.caller_ids
+
+        @property
+        def progress(self) -> float:
+            """The progress signaled for this request."""
+            return self._progress
+
+        @progress.setter
+        def progress(self, value: float) -> None:
+            self._progress = value
+            self._progress_dirty = True
 
     class Signal:
         """Set of parameters passed to the :meth:`SHVBase._got_signal`.
