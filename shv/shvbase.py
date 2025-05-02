@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import collections
 import collections.abc
 import contextlib
 import datetime
@@ -91,6 +92,9 @@ class SHVBase:
         self._calls_event: dict[int, asyncio.Event] = {}
         self._calls_msg: dict[int, RpcMessage] = {}
         self.__peer_is_shv3: bool | None = None
+        self.__send_semaphore = asyncio.Semaphore()
+        self.__send_queue: collections.deque[tuple[RpcMessage, asyncio.Future]]
+        self.__send_queue = collections.deque()
 
     async def disconnect(self) -> None:
         """Disconnect an existing connection.
@@ -107,19 +111,32 @@ class SHVBase:
 
     async def _loop(self) -> None:
         """Loop run in asyncio task to receive messages."""
-        with contextlib.suppress(EOFError):
-            while msg := await self.client.receive():
-                if msg is RpcClient.Control.RESET:
-                    self._reset()
-                elif msg.is_valid():
-                    await self._message(msg)
-                else:
-                    logger.info("%s: Dropped invalid message: %s", self.client, msg)
-
-        for request_task, _ in self._requests.values():
-            request_task.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await request_task
+        send_task = asyncio.create_task(self._send_loop())
+        try:
+            with contextlib.suppress(EOFError):
+                while msg := await self.client.receive():
+                    if msg is RpcClient.Control.RESET:
+                        self._reset()
+                    elif msg.is_valid():
+                        await self._message(msg)
+                    else:
+                        logger.info("%s: Dropped invalid message: %s", self.client, msg)
+        finally:
+            send_task.cancel()
+            tasks = [send_task]
+            for request_task, _ in self._requests.values():
+                request_task.cancel()
+                tasks.append(request_task)
+            res = await asyncio.gather(*tasks, return_exceptions=True)
+            if excs := [
+                v
+                for v in res
+                if isinstance(v, BaseException)
+                and not isinstance(v, asyncio.CancelledError)
+            ]:
+                if len(excs) == 1:
+                    raise excs[0]
+                raise BaseExceptionGroup("Collected errors from SHVBase", excs)
 
     def _reset(self) -> None:
         """Handle peer's reset request."""
@@ -139,6 +156,34 @@ class SHVBase:
         await self.client.reset()
         self._reset()
 
+    async def _send_loop(self) -> None:
+        """Loop used to send messages.
+
+        We have a dedicated loop to send messages to identify if there is an
+        empty bandwidth. Simply if there are no messages to be sent through
+        :method:`_send` then we can use :meth:`_idle_message` to generate idle
+        messages.
+        """
+        while True:
+            await self.__send_semaphore.acquire()
+            if self.__send_queue:
+                msg, future = self.__send_queue.popleft()
+            else:
+                res = self._idle_message()
+                if res is None:
+                    continue
+                msg, future = res, None
+            try:
+                await self.client.send(msg)
+            except Exception as exc:
+                if future is None:
+                    logger.warning("Idle send failed", exc_info=exc)
+                else:
+                    future.set_exception(exc)
+            else:
+                if future is not None:
+                    future.set_result(None)
+
     async def _send(self, msg: RpcMessage) -> None:
         """Send message.
 
@@ -157,8 +202,28 @@ class SHVBase:
 
         :param msg: The message to be send.
         """
-        # TODO possibly lock to prevent from spliting this call
-        await self.client.send(msg)
+        future = asyncio.get_running_loop().create_future()
+        self.__send_queue.append((msg, future))
+        self.__send_semaphore.release()
+        await future
+
+    def _idle_message(self) -> RpcMessage | None:
+        """Messages to be sent when there is bandwidth for them.
+
+        In general we just try to propagate all messages but some of the
+        messages might not have to be sent if we don't have bandwidth for them
+        at the moment. These are commonly messages not directly requested by
+        other side such as signals or some of the delayed responses.
+        """
+        for _, request in self._requests.values():
+            if request._progress_dirty:
+                request._progress_dirty = False
+                return request._msg.make_response_delay(request._progress)
+        return None
+
+    def _idle_message_ready(self) -> None:
+        """Notify internal implementation that idle message could be generated."""
+        self.__send_semaphore.release()
 
     async def call(
         self,
@@ -309,7 +374,7 @@ class SHVBase:
             case RpcMessage.Type.REQUEST:
                 key = (msg.request_id, *msg.caller_ids)
                 task = asyncio.create_task(self.__method_call(msg))
-                self._requests[key] = (task, self.Request(msg))
+                self._requests[key] = (task, self.Request(msg, self))
                 task.add_done_callback(functools.partial(self._requests.pop, key))
             case RpcMessage.Type.REQUEST_ABORT:
                 await self.__method_call(msg)
@@ -496,8 +561,9 @@ class SHVBase:
         well as ability to more freely add or remove info items.
         """
 
-        def __init__(self, msg: RpcMessage) -> None:
+        def __init__(self, msg: RpcMessage, shvbase: SHVBase) -> None:
             self._msg = msg
+            self._shvbase = shvbase
             self._progress = 0.0
             self._progress_dirty = False
 
@@ -548,7 +614,9 @@ class SHVBase:
         @progress.setter
         def progress(self, value: float) -> None:
             self._progress = value
-            self._progress_dirty = True
+            if not self._progress_dirty:
+                self._progress_dirty = True
+                self._shvbase._idle_message_ready()
 
     class Signal:
         """Set of parameters passed to the :meth:`SHVBase._got_signal`.
