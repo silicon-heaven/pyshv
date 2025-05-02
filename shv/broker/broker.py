@@ -53,7 +53,8 @@ class RpcBroker:
             **kwargs: typing.Any,  # noqa ANN401
         ) -> None:
             super().__init__(client, *args, **kwargs)
-            self._send_queue: asyncio.Queue[RpcMessage] = asyncio.Queue(8)
+            self._send_queue: collections.deque[RpcMessage]
+            self._send_queue = collections.deque(maxlen=16)
             self.__broker = broker
             self.__broker_client_id: int | None = None
             self.__peer_is_broker: bool | None = None
@@ -102,26 +103,13 @@ class RpcBroker:
 
             :param msg: Message to be sent.
             """
-            try:
-                self._send_queue.put_nowait(msg)
-            except asyncio.QueueFull:
-                logger.info("Message dropped due to overload: %s", str(msg))
+            self._send_queue.append(msg)
+            self._idle_message_ready()
 
-        async def _send_loop(self) -> None:
-            """Loop run in asyncio task to send queued messages."""
-            with contextlib.suppress(EOFError):
-                while True:
-                    await self._send(await self._send_queue.get())
-                    self._send_queue.task_done()
-
-        async def _loop(self) -> None:
-            send_task = asyncio.create_task(self._send_loop())
-            try:
-                await super()._loop()
-            finally:
-                send_task.cancel()
-                with contextlib.suppress(asyncio.exceptions.CancelledError):
-                    await send_task
+        def _idle_message(self) -> RpcMessage | None:
+            if self._send_queue:
+                return self._send_queue.popleft()
+            return super()._idle_message()
 
         async def disconnect(self) -> None:  # noqa: D102
             logger.info("Disconnecting client with ID %s", str(self.broker_client_id))
