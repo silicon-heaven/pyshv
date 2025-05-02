@@ -48,6 +48,10 @@ value. This will send first defined signal but you can also specify which signal
 to send with ``signal`` argument if multiple signals were defined for the method
 in its descriptor.
 
+The method implementation can be coroutine and thus you can use `await` in it.
+The :attr:`shv.SHVBase.Request.progress` should be updated in case
+implementation awaits for some longer tasks.
+
 Properties
 ----------
 
@@ -70,6 +74,10 @@ The signal associated with the property can be sent the same way as for other
 methods: ``await mclient.custom_prop.signal("NewPropValue")``. Note that signal
 is in no situation emited automatically and thus it must be sent explicitly by
 calling ``signal`` method as described.
+
+The both method implementations can be coroutines. But getter method should not
+preferably block for a long time, contrary to the generic method and setter it
+is desirable to return as soon as possible.
 
 Dynamic methods definition
 --------------------------
