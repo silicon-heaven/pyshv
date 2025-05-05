@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   decimal conversion issue
 - Error reported on Python 3.12 when `RpcClientPipe.fdopen` is used
 - SHV RPC Type representation for standard types `!historyRecords`, `!getLogR`.
+- Usage of `SHVMethods` with parents defining private attributes
 
 
 ## [0.8.0] - 2025-02-04
