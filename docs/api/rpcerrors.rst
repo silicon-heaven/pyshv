@@ -21,6 +21,8 @@ Standard errors
 .. autoclass:: shv.RpcLoginRequiredError
 .. autoclass:: shv.RpcUserIDRequiredError
 .. autoclass:: shv.RpcNotImplementedError
+.. autoclass:: shv.RpcTryAgainLaterError
+.. autoclass:: shv.RpcRequestInvalidError
 
 Utilities
 ---------
