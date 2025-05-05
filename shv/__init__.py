@@ -49,7 +49,7 @@ from .shvclient import SHVClient
 from .shvdevice import SHVDevice
 from .shvmethods import SHVMethods
 from .shvvalueclient import SHVValueClient
-from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
+from .shvversion import SHV_VERSION, SHV_VERSION_MAJOR, SHV_VERSION_MINOR
 from .value import (
     SHVBool,
     SHVBoolType,
@@ -83,6 +83,7 @@ from .value import (
 )
 
 __all__ = [
+    "SHV_VERSION",
     "SHV_VERSION_MAJOR",
     "SHV_VERSION_MINOR",
     "VERSION",
