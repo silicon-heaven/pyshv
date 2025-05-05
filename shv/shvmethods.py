@@ -52,7 +52,7 @@ class SHVMethods(SHVBase):
             collections.defaultdict(dict)
         )
         for name in dir(self):
-            if isinstance(attr := getattr(self, name), self.Method):
+            if isinstance(attr := getattr(self, name, None), self.Method):
                 if attr.desc.name in self._methods[attr.path]:
                     raise ValueError(
                         f"Method already defined {attr.path}:{attr.desc.name}"
