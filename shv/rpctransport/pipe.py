@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import sys
 import typing
 
 from .stream import (
@@ -45,20 +46,22 @@ class RpcClientPipe(RpcClientStream):
         protocol: type[RpcTransportProtocol] = RpcProtocolSerial,
     ) -> RpcClientPipe:
         """Create RPC client from existing Unix pipes."""
+        loop = asyncio.get_running_loop()
+
         if isinstance(rpipe, int):
             rpipe = os.fdopen(rpipe, mode="r")
-        reader = asyncio.StreamReader()
-        srprotocol = asyncio.StreamReaderProtocol(reader)
-        await asyncio.get_running_loop().connect_read_pipe(lambda: srprotocol, rpipe)
+        reader = asyncio.StreamReader(loop=loop)
+        rprotocol = asyncio.StreamReaderProtocol(reader, loop=loop)
+        await loop.connect_read_pipe(lambda: rprotocol, rpipe)
 
         if isinstance(wpipe, int):
             wpipe = os.fdopen(wpipe, mode="w")
-        wtransport, _ = await asyncio.get_running_loop().connect_write_pipe(
-            lambda: srprotocol, wpipe
-        )
-        writer = asyncio.StreamWriter(
-            wtransport, srprotocol, None, asyncio.get_running_loop()
-        )
+        if sys.version_info < (3, 12):
+            wprotocol = rprotocol
+        else:
+            wprotocol = asyncio.StreamReaderProtocol(None, loop=loop)
+        wtransport, _ = await loop.connect_write_pipe(lambda: wprotocol, wpipe)
+        writer = asyncio.StreamWriter(wtransport, wprotocol, None, loop)
 
         return cls(reader, writer, protocol)
 

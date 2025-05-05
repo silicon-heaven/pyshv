@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SHV Map no longer accept SHV UInt as key (SHV standard correct).
 - CPON now represents SHV Double in hexadecimal format thus bypassing float to
   decimal conversion issue
+- Error reported on Python 3.12 when `RpcClientPipe.fdopen` is used
 
 
 ## [0.8.0] - 2025-02-04
