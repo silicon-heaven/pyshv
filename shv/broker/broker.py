@@ -747,7 +747,10 @@ class RpcBroker:
                 # TODO this relies heavilly on SHV 3.0 and not all mounted
                 # brokers will have that. Do we want to just ignore those or
                 # do we want to implemented dedicated support for them?
-                if not await client.peer_is_broker() or not await client.peer_is_shv3():
+                if (
+                    await client.peer_shv_version() < (3, 0)
+                    or not await client.peer_is_broker()
+                ):
                     continue
                 for ri in self._subs:
                     if (

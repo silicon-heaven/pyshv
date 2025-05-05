@@ -64,6 +64,9 @@ class SHVBase:
       abandoned (if there was too much call attempts). This is time before we
       consider response to be lost.
     :param user_id: The default user ID to be used.
+    :param peer_shv_version: The assumed SHV version of the peer. In default
+      the exact version is detected but sometimes it is desirable to skip this
+      check of enforce a different version for testing purposes.
     """
 
     def __init__(
@@ -72,6 +75,7 @@ class SHVBase:
         call_attempts: int = 1,
         call_timeout: float | None = 300.0,
         user_id: str = "",
+        peer_shv_version: tuple[int, int] | None = None,
     ) -> None:
         self.client = client
         """The underlining RPC client instance.
@@ -92,7 +96,8 @@ class SHVBase:
         self._requests: dict[tuple[int, ...], tuple[asyncio.Task, SHVBase.Request]] = {}
         self._calls_event: dict[int, asyncio.Event] = {}
         self._calls_msg: dict[int, RpcMessage] = {}
-        self.__peer_is_shv3: bool | None = None
+        self._peer_shv_version = peer_shv_version
+        self.__initial_peer_shv_version = peer_shv_version
         self.__send_semaphore = asyncio.Semaphore()
         self.__send_queue: collections.deque[tuple[RpcMessage, asyncio.Future]]
         self.__send_queue = collections.deque()
@@ -142,7 +147,7 @@ class SHVBase:
     def _reset(self) -> None:
         """Handle peer's reset request."""
         logger.info("%s: Doing reset", self.client)
-        self.__peer_is_shv3 = None
+        self._peer_shv_version = self.__initial_peer_shv_version
         for request_task, _ in self._requests.values():
             request_task.cancel()
         for event in self._calls_event.values():
@@ -300,7 +305,9 @@ class SHVBase:
 
     async def ping(self) -> None:
         """Ping the peer to check the connection."""
-        await self.call(".app" if await self.peer_is_shv3() else ".broker/app", "ping")
+        await self.call(
+            ".app" if await self.peer_shv_version() >= (3, 0) else ".broker/app", "ping"
+        )
 
     async def ls(self, path: str | SHVPath) -> list[str]:
         """List child nodes of the node on the specified path.
@@ -356,15 +363,16 @@ class SHVBase:
             raise RpcMethodCallExceptionError(f"Invalid result returned: {res!r}")
         return bool(res)
 
-    async def peer_is_shv3(self) -> bool:
-        """Check if peer supports at least SHV 3.0."""
-        if self.__peer_is_shv3 is None:
-            try:
+    async def peer_shv_version(self) -> tuple[int, int]:
+        """Get the peer's SHV version."""
+        if self._peer_shv_version is None:
+            self._peer_shv_version = (0, 0)
+            with contextlib.suppress(RpcError):
                 major = await self.call(".app", "shvVersionMajor")
-                self.__peer_is_shv3 = isinstance(major, int) and major >= 0
-            except RpcError:
-                self.__peer_is_shv3 = False
-        return self.__peer_is_shv3
+                minor = await self.call(".app", "shvVersionMinor")
+                if isinstance(major, int) and isinstance(minor, int):
+                    self._peer_shv_version = (major, minor)
+        return self._peer_shv_version
 
     async def _message(self, msg: RpcMessage) -> None:
         """Handle every received message.

@@ -232,7 +232,7 @@ class SHVClient(SHVBase):
         return res
 
     async def __subscribe(self, ri: str) -> bool:
-        compat = not await self.peer_is_shv3()
+        compat = await self.peer_shv_version() < (3, 0)
         return bool(
             await self.call(
                 ".broker/currentClient" if not compat else ".broker/app",
@@ -248,7 +248,7 @@ class SHVClient(SHVBase):
         :return: ``True`` in case such subscribe was located and ``False``
           otherwise.
         """
-        compat = not await self.peer_is_shv3()
+        compat = await self.peer_shv_version() < (3, 0)
         resp = bool(
             await self.call(
                 ".broker/currentClient" if not compat else ".broker/app",

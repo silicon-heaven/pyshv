@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RpcMethodDesc` was renamed to `RpcDir`
 - `RpcMethodFlags` was moved to `RpcDir.Flag`
 - `RpcMethodAccess` was renamed to `RpcAccess`
+- `SHVBase.peer_is_shv3` is replaced with more generic
+  `SHVBase.peer_shv_version`
 
 ### Fixed
 - type hint for `dir` result (corrected against SHV standard).
