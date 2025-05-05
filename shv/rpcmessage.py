@@ -180,6 +180,18 @@ class RpcMessage:
         resp.delay = progress
         return resp
 
+    def make_abort(self, abort: bool) -> RpcMessage:
+        """Create abort message for the request."""
+        if self.type is not self.Type.REQUEST:
+            raise ValueError("Abort request can be created from request only.")
+        res = RpcMessage()
+        res.request_id = self.request_id
+        res.caller_ids = self.caller_ids
+        res.method = self.method
+        res.path = self.path
+        res.abort = abort
+        return res
+
     @property
     def _request_id(self) -> SHVType:
         return self.value.meta.get(self.Tag.REQUEST_ID)
@@ -521,33 +533,6 @@ class RpcMessage:
         res.path = path
         res.param = param
         res.user_id = user_id
-        return res
-
-    @classmethod
-    def request_abort(
-        cls,
-        path: str,
-        method: str,
-        rid: int,
-        cids: collections.abc.Sequence[int] = tuple(),
-        abort: bool = True,
-    ) -> RpcMessage:
-        """Create request abort message.
-
-        :param path: SHV path for signal.
-        :param method: method name for signal.
-        :param rid: Request identifier for this message. It is automatically
-          assigned if ``None`` is passed.
-        :param cids: The caller IDs. This can be used with methods using a
-          unique CallerIds sequence to establish session.
-        :param abort: If method call should be aborted or only queried.
-        """
-        res = cls()
-        res.request_id = rid
-        res.caller_ids = cids
-        res.method = method
-        res.path = path
-        res.abort = abort
         return res
 
     @classmethod
