@@ -9,6 +9,7 @@ import contextlib
 import datetime
 import functools
 import logging
+import time
 
 from .__version__ import VERSION
 from .path import SHVPath
@@ -20,6 +21,7 @@ from .rpcerrors import (
     RpcMethodCallExceptionError,
     RpcMethodNotFoundError,
     RpcRequestInvalidError,
+    RpcTryAgainLaterError,
     RpcUserIDRequiredError,
 )
 from .rpcmessage import RpcMessage
@@ -39,6 +41,21 @@ class SHVBase:
 
     Messages are handled in an asyncio loop and based on the type of the message
     the different operation is performed.
+
+    :param client: The RPC client instance to wrap and manage.
+    :param call_timeout: Timeout in seconds before call is abandoned. The
+      default is no timeout and thus infinite waiting. This is handy if you
+      don't want to wrap call calls in your code with :func:`asyncio.timeout`
+      and does exactly the same thing.
+    :param call_query_timeout: Timeout in seconds before query is used to check
+      the request status. The shorter time will cause faster message lost
+      detection while the longer
+    :param call_retry_timeout: Timeout in seconds when the request is sent
+      again if there is no response received from the device.
+    :param user_id: The default user ID to be used.
+    :param peer_shv_version: The assumed SHV version of the peer. In default
+      the exact version is detected but sometimes it is desirable to skip this
+      check of enforce a different version for testing purposes.
     """
 
     IDLE_TIMEOUT: float = 180
@@ -54,26 +71,13 @@ class SHVBase:
     """Version of the application reported to the SHV.
 
     You should change this value in child class to report a correct number.
-
-    :param client: The RPC client instance to wrap and manage.
-    :param call_attempts: Number of attempts for :meth:`call` when no response
-      is received before call is abandoned. You can use zero (or negative
-      number) for unlimited number of attempts. The default is a single attempt
-      and this only regular one call.
-    :param call_timeout: Timeout in seconds before call is attempted again or
-      abandoned (if there was too much call attempts). This is time before we
-      consider response to be lost.
-    :param user_id: The default user ID to be used.
-    :param peer_shv_version: The assumed SHV version of the peer. In default
-      the exact version is detected but sometimes it is desirable to skip this
-      check of enforce a different version for testing purposes.
     """
 
     def __init__(
         self,
         client: RpcClient,
-        call_attempts: int = 1,
-        call_timeout: float | None = 300.0,
+        call_query_timeout: float = 1.0,
+        call_retry_timeout: float = 60.0,
         user_id: str = "",
         peer_shv_version: tuple[int, int] | None = None,
     ) -> None:
@@ -85,17 +89,22 @@ class SHVBase:
         """
         self.task = asyncio.create_task(self._loop())
         """Task running the message handling receive loop."""
-        self.call_attempts = call_attempts
-        """Number of attempts when no response is received before call is abandoned.
-        You can use zero for no  or negative number to have unlimited attempts.
-        """
-        self.call_timeout = call_timeout
-        """Timeout in seconds before call is attempted again or abandoned."""
         self.user_id = user_id
         """The default user ID provided if method should be requested with it."""
+        self.call_query_timeout = call_query_timeout
+        """Timeout in seconds before :meth:`call` queries the state of the request."""
+        self.call_retry_timeout = call_retry_timeout
+        """Timeout in seconds before :meth:`call` send request again.
+
+        Be aware how this interacts with :attr:`SHVBase.call_query_timeout`.
+        This should be longer to ensure that we try to query the request before
+        it is submitted as the whole again.
+
+        This timeout is applied only if we get no response for given amount of
+        time. Any response on query on voluntary one extends this timeout.
+        """
         self._requests: dict[tuple[int, ...], tuple[asyncio.Task, SHVBase.Request]] = {}
-        self._calls_event: dict[int, asyncio.Event] = {}
-        self._calls_msg: dict[int, RpcMessage] = {}
+        self._responses: dict[int, asyncio.Queue[RpcMessage | None]] = {}
         self._peer_shv_version = peer_shv_version
         self.__initial_peer_shv_version = peer_shv_version
         self.__send_semaphore = asyncio.Semaphore()
@@ -150,8 +159,9 @@ class SHVBase:
         self._peer_shv_version = self.__initial_peer_shv_version
         for request_task, _ in self._requests.values():
             request_task.cancel()
-        for event in self._calls_event.values():
-            event.set()
+        for queue in self._responses.values():
+            with contextlib.suppress(asyncio.QueueFull):
+                queue.put_nowait(None)
 
     async def reset(self) -> None:
         """Reset the client and connection.
@@ -162,88 +172,24 @@ class SHVBase:
         await self.client.reset()
         self._reset()
 
-    async def _send_loop(self) -> None:
-        """Loop used to send messages.
-
-        We have a dedicated loop to send messages to identify if there is an
-        empty bandwidth. Simply if there are no messages to be sent through
-        :method:`_send` then we can use :meth:`_idle_message` to generate idle
-        messages.
-        """
-        while True:
-            await self.__send_semaphore.acquire()
-            if self.__send_queue:
-                msg, future = self.__send_queue.popleft()
-            else:
-                res = self._idle_message()
-                if res is None:
-                    continue
-                msg, future = res, None
-            try:
-                await self.client.send(msg)
-            except Exception as exc:
-                if future is None:
-                    logger.warning("Idle send failed", exc_info=exc)
-                else:
-                    future.set_exception(exc)
-            else:
-                if future is not None:
-                    future.set_result(None)
-
-    async def _send(self, msg: RpcMessage) -> None:
-        """Send message.
-
-        You should be using this method instead of ``self.client.send`` to
-        ensure that send can be correctly overwritten and optionally postponed
-        or blocked by child implementations.
-
-        This is intentionally marked as protected (accessible only by class and
-        its children methods) because generic message must be send only for
-        valid paths and methods and that is something only class itself can
-        ensure. Your implemntation should provide public methods that protects
-        against call with invalid path or method.
-
-        Note that this is coroutine and thus it is up to you if you await it or
-        use asyncio tasks.
-
-        :param msg: The message to be send.
-        """
-        future = asyncio.get_running_loop().create_future()
-        self.__send_queue.append((msg, future))
-        self.__send_semaphore.release()
-        await future
-
-    def _idle_message(self) -> RpcMessage | None:
-        """Messages to be sent when there is bandwidth for them.
-
-        In general we just try to propagate all messages but some of the
-        messages might not have to be sent if we don't have bandwidth for them
-        at the moment. These are commonly messages not directly requested by
-        other side such as signals or some of the delayed responses.
-        """
-        for _, request in self._requests.values():
-            if request._progress_dirty:
-                request._progress_dirty = False
-                return request._msg.make_response_delay(request._progress)
-        return None
-
-    def _idle_message_ready(self) -> None:
-        """Notify internal implementation that idle message could be generated."""
-        self.__send_semaphore.release()
-
     async def call(
         self,
         path: str | SHVPath,
         method: str,
         param: SHVType = None,
-        call_attempts: int | None = None,
-        call_timeout: float | None = None,
         user_id: str | None = None,
+        query_timeout: float | None = None,
+        retry_timeout: float | None = None,
+        progress: collections.abc.Callable[
+            [float | None], collections.abc.Awaitable[None] | None
+        ]
+        | None = None,
     ) -> SHVType:
         """Call given method on given path with given parameter.
 
         Note that this is coroutine and thus it is up to you if you await it or
-        use asyncio tasks.
+        use asyncio tasks. You can also freely use :func:`asyncio.timeout` to
+        timeout the call.
 
         The delivery of the messages is not ensure in SHV network (they can be
         dropped due to multiple reasons without informing the source of the
@@ -253,55 +199,94 @@ class SHVBase:
         :param path: SHV path method is associated with.
         :param method: SHV method name to be called.
         :param param: Parameter passed to the called method.
-        :param call_attempts: Allows override of the object setting.
-        :param call_timeout: Allows override of the object setting.
         :param user_id: UserID added to the method call request. This is required
           by some RPC methods to identify the user and they will respond with
           :class:`RpcUserIDRequiredError` if it is missing. This is caught by
-          this method and request will be attempted again (not counting in
-          ``call_attempts``) with User ID ``""``. If you know that method needs
-          User ID then you can prevent this round trip by setting this argument
-          to ``""``. On the other hand sending all requests with User ID wastes
-          with bandwidth. In general usage you should use ``self.user_id``
-          instead of just ``""`` to use the object default.
+          this method and request will be attempted again with User ID ``""``.
+          If you know that method needs User ID then you can prevent this round
+          trip by setting this argument to ``""``. On the other hand sending
+          all requests with User ID wastes with bandwidth. In general usage you
+          should use :attr:`SHVBase.user_id` instead of just ``""`` to use the
+          object default.
+        :param query_timeout: Override :attr:`SHVBase.call_query_timeout` just
+          for this one call.
+        :param retry_timeout: Override :attr:`SHVBase.call_retry_timeout` just
+          for this one call.
+        :param progress: An optional callback function that is called to report
+          on progress of the call. It can be either function of coroutine. The
+          argument passed is the float between 0 and 1 providing the progress
+          signalization or ``None`` to signal that
+          :class:`RpcTryAgainLaterError` was received. If you need to pass
+          additional arguments to the function then use
+          :func:`functools.partial`.
         :return: Return value on successful method call.
         :raise RpcError: The call result in error that is propagated by raising
-            `RpcError` or its children based on the failure.
-        :raise TimeoutError: when response is not received before timeout with
-            all attempts depleted.
-        :raise EOFError: when client disconnected and thus request can't be sent
-          or response received.
+          `RpcError` or its children based on the failure.
+        :raise EOFError: when client disconnected and thus request can't be
+          sent or response received.
         """
-        call_attempts = self.call_attempts if call_attempts is None else call_attempts
-        call_timeout = self.call_timeout if call_timeout is None else call_timeout
+        query_timeout = (
+            self.call_query_timeout if query_timeout is None else query_timeout
+        )
+        retry_timeout = (
+            self.call_retry_timeout if retry_timeout is None else retry_timeout
+        )
+
+        async def callback_progress(value: float | None) -> None:
+            if progress is not None:
+                if (ares := progress(value)) is not None:
+                    await ares
+
         request = RpcMessage.request(path, method, param, user_id=user_id)
-        event = asyncio.Event()
-        self._calls_event[request.request_id] = event
-        attempt = 0
-        while call_attempts < 1 or attempt < call_attempts:
-            attempt += 1
-            await self._send(request)
-            try:
-                async with asyncio.timeout(call_timeout):
-                    await event.wait()
-            except TimeoutError:
-                continue
-            if request.request_id not in self._calls_msg:
-                self._calls_event[request.request_id].clear()
-                continue
-            response = self._calls_msg.pop(request.request_id)
-            if response.type == RpcMessage.Type.RESPONSE_ERROR:
-                error = response.error
-                # TODO support RpcTryAgainLaterError
-                if isinstance(error, RpcUserIDRequiredError) and user_id is None:
-                    attempt -= 1  # Annul this attempt
-                    request.user_id = self.user_id
-                    event.clear()
-                    self._calls_event[request.new_request_id()] = event
-                    continue
-                raise error
-            return response.result
-        raise TimeoutError
+        assert request.request_id not in self._responses
+        queue = self._responses[request.request_id] = asyncio.Queue()
+        try:
+            while True:
+                await self._send(request)
+                last = time.monotonic()
+                while True:
+                    try:
+                        tm = min(query_timeout, retry_timeout + last - time.monotonic())
+                        async with asyncio.timeout(tm):
+                            msg = await queue.get()
+                        if msg is None:  # The communication reset
+                            break  # We need to send request again
+                        match msg.type:
+                            case RpcMessage.Type.RESPONSE:
+                                return msg.result
+                            case RpcMessage.Type.RESPONSE_ERROR:
+                                match msg.error:
+                                    case RpcUserIDRequiredError():
+                                        request.user_id = self.user_id
+                                        rid = request.new_request_id()
+                                        self._responses[rid] = queue
+                                    case RpcRequestInvalidError():
+                                        self._responses[request.request_id] = queue
+                                    case RpcTryAgainLaterError():
+                                        await callback_progress(None)
+                                        rid = request.new_request_id()
+                                        self._responses[rid] = queue
+                                        tm = retry_timeout + last - time.monotonic()
+                                        if tm > 0:
+                                            await asyncio.sleep(tm)
+                                    case error:
+                                        raise error
+                                break
+                            case RpcMessage.Type.RESPONSE_DELAY:
+                                await callback_progress(msg.delay)
+                                last = time.monotonic()
+                            case _:  # pragma: no cover
+                                raise AssertionError(f"Invalid message: {msg}")
+                    except TimeoutError:
+                        if time.monotonic() - last > retry_timeout:
+                            break
+                        await self._send(request.make_abort(False))
+        finally:
+            if request.request_id in self._responses:
+                if self.client.connected:
+                    # TODO possibly put to the task
+                    await self._send(request.make_abort(True))
+                del self._responses[request.request_id]
 
     async def ping(self) -> None:
         """Ping the peer to check the connection."""
@@ -374,6 +359,75 @@ class SHVBase:
                     self._peer_shv_version = (major, minor)
         return self._peer_shv_version
 
+    async def _send_loop(self) -> None:
+        """Loop used to send messages.
+
+        We have a dedicated loop to send messages to identify if there is an
+        empty bandwidth. Simply if there are no messages to be sent through
+        :meth:`_send` then we can use :meth:`_idle_message` to generate idle
+        messages.
+        """
+        while True:
+            await self.__send_semaphore.acquire()
+            if self.__send_queue:
+                msg, future = self.__send_queue.popleft()
+            else:
+                res = self._idle_message()
+                if res is None:
+                    continue
+                msg, future = res, None
+            try:
+                await self.client.send(msg)
+            except Exception as exc:
+                if future is None:
+                    logger.warning("Idle send failed", exc_info=exc)
+                else:
+                    future.set_exception(exc)
+            else:
+                if future is not None:
+                    future.set_result(None)
+
+    async def _send(self, msg: RpcMessage) -> None:
+        """Send message.
+
+        You should be using this method instead of ``self.client.send`` to
+        ensure that send can be correctly overwritten and optionally postponed
+        or blocked by child implementations.
+
+        This is intentionally marked as protected (accessible only by class and
+        its children methods) because generic message must be send only for
+        valid paths and methods and that is something only class itself can
+        ensure. Your implemntation should provide public methods that protects
+        against call with invalid path or method.
+
+        Note that this is coroutine and thus it is up to you if you await it or
+        use asyncio tasks.
+
+        :param msg: The message to be send.
+        """
+        future = asyncio.get_running_loop().create_future()
+        self.__send_queue.append((msg, future))
+        self.__send_semaphore.release()
+        await future
+
+    def _idle_message(self) -> RpcMessage | None:
+        """Messages to be sent when there is bandwidth for them.
+
+        In general we just try to propagate all messages but some of the
+        messages might not have to be sent if we don't have bandwidth for them
+        at the moment. These are commonly messages not directly requested by
+        other side such as signals or some of the delayed responses.
+        """
+        for _, request in self._requests.values():
+            if request._progress_dirty:
+                request._progress_dirty = False
+                return request._msg.make_response_delay(request._progress)
+        return None
+
+    def _idle_message_ready(self) -> None:
+        """Notify internal implementation that idle message could be generated."""
+        self.__send_semaphore.release()
+
     async def _message(self, msg: RpcMessage) -> None:
         """Handle every received message.
 
@@ -388,12 +442,11 @@ class SHVBase:
             case RpcMessage.Type.REQUEST_ABORT:
                 await self.__method_call(msg)
             case RpcMessage.Type.RESPONSE | RpcMessage.Type.RESPONSE_ERROR:
-                rid = msg.request_id
-                if rid in self._calls_event:
-                    self._calls_msg[rid] = msg
-                    self._calls_event.pop(rid).set()
+                if (queue := self._responses.pop(msg.request_id, None)) is not None:
+                    await queue.put(msg)
             case RpcMessage.Type.RESPONSE_DELAY:
-                pass  # TODO
+                if (queue := self._responses.get(msg.request_id)) is not None:
+                    await queue.put(msg)
             case RpcMessage.Type.SIGNAL:
                 await self._got_signal(self.Signal(msg))
 

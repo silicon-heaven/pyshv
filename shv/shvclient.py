@@ -9,7 +9,6 @@ import logging
 import time
 import typing
 
-from .path import SHVPath
 from .rpclogin import RpcLogin
 from .rpcmessage import RpcMessage
 from .rpcparam import shvgett
@@ -198,26 +197,12 @@ class SHVClient(SHVBase):
         for ri in self._subscribes:
             await self.__subscribe(ri)
 
-    async def call(  # noqa: D102
-        self,
-        path: str | SHVPath,
-        method: str,
-        param: SHVType = None,
-        call_attempts: int | None = None,
-        call_timeout: float | None = None,
-        user_id: str | None = None,
-    ) -> SHVType:
-        timeout = self.call_timeout if call_timeout is None else call_timeout
-        if timeout is not None:
-            timeout *= self.call_attempts if call_attempts is None else call_attempts
-        async with asyncio.timeout(timeout):
-            while True:
-                with contextlib.suppress(EOFError):
-                    return await super().call(
-                        path, method, param, call_attempts, call_timeout, user_id
-                    )
-                await asyncio.sleep(0)  # Let loop detect disconnect
-                await self._connected.wait()
+    async def call(self, *args: typing.Any, **kwargs: typing.Any) -> SHVType:  # noqa: D102, ANN401
+        while True:
+            with contextlib.suppress(EOFError):
+                return await super().call(*args, **kwargs)
+            await asyncio.sleep(0)  # Let loop detect disconnect
+            await self._connected.wait()
 
     async def subscribe(self, ri: str) -> bool:
         """Perform subscribe for signals on given path.
