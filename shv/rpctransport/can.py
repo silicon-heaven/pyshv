@@ -145,11 +145,7 @@ class RpcCAN:
     @classmethod
     def socketcan(cls, interface: str) -> RpcCAN:
         """Get :class:`RpcCAN` for given socket CAN interface."""
-        return cls(
-            can.Bus(
-                channel=interface, interface="socketcan", fd=True, local_loopback=False
-            )
-        )
+        return cls(can.Bus(channel=interface, interface="socketcan", fd=True))
 
     @classmethod
     def virtualcan(cls, name: str) -> RpcCAN:
@@ -282,8 +278,8 @@ class RpcCAN:
             can.Message(
                 arbitration_id=0x10 + src,  # firstFrame and not notLastFrame
                 dlc=dlc,
+                is_remote_frame=True,
                 is_extended_id=False,
-                is_fd=True,
             ),
         )
 
