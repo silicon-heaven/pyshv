@@ -300,7 +300,7 @@ class CponReader(commonpack.CommonReader):
         if dot := accept(b"."):
             multiaccept(cset)
         tp: type = int
-        if accept(b"pP"):
+        if cset is not cset_bin and accept(b"pP"):
             tp = float
             accept(b"+-")
             multiaccept(cset_dec)
@@ -318,7 +318,10 @@ class CponReader(commonpack.CommonReader):
 
         if tp is float:
             sval = bval.decode("ascii")
-            return float.fromhex(sval) if cset is cset_hex else float(sval)
+            if cset is cset_hex:
+                return float.fromhex(sval)
+            mant, _, exp = sval.replace("P", "p").partition("p")
+            return float(mant) * (2.0 ** int(exp))
         if tp is decimal.Decimal:
             return tp(bval.decode("ascii"))  # type: ignore
         return tp(bval, 0)  # type: ignore
