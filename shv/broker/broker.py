@@ -119,7 +119,7 @@ class RpcBroker:
         async def _message(self, msg: RpcMessage) -> None:
             assert self.role is not None
             match msg.type:
-                case RpcMessage.Type.REQUEST:
+                case RpcMessage.Type.REQUEST | RpcMessage.Type.REQUEST_ABORT:
                     # Set access granted to the level allowed by the role
                     access = self.role.access_level(msg.path, msg.method)
                     if access is None:
@@ -162,9 +162,11 @@ class RpcBroker:
                     msg.path = cpath[1]
                     cpath[0].send(msg)
 
-                case RpcMessage.Type.REQUEST_ABORT:
-                    pass  # TODO
-                case RpcMessage.Type.RESPONSE | RpcMessage.Type.RESPONSE_ERROR:
+                case (
+                    RpcMessage.Type.RESPONSE
+                    | RpcMessage.Type.RESPONSE_ERROR
+                    | RpcMessage.Type.RESPONSE_DELAY
+                ):
                     cids = list(msg.caller_ids)
                     if not cids:  # no caller IDs means this is message for us
                         await super()._message(msg)
@@ -174,8 +176,6 @@ class RpcBroker:
                     if (peer := self.__broker.get_client(cid)) is not None:
                         peer.send(msg)
 
-                case RpcMessage.Type.RESPONSE_DELAY:
-                    pass  # TODO
                 case RpcMessage.Type.SIGNAL:
                     self.__broker.signal_from(msg, self)
 
