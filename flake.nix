@@ -5,27 +5,26 @@
 
   outputs = {
     self,
-    flake-utils,
-    nixpkgs,
     flakepy,
+    nixpkgs,
   }: let
-    inherit (flake-utils.lib) eachDefaultSystem;
-    inherit (nixpkgs.lib) composeManyExtensions getExe';
+    inherit (flakepy.inputs.flake-utils.lib) eachDefaultSystem;
+    inherit (nixpkgs.lib) getExe';
 
-    pyproject = flakepy.lib.pyproject ./. {};
+    pyproject = flakepy.lib.readPyproject ./. {};
 
-    pypkg = pyproject.package {};
+    pypackage = pyproject.buildPackage {};
   in
     {
       overlays = {
         pythonPackages = final: _: {
-          "${pyproject.pname}" = final.callPackage pypkg {};
+          "${pyproject.pname}" = final.callPackage pypackage {};
         };
-        packages = _: prev: {
+        pkgs = _: prev: {
           pythonPackagesExtensions =
             prev.pythonPackagesExtensions ++ [self.overlays.pythonPackages];
         };
-        default = composeManyExtensions [self.overlays.packages];
+        default = self.overlays.pkgs;
       };
 
       nixosModules = import ./nixos/modules {
@@ -50,7 +49,8 @@
           shfmt
           statix
           twine
-          (python3.withPackages (pypkgs: with pypkgs; [build sphinx-autobuild]))
+          (python3.withPackages (pypkgs:
+              with pypkgs; [build sphinx-autobuild]))
         ];
         inputsFrom = [self.packages.${system}.default];
       };

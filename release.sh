@@ -27,7 +27,7 @@ releases() {
 
 # Get the latest changelog.
 latest_changelog() {
-	awk '
+	gawk '
 		BEGIN { flag = 0; }
 		/^## / && !flag { flag = 1; next; }
 		/^## / && flag { exit; }
@@ -58,10 +58,33 @@ if ! in_ci; then
 		break
 	done
 
-	sed -i "0,/^## / s|## \\[Unreleased\\].*|## \\[${version}\\] - $(date +%Y-%m-%d)|" CHANGELOG.md
-	[[ "$(releases | head -1)" == "$version" ]] || fail "Failed to set version in CHANGELOG.md"
+	gawk -i inplace -v prev="$prev" -v version="$version" '
+		/^## \[Unreleased\]/ {
+			print "## [" version "] - " strftime("%Y-%m-%d")
+			next
+		}
+		/^\[unreleased\]: / {
+			url = $2; sub("v" prev, "v" version, url)
+			print "[unreleased]: " url
+			url = $2; sub(/HEAD/, "v" version, url)
+			print "[" version "]: " url
+			next
+		}
+		{print}
+	' CHANGELOG.md
+	if ! grep -F "[unreleased]: " CHANGELOG.md; then
+		url=$(sed -n '0,/^source = "/ s|^source = "\([^"]*\)"$|\1|p' pyproject.toml)
+		{
+			echo && echo
+			echo "[unreleased]: $url/compare/v$version..HEAD"
+			echo "[$version]: $url/-/tags/v$version"
+		} >>CHANGELOG.md
+	fi
+	[[ "$(releases | head -1)" == "$version" ]] ||
+		fail "Failed to set version in CHANGELOG.md"
 	sed -i "0,/^version = / s/^version = .*/version = \"${version}\"/" pyproject.toml
-	grep -F "version = \"${version}\"" pyproject.toml || fail "Failed to set version in pyproject.toml"
+	grep -F "version = \"${version}\"" pyproject.toml ||
+		fail "Failed to set version in pyproject.toml"
 	git commit -ve -m "$project_name version $version" -m "$changelog" CHANGELOG.md pyproject.toml
 
 	while ! gitlint; do
@@ -86,6 +109,14 @@ if ! in_ci; then
 	}
 
 	git tag -s "v${version}" -m "$(git log --format=%B -n 1 HEAD)"
+
+	sed -i "/^## \[${version//./\\.}\] - $(date +%Y-%m-)/ i ## [Unreleased]\n\n" CHANGELOG.md
+	git commit -F- CHANGELOG.md <<-EOF
+		Preparations for the next development
+
+		This adds unreleased section to the changelog to ensure that future
+		changes won't be interpreted as part release by readers.
+	EOF
 
 else
 
