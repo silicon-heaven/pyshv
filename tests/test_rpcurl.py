@@ -77,6 +77,11 @@ DATA = [
         "serial:/dev/ttyX?baudrate=1152000",
         RpcUrl("/dev/ttyX", protocol=RpcProtocol.TTY, baudrate=1152000),
     ),
+    ("ws:/var/ws", RpcUrl("/var/ws", protocol=RpcProtocol.WS)),
+    (
+        "ws://user@[::]:8081",
+        RpcUrl("::", port=8081, protocol=RpcProtocol.WS, login=RpcLogin("user")),
+    ),
 ]
 
 
@@ -126,7 +131,7 @@ def test_parse(url, rpcurl):
             "tcp://localhost?missing=some&other=foo",
             "Unsupported URL queries: missing, other",
         ),
-        ("tcp:///dev/null", "Path is not supported for tcp: /dev/null"),
+        ("tcp:///dev/null", "Path not supported for tcp: /dev/null"),
     ),
 )
 def test_invalid(url, msg):

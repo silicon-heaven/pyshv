@@ -110,23 +110,30 @@ class RpcUrl:
         res = cls("", protocol=protocol)
 
         res.login.username = sr.username or res.login.username
-        if protocol in {
-            RpcProtocol.TCP,
-            RpcProtocol.TCPS,
-            RpcProtocol.SSL,
-            RpcProtocol.SSLS,
-        }:
-            res.location = sr.hostname or ""
-            if sr.port is not None:
-                res.port = int(sr.port)
-            if sr.path:
-                raise ValueError(f"Path is not supported for {sr.scheme}: {sr.path}")
-        elif protocol in {RpcProtocol.UNIX, RpcProtocol.UNIXS, RpcProtocol.TTY}:
-            res.location = f"/{sr.netloc}{sr.path}" if sr.netloc else sr.path
-        elif protocol in {RpcProtocol.WS, RpcProtocol.WSS}:
-            res.location = f"{sr.netloc}{sr.path}"
-        else:
-            raise NotImplementedError  # pragma: no cover
+        match protocol:
+            case (
+                RpcProtocol.TCP | RpcProtocol.TCPS | RpcProtocol.SSL | RpcProtocol.SSLS
+            ):
+                res.location = sr.hostname or ""
+                if sr.port is not None:
+                    res.port = int(sr.port)
+                if sr.path:
+                    raise ValueError(f"Path not supported for {sr.scheme}: {sr.path}")
+            case RpcProtocol.UNIX | RpcProtocol.UNIXS | RpcProtocol.TTY:
+                res.location = f"/{sr.netloc}{sr.path}" if sr.netloc else sr.path
+            case RpcProtocol.WS | RpcProtocol.WSS:
+                if sr.path:
+                    if sr.port is not None:
+                        raise ValueError(
+                            "Port can't be specified with path for websockets"
+                        )
+                    res.location = f"{sr.netloc}{sr.path}"
+                else:
+                    res.location = sr.hostname or ""
+                    if sr.port is not None:
+                        res.port = int(sr.port)
+            case protocol:
+                raise NotImplementedError(f"Protocol: {protocol}")  # pragma: no cover
 
         if opts := pqs.pop("user", []):
             res.login.username = opts[0]
@@ -171,31 +178,36 @@ class RpcUrl:
             RpcProtocol.WSS: "wss",
         }
         user_added = not self.login.username or self.login.username == RpcLogin.username
-        if self.protocol in {
-            RpcProtocol.TCP,
-            RpcProtocol.TCPS,
-            RpcProtocol.SSL,
-            RpcProtocol.SSLS,
-        }:
-            netloc = "//"
-            if not user_added:
-                netloc += f"{self.login.username}@"
-                user_added = True
-            if ":" in self.location:
-                netloc += f"[{self.location}]"
-            else:
-                netloc += self.location
-            netloc += f":{self.port}"
-        elif self.protocol in {
-            RpcProtocol.UNIX,
-            RpcProtocol.UNIXS,
-            RpcProtocol.TTY,
-            RpcProtocol.WS,
-            RpcProtocol.WSS,
-        }:
-            netloc = self.location
-        else:
-            raise NotImplementedError  # pragma: no cover
+        match self.protocol:
+            case (
+                RpcProtocol.TCP | RpcProtocol.TCPS | RpcProtocol.SSL | RpcProtocol.SSLS
+            ):
+                netloc = "//"
+                if not user_added:
+                    netloc += f"{self.login.username}@"
+                    user_added = True
+                if ":" in self.location:
+                    netloc += f"[{self.location}]"
+                else:
+                    netloc += self.location
+                netloc += f":{self.port}"
+            case RpcProtocol.UNIX | RpcProtocol.UNIXS | RpcProtocol.TTY:
+                netloc = self.location
+            case RpcProtocol.WS | RpcProtocol.WSS:
+                if self.port == type(self).port:
+                    netloc = self.location
+                else:
+                    netloc = "//"
+                    if not user_added:
+                        netloc += f"{self.login.username}@"
+                        user_added = True
+                    if ":" in self.location:
+                        netloc += f"[{self.location}]"
+                    else:
+                        netloc += self.location
+                    netloc += f":{self.port}"
+            case protocol:
+                raise NotImplementedError(f"Protocol: {protocol}")  # pragma: no cover
 
         opts: list[str] = []
         if not user_added:
