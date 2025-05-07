@@ -515,12 +515,12 @@ def test_any_attr():
         (
             rpctype_getlog_p,
             "getLogP",
-            "{t|n:since,t|n:until,i(0,)|n:count,b|n:snapshot,s|n:ri}",
+            "i{t|n:since:1,t|n:until,i(0,)|n:count,s|n:ri}",
         ),
         (
             rpctype_getlog_r,
             "getLogR",
-            "[i{t:timestamp:1,i(0,)|n:ref,s|n:path,s|n:signal,s|n:source,?:value,s|n:userId,b|n:repeat}]",
+            "[i{t|n:timestamp:1,i(0,)|n:ref,s|n:path,s|n:signal,s|n:source,?:value,s|n:userId,b|n:repeat}]",
         ),
         (
             rpctype_history_records,

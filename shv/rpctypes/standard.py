@@ -13,7 +13,6 @@ from .bool import rpctype_bool
 from .datetime import rpctype_datetime
 from .enum import RpcTypeEnum
 from .integer import RpcTypeInteger, rpctype_integer
-from .keystruct import RpcTypeKeyStruct
 from .list import RpcTypeList
 from .map import RpcTypeMap, rpctype_map
 from .oneof import RpcTypeOptional
@@ -165,23 +164,22 @@ i{u|n:readyToReceive:1,u|n:readyToSend}
 
 rpctype_getlog_p = RpcTypeStandard(
     "getLogP",
-    RpcTypeKeyStruct({
-        "since": RpcTypeOptional(rpctype_datetime),
-        "until": RpcTypeOptional(rpctype_datetime),
-        "count": RpcTypeOptional(RpcTypeInteger(0)),
-        "snapshot": RpcTypeOptional(rpctype_bool),
-        "ri": RpcTypeOptional(rpctype_string),
+    RpcTypeStruct({
+        1: (RpcTypeOptional(rpctype_datetime), "since"),
+        2: (RpcTypeOptional(rpctype_datetime), "until"),
+        3: (RpcTypeOptional(RpcTypeInteger(0)), "count"),
+        4: (RpcTypeOptional(rpctype_string), "ri"),
     }),
 )
 """
-{t|n:since,t|n:until,i(0,)|n:count,b|n:snapshot,s|n:ri}
+i{t|n:since:1,t|n:until,i(0,)|n:count,s|n:ri}
 """
 
 rpctype_getlog_r = RpcTypeStandard(
     "getLogR",
     RpcTypeList(
         RpcTypeStruct({
-            1: (rpctype_datetime, "timestamp"),
+            1: (RpcTypeOptional(rpctype_datetime), "timestamp"),
             2: (RpcTypeOptional(RpcTypeInteger(0)), "ref"),
             3: (RpcTypeOptional(rpctype_string), "path"),
             4: (RpcTypeOptional(rpctype_string), "signal"),
@@ -193,7 +191,7 @@ rpctype_getlog_r = RpcTypeStandard(
     ),
 )
 """
-[i{t:timestamp:1,i(0,)|n:ref,s|n:path,s|n:signal,s|n:source,?:value,s|n:userId,b|n:repeat}]
+[i{t|n:timestamp:1,i(0,)|n:ref,s|n:path,s|n:signal,s|n:source,?:value,s|n:userId,b|n:repeat}]
 """
 
 
