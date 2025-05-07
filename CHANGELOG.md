@@ -11,11 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SHVBase` now has `user_id` property that is default user ID used with `call`
   method
 
+### Changed
+- Updated `getLogR` type hint according to spefication, it is now Struct
+  instead of KeyStruct.
+
+
 ### Fixed
 - type hint for `dir` result (corrected against SHV standard).
 - default parameter type hint for getters is now correctly `i(0,)|n` instead of
   plain `i`.
-- type hint `!getLogP` being Struct instead of KeyStruct
 - SHV Map no longer accept SHV UInt as key (SHV standard correct).
 - CPON now represents SHV Double in hexadecimal format thus bypassing float to
   decimal conversion issue

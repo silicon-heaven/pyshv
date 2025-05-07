@@ -14,7 +14,6 @@ from .datetime import rpctype_datetime
 from .enum import RpcTypeEnum
 from .imap import RpcTypeIMap
 from .integer import RpcTypeInteger, rpctype_integer
-from .keystruct import RpcTypeKeyStruct
 from .list import RpcTypeList
 from .map import RpcTypeMap, rpctype_map
 from .null import rpctype_null
@@ -166,22 +165,21 @@ i{u|n:readyToReceive:1,u|n:readyToSend}
 
 rpctype_getlog_p = RpcTypeStandard(
     "getLogP",
-    RpcTypeKeyStruct({
-        "since": RpcTypeOneOf(rpctype_datetime, rpctype_null),
-        "until": RpcTypeOneOf(rpctype_datetime, rpctype_null),
-        "count": RpcTypeOneOf(RpcTypeInteger(0), rpctype_null),
-        "snapshot": RpcTypeOneOf(rpctype_bool, rpctype_null),
-        "ri": RpcTypeOneOf(rpctype_string, rpctype_null),
+    RpcTypeStruct({
+        1: (RpcTypeOneOf(rpctype_datetime, rpctype_null), "since"),
+        2: (RpcTypeOneOf(rpctype_datetime, rpctype_null), "until"),
+        3: (RpcTypeOneOf(RpcTypeInteger(0), rpctype_null), "count"),
+        4: (RpcTypeOneOf(rpctype_string, rpctype_null), "ri"),
     }),
 )
 """
-{t|n:since,t|n:until,i(0,)|n:count,b|n:snapshot,s|n:ri}
+i{t|n:since,t|n:until,i(0,)|n:count,s|n:ri}
 """
 
 rpctype_getlog_r = RpcTypeStandard(
     "getLogR",
     RpcTypeStruct({
-        1: (rpctype_datetime, "timestamp"),
+        1: (RpcTypeOneOf(rpctype_datetime, rpctype_null), "timestamp"),
         2: (RpcTypeOneOf(RpcTypeInteger(0), rpctype_null), "ref"),
         3: (RpcTypeOneOf(rpctype_string, rpctype_null), "path"),
         4: (RpcTypeOneOf(rpctype_string, rpctype_null), "signal"),
