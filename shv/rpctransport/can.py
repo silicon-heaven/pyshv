@@ -7,8 +7,10 @@ import collections
 import collections.abc
 import concurrent
 import dataclasses
-import enum
+import errno
 import logging
+import time
+import typing
 import weakref
 
 import can
@@ -21,6 +23,11 @@ logger = logging.getLogger(__name__)
 
 class RpcCAN:
     """The SHV RPC CAN Bus management operations."""
+
+    AID_NOT_LAST_MASK: typing.Final = 0x400
+    AID_FIRST_MASK: typing.Final = 0x200
+    AID_QOS_MASK: typing.Final = 0x100
+    AID_ADDRESS_MASK: typing.Final = 0x0FF
 
     class Connection:
         """Single connection between server and client."""
@@ -100,17 +107,6 @@ class RpcCAN:
             if self._disconnect_task is not None:
                 await self._disconnect_task
 
-    class RTR(enum.IntEnum):
-        """Data lenght for the RTR CAN frames used by the protocol."""
-
-        MSGABORT = 0
-        """Abort partially sent out message."""
-        ANNOUNCE = 5
-        """Anounce server."""
-        DISCOVER = 6
-        """Requests servers to send announce."""
-        # TODO we are missing the way to autonegotiate the client address
-
     @dataclasses.dataclass
     class _Peer:
         data: bytearray = dataclasses.field(default_factory=bytearray)
@@ -165,32 +161,36 @@ class RpcCAN:
     async def _receive(self, msg: can.Message) -> None:
         if msg.is_error_frame or msg.is_extended_id:
             return  # TODO what to do with error or extended id frames?
-
         aid = msg.arbitration_id
-        src = aid & 0xFF
+        src = aid & self.AID_ADDRESS_MASK
+        notlast = bool(aid & self.AID_NOT_LAST_MASK)
+        first = bool(aid & self.AID_FIRST_MASK)
+        if src in {0x0, 0x80, 0xFF}:
+            return  # Excluded from SHV CAN
         peer = self._peers.get(src)
-        if msg.is_remote_frame:
-            match msg.dlc:
-                case self.RTR.MSGABORT:
+        if not msg.data:
+            match notlast, first:
+                case False, False:  # Message abort
                     if peer is not None:
                         peer.clear()
-                case self.RTR.ANNOUNCE:
-                    for cb in self._announcers:
-                        callres = cb(src)
-                        if isinstance(callres, collections.abc.Awaitable):
-                            await callres
-                case self.RTR.DISCOVER:
-                    for address in self._binds:
-                        await self._send_rtr(address, self.RTR.ANNOUNCE)
+                case True, False:  # Server announce
+                    if src & 0x80:  # The source is server
+                        for cb in self._announcers:
+                            callres = cb(src)
+                            if isinstance(callres, collections.abc.Awaitable):
+                                await callres
+                    else:  # The source is client
+                        for address in self._binds:
+                            await self._send_frames((
+                                (self.AID_NOT_LAST_MASK + address, b""),
+                            ))
             return
 
         # Data frame
-        first = aid & 1 << 9
-        last = not aid & 1 << 10
         if len(msg.data) < (2 if first else 1):
             return  # Message with not enough bytes are invalid
         counter = msg.data[0]
-        if last and counter >> 4:
+        if not notlast and counter >> 4:
             msg.data = msg.data[: -(counter >> 4)]  # Remove stuffed bytes
         if first:
             dest = msg.data[1]
@@ -216,13 +216,13 @@ class RpcCAN:
             peer.counter = 0
         elif peer is None or peer.dest == -1:
             return  # Not for us or we missed the first frame thus ignore
-        if (counter ^ peer.counter) & (0xF if last else 0xFF) != 0:
+        if (counter ^ peer.counter) & (0xF if not notlast else 0xFF) != 0:
             # Invalid counter signals missed frames
             peer.clear()
             return
         peer.counter = (peer.counter + 1) % 0x100
         peer.data.extend(msg.data[2 if first else 1 :])
-        if last:
+        if not notlast:
             peer.connections[peer.dest]._received.append(bytes(peer.data))
             peer.connections[peer.dest]._receive_event.set()
             peer.clear()
@@ -239,6 +239,7 @@ class RpcCAN:
         datalen = len(data)
         qos = datalen > 512
         sizes = (1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64)
+        frames = []
         while True:
             overhead = 2 if first else 1
             dlen = min(datalen, 64 - overhead)
@@ -246,9 +247,9 @@ class RpcCAN:
             stuffing = (
                 next(v for v in sizes if (dlen + overhead) <= v) - dlen - overhead
             )
-            aid = (1 << 10) if not last else 0  # notLastFrame
-            aid += 1 << 9 if first else 0  # firstFrame
-            aid += 1 << 8 if qos else 0  # QoS
+            aid = self.AID_NOT_LAST_MASK if not last else 0
+            aid += self.AID_FIRST_MASK if first else 0
+            aid += self.AID_QOS_MASK if qos else 0
             aid += src
             msgdata = (
                 bytes([(count & 0xF) + (stuffing << 4) if last else count])
@@ -256,32 +257,38 @@ class RpcCAN:
                 + data[off : off + dlen]
                 + (b"\0" * stuffing)
             )
-            await asyncio.get_running_loop().run_in_executor(
-                self._sendexecutor,
-                self.bus.send,
-                can.Message(
-                    arbitration_id=aid, data=msgdata, is_extended_id=False, is_fd=True
-                ),
-            )
+            frames.append((aid, msgdata))
             off += dlen
             datalen -= dlen
             count = (count + 1) % 0x100
             first = False
             if last:
                 break
+        await self._send_frames(frames)
 
-    async def _send_rtr(self, src: int, dlc: int) -> None:
-        """Send CAN RTR message as compatible with SHV RPC."""
+    async def _send_frames(
+        self, frames: collections.abc.Sequence[tuple[int, bytes]]
+    ) -> None:
+        """Send CAN frame."""
         await asyncio.get_running_loop().run_in_executor(
-            self._sendexecutor,
-            self.bus.send,
-            can.Message(
-                arbitration_id=0x10 + src,  # firstFrame and not notLastFrame
-                dlc=dlc,
-                is_remote_frame=True,
-                is_extended_id=False,
-            ),
+            self._sendexecutor, self.__send, frames
         )
+
+    def __send(self, frames: collections.abc.Sequence[tuple[int, bytes]]) -> None:
+        for aid, data in frames:
+            msg = can.Message(
+                arbitration_id=aid, data=data, is_extended_id=False, is_fd=True
+            )
+            while True:
+                try:
+                    self.bus.send(msg)
+                except can.exceptions.CanOperationError as exc:
+                    if f"[Error Code {errno.ENOBUFS}]" in exc.args[0]:
+                        time.sleep(0.01)
+                    elif "Transmit buffer full" != exc.args[0]:
+                        raise exc
+                else:
+                    break
 
     async def _ensure_registration(self) -> None:
         if self._notifier is None:
@@ -327,7 +334,7 @@ class RpcCAN:
             raise ValueError(f"Address {local} is already bound")
         await self._ensure_registration()
         self._binds[local] = callback
-        await self._send_rtr(local, self.RTR.ANNOUNCE)
+        await self._send_frames(((self.AID_NOT_LAST_MASK + local, b""),))
 
     def isbound(self, local: int) -> bool:
         """Check if given address is bound or not."""
@@ -360,7 +367,7 @@ class RpcCAN:
 
     async def discover(self) -> None:
         """Send discovery request so all present servers emit announcement."""
-        await self._send_rtr(0xFF, self.RTR.DISCOVER)
+        # TODO we need client address for this
 
 
 class RpcClientCAN(RpcClient):
