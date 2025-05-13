@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instead of KeyStruct.
 
 
+### Changed
+- Websockets RPC Transport now requires `shv3` to be used as subprotocol.
+  Connections failing to select this subprotocol won't be established.
+
 ### Fixed
 - type hint for `dir` result (corrected against SHV standard).
 - default parameter type hint for getters is now correctly `i(0,)|n` instead of

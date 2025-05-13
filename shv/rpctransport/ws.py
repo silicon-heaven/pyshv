@@ -11,10 +11,14 @@ import weakref
 
 import websockets.asyncio.client
 import websockets.asyncio.server
+import websockets.exceptions
+import websockets.typing
 
 from .abc import RpcClient, RpcServer
 
 logger = logging.getLogger(__name__)
+
+subprotocol = websockets.typing.Subprotocol("shv3")
 
 
 class RpcClientWebSockets(RpcClient):
@@ -75,10 +79,19 @@ class RpcClientWebSockets(RpcClient):
         if not self.connected:
             if self.port != -1:
                 self._wsp = await websockets.asyncio.client.connect(
-                    f"ws://{self.location}:{self.port}"
+                    f"ws://{self.location}:{self.port}", subprotocols=[subprotocol]
                 )
             else:
-                self._wsp = await websockets.asyncio.client.unix_connect(self.location)
+                self._wsp = await websockets.asyncio.client.unix_connect(
+                    self.location, subprotocols=[subprotocol]
+                )
+            if self._wsp.subprotocol != subprotocol:
+                real_subprotocol = self._wsp.subprotocol
+                await self._wsp.close()
+                self._wsp = None
+                raise websockets.exceptions.InvalidHandshake(
+                    f"Unexpected subprotocol: {real_subprotocol}"
+                )
             self._close_task = None
             logger.debug("%s: Connected", self)
         else:
@@ -116,7 +129,7 @@ class _RpcServerWebSockets(RpcServer):
         ],
     ) -> None:
         self.client_connected_cb = client_connected_cb
-        """Callbact that is called when new client is connected."""
+        """Callback that is called when new client is connected."""
         self._server: websockets.asyncio.server.Server | None = None
         self._clients: weakref.WeakSet[_RpcServerWebSockets.Client] = weakref.WeakSet()
 
@@ -141,7 +154,7 @@ class _RpcServerWebSockets(RpcServer):
     async def listen(self) -> None:
         if self._server is None:
             self._server = await self._create_server()
-        await self._server.start_serving()
+        # Note: server starts listening automatically
 
     async def listen_forewer(self) -> None:
         if self._server is None:
@@ -250,7 +263,10 @@ class RpcServerWebSockets(_RpcServerWebSockets):
 
     async def _create_server(self) -> websockets.asyncio.server.Server:
         return await websockets.asyncio.server.serve(
-            self._client_connect, self.location, self.port, start_serving=False
+            self._client_connect,
+            self.location,
+            self.port,
+            subprotocols=[subprotocol],
         )
 
     def __str__(self) -> str:
@@ -293,7 +309,9 @@ class RpcServerWebSocketsUnix(_RpcServerWebSockets):
 
     async def _create_server(self) -> websockets.asyncio.server.Server:
         return await websockets.asyncio.server.unix_serve(
-            self._client_connect, self.location
+            self._client_connect,
+            self.location,
+            subprotocols=[subprotocol],
         )
 
     def __str__(self) -> str:
