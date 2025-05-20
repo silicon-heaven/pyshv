@@ -40,8 +40,7 @@ class FilesProvider(SHVClient):
         elif path == "files" or path.startswith("files/"):
             pth = self.path / path[6:]
             if pth.is_dir():
-                for spth in pth.iterdir():
-                    yield spth.name
+                yield from sorted(spth.name for spth in pth.iterdir())
 
     def _dir(self, path: str) -> collections.abc.Iterator[RpcMethodDesc]:
         yield from super()._dir(path)
