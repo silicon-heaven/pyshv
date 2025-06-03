@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Performance issue caused by conversion of transported data for logging even if
   logs were not generated.
+- Performance issue caused by too deep check when `SHVMeta` was being created
+  for IMap and Map.
 
 
 ## [0.9.0] - 2025-05-20

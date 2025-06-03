@@ -71,7 +71,7 @@ class SHVMeta(abc.ABC):  # noqa B024
         when `value` is of `SHVMeta` it returns the same object and only updates
         provided meta.
         """
-        res: SHVMeta
+        res: SHVMeta | None = None
         if isinstance(value, SHVMeta):
             res = value
         elif value is None:
@@ -92,11 +92,14 @@ class SHVMeta(abc.ABC):  # noqa B024
             res = SHVDecimal(value)
         elif isinstance(value, collections.abc.Sequence):
             res = SHVList(value)
-        elif is_shvimap(value):
-            res = SHVIMap(value)
-        elif is_shvmap(value):
-            res = SHVMap(value)
-        else:
+        elif isinstance(value, collections.abc.Mapping):
+            ikey = iter(value)
+            key1 = next(ikey, 0)  # The default is IMap thus use integer key
+            if isinstance(key1, int) and all(isinstance(k, int) for k in ikey):
+                res = SHVIMap(value)
+            elif isinstance(key1, str) and all(isinstance(k, str) for k in ikey):
+                res = SHVMap(value)
+        if res is None:
             raise ValueError(f"Invalid SHV value: {value!r}")
         if meta:
             res.meta.update(meta)
