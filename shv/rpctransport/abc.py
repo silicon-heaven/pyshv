@@ -53,7 +53,8 @@ class RpcClient(abc.ABC):
         """
         await self._send(bytearray((ChainPack.ProtocolType,)) + msg.to_chainpack())
         self.last_send = time.monotonic()
-        logger.debug("%s => %s", str(self), msg.to_string())
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("%s => %s", str(self), msg.to_string())
 
     @abc.abstractmethod
     async def _send(self, msg: bytes) -> None:
@@ -78,15 +79,18 @@ class RpcClient(abc.ABC):
                     else:
                         if isinstance(shvdata, SHVIMap):
                             if (msg := RpcMessage(shvdata)).is_valid():
-                                logger.debug("%s <= %s", self, msg.to_string())
+                                if logger.isEnabledFor(logging.DEBUG):
+                                    logger.debug("%s <= %s", self, msg.to_string())
                                 return msg
-                        logger.debug(
-                            f"<= Invalid RPC message: {CponWriter.pack(shvdata).decode('UTF-8')}"
-                        )
+                        if logger.isEnabledFor(logging.DEBUG):
+                            logger.debug(
+                                "<= Invalid RPC message: %s",
+                                CponWriter.pack(shvdata).decode("UTF-8"),
+                            )
             elif len(data) == 1 and data[0] == 0:
                 logger.debug("%s <= Control message RESET", self)
                 return self.Control.RESET
-            else:
+            elif logger.isEnabledFor(logging.DEBUG):
                 logger.debug("%s <= Invalid message received: %s", self, data)
 
     @abc.abstractmethod
