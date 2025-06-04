@@ -37,13 +37,13 @@ class CommonReader(abc.ABC):
 
         self.stream: typing.IO = stream
         """Stream used to receive bytes from."""
-        self.peek_bytes = b""
-        """Peeked bytes so far."""
+        self.peek_byte = b""
+        """Peeked byte if any."""
         self.bytes_cnt = 0
         """Number of bytes read so far."""
 
         if isinstance(stream, CommonReader):
-            self.peek_bytes = orig.peek_bytes
+            self.peek_byte = orig.peek_byte
             self.bytes_cnt = orig.bytes_cnt
 
     def _read(self, size: int) -> bytes:
@@ -56,13 +56,16 @@ class CommonReader(abc.ABC):
         :raise EOFError: in case EOF is encountered.
         """
         assert size > 0
-        res = b""
-        while len(res) < size:
-            read = self.read_raw(size - len(res))
-            if len(read) == 0:
+        self.bytes_cnt += size
+        res = self.peek_byte
+        self.peek_byte = b""
+        size -= len(res)
+        while size:
+            read = self.stream.read(size)
+            if not read:
                 raise EOFError("End of message or file encountered.")
             res += read
-        self.bytes_cnt += size
+            size -= len(read)
         return res
 
     def _read_byte(self) -> int:
@@ -77,23 +80,23 @@ class CommonReader(abc.ABC):
         """Peek a single byte and return it as int.
 
         Peeked byte is actually read from the stream and is stored to
-        `peek_bytes`.
+        `peek_byte`.
 
         :return: Peeked byte. This also returns `0` when EOF is encountered.
         Make sure that you use `0` to terminate what you are doing.
         """
-        if len(self.peek_bytes) == 0:
+        if not self.peek_byte:
             try:
-                self.peek_bytes = self._read(1)
-                self.bytes_cnt -= len(self.peek_bytes)
+                self.peek_byte = self._read(1)
+                self.bytes_cnt -= 1
             except EOFError:
                 return 0
-        return self.peek_bytes[0]
+        return self.peek_byte[0]
 
     def _peek_drop(self) -> None:
         """Drop peeked data."""
-        self.bytes_cnt += len(self.peek_bytes)
-        self.peek_bytes = b""
+        self.bytes_cnt += len(self.peek_byte)
+        self.peek_byte = b""
 
     def _read_check(self, data: bytes) -> None:
         """Read bytes and check that it is what we expected.
@@ -106,26 +109,11 @@ class CommonReader(abc.ABC):
         if data != b:
             raise ValueError(f"Expected {data!r} but got {b!r}")
 
-    def read_raw(self, size: int) -> bytes:
-        """Read raw bytes from the stream."""
-        res = self.peek_bytes[:size]
-        self.peek_bytes = self.peek_bytes[size:]
-        if len(res) < size:
-            res += self.stream.read(size - len(res))
-        return res
-
     @abc.abstractmethod
     def read(self) -> SHVType:
         """Read next SHV value.
 
         :raise ValueError: when unexpected byte was received.
-        :raise EOFError: in case EOF is encountered.
-        """
-
-    @abc.abstractmethod
-    def read_meta(self) -> SHVMetaType | None:
-        """Read next meta value without reading the value.
-
         :raise EOFError: in case EOF is encountered.
         """
 

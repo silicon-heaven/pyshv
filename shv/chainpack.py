@@ -103,59 +103,48 @@ class ChainPack:
 class ChainPackReader(commonpack.CommonReader):
     """Read data in ChainPack format."""
 
-    def read_meta(self) -> SHVMetaType | None:  # noqa: D102
-        if self._peek_byte() != ChainPack.Schema.CP_MetaMap:
-            return None
-        self._peek_drop()
-        return self._read_map()
-
     def read(self) -> SHVType:  # noqa: D102
-        meta = self.read_meta()
-
-        value: SHVType
         packing_schema = self._read_byte()
+        if packing_schema < 64:
+            return SHVUInt(packing_schema & 63)
         if packing_schema < 128:
-            # tiny Int or UInt
-            value = packing_schema & 63
-            if not packing_schema & 64:
-                value = SHVUInt(value)
-        elif packing_schema == ChainPack.Schema.CP_Null:
-            value = None
-        elif packing_schema == ChainPack.Schema.CP_TRUE:
-            value = True
-        elif packing_schema == ChainPack.Schema.CP_FALSE:
-            value = False
-        elif packing_schema == ChainPack.Schema.CP_Int:
-            value = self._read_int_data()
-        elif packing_schema == ChainPack.Schema.CP_UInt:
-            value = SHVUInt(self.read_uint_data())
-        elif packing_schema == ChainPack.Schema.CP_Double:
-            value = self._read_double()
-        elif packing_schema == ChainPack.Schema.CP_Decimal:
-            value = self._read_decimal()
-        elif packing_schema == ChainPack.Schema.CP_DateTime:
-            value = self._read_datetime()
-        elif packing_schema == ChainPack.Schema.CP_Map:
-            value = typing.cast(SHVMapType, self._read_map())
-            if not value:
-                value = SHVMap()  # Remove confusin between map and imap
-        elif packing_schema == ChainPack.Schema.CP_IMap:
-            value = typing.cast(SHVIMapType, self._read_map())
-            if not value:
-                value = SHVIMap()  # Remove confusin between map and imap
-        elif packing_schema == ChainPack.Schema.CP_List:
-            value = self._read_list()
-        elif packing_schema == ChainPack.Schema.CP_Blob:
-            value = self._read_blob()
-        elif packing_schema == ChainPack.Schema.CP_String:
-            value = self._read_string()
-        elif packing_schema == ChainPack.Schema.CP_CString:
-            value = self._read_cstring()
-        else:
-            raise ValueError(f"ChainPack - Invalid type: {packing_schema}")
-        if meta is not None:
-            value = SHVMeta.new(value, meta)
-        return value
+            return packing_schema & 63
+        if packing_schema == ChainPack.Schema.CP_Null:
+            return None
+        if packing_schema == ChainPack.Schema.CP_TRUE:
+            return True
+        if packing_schema == ChainPack.Schema.CP_FALSE:
+            return False
+        if packing_schema == ChainPack.Schema.CP_Int:
+            return self._read_int_data()
+        if packing_schema == ChainPack.Schema.CP_UInt:
+            return SHVUInt(self.read_uint_data())
+        if packing_schema == ChainPack.Schema.CP_Double:
+            return self._read_double()
+        if packing_schema == ChainPack.Schema.CP_Decimal:
+            return self._read_decimal()
+        if packing_schema == ChainPack.Schema.CP_DateTime:
+            return self._read_datetime()
+        if packing_schema == ChainPack.Schema.CP_Map:
+            if mvalue := typing.cast(SHVMapType, self._read_map()):
+                return mvalue
+            return SHVMap()  # Remove confusin between map and imap
+        if packing_schema == ChainPack.Schema.CP_IMap:
+            if imvalue := typing.cast(SHVIMapType, self._read_map()):
+                return imvalue
+            return SHVIMap()  # Remove confusin between map and imap
+        if packing_schema == ChainPack.Schema.CP_List:
+            return self._read_list()
+        if packing_schema == ChainPack.Schema.CP_Blob:
+            return self._read_blob()
+        if packing_schema == ChainPack.Schema.CP_String:
+            return self._read_string()
+        if packing_schema == ChainPack.Schema.CP_CString:
+            return self._read_cstring()
+        if packing_schema == ChainPack.Schema.CP_MetaMap:
+            meta = self._read_map()
+            return SHVMeta.new(self.read(), meta)
+        raise ValueError(f"ChainPack - Invalid type: {packing_schema}")
 
     def _read_uint_data_helper(self) -> tuple[int, int]:
         num = 0
@@ -255,26 +244,20 @@ class ChainPackReader(commonpack.CommonReader):
 
     def _read_list(self) -> SHVListType:
         lst = []
-        while True:
-            b = self._peek_byte()
-            if b == ChainPack.Schema.CP_TERM:
-                self._read_byte()
-                break
+        while self._peek_byte() != ChainPack.Schema.CP_TERM:
             lst.append(self.read())
+        self._peek_drop()
         return lst
 
     def _read_map(self) -> dict[str | int, SHVType]:
         mmap: dict[str | int, SHVType] = {}
-        while True:
-            b = self._peek_byte()
-            if b == ChainPack.Schema.CP_TERM:
-                self._read_byte()
-                break
+        while self._peek_byte() != ChainPack.Schema.CP_TERM:
             key = self.read()
             if not isinstance(key, str | int) or isinstance(key, SHVUInt):
                 raise ValueError(f"Invalid Map key: {type(key)}")
             val = self.read()
             mmap[key] = val
+        self._peek_drop()
         return mmap
 
 

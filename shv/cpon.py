@@ -78,69 +78,58 @@ class CponReader(commonpack.CommonReader):
             else:
                 self._peek_drop()
 
-    def read_meta(self) -> SHVMetaType | None:  # noqa: D102
-        self._skip_white_insignificant()
-        b = self._peek_byte()
-        if b != ord("<"):
-            return None
-        return self._read_map(">")
-
     def read(self) -> SHVType:  # noqa: D102
-        meta = self.read_meta()
-
-        value: SHVType
         self._skip_white_insignificant()
         b = self._peek_byte()
         if ord("0") <= b <= ord("9") or b == ord("+") or b == ord("-"):
-            value = self._new_read_number()
+            return self._new_read_number()
         elif b == ord('"'):
-            value = self._read_cstring()
+            return self._read_cstring()
         elif b == ord("["):
-            value = self._read_list()
+            return self._read_list()
         elif b == ord("{"):
-            value = typing.cast(SHVMapType, self._read_map())
-            if not value:
-                value = SHVMap()  # Remove confusin between map and imap
+            if value := typing.cast(SHVMapType, self._read_map()):
+                return value
+            return SHVMap()  # Remove confusin between map and imap
         elif b == ord("i"):
             self._peek_drop()
             b = self._peek_byte()
             if b != ord("{"):
                 raise ValueError("Invalid IMap prefix.")
-            value = typing.cast(SHVIMapType, self._read_map())
-            if not value:
-                value = SHVIMap()  # Remove confusin between map and imap
+            if imvalue := typing.cast(SHVIMapType, self._read_map()):
+                return imvalue
+            return SHVIMap()  # Remove confusin between map and imap
         elif b == ord("d"):
             self._peek_drop()
             b = self._peek_byte()
             if b != ord('"'):
                 raise ValueError("Invalid DateTime prefix.")
-            value = self._read_datetime()
+            return self._read_datetime()
         elif b == ord("b"):
             self._peek_drop()
             b = self._peek_byte()
             if b != ord('"'):
                 raise ValueError("Invalid Blob prefix.")
-            value = self._read_blob()
+            return self._read_blob()
         elif b == ord("x"):
             self._peek_drop()
             b = self._peek_byte()
             if b != ord('"'):
                 raise ValueError("Invalid HexBlob prefix.")
-            value = self._read_hexblob()
+            return self._read_hexblob()
         elif b == ord("t"):
             self._read_check(b"true")
-            value = True
+            return True
         elif b == ord("f"):
             self._read_check(b"false")
-            value = False
+            return False
         elif b == ord("n"):
             self._read_check(b"null")
-            value = None
-        else:
-            raise ValueError("Malformed Cpon input.")
-        if meta is not None:
-            value = SHVMeta.new(value, meta)
-        return value
+            return None
+        if b == ord("<"):
+            meta = self._read_map(">")
+            return SHVMeta.new(self.read(), meta)
+        raise ValueError("Malformed Cpon input.")
 
     def _read_datetime(self) -> datetime.datetime:
         self._peek_drop()  # eat '"'
