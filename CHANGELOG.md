@@ -7,8 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed
-- Reduced performance for unpacking due to unnecessary abstraction in stream
-  reading
+- Reduced performance impact of unpacking bytes read due to unnecessary
+  abstraction
 
 
 ## [0.9.1] - 2025-06-03
