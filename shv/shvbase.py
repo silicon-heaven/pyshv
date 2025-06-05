@@ -25,6 +25,7 @@ from .rpcerrors import (
     RpcUserIDRequiredError,
 )
 from .rpcmessage import RpcMessage
+from .rpcri import rpcri_match
 from .rpctransport import RpcClient
 from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
 from .value import SHVType, is_shvbool, is_shvnull
@@ -681,6 +682,10 @@ class SHVBase:
                 self._progress_dirty = True
                 self._shvbase._idle_message_ready()
 
+        def ri_match(self, ri: str) -> bool:
+            """Check if request matches given RI."""
+            return rpcri_match(ri, self.path, self.method)
+
     class Signal:
         """Set of parameters passed to the :meth:`SHVBase._got_signal`.
 
@@ -724,3 +729,7 @@ class SHVBase:
             This can be ``None`` when request message contained no ID.
             """
             return self._msg.user_id
+
+        def ri_match(self, ri: str) -> bool:
+            """Check if signal matches given RI."""
+            return rpcri_match(ri, self.path, self.source, self.signal)
