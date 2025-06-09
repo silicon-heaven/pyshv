@@ -201,10 +201,7 @@ class RpcProtocolSerialCRC(_RpcProtocolSerial):
 class RpcClientStream(RpcClient):
     """RPC connection to some SHV peer over data stream."""
 
-    def __init__(
-        self,
-        protocol: type[RpcTransportProtocol] = RpcProtocolBlock,
-    ) -> None:
+    def __init__(self, protocol: type[RpcTransportProtocol] = RpcProtocolBlock) -> None:
         super().__init__()
         self._reader: asyncio.StreamReader | None = None
         self._writer: asyncio.StreamWriter | None = None

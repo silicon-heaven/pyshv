@@ -3,10 +3,11 @@
 import asyncio
 import collections.abc
 import contextlib
+import io
 import logging
 import pathlib
 
-import aioserial
+import serial
 
 from .abc import RpcClient, RpcServer
 from .stream import (
@@ -35,16 +36,23 @@ class RpcClientTTY(RpcClient):
         self.port = port
         self.baudrate = baudrate
         self.protocol = protocol
-        self.serial: aioserial.AioSerial | None = None
+        self.serial: serial.Serial | None = None
         self._eof = asyncio.Event()
         self._eof.set()
+        self._rbuf = bytearray()
+        self._rready = asyncio.Event()
+        self._loop: asyncio.AbstractEventLoop
+        self.__send_lock = asyncio.Lock()
 
     def __str__(self) -> str:
         return f"tty:{self.port}"
 
     async def _send(self, msg: bytes) -> None:
         assert self.serial is not None
-        await self.serial.write_async(self.protocol.annotate(msg))
+        async with self.__send_lock:
+            await asyncio.get_running_loop().run_in_executor(
+                None, self.serial.write, self.protocol.annotate(msg)
+            )
 
     async def _receive(self) -> bytes:
         return await self.protocol.receive(self._read_exactly)
@@ -55,35 +63,53 @@ class RpcClientTTY(RpcClient):
 
     async def reset(self) -> None:  # noqa: D102
         if not self.connected:
-            self.serial = aioserial.AioSerial(
+            self.serial = serial.Serial(
                 port=self.port,
                 baudrate=self.baudrate,
                 rtscts=True,
                 dsrdtr=True,
                 exclusive=True,
+                timeout=0,
             )
+            # TODO add support for windows with threads
+            self._loop = asyncio.get_running_loop()
             self._eof.clear()
             logger.debug("%s: Connected", self)
         await super().reset()
 
+    def _read_cb(self) -> None:
+        assert self.serial is not None
+        data = self.serial.read(io.DEFAULT_BUFFER_SIZE)
+        if data is None:
+            return
+        self._rbuf += data
+        self._rready.set()
+        if len(data) >= io.DEFAULT_BUFFER_SIZE:
+            # Do not read more that buffer size. This should propagate as
+            # blocking on the serial port's flow control.
+            self._loop.remove_reader(self.serial.fileno())
+
     async def _read_exactly(self, n: int) -> bytes:
         assert self.serial is not None
-        res = bytearray()
+        res = self._rbuf[:n]
+        del self._rbuf[:n]
         while len(res) < n:
-            try:
-                res += await self.serial.read_async(n - len(res))
-            # Note: TypeError is raised because serial.close() clears some
-            # variables that are still used in the task. This is bug in
-            # aioserial.
-            except (aioserial.SerialException, TypeError) as exc:
-                self._eof.set()
-                raise EOFError from exc
+            if self._eof.is_set():
+                raise EOFError
+            cnt = n - len(res)
+            self._rready.clear()
+            self._loop.add_reader(self.serial.fileno(), self._read_cb)
+            await self._rready.wait()
+            res += self._rbuf[:cnt]
+            del self._rbuf[:cnt]
         return res
 
     def _disconnect(self) -> None:
         if self.connected:
             assert self.serial is not None
+            self._loop.remove_reader(self.serial.fileno())
             self.serial.close()
+            self._rready.set()
             self._eof.set()
 
     async def wait_disconnect(self) -> None:  # noqa: D102
