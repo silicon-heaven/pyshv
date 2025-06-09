@@ -162,7 +162,7 @@ class SHVClient(SHVBase):
         """
         await self._connected.wait()
         if (
-            msg.type != RpcMessage.Type.REQUEST
+            msg.type not in {RpcMessage.Type.REQUEST, RpcMessage.Type.REQUEST_ABORT}
             or msg.path
             or msg.method not in {"hello", "login"}
         ):
