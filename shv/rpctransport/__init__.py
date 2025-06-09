@@ -3,9 +3,9 @@
 from .abc import RpcClient, RpcServer
 from .pipe import RpcClientPipe
 from .stream import (
+    RpcProtocolBlock,
     RpcProtocolSerial,
     RpcProtocolSerialCRC,
-    RpcProtocolStream,
     RpcTransportProtocol,
 )
 from .tcp import RpcClientTCP, RpcServerTCP
@@ -21,9 +21,9 @@ __all__ = [
     "RpcClientTTY",
     "RpcClientUnix",
     "RpcClientWebSockets",
+    "RpcProtocolBlock",
     "RpcProtocolSerial",
     "RpcProtocolSerialCRC",
-    "RpcProtocolStream",
     "RpcServer",
     "RpcServerTCP",
     "RpcServerTTY",

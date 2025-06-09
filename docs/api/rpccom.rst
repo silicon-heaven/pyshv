@@ -36,7 +36,7 @@ Transport protocols
 SHV RPC is based on messages and these protocols are for sending these messages
 over data stream. Please do not confuse this with :class:`shv.RpcProtocol`.
 
-.. autoclass:: shv.RpcProtocolStream
+.. autoclass:: shv.RpcProtocolBlock
 .. autoclass:: shv.RpcProtocolSerial
 .. autoclass:: shv.RpcProtocolSerialCRC
 .. autoclass:: shv.RpcTransportProtocol

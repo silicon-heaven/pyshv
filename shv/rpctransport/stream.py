@@ -66,7 +66,7 @@ class RpcTransportProtocol(abc.ABC):
         return await cls.receive(read)
 
 
-class RpcProtocolStream(RpcTransportProtocol):
+class RpcProtocolBlock(RpcTransportProtocol):
     """SHV RPC Stream protocol."""
 
     @classmethod
@@ -203,7 +203,7 @@ class RpcClientStream(RpcClient):
 
     def __init__(
         self,
-        protocol: type[RpcTransportProtocol] = RpcProtocolStream,
+        protocol: type[RpcTransportProtocol] = RpcProtocolBlock,
     ) -> None:
         super().__init__()
         self._reader: asyncio.StreamReader | None = None
@@ -271,7 +271,7 @@ class RpcServerStream(RpcServer):
         client_connected_cb: collections.abc.Callable[
             [RpcClient], collections.abc.Awaitable[None] | None
         ],
-        protocol: type[RpcTransportProtocol] = RpcProtocolStream,
+        protocol: type[RpcTransportProtocol] = RpcProtocolBlock,
     ) -> None:
         self.client_connected_cb = client_connected_cb
         """Callbact that is called when new client is connected."""

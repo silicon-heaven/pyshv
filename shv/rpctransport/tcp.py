@@ -7,7 +7,7 @@ import logging
 from .abc import RpcClient
 from .stream import (
     RpcClientStream,
-    RpcProtocolStream,
+    RpcProtocolBlock,
     RpcServerStream,
     RpcTransportProtocol,
 )
@@ -22,7 +22,7 @@ class RpcClientTCP(RpcClientStream):
         self,
         location: str = "localhost",
         port: int = 3755,
-        protocol: type[RpcTransportProtocol] = RpcProtocolStream,
+        protocol: type[RpcTransportProtocol] = RpcProtocolBlock,
     ) -> None:
         super().__init__(protocol)
         self.location = location
@@ -48,7 +48,7 @@ class RpcServerTCP(RpcServerStream):
         ],
         location: str | None = None,
         port: int = 3755,
-        protocol: type[RpcTransportProtocol] = RpcProtocolStream,
+        protocol: type[RpcTransportProtocol] = RpcProtocolBlock,
     ) -> None:
         super().__init__(client_connected_cb, protocol)
         self.location = location

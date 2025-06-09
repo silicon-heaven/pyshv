@@ -4,7 +4,7 @@ import collections.abc
 
 from ..rpcurl import RpcProtocol, RpcUrl
 from .abc import RpcClient, RpcServer
-from .stream import RpcProtocolSerial, RpcProtocolSerialCRC, RpcProtocolStream
+from .stream import RpcProtocolBlock, RpcProtocolSerial, RpcProtocolSerialCRC
 from .tcp import RpcClientTCP, RpcServerTCP
 from .tty import RpcClientTTY, RpcServerTTY
 from .unix import RpcClientUnix, RpcServerUnix
@@ -21,11 +21,11 @@ def init_rpc_client(url: RpcUrl | str) -> RpcClient:
         url = RpcUrl.parse(url)
     match url.protocol:
         case RpcProtocol.TCP:
-            return RpcClientTCP(url.location, url.port, RpcProtocolStream)
+            return RpcClientTCP(url.location, url.port, RpcProtocolBlock)
         case RpcProtocol.TCPS:
             return RpcClientTCP(url.location, url.port, RpcProtocolSerial)
         case RpcProtocol.UNIX:
-            return RpcClientUnix(url.location, RpcProtocolStream)
+            return RpcClientUnix(url.location, RpcProtocolBlock)
         case RpcProtocol.UNIXS:
             return RpcClientUnix(url.location, RpcProtocolSerial)
         case RpcProtocol.TTY:
@@ -67,14 +67,14 @@ async def create_rpc_server(
     match url.protocol:
         case RpcProtocol.TCP:
             res = RpcServerTCP(
-                client_connected_cb, url.location, url.port, RpcProtocolStream
+                client_connected_cb, url.location, url.port, RpcProtocolBlock
             )
         case RpcProtocol.TCPS:
             res = RpcServerTCP(
                 client_connected_cb, url.location, url.port, RpcProtocolSerial
             )
         case RpcProtocol.UNIX:
-            res = RpcServerUnix(client_connected_cb, url.location, RpcProtocolStream)
+            res = RpcServerUnix(client_connected_cb, url.location, RpcProtocolBlock)
         case RpcProtocol.UNIXS:
             res = RpcServerUnix(client_connected_cb, url.location, RpcProtocolSerial)
         case RpcProtocol.TTY:
