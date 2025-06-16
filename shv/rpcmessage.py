@@ -357,7 +357,7 @@ class RpcMessage:
 
     @property
     def _access_level(self) -> SHVType:
-        return self.value.get(self.Tag.ACCESS_LEVEL)
+        return self.value.meta.get(self.Tag.ACCESS_LEVEL)
 
     @property
     def rpc_access(self) -> RpcAccess | None:

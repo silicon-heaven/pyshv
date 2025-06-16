@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Reduced performance impact of unpacking bytes read due to unnecessary
   abstraction
+- Omission of AccessLevel in `RpcMessage`
 
 
 ## [0.9.1] - 2025-06-03
