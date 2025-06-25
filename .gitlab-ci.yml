@@ -146,7 +146,7 @@ release:
   extends: .deploy
   image: "registry.gitlab.com/gitlab-org/release-cli:latest"
   script:
-    - apk update && apk add bash
+    - apk update && apk add bash gawk
     - bash release.sh
 
 gitlab-pypi:
