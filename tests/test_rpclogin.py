@@ -59,7 +59,10 @@ def test_extend_options():
         (RpcLogin("admin"), "invalid", RpcLoginType.PLAIN, False),
         (
             RpcLogin(
-                "admin", "a7162d463b28666737f63034db39f03bca59b060", RpcLoginType.SHA1
+                "admin",
+                "a7162d463b28666737f63034db39f03bca59b060",
+                "",
+                RpcLoginType.SHA1,
             ),
             "",
             RpcLoginType.PLAIN,
@@ -67,7 +70,10 @@ def test_extend_options():
         ),
         (
             RpcLogin(
-                "admin", "a7162d463b28666737f63034db39f03bca59b060", RpcLoginType.SHA1
+                "admin",
+                "a7162d463b28666737f63034db39f03bca59b060",
+                "",
+                RpcLoginType.SHA1,
             ),
             "invalid",
             RpcLoginType.PLAIN,
@@ -87,7 +93,10 @@ def test_extend_options():
         ),
         (
             RpcLogin(
-                "admin", "a7162d463b28666737f63034db39f03bca59b060", RpcLoginType.SHA1
+                "admin",
+                "a7162d463b28666737f63034db39f03bca59b060",
+                "",
+                RpcLoginType.SHA1,
             ),
             "81f344a7686a80b4c5293e8fdc0b0160c82c06a8",
             RpcLoginType.SHA1,
@@ -127,6 +136,12 @@ def test_validate_password(obj, password, login_type, expected):
                 },
             },
         ),
+        (
+            RpcLogin(token="ABCDEFGHIJK", login_type=RpcLoginType.TOKEN),
+            None,
+            True,
+            {"login": {"token": "ABCDEFGHIJK", "type": "TOKEN"}, "options": {}},
+        ),
     ),
 )
 def test_to_shv(obj, custom_options, trusted, shv):
@@ -156,12 +171,17 @@ def test_to_shv(obj, custom_options, trusted, shv):
             RpcLogin(
                 "admin",
                 "a7162d463b28666737f63034db39f03bca59b060",
+                "",
                 RpcLoginType.SHA1,
                 {
                     "device": {"mountPoint": "test/this"},
                     "other": 42,
                 },
             ),
+        ),
+        (
+            {"login": {"token": "ABCDEFGHIJK", "type": "TOKEN"}},
+            RpcLogin(username="", token="ABCDEFGHIJK", login_type=RpcLoginType.TOKEN),
         ),
     ),
 )

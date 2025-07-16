@@ -40,6 +40,8 @@ class RpcLoginType(enum.Enum):
     """Plain login format should be used."""
     SHA1 = "SHA1"
     """Use hash algorithm SHA1 (preferred and common default)."""
+    TOKEN = "TOKEN"  # noqa: S105
+    """Use token login."""
 
 
 @dataclasses.dataclass
@@ -53,6 +55,8 @@ class RpcLogin:
     """User name used to login to the remote server."""
     password: str = ""
     """Password used to login to the server."""
+    token: str = ""
+    """The token provided by previous login."""
     login_type: RpcLoginType = RpcLoginType.PLAIN
     """Type of the login to be used (specifies format of the password)."""
     options: dict[str, SHVType] = dataclasses.field(default_factory=dict)
@@ -181,7 +185,7 @@ class RpcLogin:
 
     def to_shv(
         self,
-        nonce: str,
+        nonce: str | None = None,
         custom_options: SHVMapType | None = None,
         trusted: bool = False,
     ) -> SHVType:
@@ -196,22 +200,25 @@ class RpcLogin:
           specifies `PLAIN`.
         :return: Parameters to be passed to login method call.
         """
-        password = self.password
-        login_type = self.login_type
-        if self.login_type is RpcLoginType.PLAIN and not trusted:
-            login_type = RpcLoginType.SHA1
-            password = hashlib.sha1(self.password.encode("utf-8")).hexdigest()  # noqa S324
-        if login_type is RpcLoginType.SHA1:
-            m = hashlib.sha1()  # noqa S324
-            m.update(nonce.encode("utf-8"))
-            m.update((password or "").encode("utf-8"))
-            password = m.hexdigest()
+        login = {"type": self.login_type.value}
+        if self.login_type is RpcLoginType.TOKEN:
+            login["token"] = self.token
+        else:
+            password = self.password
+            if self.login_type is RpcLoginType.PLAIN and not trusted:
+                login["type"] = RpcLoginType.SHA1.value
+                password = hashlib.sha1(self.password.encode("utf-8")).hexdigest()  # noqa S324
+            if login["type"] == RpcLoginType.SHA1.value:
+                m = hashlib.sha1()  # noqa S324
+                if nonce is None:  # pragma: no cover
+                    raise ValueError("Nonce must be provided")
+                m.update(nonce.encode("utf-8"))
+                m.update((password or "").encode("utf-8"))
+                password = m.hexdigest()
+            login["user"] = self.username
+            login["password"] = password
         return {
-            "login": {
-                "password": password,
-                "type": login_type.value,
-                "user": self.username,
-            },
+            "login": login,
             "options": typing.cast(
                 SHVType,
                 self.__dictmerge(
@@ -231,13 +238,16 @@ class RpcLogin:
         if not is_shvmap(value):
             raise RpcInvalidParamError("Expected Map.")
         username = shvgett(value, ("login", "user"), str, "")
+        token = shvgett(value, ("login", "token"), str, "")
         password = shvgett(value, ("login", "password"), str, "")
         login_type = RpcLoginType(
             shvgett(
                 value,
                 ("login", "type"),
                 str,
-                RpcLoginType.SHA1.value
+                RpcLoginType.TOKEN.value
+                if token
+                else RpcLoginType.SHA1.value
                 if len(password) == 40
                 else RpcLoginType.PLAIN.value,
             )
@@ -245,4 +255,4 @@ class RpcLogin:
         options = value.get("options")
         if not is_shvmap(options):
             options = {}
-        return cls(username, password, login_type, dict(options))
+        return cls(username, password, token, login_type, dict(options))

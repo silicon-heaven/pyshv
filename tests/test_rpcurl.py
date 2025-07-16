@@ -72,6 +72,13 @@ DATA = [
         ),
     ),
     ("tcp://[::]:4242", RpcUrl("::", port=4242)),
+    (
+        "tcp://[::]?token=AAAAAAAAAAAAAAAA",
+        RpcUrl(
+            "::",
+            login=RpcLogin(token="AAAAAAAAAAAAAAAA", login_type=RpcLoginType.TOKEN),
+        ),
+    ),
     ("serial:/dev/ttyX", RpcUrl("/dev/ttyX", protocol=RpcProtocol.TTY)),
     (
         "serial:/dev/ttyX?baudrate=1152000",

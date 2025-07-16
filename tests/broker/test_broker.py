@@ -291,16 +291,7 @@ async def test_invalid_login(shvbroker, url):
 async def test_invalid_hello_seq(shvbroker, url):
     client = await RpcClientTCP.connect(url.location, url.port)
     await client.send(RpcMessage.request("", "invalid"))
-    with pytest.raises(RpcLoginRequiredError, match=r"Use hello method"):
-        raise (await client.receive()).error
-
-
-async def test_invalid_login_seq(shvbroker, url):
-    client = await RpcClientTCP.connect(url.location, url.port)
-    await client.send(RpcMessage.request("", "hello"))
-    await client.receive()
-    await client.send(RpcMessage.request("", "invalid"))
-    with pytest.raises(RpcLoginRequiredError, match=r"Use hello and login methods"):
+    with pytest.raises(RpcLoginRequiredError, match=r"Use login method"):
         raise (await client.receive()).error
 
 

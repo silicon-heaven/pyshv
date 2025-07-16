@@ -394,50 +394,47 @@ class RpcBroker:
                 return await super()._message(msg)
             if not msg.type == RpcMessage.Type.REQUEST:
                 return  # Ignore anything other than requests before login
-            if not msg.path:
-                if msg.method == "hello":
+            match msg.path, msg.method:
+                case "", "hello":
                     if not self._nonce:
                         self._nonce = secrets.token_hex(5)  # ten characters
-                    await self._send(msg.make_response({"nonce": self._nonce}))
-                    return
-                if self._nonce and msg.method == "login":
+                    resp = msg.make_response({"nonce": self._nonce})
+                case "", "login":
                     try:
                         self._login = RpcLogin.from_shv(msg.param)
                         self._role = self.broker.config.login(self._login, self._nonce)
                     except RpcError as exp:
-                        await self._send(msg.make_response(exp))
-                        return
-                    if self._role is None:
-                        error = RpcMethodCallExceptionError("Invalid login")
-                        await self._send(msg.make_response(error))
-                        return
-                    try:
-                        self._register()
-                    except ValueError as exc:
-                        error = RpcMethodCallExceptionError(str(exc))
-                        await self._send(msg.make_response(error))
-                        return
-                    self.IDLE_TIMEOUT = float(
-                        self._login.idle_timeout or type(self).IDLE_TIMEOUT
-                    )
-                    device_id = self._login.device_id
-                    logger.info(
-                        "Client %d logged in as user: %s%s",
-                        self.broker_client_id,
-                        self._login.username,
-                        f" (deviceId={device_id})" if device_id else "",
-                    )
-                    await self._send(msg.make_response())
-                    return
-            await self._send(
-                msg.make_response(
-                    RpcLoginRequiredError(
-                        "Use hello and login methods"
-                        if self._nonce
-                        else "Use hello method"
-                    )
-                )
-            )
+                        resp = msg.make_response(exp)
+                    else:
+                        if self._role is None:
+                            resp = msg.make_response(
+                                RpcMethodCallExceptionError("Invalid login")
+                            )
+                        else:
+                            try:
+                                self._register()
+                            except ValueError as exc:
+                                resp = msg.make_response(
+                                    RpcMethodCallExceptionError(str(exc))
+                                )
+                            else:
+                                if self._login.idle_timeout:
+                                    self.IDLE_TIMEOUT = float(self._login.idle_timeout)
+                                device_id = self._login.device_id
+                                logger.info(
+                                    "Client %d logged in as user: %s%s",
+                                    self.broker_client_id,
+                                    self._login.username,
+                                    f" (deviceId={device_id})" if device_id else "",
+                                )
+                                resp = msg.make_response()
+                case "", "workflows":
+                    # TODO "TOKEN"
+                    resp = msg.make_response(["PLAIN", "SHA1"])
+                # case "", "revokeToken":  # TODO
+                case _, _:
+                    resp = msg.make_response(RpcLoginRequiredError("Use login method"))
+            await self._send(resp)
 
         def _reset(self) -> None:
             super()._reset()

@@ -4,6 +4,7 @@ import dataclasses
 import enum
 import functools
 import getpass
+import typing
 import urllib.parse
 
 from .rpclogin import RpcLogin, RpcLoginType
@@ -67,15 +68,17 @@ class RpcUrl:
     baudrate: int = 115200
     """Baudrate used for some of the link protocols."""
 
+    default_port: typing.ClassVar[dict[RpcProtocol, int]] = {
+        RpcProtocol.TCP: 3755,
+        RpcProtocol.TCPS: 3765,
+        RpcProtocol.SSL: 3756,
+        RpcProtocol.SSLS: 3766,
+    }
+
     def __post_init__(self) -> None:
         """Deduce the correct value for port."""
         if self.port == type(self).port:
-            self.port = {
-                RpcProtocol.TCP: 3755,
-                RpcProtocol.TCPS: 3765,
-                RpcProtocol.SSL: 3756,
-                RpcProtocol.SSLS: 3766,
-            }.get(self.protocol, self.port)
+            self.port = self.default_port.get(self.protocol, self.port)
 
     def __str__(self) -> str:
         return self.to_url()
@@ -135,18 +138,22 @@ class RpcUrl:
             case protocol:
                 raise NotImplementedError(f"Protocol: {protocol}")  # pragma: no cover
 
-        if opts := pqs.pop("user", []):
-            res.login.username = opts[0]
-        if opts := pqs.pop("shapass", []):
-            if len(opts[0]) != 40:
-                raise ValueError("SHA1 password must have 40 characters.")
-            res.login.password = opts[0]
-            res.login.login_type = RpcLoginType.SHA1
-            # We prefer SHA1 password and thus discard plain if both are present
-            pqs.pop("password", [])
-        elif opts := pqs.pop("password", []):
-            res.login.password = opts[0]
-            res.login.login_type = RpcLoginType.PLAIN
+        if opts := pqs.pop("token", []):
+            res.login.token = opts[0]
+            res.login.login_type = RpcLoginType.TOKEN
+        else:
+            if opts := pqs.pop("user", []):
+                res.login.username = opts[0]
+            if opts := pqs.pop("shapass", []):
+                if len(opts[0]) != 40:
+                    raise ValueError("SHA1 password must have 40 characters.")
+                res.login.password = opts[0]
+                res.login.login_type = RpcLoginType.SHA1
+                # We prefer SHA1 password and thus discard plain if both are present
+                pqs.pop("password", [])
+            elif opts := pqs.pop("password", []):
+                res.login.password = opts[0]
+                res.login.login_type = RpcLoginType.PLAIN
         if opts := pqs.pop("devid", []):
             res.login.device_id = opts[0]
         if opts := pqs.pop("devmount", []):
@@ -190,7 +197,8 @@ class RpcUrl:
                     netloc += f"[{self.location}]"
                 else:
                     netloc += self.location
-                netloc += f":{self.port}"
+                if self.port != self.default_port[self.protocol]:
+                    netloc += f":{self.port}"
             case RpcProtocol.UNIX | RpcProtocol.UNIXS | RpcProtocol.TTY:
                 netloc = self.location
             case RpcProtocol.WS | RpcProtocol.WSS:
@@ -217,13 +225,16 @@ class RpcUrl:
             opts.append(f"devid={urllib.parse.quote(self.login.device_id)}")
         if self.login.device_mount_point:
             opts.append(f"devmount={urllib.parse.quote(self.login.device_mount_point)}")
-        if self.login.password and not public:
-            if self.login.login_type is RpcLoginType.SHA1:
-                opts.append(f"shapass={self.login.password}")
-            elif self.login.login_type is RpcLoginType.PLAIN:
-                opts.append(f"password={urllib.parse.quote(self.login.password)}")
-            else:
-                raise NotImplementedError()  # pragma: no cover
+        if not public:
+            if self.login.token:
+                opts.append(f"token={self.login.token}")
+            if self.login.password:
+                if self.login.login_type is RpcLoginType.SHA1:
+                    opts.append(f"shapass={self.login.password}")
+                elif self.login.login_type is RpcLoginType.PLAIN:
+                    opts.append(f"password={urllib.parse.quote(self.login.password)}")
+                else:
+                    raise NotImplementedError()  # pragma: no cover
         if self.baudrate != type(self).baudrate:
             opts.append(f"baudrate={self.baudrate}")
 
