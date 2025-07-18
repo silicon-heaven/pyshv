@@ -3,17 +3,17 @@
 import asyncio
 import collections.abc
 import contextlib
-import io
+import fcntl
 import logging
+import os
 import pathlib
-
-import serial
+import sys
+import termios
+import tty
+import typing
 
 from .abc import RpcClient, RpcServer
-from .stream import (
-    RpcProtocolSerialCRC,
-    RpcTransportProtocol,
-)
+from .stream import RpcClientStream, RpcProtocolSerialCRC
 
 try:
     import asyncinotify
@@ -23,97 +23,62 @@ except (ImportError, TypeError):  # pragma: no cover
 logger = logging.getLogger(__name__)
 
 
-class RpcClientTTY(RpcClient):
+# TODO this is not supported on windows
+class RpcClientTTY(RpcClientStream):
     """RPC connection to some SHV peer over serial communication device."""
 
     def __init__(
         self,
         port: str,
         baudrate: int = 115200,
-        protocol: type[RpcTransportProtocol] = RpcProtocolSerialCRC,
     ) -> None:
-        super().__init__()
+        super().__init__(RpcProtocolSerialCRC)
         self.port = port
-        self.baudrate = baudrate
-        self.protocol = protocol
-        self.serial: serial.Serial | None = None
-        self._eof = asyncio.Event()
-        self._eof.set()
-        self._rbuf = bytearray()
-        self._rready = asyncio.Event()
-        self._loop: asyncio.AbstractEventLoop
-        self.__send_lock = asyncio.Lock()
+        try:
+            self._bspeed = getattr(termios, f"B{baudrate}")
+        except AttributeError as exc:
+            raise ValueError(f"Unsupported baudrate {baudrate}") from exc
 
     def __str__(self) -> str:
         return f"tty:{self.port}"
 
-    async def _send(self, msg: bytes) -> None:
-        assert self.serial is not None
-        async with self.__send_lock:
-            await asyncio.get_running_loop().run_in_executor(
-                None, self.serial.write, self.protocol.annotate(msg)
-            )
-
-    async def _receive(self) -> bytes:
-        return await self.protocol.receive(self._read_exactly)
-
-    @property
-    def connected(self) -> bool:  # noqa: D102
-        return self.serial is not None and self.serial.is_open
-
     async def reset(self) -> None:  # noqa: D102
-        if not self.connected:
-            self.serial = serial.Serial(
-                port=self.port,
-                baudrate=self.baudrate,
-                rtscts=True,
-                dsrdtr=True,
-                exclusive=True,
-                timeout=0,
-            )
-            # TODO add support for windows with threads
-            self._loop = asyncio.get_running_loop()
-            self._eof.clear()
-            logger.debug("%s: Connected", self)
+        was_connected = self.connected
         await super().reset()
+        if not was_connected and self.connected:
+            await self.reset()  # Nested reset to send reset message
 
-    def _read_cb(self) -> None:
-        assert self.serial is not None
-        data = self.serial.read(io.DEFAULT_BUFFER_SIZE)
-        if data is None:
-            return
-        self._rbuf += data
-        self._rready.set()
-        if len(data) >= io.DEFAULT_BUFFER_SIZE:
-            # Do not read more that buffer size. This should propagate as
-            # blocking on the serial port's flow control.
-            self._loop.remove_reader(self.serial.fileno())
+    async def _open_connection(
+        self,
+    ) -> tuple[asyncio.StreamReader, asyncio.StreamWriter]:
+        fd = os.open(self.port, os.O_RDWR)
+        try:
+            if not os.isatty(fd):
+                raise ValueError(f"{self.port} is not TTY")
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            attr = termios.tcgetattr(fd)
+            _cfmakeraw(attr)
+            attr[tty.CFLAG] |= termios.CRTSCTS  # flow control
+            attr[tty.ISPEED] = attr[tty.OSPEED] = self._bspeed
+            termios.tcsetattr(fd, termios.TCSAFLUSH, attr)
+        except Exception:
+            os.close(fd)
+            raise
+        file = os.fdopen(fd, "wb")
 
-    async def _read_exactly(self, n: int) -> bytes:
-        assert self.serial is not None
-        res = self._rbuf[:n]
-        del self._rbuf[:n]
-        while len(res) < n:
-            if self._eof.is_set():
-                raise EOFError
-            cnt = n - len(res)
-            self._rready.clear()
-            self._loop.add_reader(self.serial.fileno(), self._read_cb)
-            await self._rready.wait()
-            res += self._rbuf[:cnt]
-            del self._rbuf[:cnt]
-        return res
+        loop = asyncio.get_running_loop()
+        reader = asyncio.StreamReader(loop=loop)
+        rprotocol = asyncio.StreamReaderProtocol(reader, loop=loop)
+        await loop.connect_read_pipe(lambda: rprotocol, file)
 
-    def _disconnect(self) -> None:
-        if self.connected:
-            assert self.serial is not None
-            self._loop.remove_reader(self.serial.fileno())
-            self.serial.close()
-            self._rready.set()
-            self._eof.set()
+        if sys.version_info < (3, 12):
+            wprotocol = rprotocol
+        else:
+            wprotocol = asyncio.StreamReaderProtocol(None, loop=loop)
+        wtransport, _ = await loop.connect_write_pipe(lambda: wprotocol, file)
+        writer = asyncio.StreamWriter(wtransport, wprotocol, None, loop)
 
-    async def wait_disconnect(self) -> None:  # noqa: D102
-        await self._eof.wait()
+        return reader, writer
 
 
 class RpcServerTTY(RpcServer):
@@ -130,11 +95,10 @@ class RpcServerTTY(RpcServer):
         ],
         port: str,
         baudrate: int = 115200,
-        protocol: type[RpcTransportProtocol] = RpcProtocolSerialCRC,
     ) -> None:
         self.client_connected_cb = client_connected_cb
         """Callbact that is called when new client is connected."""
-        self.client = RpcClientTTY(port, baudrate, protocol)
+        self.client = RpcClientTTY(port, baudrate)
         """The :class:`RpcClientTTY` instance."""
         self._task: asyncio.Task | None = None
 
@@ -193,3 +157,62 @@ class RpcServerTTY(RpcServer):
     async def wait_terminated(self) -> None:  # noqa D102
         await self.wait_closed()
         await self.client.wait_disconnect()
+
+
+def _cfmakeraw(mode: typing.Any) -> None:  # noqa: ANN401
+    """Make termios mode raw.
+
+    License: Python Software Foundation License Version 2
+    Source: CPython (tty.py)
+    Author: Steen Lumholt.
+
+    This is copy of the code provided in standard Python library since Python
+    3.12. The switch to the ``tty.cfmakeraw`` should be made once minimal
+    version is at least that.
+    """
+    # Clear all POSIX.1-2017 input mode flags.
+    # See chapter 11 "General Terminal Interface"
+    # of POSIX.1-2017 Base Definitions.
+    mode[tty.IFLAG] &= ~(
+        termios.IGNBRK
+        | termios.BRKINT
+        | termios.IGNPAR
+        | termios.PARMRK
+        | termios.INPCK
+        | termios.ISTRIP
+        | termios.INLCR
+        | termios.IGNCR
+        | termios.ICRNL
+        | termios.IXON
+        | termios.IXANY
+        | termios.IXOFF
+    )
+
+    # Do not post-process output.
+    mode[tty.OFLAG] &= ~termios.OPOST
+
+    # Disable parity generation and detection; clear character size mask;
+    # let character size be 8 bits.
+    mode[tty.CFLAG] &= ~(termios.PARENB | termios.CSIZE)
+    mode[tty.CFLAG] |= termios.CS8
+
+    # Clear all POSIX.1-2017 local mode flags.
+    mode[tty.LFLAG] &= ~(
+        termios.ECHO
+        | termios.ECHOE
+        | termios.ECHOK
+        | termios.ECHONL
+        | termios.ICANON
+        | termios.IEXTEN
+        | termios.ISIG
+        | termios.NOFLSH
+        | termios.TOSTOP
+    )
+
+    # POSIX.1-2017, 11.1.7 Non-Canonical Mode Input Processing,
+    # Case B: MIN>0, TIME=0
+    # A pending read shall block until MIN (here 1) bytes are received,
+    # or a signal is received.
+    mode[tty.CC] = list(mode[tty.CC])
+    mode[tty.CC][termios.VMIN] = 1
+    mode[tty.CC][termios.VTIME] = 0

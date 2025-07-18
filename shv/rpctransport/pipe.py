@@ -49,13 +49,13 @@ class RpcClientPipe(RpcClientStream):
         loop = asyncio.get_running_loop()
 
         if isinstance(rpipe, int):
-            rpipe = os.fdopen(rpipe, mode="r")
+            rpipe = os.fdopen(rpipe, mode="rb")
         reader = asyncio.StreamReader(loop=loop)
         rprotocol = asyncio.StreamReaderProtocol(reader, loop=loop)
         await loop.connect_read_pipe(lambda: rprotocol, rpipe)
 
         if isinstance(wpipe, int):
-            wpipe = os.fdopen(wpipe, mode="w")
+            wpipe = os.fdopen(wpipe, mode="wb")
         if sys.version_info < (3, 12):
             wprotocol = rprotocol
         else:

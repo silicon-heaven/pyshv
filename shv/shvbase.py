@@ -44,10 +44,6 @@ class SHVBase:
     the different operation is performed.
 
     :param client: The RPC client instance to wrap and manage.
-    :param call_timeout: Timeout in seconds before call is abandoned. The
-      default is no timeout and thus infinite waiting. This is handy if you
-      don't want to wrap call calls in your code with :func:`asyncio.timeout`
-      and does exactly the same thing.
     :param call_query_timeout: Timeout in seconds before query is used to check
       the request status. The shorter time will cause faster message lost
       detection while the longer

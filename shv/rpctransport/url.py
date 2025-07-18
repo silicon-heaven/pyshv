@@ -4,7 +4,7 @@ import collections.abc
 
 from ..rpcurl import RpcProtocol, RpcUrl
 from .abc import RpcClient, RpcServer
-from .stream import RpcProtocolBlock, RpcProtocolSerial, RpcProtocolSerialCRC
+from .stream import RpcProtocolBlock, RpcProtocolSerial
 from .tcp import RpcClientTCP, RpcServerTCP
 from .tty import RpcClientTTY, RpcServerTTY
 from .unix import RpcClientUnix, RpcServerUnix
@@ -29,7 +29,7 @@ def init_rpc_client(url: RpcUrl | str) -> RpcClient:
         case RpcProtocol.UNIXS:
             return RpcClientUnix(url.location, RpcProtocolSerial)
         case RpcProtocol.TTY:
-            return RpcClientTTY(url.location, url.baudrate, RpcProtocolSerialCRC)
+            return RpcClientTTY(url.location, url.baudrate)
         case RpcProtocol.WS:
             return RpcClientWebSockets(url.location)
         case _:
@@ -78,9 +78,7 @@ async def create_rpc_server(
         case RpcProtocol.UNIXS:
             res = RpcServerUnix(client_connected_cb, url.location, RpcProtocolSerial)
         case RpcProtocol.TTY:
-            res = RpcServerTTY(
-                client_connected_cb, url.location, url.baudrate, RpcProtocolSerialCRC
-            )
+            res = RpcServerTTY(client_connected_cb, url.location, url.baudrate)
         case RpcProtocol.WS:
             if url.port != -1:
                 res = RpcServerWebSockets(client_connected_cb, url.location, url.port)
