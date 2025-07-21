@@ -118,8 +118,10 @@ class SHVBase:
         ``x.client.disconnect()`` to only initialize disconnect without waiting
         for it to take an effect.
         """
+        self.task.cancel()
         self.client.disconnect()
-        await self.task
+        with contextlib.suppress(asyncio.CancelledError):
+            await self.task
 
     async def _loop(self) -> None:
         """Loop run in asyncio task to receive messages."""
