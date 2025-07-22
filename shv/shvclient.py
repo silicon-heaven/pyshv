@@ -166,8 +166,11 @@ class SHVClient(SHVBase):
         if (
             msg.type not in {RpcMessage.Type.REQUEST, RpcMessage.Type.REQUEST_ABORT}
             or msg.path
-            or msg.method not in {"hello", "login"}
+            or msg.method in {"ls", "dir"}
         ):
+            # Anything that is on root node is expected to be part of the
+            # login process and thus for anything else wait for the login to
+            # complete.
             await self._login_task
         await super()._send(msg)
 
