@@ -193,7 +193,11 @@ class SHVClient(SHVBase):
         await self.call(
             "",
             "login",
-            self.login.to_shv(nonce, {"idleWatchDogTimeOut": int(self.IDLE_TIMEOUT)}),
+            self.login.to_shv(
+                nonce,
+                {"idleWatchDogTimeOut": int(self.IDLE_TIMEOUT)},
+                self.client.secure,
+            ),
         )
         # Restore subscriptions
         for ri in self._subscribes:

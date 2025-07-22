@@ -187,7 +187,7 @@ class RpcLogin:
         self,
         nonce: str | None = None,
         custom_options: SHVMapType | None = None,
-        trusted: bool = False,
+        secure: bool = False,
     ) -> SHVType:
         """RPC Login parameter in the parameter format for login method.
 
@@ -195,7 +195,7 @@ class RpcLogin:
           method call that is used for SHA1 login.
         :param custom_options: These are additional options to be added to the
           login options.
-        :param trusted: Specifies if the transport can be trusted. On untrusted
+        :param secure: Specifies if the transport is secure. On insecure
           transport layers the `SHA1` password is used even if this login
           specifies `PLAIN`.
         :return: Parameters to be passed to login method call.
@@ -205,7 +205,7 @@ class RpcLogin:
             login["token"] = self.token
         else:
             password = self.password
-            if self.login_type is RpcLoginType.PLAIN and not trusted:
+            if self.login_type is RpcLoginType.PLAIN and not secure:
                 login["type"] = RpcLoginType.SHA1.value
                 password = hashlib.sha1(self.password.encode("utf-8")).hexdigest()  # noqa S324
             if login["type"] == RpcLoginType.SHA1.value:

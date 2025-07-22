@@ -45,6 +45,15 @@ class RpcClient(abc.ABC):
         await res.reset()
         return res
 
+    @property
+    def secure(self) -> bool:
+        """If transport is secure (protected against spying).
+
+        The protection in general means some sort of encryption of the sent
+        data being performed. In most cases we consider transports insecure.
+        """
+        return False
+
     async def send(self, msg: RpcMessage) -> None:
         """Send the given SHV RPC Message.
 

@@ -190,6 +190,10 @@ class TestTCP(ServerLink):
         client.disconnect()
         await client.wait_disconnect()
 
+    def test_secure(self, clients):
+        assert not clients[0].secure
+        assert not clients[1].secure
+
 
 class TestSSL(TestTCP):
     """Check that TCP/IP SSL transport protocol works."""
@@ -209,6 +213,10 @@ class TestSSL(TestTCP):
         server.verify_mode = ssl.CERT_OPTIONAL
 
         return client, server
+
+    def test_secure(self, clients):
+        assert clients[0].secure
+        assert clients[1].secure
 
 
 class TestUnix(ServerLink):

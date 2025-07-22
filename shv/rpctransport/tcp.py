@@ -46,6 +46,10 @@ class RpcClientTCP(RpcClientStream):
     ) -> tuple[asyncio.StreamReader, asyncio.StreamWriter]:
         return await asyncio.open_connection(self.location, self.port, ssl=self.ssl)
 
+    @property
+    def secure(self) -> bool:  # noqa: D102
+        return self.ssl is not None
+
 
 class RpcServerTCP(RpcServerStream):
     """RPC server listenting for SHV connections in TCP/IP."""
@@ -127,3 +131,7 @@ class RpcServerTCP(RpcServerStream):
             peername = self._writer.get_extra_info("peername")
             location = f"[{peername[0]}]" if ":" in peername[0] else peername[0]
             return f"tcp:{location}:{peername[1]}"
+
+        @property
+        def secure(self) -> bool:  # noqa: D102
+            return self._server.ssl is not None
