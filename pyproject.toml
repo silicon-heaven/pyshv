@@ -40,6 +40,8 @@ build-backend = "setuptools.build_meta"
 exclude = ["docs", "tests*"]
 [tool.setuptools.package-data]
 "*" = ["py.typed"]
+[tool.setuptools.cmdclass]
+build_py = "template_package_name.__setuptools__.BuildPy"
 
 [tool.coverage.run]
 branch = true
