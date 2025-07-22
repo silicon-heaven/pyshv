@@ -5,16 +5,8 @@ import decimal
 
 import pytest
 
-from shv import (
-    CponReader,
-    CponWriter,
-    SHVIMap,
-    SHVInt,
-    SHVMap,
-    SHVMeta,
-    SHVUInt,
-    shvmeta,
-)
+from shv import SHVIMap, SHVInt, SHVMap, SHVMeta, SHVUInt, shvmeta
+from shv.cpon import CponReader, CponWriter
 
 DATA: list = [
     ("null", None),

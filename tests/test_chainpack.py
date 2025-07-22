@@ -5,15 +5,8 @@ import decimal
 
 import pytest
 
-from shv import (
-    ChainPackReader,
-    ChainPackWriter,
-    SHVIMap,
-    SHVMap,
-    SHVMeta,
-    SHVUInt,
-    shvmeta,
-)
+from shv import SHVIMap, SHVMap, SHVMeta, SHVUInt, shvmeta
+from shv.chainpack import ChainPackReader, ChainPackWriter
 
 # You can get chainpack using this shell command:
 #   echo 'null' | cp2cp --ip --oc \

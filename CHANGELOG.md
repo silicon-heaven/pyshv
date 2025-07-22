@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Broker now supports `:workflows` method during login and no longer requires
   `:hello` to be always used
 - `RpcClient*` and `RpcServer*` classes were moved to `shv.rpctransport`
+- `ChainPack*` classes are now available only from `shv.chainpack`
+- `Cpon*` classes are now available only from `shv.cpon`
 
 ### Fixed
 - Error loop caused by serial disconnection
