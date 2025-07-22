@@ -1,6 +1,7 @@
-lib: pkgs: nixosModules:
-with builtins;
-with lib; let
+nixos: pkgs: nixosModules: let
+  inherit (pkgs.lib) mapAttrs' nameValuePair filterAttrs removeSuffix hasSuffix;
+  inherit (builtins) readDir;
+
   runTest = path: name: let
     modtest = import path {inherit nixosModules pkgs;};
   in
@@ -17,7 +18,7 @@ in
       nameValuePair nname (runTest (./. + "/${name}") nname)
   )
   (
-    filterAttrs (n: v: v == "regular" && hasSuffix ".nix" n) (
+    filterAttrs (n: v: v == "regular" && hasSuffix ".nix" n && n != "default.nix") (
       readDir ./.
     )
   )

@@ -19,10 +19,6 @@ classifiers = [
   "Typing :: Typed",
 ]
 requires-python = ">=3.11"
-dependencies = [
-  "websockets >= 13.0",
-  "asyncinotify; sys_platform == \"linux\"",
-]
 
 [project.urls]
 "Homepage" = "https://gitlab.com/silicon-heaven/pyshv"
@@ -30,6 +26,8 @@ dependencies = [
 "Github" = "https://github.com/silicon-heaven/libshv-py"
 
 [project.optional-dependencies]
+websockets = ["websockets >= 13.0"]
+extra = ["asyncinotify; sys_platform == \"linux\""]
 test = [
   "pytest",
   "pytest-asyncio",

@@ -18,7 +18,7 @@ from .stream import RpcClientStream, RpcProtocolSerialCRC
 try:
     import asyncinotify
 except (ImportError, TypeError):  # pragma: no cover
-    asyncinotify = None  # type: ignore
+    asyncinotify = None
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +128,7 @@ class RpcServerTTY(RpcServer):
                         if str(pth.name) == str(event.name):
                             break
             else:
-                await asyncio.sleep(5)  # type: ignore
+                await asyncio.sleep(5)
 
     def is_serving(self) -> bool:  # noqa: D102
         return self._task is not None and not self._task.done()

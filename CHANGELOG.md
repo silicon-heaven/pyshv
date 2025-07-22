@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - TTY support is now implement without `pyserial` backing
+- `websockets` and `asyncinotify` dependencies are now optional
 - Broker now supports `:workflows` method during login and no longer requires
   `:hello` to be always used
 - `RpcClient*` and `RpcServer*` classes were moved to `shv.rpctransport`

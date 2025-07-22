@@ -9,16 +9,20 @@ import logging
 import typing
 import weakref
 
-import websockets.asyncio.client
-import websockets.asyncio.server
-import websockets.exceptions
-import websockets.typing
-
 from .abc import RpcClient, RpcServer
 
 logger = logging.getLogger(__name__)
 
-subprotocol = websockets.typing.Subprotocol("shv3")
+try:
+    import websockets.asyncio.client
+    import websockets.asyncio.server
+    import websockets.exceptions
+    import websockets.typing
+
+    WEBSOCKETS_IMPORT = None
+    subprotocol = websockets.typing.Subprotocol("shv3")
+except ImportError as exc:
+    WEBSOCKETS_IMPORT = exc
 
 
 class RpcClientWebSockets(RpcClient):
@@ -32,6 +36,8 @@ class RpcClientWebSockets(RpcClient):
     """
 
     def __init__(self, location: str, port: int = -1) -> None:
+        if WEBSOCKETS_IMPORT is not None:
+            raise WEBSOCKETS_IMPORT
         super().__init__()
         self.location = location
         self.port = port
@@ -128,6 +134,8 @@ class _RpcServerWebSockets(RpcServer):
             [RpcClient], collections.abc.Awaitable[None] | None
         ],
     ) -> None:
+        if WEBSOCKETS_IMPORT is not None:
+            raise WEBSOCKETS_IMPORT
         self.client_connected_cb = client_connected_cb
         """Callback that is called when new client is connected."""
         self._server: websockets.asyncio.server.Server | None = None
