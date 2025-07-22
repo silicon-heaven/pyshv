@@ -9,7 +9,7 @@ import logging
 import time
 import typing
 
-from .rpclogin import RpcLogin
+from .rpclogin import RpcLogin, RpcLoginType
 from .rpcmessage import RpcMessage
 from .rpcparam import shvgett
 from .rpcri import rpcri_legacy_subscription
@@ -61,7 +61,7 @@ class SHVClient(SHVBase):
         """
         self._subscribes: set[str] = set()
         self._connected = asyncio.Event()
-        self._login_task = asyncio.create_task(self._login())
+        self._login_task = asyncio.create_task(self.__login())
 
     # TODO solve type hinting in this method. It seems that right now it is not
     # possible to correctly type hint the args and kwargs to copy Self # params.
@@ -181,18 +181,29 @@ class SHVClient(SHVBase):
     def __restart_login(self) -> None:
         if not self._login_task.done():
             self._login_task.cancel()
-        self._login_task = asyncio.create_task(self._login())
+        self._login_task = asyncio.create_task(self.__login())
+
+    async def __login(self) -> None:
+        await self._login()
+        await self._post_login()
 
     async def _login(self) -> None:
-        """Login operation and all steps done to prepare or restore client.
+        """Login operation.
 
-        This includes subscribes restoration after connection reset.
+        This implements standard :attr:`RpcLoginType.PLAIN`,
+        :attr:`RpcLoginType.SHA1`, and :attr:`RpcLoginType.TOKEN`.
 
         Be aware when you are overwriting or extending this method as this is
         running on every reset and holds off any other messages.
         """
-        res = await self.call("", "hello")
-        nonce = shvgett(res, "nonce", str, "")
+        secure = self.client.secure
+        if self.login.login_type is RpcLoginType.SHA1 or (
+            not secure and self.login.login_type is RpcLoginType.PLAIN
+        ):
+            res = await self.call("", "hello")
+            nonce = shvgett(res, "nonce", str, "")
+        else:
+            nonce = None
         await self.call(
             "",
             "login",
@@ -202,7 +213,15 @@ class SHVClient(SHVBase):
                 self.client.secure,
             ),
         )
-        # Restore subscriptions
+
+    async def _post_login(self) -> None:
+        """Tasks performed after successful login to prepare and restore client.
+
+        In default this restores all subscriptions added up to that point.
+
+        Be aware when you are overwriting or extending this method as this is
+        running on every reset and holds off any other messages.
+        """
         for ri in self._subscribes:
             await self.__subscribe(ri)
 
