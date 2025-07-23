@@ -74,7 +74,7 @@ include:
 lint:
   extends: .lint
   script:
-    - nix develop --quiet -c ruff check .
+    - nix run --quiet .#ruff -- check .
 
 mypy:
   extends: .lint
@@ -85,12 +85,12 @@ mypy:
 shellcheck:
   extends: .lint
   script:
-    - git ls-files '**.sh' | xargs nix develop --quiet -c shellcheck
+    - git ls-files '**.sh' | xargs nix run --quiet .#shellcheck
 
 statix:
   extends: .lint
   script:
-    - nix develop --quiet -c statix check .
+    - nix run --quiet .#statix -- check .
 
 ## Style stage #################################################################
 .style:
@@ -102,13 +102,13 @@ statix:
 format:
   extends: .style
   script:
-    - nix develop --quiet -c ruff format --diff .
-    - nix develop --quiet -c ruff check --diff .
+    - nix run --quiet .#ruff -- format --diff .
+    - nix run --quiet .#ruff -- check --diff .
 
 shell-format:
   extends: .style
   script:
-    - git ls-files '**.sh' | xargs nix develop --quiet -c shfmt -w
+    - git ls-files '**.sh' | xargs nix run --quiet .#shfmt -- -w
     - git diff --exit-code
 
 nixfmt:
@@ -120,18 +120,18 @@ nixfmt:
 deadnix:
   extends: .style
   script:
-    - nix develop --quiet -c deadnix --fail .
+    - nix run --quiet .#deadnix -- --fail .
 
 editorconfig-checker:
   extends: .style
   script:
-    - nix develop --quiet -c editorconfig-checker -exclude '.nix-cache/.*'
+    - nix run --quiet .#editorconfig-checker -- -exclude '.nix-cache/.*'
 
 gitlint:
   extends: .style
   script:
     - git fetch
-    - nix develop --quiet -c gitlint --commits origin/master..$CI_COMMIT_SHA
+    - nix run --quiet .#gitlint -- --commits origin/master..$CI_COMMIT_SHA
 
 ## Release creation ############################################################
 .deploy:

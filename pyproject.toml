@@ -52,6 +52,8 @@ build-backend = "setuptools.build_meta"
 exclude = ["docs", "tests*"]
 [tool.setuptools.package-data]
 "*" = ["py.typed"]
+[tool.setuptools.cmdclass]
+build_py = "shv.__setuptools__.BuildPy"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
