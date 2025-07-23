@@ -1,5 +1,8 @@
 """SHV RPC URL used to specify connection and listen settings."""
 
+from __future__ import annotations
+
+import collections.abc
 import dataclasses
 import enum
 import functools
@@ -144,7 +147,7 @@ class RpcUrl:
         return context
 
     @classmethod
-    def parse(cls, url: str) -> "RpcUrl":
+    def parse(cls, url: str) -> typing.Self:
         """Parse string URL to the object representation.
 
         :param url: URL in string format.
@@ -198,58 +201,72 @@ class RpcUrl:
             case protocol:
                 raise NotImplementedError(f"Protocol: {protocol}")  # pragma: no cover
 
-        if opts := pqs.pop("token", []):
-            res.login.token = opts[0]
-            res.login.login_type = RpcLoginType.TOKEN
-        else:
-            if opts := pqs.pop("user", []):
-                res.login.username = opts[0]
-            if opts := pqs.pop("shapass", []):
-                if len(opts[0]) != 40:
-                    raise ValueError("SHA1 password must have 40 characters.")
-                res.login.password = opts[0]
-                res.login.login_type = RpcLoginType.SHA1
-                # We prefer SHA1 password and thus discard plain if both are present
-                pqs.pop("password", [])
-            elif opts := pqs.pop("password", []):
-                res.login.password = opts[0]
-                res.login.login_type = RpcLoginType.PLAIN
-        if opts := pqs.pop("devid", []):
-            res.login.device_id = opts[0]
-        if opts := pqs.pop("devmount", []):
-            res.login.device_mount_point = opts[0]
-        if protocol in {RpcProtocol.SSL, RpcProtocol.SSLS}:
-            if opts := pqs.pop("ca", []):
-                res.ca = opts[0]
-            if opts := pqs.pop("cafile", []):
-                res.ca = pathlib.Path(opts[0])
-            if opts := pqs.pop("cert", []):
-                res.cert = opts[0]
-            if opts := pqs.pop("certfile", []):
-                res.cert = pathlib.Path(opts[0])
-            if opts := pqs.pop("key", []):
-                res.key = opts[0]
-            if opts := pqs.pop("keyfile", []):
-                res.key = pathlib.Path(opts[0])
-            if opts := pqs.pop("crl", []):
-                res.crl = opts[0]
-            if opts := pqs.pop("crlfile", []):
-                res.crl = pathlib.Path(opts[0])
-            if opts := pqs.pop("verify", []):
-                if opts[0] in {"true", "t"}:
-                    res.verify = True
-                elif opts[0] in {"false", "f"}:
-                    res.verify = False
-                else:
-                    raise ValueError(f"Invalid for verify: {opts[0]}")
-        if protocol is RpcProtocol.TTY:
-            if opts := pqs.pop("baudrate", []):
-                res.baudrate = int(opts[0])
-
+        res._parse_query(pqs)
         if pqs:
             raise ValueError(f"Unsupported URL queries: {', '.join(pqs.keys())}")
 
         return res
+
+    def _parse_query(self, pqs: dict[str, list[str]]) -> None:
+        """Parse queries.
+
+        This is called from :meth:`parse` to parse query part of the URL. It
+        can be extended to get support for additional query parameters.
+
+        The implementation should remove keys that were processed. The valid
+        URL thus will end up with empty ``pqs`` after this method returns.
+
+        Also see :meth:`_serialize_query`.
+
+        :param pqs: The query parameters.
+        """
+        if opts := pqs.pop("token", []):
+            self.login.token = opts[0]
+            self.login.login_type = RpcLoginType.TOKEN
+        else:
+            if opts := pqs.pop("user", []):
+                self.login.username = opts[0]
+            if opts := pqs.pop("shapass", []):
+                if len(opts[0]) != 40:
+                    raise ValueError("SHA1 password must have 40 characters.")
+                self.login.password = opts[0]
+                self.login.login_type = RpcLoginType.SHA1
+                # We prefer SHA1 password and thus discard plain if both are present
+                pqs.pop("password", [])
+            elif opts := pqs.pop("password", []):
+                self.login.password = opts[0]
+                self.login.login_type = RpcLoginType.PLAIN
+        if opts := pqs.pop("devid", []):
+            self.login.device_id = opts[0]
+        if opts := pqs.pop("devmount", []):
+            self.login.device_mount_point = opts[0]
+        if self.protocol in {RpcProtocol.SSL, RpcProtocol.SSLS}:
+            if opts := pqs.pop("ca", []):
+                self.ca = opts[0]
+            if opts := pqs.pop("cafile", []):
+                self.ca = pathlib.Path(opts[0])
+            if opts := pqs.pop("cert", []):
+                self.cert = opts[0]
+            if opts := pqs.pop("certfile", []):
+                self.cert = pathlib.Path(opts[0])
+            if opts := pqs.pop("key", []):
+                self.key = opts[0]
+            if opts := pqs.pop("keyfile", []):
+                self.key = pathlib.Path(opts[0])
+            if opts := pqs.pop("crl", []):
+                self.crl = opts[0]
+            if opts := pqs.pop("crlfile", []):
+                self.crl = pathlib.Path(opts[0])
+            if opts := pqs.pop("verify", []):
+                if opts[0] in {"true", "t", "y"}:
+                    self.verify = True
+                elif opts[0] in {"false", "f", "n"}:
+                    self.verify = False
+                else:
+                    raise ValueError(f"Invalid for verify: {opts[0]}")
+        if self.protocol is RpcProtocol.TTY:
+            if opts := pqs.pop("baudrate", []):
+                self.baudrate = int(opts[0])
 
     def to_url(self, public: bool = False) -> str:
         """Convert to string URL.
@@ -301,45 +318,46 @@ class RpcUrl:
             case protocol:
                 raise NotImplementedError(f"Protocol: {protocol}")  # pragma: no cover
 
-        opts: list[str] = []
-        if not user_added:
-            opts.append(f"user={urllib.parse.quote(self.login.username)}")
-            user_added = True
-        if self.login.device_id:
-            opts.append(f"devid={urllib.parse.quote(self.login.device_id)}")
-        if self.login.device_mount_point:
-            opts.append(f"devmount={urllib.parse.quote(self.login.device_mount_point)}")
-        if not public:
-            if self.login.token:
-                opts.append(f"token={self.login.token}")
-            if self.login.password:
-                if self.login.login_type is RpcLoginType.SHA1:
-                    opts.append(f"shapass={self.login.password}")
-                elif self.login.login_type is RpcLoginType.PLAIN:
-                    opts.append(f"password={urllib.parse.quote(self.login.password)}")
-                else:
-                    raise NotImplementedError()  # pragma: no cover
-        if self.baudrate != type(self).baudrate:
-            opts.append(f"baudrate={self.baudrate}")
-        if self.ca != type(self).ca:
-            opts.append(
-                f"{'cafile' if isinstance(self.ca, pathlib.Path) else 'ca'}={self.ca}"
-            )
-        if self.cert != type(self).cert:
-            opts.append(
-                f"{'certfile' if isinstance(self.cert, pathlib.Path) else 'cert'}={self.cert}"
-            )
-        if self.key != type(self).key:
-            opts.append(
-                f"{'keyfile' if isinstance(self.key, pathlib.Path) else 'key'}={self.key}"
-            )
-        if self.crl != type(self).crl:
-            opts.append(
-                f"{'crlfile' if isinstance(self.crl, pathlib.Path) else 'crl'}={self.crl}"
-            )
-        if self.verify != type(self).verify:
-            opts.append(f"verify={'true' if self.verify else 'false'}")
-
+        opts = [] if user_added else [f"user={urllib.parse.quote(self.login.username)}"]
+        opts += self._serialize_query(public)
+        # TODO correctly escape the URL
         return (
             f"{protocols[self.protocol]}:{netloc}{'?' if opts else ''}{'&'.join(opts)}"
         )
+
+    def _serialize_query(self, public: bool) -> collections.abc.Iterator[str]:
+        """Serialize queries.
+
+        This is called from :meth:`to_url` to serialize query part of the URL.
+        It can be extended to get support for additional query parameters.
+
+        Also see :meth:`_parse_query`.
+
+        :param pqs: The query parameters.
+        """
+        if self.login.device_id:
+            yield f"devid={urllib.parse.quote(self.login.device_id)}"
+        if self.login.device_mount_point:
+            yield f"devmount={urllib.parse.quote(self.login.device_mount_point)}"
+        if not public:
+            if self.login.token:
+                yield f"token={self.login.token}"
+            if self.login.password:
+                if self.login.login_type is RpcLoginType.SHA1:
+                    yield f"shapass={self.login.password}"
+                elif self.login.login_type is RpcLoginType.PLAIN:
+                    yield f"password={urllib.parse.quote(self.login.password)}"
+                else:
+                    raise NotImplementedError  # pragma: no cover
+        if self.baudrate != type(self).baudrate:
+            yield f"baudrate={self.baudrate}"
+        if self.ca != type(self).ca:
+            yield f"{'cafile' if isinstance(self.ca, pathlib.Path) else 'ca'}={self.ca}"
+        if self.cert != type(self).cert:
+            yield f"{'certfile' if isinstance(self.cert, pathlib.Path) else 'cert'}={self.cert}"
+        if self.key != type(self).key:
+            yield f"{'keyfile' if isinstance(self.key, pathlib.Path) else 'key'}={self.key}"
+        if self.crl != type(self).crl:
+            yield f"{'crlfile' if isinstance(self.crl, pathlib.Path) else 'crl'}={self.crl}"
+        if self.verify != type(self).verify:
+            yield f"verify={'true' if self.verify else 'false'}"

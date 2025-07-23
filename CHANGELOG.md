@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Support for `ssl` and `ssls` transports
 - Support for token logins in `RpcUrl` and in `RpcLogin`
+- Support for extending `RpcUrl` with non-standard query parameters
 
 ### Changed
 - TTY support is now implement without `pyserial` backing
