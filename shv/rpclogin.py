@@ -11,7 +11,7 @@ import hashlib
 import logging
 import typing
 
-from .rpcerrors import RpcInvalidParamError
+from .rpcdef.errors import RpcInvalidParamError
 from .rpcparam import shvgett
 from .value import SHVMapType, SHVType, is_shvmap
 

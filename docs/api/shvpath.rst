@@ -1,5 +1,5 @@
 SHV Path
 ========
 
-.. autoclass:: shv.SHVPath
-.. autoclass:: shv.SHVPathParents
+.. autoclass:: shv.path.SHVPath
+.. autoclass:: shv.path.SHVPathParents

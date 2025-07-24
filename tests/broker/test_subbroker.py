@@ -6,14 +6,11 @@ import dataclasses
 import pytest
 
 from example_device import ExampleDevice
-from shv import (
-    RpcLogin,
-    RpcLoginType,
-    RpcMessage,
-    RpcUrl,
-    SHVClient,
-    broker,
-)
+from shv import broker
+from shv.rpcapi.client import SHVClient
+from shv.rpclogin import RpcLogin, RpcLoginType
+from shv.rpcmessage import RpcMessage
+from shv.rpcurl import RpcUrl
 
 
 @pytest.fixture(name="suburl")

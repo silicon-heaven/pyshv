@@ -6,17 +6,16 @@ import logging
 
 import pytest
 
-from shv import (
-    SHV_VERSION,
+from shv import SHV_VERSION, SHVType
+from shv.rpcapi import SHVBase
+from shv.rpcdef import (
     RpcDir,
     RpcInvalidParamError,
-    RpcMessage,
     RpcRequestInvalidError,
     RpcTryAgainLaterError,
     RpcUserIDRequiredError,
-    SHVBase,
-    SHVType,
 )
+from shv.rpcmessage import RpcMessage
 from shv.rpctransport import RpcClientPipe
 
 logger = logging.getLogger(__name__)

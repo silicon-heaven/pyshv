@@ -12,9 +12,11 @@ import secrets
 import time
 import typing
 
-from ..rpcaccess import RpcAccess
-from ..rpcdir import RpcDir
-from ..rpcerrors import (
+from ..rpcapi import SHVBase
+from ..rpcapi.client import SHVClient
+from ..rpcdef import (
+    RpcAccess,
+    RpcDir,
     RpcError,
     RpcInvalidParamError,
     RpcLoginRequiredError,
@@ -26,8 +28,6 @@ from ..rpcmessage import RpcMessage
 from ..rpcparam import shvargt
 from ..rpcri import rpcri_match, rpcri_relative_to
 from ..rpctransport import RpcClient, RpcServer, create_rpc_server, init_rpc_client
-from ..shvbase import SHVBase
-from ..shvclient import SHVClient
 from ..value import SHVType
 from .config import RpcBrokerConfigABC, RpcBrokerRoleABC
 from .utils import nmax, nmin
@@ -338,7 +338,7 @@ class RpcBroker:
         """Name reported as application name for pyshvbroker."""
 
         IDLE_TIMEOUT_LOGIN: float = 5
-        """:attr:`shv.SHVBase.IDLE_TIMEOUT` set for clients without user.
+        """:attr:`shv.rpcapi.SHVBase.IDLE_TIMEOUT` set for clients without user.
 
         This is intentionally shorter to quickly disconnect inactive clients
         that are not participating in SHV RPC.

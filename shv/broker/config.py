@@ -11,7 +11,7 @@ import pathlib
 import tomllib
 import typing
 
-from ..rpcaccess import RpcAccess
+from ..rpcdef.access import RpcAccess
 from ..rpclogin import RpcLogin, RpcLoginType
 from ..rpcri import rpcri_match
 from ..rpcurl import RpcUrl
@@ -29,6 +29,7 @@ class NamedProtocol(typing.Protocol):
 
 
 NamedT = typing.TypeVar("NamedT", bound=NamedProtocol)
+"""Type variable used for :class:`NamedProtocol` like classes."""
 
 
 class NamedMap(collections.abc.Mapping[str, NamedT]):

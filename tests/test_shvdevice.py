@@ -5,18 +5,10 @@ import time
 
 import pytest
 
-from shv import (
-    SHV_VERSION_MAJOR,
-    SHV_VERSION_MINOR,
-    VERSION,
-    RpcAccess,
-    RpcAlert,
-    RpcDir,
-    RpcMethodNotFoundError,
-    RpcNotImplementedError,
-    SHVDevice,
-    shvmeta,
-)
+from shv import SHV_VERSION_MAJOR, SHV_VERSION_MINOR, VERSION, shvmeta
+from shv.rpcapi.device import SHVDevice
+from shv.rpcdef import RpcAccess, RpcDir, RpcMethodNotFoundError, RpcNotImplementedError
+from shv.rpcdef.alert import RpcAlert
 
 
 class Device(SHVDevice):

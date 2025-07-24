@@ -2,7 +2,7 @@
 
 import pytest
 
-from shv import SHVGetKey, shvarg, shvget
+from shv.rpcparam import SHVGetKey, shvarg, shvget
 
 
 @pytest.mark.parametrize(

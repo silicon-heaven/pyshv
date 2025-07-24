@@ -3,9 +3,9 @@ Client communication in SHV
 
 The most basic operation on SHV network is calling methods and reading some
 values. Dedicated class is provided for this purpose in form of
-:class:`shv.SHVValueClient`. Note that you can also use :class:`shv.SHVClient`
-directly if you want to just call some methods and don't care about properties
-value caching.
+:class:`shv.rpcapi.valueclient.SHVValueClient`. Note that you can also use
+:class:`shv.rpcapi.client.SHVClient` directly if you want to just call some
+methods and don't care about properties value caching.
 
 
 Connecting to the broker
@@ -18,9 +18,10 @@ testing of this project. Run the following command in the pySHV source
 directory): ``python3 -m shv.broker -c tests/broker/config.toml``.
 
 You need to call function ``SHVValueClient.connect``
-(:func:`shv.SHVClient.connect`). It will provide you with
-:class:`shv.SHVValueClient` (:class:`shv.SHVClient`) instance that is connected
-and logged in to the SHV broker.
+(:func:`shv.rpcapi.client.SHVClient.connect`). It will provide you with
+:class:`shv.rpcapi.valueclient.SHVValueClient`
+(:class:`shv.rpcapi.client.SHVClient`) instance that is connected and logged in
+to the SHV broker.
 
 >>> client = await shv.SHVValueClient.connect("tcp://admin@localhost?password=admin!123")
 
@@ -29,11 +30,12 @@ Discovering SHV tree
 --------------------
 
 Once you are connected you can discover tree of nodes and its associated
-methods. There is :func:`shv.SHVBase.ls` method for this purpose available.
-Methods associated with some node can be listed with
-:func:`shv.SHVBase.dir`. There are also methods
-:func:`shv.SHVBase.ls_has_child` and :func:`shv.SHVBase.dir_exists`
-for respective node and method existence validation.
+methods. There is :func:`shv.rpcapi.SHVBase.ls` method for this purpose
+available. Methods associated with some node can be listed with
+:func:`shv.rpcapi.SHVBase.dir`. There are also methods
+:func:`shv.rpcapi.SHVBase.ls_has_child` and
+:func:`shv.rpcapi.SHVBase.dir_exists` for respective node and method existence
+validation.
 
 This is all you need to iterate over the whole SHV tree of the SHV broker.
 
@@ -48,14 +50,15 @@ Calling methods
 ---------------
 
 Now when you know about available methods (or if know in advance without having
-to call ``dir``) you can call any of them using :func:`shv.SHVBase.call`.
+to call ``dir``) you can call any of them using :func:`shv.rpcapi.SHVBase.call`.
 
 >>> await client.call(".app", "name")
 'pyshvbroker'
 
 The method call can result in SHV error that is propagated as Python exception.
 To differentiate between errors in your code and errors produced by SHV you can
-filter for :class:`shv.RpcError` base class as all SHV errors are based on it.
+filter for :class:`shv.rpcdef.RpcError` base class as all SHV errors are based
+on it.
 
 >>> await client.call("nosuch", "foo")
 shv.rpcerrors.RpcMethodCallExceptionError: ("method: foo path: nosuch what: Method: 'foo' on path 'nosuch' doesn't exist", <RpcErrorCode.METHOD_CALL_EXCEPTION: 8>)
@@ -67,7 +70,8 @@ Reading and writing values
 Some nodes have value associated with them. To receive it they provide common
 ``get`` method and optionally to change it they provide ``set`` method. You can
 call these methods directly or use simple wrappers
-:func:`shv.SHVValueClient.prop_get` and :func:`shv.SHVValueClient.prop_set`.
+:func:`shv.rpcapi.valueclient.SHVValueClient.prop_get` and
+:func:`shv.rpcapi.valueclient.SHVValueClient.prop_set`.
 
 To actually demonstrate this we need some device that actually has property
 nodes. One of such devices is our example device so feel free to connect it
@@ -85,20 +89,20 @@ True
 Subscribing for changes
 -----------------------
 
-The primary functionality of :class:`shv.SHVValueClient` is to ease access to the
-property values. It is not efficient to always call
-:func:`shv.SHVValueClient.prop_get` but we could use old value if we would know
-that there was no change in the meantime. SHV RPC solves this by devices
-signaling their new value. That way we do not have to ask for new value every
-time but we still have it as soon as possible. This of course could get pretty
-noisy once there would be multiple devices connected to the SHV broker and we
-are never interested in all value changes. Because of that SHV broker filters
-all signals unless we explicitly ask for them with
-:func:`shv.SHVClient.subscribe` that expects `Resource Identifier
+The primary functionality of :class:`shv.rpcapi.valueclient.SHVValueClient` is
+to ease access to the property values. It is not efficient to always call
+:func:`shv.rpcapi.valueclient.SHVValueClient.prop_get` but we could use old
+value if we would know that there was no change in the meantime. SHV RPC solves
+this by devices signaling their new value. That way we do not have to ask for
+new value every time but we still have it as soon as possible. This of course
+could get pretty noisy once there would be multiple devices connected to the SHV
+broker and we are never interested in all value changes. Because of that SHV
+broker filters all signals unless we explicitly ask for them with
+:func:`shv.rpcapi.client.SHVClient.subscribe` that expects `Resource Identifier
 <https://silicon-heaven.github.io/shv-doc/rpcri.html>`__ to be provided.
 
-:class:`shv.SHVValueClient` caches subscribed values and you can quickly access
-them using subscribe operator (that is Python operator `[]`).
+:class:`shv.rpcapi.valueclient.SHVValueClient` caches subscribed values and you
+can quickly access them using subscribe operator (that is Python operator `[]`).
 
 >>> await client.subscribe("test/device/track/**:*:*")))
 >>> await client.get_snapshot("test/device/track/**:*:*")))
@@ -109,14 +113,15 @@ them using subscribe operator (that is Python operator `[]`).
 [1]
 
 In this example we changed value by ourself but
-:func:`shv.SHVValueClient.prop_set` does not in default interact with cache and new
-value is rather returned because signal was emitted by device (feel free to
-change the value with some separate script or application).
+:func:`shv.rpcapi.valueclient.SHVValueClient.prop_set` does not in default
+interact with cache and new value is rather returned because signal was emitted
+by device (feel free to change the value with some separate script or
+application).
 
-The method :func:`shv.SHVValueClient.get_snapshot` is called to initialize our
-cache. Note that :class:`KeyError` is raised if path is not in cache as we can't
-know if it is not there due to not being initialized yet or because there is no
-such node.
+The method :func:`shv.rpcapi.valueclient.SHVValueClient.get_snapshot` is called
+to initialize our cache. Note that :class:`KeyError` is raised if path is not in
+cache as we can't know if it is not there due to not being initialized yet or
+because there is no such node.
 
 >>> await client.subscribe("test/device/track/**:*:*")))
 >>> client["test/device/track/1"]))

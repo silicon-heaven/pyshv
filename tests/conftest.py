@@ -5,15 +5,11 @@ import pathlib
 import pytest
 
 from example_device import ExampleDevice
-from shv import (
-    RpcLogin,
-    RpcLoginType,
-    RpcProtocol,
-    RpcUrl,
-    SHVClient,
-    SHVValueClient,
-    broker,
-)
+from shv import broker
+from shv.rpcapi.client import SHVClient
+from shv.rpcapi.valueclient import SHVValueClient
+from shv.rpclogin import RpcLogin, RpcLoginType
+from shv.rpcurl import RpcProtocol, RpcUrl
 
 logger = logging.getLogger(__name__)
 

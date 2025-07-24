@@ -6,7 +6,8 @@ import dataclasses
 import pytest
 
 from example_device import ExampleDevice
-from shv import RpcMessage, SHVClient
+from shv.rpcapi.client import SHVClient
+from shv.rpcmessage import RpcMessage
 
 
 class LSClient(SHVClient):

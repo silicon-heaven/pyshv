@@ -18,7 +18,7 @@ class RpcClient(abc.ABC):
     """RPC connection to some SHV peer."""
 
     class Control(enum.Enum):
-        """Control message that is received instead of :class:`RpcMessage`."""
+        """Control message that is received instead of :class:`shv.rpcmessage.RpcMessage`."""
 
         RESET = enum.auto()
 

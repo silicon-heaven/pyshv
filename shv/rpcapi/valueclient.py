@@ -9,11 +9,11 @@ import logging
 import time
 import typing
 
-from .rpcerrors import RpcMethodCallExceptionError, RpcMethodNotFoundError
-from .rpcri import rpcri_match
-from .shvbase import SHVBase
-from .shvclient import SHVClient
-from .value import SHVMapType, SHVType, shvmeta, shvmeta_eq
+from ..rpcdef.errors import RpcMethodCallExceptionError, RpcMethodNotFoundError
+from ..rpcri import rpcri_match
+from ..value import SHVMapType, SHVType, shvmeta, shvmeta_eq
+from .base import SHVBase
+from .client import SHVClient
 
 logger = logging.getLogger(__name__)
 

@@ -8,8 +8,8 @@ This is based on the Universal Resource Locator standard and is defined in the
 URL
 ---
 
-.. autoclass:: shv.RpcUrl
-.. autoclass:: shv.RpcProtocol
+.. autoclass:: shv.rpcurl.RpcUrl
+.. autoclass:: shv.rpcurl.RpcProtocol
 
 Broker Login
 ------------

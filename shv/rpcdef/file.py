@@ -13,12 +13,12 @@ import pathlib
 import types
 import typing
 
-from .rpcaccess import RpcAccess
-from .rpcdir import RpcDir
-from .rpcerrors import RpcInvalidParamError
-from .rpcparam import shvarg, shvargt, shvget, shvgett, shvt
-from .shvbase import SHVBase
-from .value import SHVType, is_shvimap
+from ..rpcapi import SHVBase
+from ..rpcparam import shvarg, shvargt, shvget, shvgett, shvt
+from ..value import SHVType, is_shvimap
+from .access import RpcAccess
+from .dir import RpcDir
+from .errors import RpcInvalidParamError
 
 
 @dataclasses.dataclass
@@ -115,9 +115,10 @@ def _iceil(val: int, mult: int) -> int:
 
 
 class RpcFile:
-    """RPC file accessed over :class:`SHVBase`.
+    """RPC file accessed over :class:`shv.rpcapi.SHVBase`.
 
-    :param client: The :class:`SHVBase` based client used to communicate.
+    :param client: The :class:`shv.rpcapi.SHVBase` based client used to
+      communicate.
     :param path: SHV path to the file node.
     :param buffered: If reading and writing should be backed by local buffer to
       transfer data in chunks suggested by the device.
@@ -428,7 +429,7 @@ class RpcFile:
         """Truncate file size.
 
         :param size: Truncate to this specific size or to the current offset in
-        case of ``None``.
+          case of ``None``.
         """
         await self.client.call(
             self._path, "truncate", size if size is not None else self._offset
@@ -439,9 +440,9 @@ class RpcFile:
 class FileProvider:
     """Implementation helper that provides local files over SHV RPC.
 
-    This should be used from :class:`SHVBase` based classes. The appropriate
-    file provide is instanciated and for the appropriate file nodes all `dir`
-    and other method calls are delefated to this helper.
+    This should be used from :class:`shv.rpcapi.SHVBase` based classes. The
+    appropriate file provide is instanciated and for the appropriate file nodes
+    all `dir` and other method calls are delefated to this helper.
     """
 
     access_read: RpcAccess = RpcAccess.READ
@@ -456,11 +457,11 @@ class FileProvider:
     def dir(self) -> collections.abc.Iterator[RpcDir]:
         """Provide method descriptions for this file access.
 
-        This should be called from :meth:`shv.SHVBase._dir` implementation for
-        file nodes.
+        This should be called from :meth:`shv.rpcapi.SHVBase._dir`
+        implementation for file nodes.
 
         :return: Iterator over method descriptions appropriate for this
-        provider.
+          provider.
         """
         yield RpcDir.getter("stat", "n", "!stat", self.access_read)
         yield RpcDir.getter("size", "n", "i(0,)", self.access_read)
@@ -497,12 +498,13 @@ class FileProvider:
     ) -> SHVType:
         """File access methods implementation.
 
-        This should be called from :meth:`shv.SHVBase._method_call`
+        This should be called from :meth:`shv.rpcapi.SHVBase._method_call`
         implementation for file nodes.
 
         :param path: Path to the file that should be accessed. This is not SHV
           path but rather a real local file path.
-        :param request: The request parameter from :meth:`SHVBase._method_call`.
+        :param request: The request parameter from
+          :meth:`shv.rpcapi.SHVBase._method_call`.
         :return: The value that should be provided as result of the method call.
         :raises FileNotFoundError: If file pointed to by ``path`` doesn't
           exists.

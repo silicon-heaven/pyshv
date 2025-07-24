@@ -12,13 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for extending `RpcUrl` with non-standard query parameters
 
 ### Changed
+- Almost all classes previously exposed in the package root now have to be
+  imported from their appropriate submodule. The only available classes are of
+  the SHV types representation.
+- The RPC specific type representations were moved to `shv.rpcdef` (this
+  includes `RpcDir`, `RpcAccess`, `RpcAlert`, and more)
 - TTY support is now implement without `pyserial` backing
 - `websockets` and `asyncinotify` dependencies are now optional
 - Broker now supports `:workflows` method during login and no longer requires
   `:hello` to be always used
-- `RpcClient*` and `RpcServer*` classes were moved to `shv.rpctransport`
-- `ChainPack*` classes are now available only from `shv.chainpack`
-- `Cpon*` classes are now available only from `shv.cpon`
 
 ### Fixed
 - Error loop caused by serial disconnection

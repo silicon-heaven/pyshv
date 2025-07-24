@@ -2,7 +2,7 @@
 
 import pytest
 
-from shv import (
+from shv.rpcdef import (
     RpcError,
     RpcInvalidParamError,
     RpcLoginRequiredError,

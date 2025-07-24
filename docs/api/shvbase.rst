@@ -1,5 +1,5 @@
 SHV RPC Base
 ============
 
-.. autoclass:: shv.SHVBase
+.. autoclass:: shv.rpcapi.SHVBase
    :private-members:

@@ -11,11 +11,11 @@ import functools
 import logging
 import time
 
-from .__version__ import VERSION
-from .path import SHVPath
-from .rpcaccess import RpcAccess
-from .rpcdir import RpcDir
-from .rpcerrors import (
+from ..__version__ import VERSION
+from ..path import SHVPath
+from ..rpcdef.access import RpcAccess
+from ..rpcdef.dir import RpcDir
+from ..rpcdef.errors import (
     RpcError,
     RpcInvalidParamError,
     RpcMethodCallExceptionError,
@@ -24,11 +24,11 @@ from .rpcerrors import (
     RpcTryAgainLaterError,
     RpcUserIDRequiredError,
 )
-from .rpcmessage import RpcMessage
-from .rpcri import rpcri_match
-from .rpctransport import RpcClient
-from .shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
-from .value import SHVType, is_shvbool, is_shvnull
+from ..rpcmessage import RpcMessage
+from ..rpcri import rpcri_match
+from ..rpctransport import RpcClient
+from ..shvversion import SHV_VERSION_MAJOR, SHV_VERSION_MINOR
+from ..value import SHVType, is_shvbool, is_shvnull
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +37,9 @@ class SHVBase:
     """SHV RPC object API base class.
 
     You want to use this if you plan to implement your own specific RPC message
-    handler but in most cases you might want to use :class:`shv.SHVClient` or
-    :class:`shv.SHVDevice` instead.
+    handler but in most cases you might want to use
+    :class:`shv.rpcapi.client.SHVClient` or :class:`shv.rpcapi.device.SHVDevice`
+    instead.
 
     Messages are handled in an asyncio loop and based on the type of the message
     the different operation is performed.
@@ -165,8 +166,8 @@ class SHVBase:
     async def reset(self) -> None:
         """Reset the client and connection.
 
-        This calls :meth:`RpcClient.reset` as well as reset of the internal
-        state.
+        This calls :meth:`shv.rpctransport.RpcClient.reset` as well as reset of
+        the internal state.
         """
         await self.client.reset()
         self._reset()
@@ -200,27 +201,27 @@ class SHVBase:
         :param param: Parameter passed to the called method.
         :param user_id: UserID added to the method call request. This is required
           by some RPC methods to identify the user and they will respond with
-          :class:`RpcUserIDRequiredError` if it is missing. This is caught by
-          this method and request will be attempted again with User ID ``""``.
-          If you know that method needs User ID then you can prevent this round
-          trip by setting this argument to ``""``. On the other hand sending
-          all requests with User ID wastes with bandwidth. In general usage you
-          should use :attr:`SHVBase.user_id` instead of just ``""`` to use the
-          object default.
-        :param query_timeout: Override :attr:`SHVBase.call_query_timeout` just
+          :class:`shv.rpcdef.RpcUserIDRequiredError` if it is missing. This is
+          caught by this method and request will be attempted again with User
+          ID ``""``. If you know that method needs User ID then you can prevent
+          this round trip by setting this argument to ``""``. On the other hand
+          sending all requests with User ID wastes with bandwidth. In general
+          usage you should use :attr:`shv.rpcapi.SHVBase.user_id` instead of
+          just ``""`` to use the object default.
+        :param query_timeout: Override :attr:`shv.rpcapi.SHVBase.call_query_timeout` just
           for this one call.
-        :param retry_timeout: Override :attr:`SHVBase.call_retry_timeout` just
+        :param retry_timeout: Override :attr:`shv.rpcapi.SHVBase.call_retry_timeout` just
           for this one call.
         :param progress: An optional callback function that is called to report
           on progress of the call. It can be either function of coroutine. The
           argument passed is the float between 0 and 1 providing the progress
           signalization or ``None`` to signal that
-          :class:`RpcTryAgainLaterError` was received. If you need to pass
-          additional arguments to the function then use
+          :class:`shv.rpcdef.RpcTryAgainLaterError` was received. If you need
+          to pass additional arguments to the function then use
           :func:`functools.partial`.
         :return: Return value on successful method call.
         :raise RpcError: The call result in error that is propagated by raising
-          `RpcError` or its children based on the failure.
+          :class:`shv.rpcdef.RpcError` or its children based on the failure.
         :raise EOFError: when client disconnected and thus request can't be
           sent or response received.
         """
@@ -481,7 +482,7 @@ class SHVBase:
 
         :param request: SHV RPC request message info.
         :return: result of the method call. To report error you should raise
-            :exc:`RpcError`.
+            :exc:`shv.rpcdef.RpcError`.
         """
         match request.path, request.method:
             case ".app", "shvVersionMajor":
@@ -591,7 +592,7 @@ class SHVBase:
         """Implement ``dir`` method for all nodes.
 
         This implementation is called only for valid paths
-        (:meth:`shv.SHVBase._valid_path`).
+        (:meth:`shv.rpcapi.SHVBase._valid_path`).
 
         Always call this as first before you yield your own methods to provide
         users with standard ones.
@@ -616,7 +617,7 @@ class SHVBase:
         """
 
     class Request:
-        """Set of parameters passed to the :meth:`shv.SHVBase._method_call`.
+        """Set of parameters passed to the :meth:`shv.rpcapi.SHVBase._method_call`.
 
         This is provided as one data class to allow easier method typing as
         well as ability to more freely add or remove info items.
@@ -654,7 +655,7 @@ class SHVBase:
             """The user's ID collected as message was passed around.
 
             This can be ``None`` when request message contained no ID. You can raise
-            :class:`RpcUserIDRequiredError` if you need it.
+            :class:`shv.rpcdef.RpcUserIDRequiredError` if you need it.
             """
             return self._msg.user_id
 

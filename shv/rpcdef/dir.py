@@ -7,9 +7,9 @@ import enum
 import functools
 import typing
 
-from .rpcaccess import RpcAccess
-from .rpcparam import SHVGetKey, shvget, shvgett
-from .value import SHVMapType, SHVType, is_shvimap, is_shvmap
+from ..rpcparam import SHVGetKey, shvget, shvgett
+from ..value import SHVMapType, SHVType, is_shvimap, is_shvmap
+from .access import RpcAccess
 
 
 @dataclasses.dataclass
@@ -132,7 +132,7 @@ class RpcDir:
         :param signal: Allows specifying property change signal. You can specify
           `True` to get default `"chng"` signal or you can specify custom signal
           name (should end with *chng*).
-        :param flags: Flags assigned to the method. :py:data:`Flags.GETTER` is
+        :param flags: Flags assigned to the method. :py:data:`Flag.GETTER` is
           always set.
         :param description: Short description of the value.
         """

@@ -5,7 +5,9 @@ import logging
 
 import pytest
 
-from shv import RpcProtocol, SHVClient, broker
+from shv import broker
+from shv.rpcapi.client import SHVClient
+from shv.rpcurl import RpcProtocol
 
 logger = logging.getLogger(__name__)
 

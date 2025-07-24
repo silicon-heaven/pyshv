@@ -2,11 +2,7 @@
 
 import pytest
 
-from shv import (
-    rpcri_legacy_subscription,
-    rpcri_match,
-    rpcri_relative_to,
-)
+from shv.rpcri import rpcri_legacy_subscription, rpcri_match, rpcri_relative_to
 
 
 @pytest.mark.parametrize(

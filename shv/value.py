@@ -46,8 +46,8 @@ class SHVMeta(abc.ABC):  # noqa B024
     .. warning::
         ``None`` and bool can't have meta assigned to the them just by simple
         inheritance and thus we define our custom types. Make sure that you
-        always expect that you can get instance of :class:`SHVNull` instead of
-        ``None`` and :class:`SHVBool` instead of ``True`` and ``False``.
+        always expect that you can get instance of :class:`shv.SHVNull` instead
+        of ``None`` and :class:`shv.SHVBool` instead of ``True`` and ``False``.
     .. note::
         Meta is not intentionally included in the plain comparison to ensure
         that standard hashable types are still hashable while meta is
@@ -149,7 +149,7 @@ class SHVNull(SHVMeta):
 
 
 def is_shvnull(value: object) -> typing.TypeGuard[SHVNullType]:
-    """Validate type of the value as either ``None`` or :class:`SHVNull`."""
+    """Validate type of the value as either ``None`` or :class:`shv.SHVNull`."""
     return value is None or isinstance(value, SHVNull)
 
 

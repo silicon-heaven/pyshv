@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from shv import SHVPath
+from shv.path import SHVPath
 
 
 def test_nospace():

@@ -31,7 +31,7 @@ class RpcTransportProtocol(abc.ABC):
 
     @classmethod
     async def asyncio_send(cls, writer: asyncio.StreamWriter, msg: bytes) -> None:
-        """Variation on :meth:`send` that uses :class:`asyncio.StreamWriter`."""
+        """Send function that uses :class:`asyncio.StreamWriter`."""
         # TODO: the split write is for some reason required for TCP to ensure
         # that write detects disconnect. Otherwise only second write would
         # cause exception. We should revisit this in the future. It smells like

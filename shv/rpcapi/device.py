@@ -7,14 +7,12 @@ import itertools
 import time
 import typing
 
-from .rpcaccess import RpcAccess
-from .rpcalert import RpcAlert
-from .rpcdir import RpcDir
-from .rpcerrors import RpcNotImplementedError
-from .rpcmessage import RpcMessage
-from .shvbase import SHVBase
-from .shvclient import SHVClient
-from .value import SHVType
+from ..rpcdef import RpcAccess, RpcDir, RpcNotImplementedError
+from ..rpcdef.alert import RpcAlert
+from ..rpcmessage import RpcMessage
+from ..value import SHVType
+from .base import SHVBase
+from .client import SHVClient
 
 
 class SHVDevice(SHVClient):

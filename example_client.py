@@ -5,7 +5,8 @@ import argparse
 import asyncio
 import logging
 
-from shv import RpcUrl, SHVClient
+from shv.rpcapi.client import SHVClient
+from shv.rpcurl import RpcUrl
 
 log_levels = (
     logging.DEBUG,

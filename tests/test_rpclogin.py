@@ -4,7 +4,8 @@ import re
 
 import pytest
 
-from shv import RpcInvalidParamError, RpcLogin, RpcLoginType
+from shv.rpcdef import RpcInvalidParamError
+from shv.rpclogin import RpcLogin, RpcLoginType
 
 
 def test_options_init():

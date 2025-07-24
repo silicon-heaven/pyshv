@@ -7,17 +7,13 @@ import collections.abc
 import logging
 import typing
 
-from shv import (
-    RpcAccess,
-    RpcDir,
-    RpcInvalidParamError,
-    RpcMessage,
-    RpcUrl,
-    SHVBase,
-    SHVClient,
-    SHVMethods,
-    SHVType,
-)
+from shv import SHVType
+from shv.rpcapi import SHVBase
+from shv.rpcapi.client import SHVClient
+from shv.rpcapi.methods import SHVMethods
+from shv.rpcdef import RpcAccess, RpcDir, RpcInvalidParamError
+from shv.rpcmessage import RpcMessage
+from shv.rpcurl import RpcUrl
 
 
 class ExampleDevice(SHVClient, SHVMethods):

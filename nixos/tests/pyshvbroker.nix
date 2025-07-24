@@ -13,7 +13,7 @@
       text = ''
         #!${testPython}/bin/python3
         import asyncio
-        import shv
+        from shv.rpcapi.client import SHVClient
 
 
         ${script}
@@ -48,7 +48,7 @@ in {
       environment.systemPackages = [
         (shvTest "checkls" ''
           async def main():
-              client = await shv.SHVClient.connect("tcp://admin@broker?password=admin!123")
+              client = await SHVClient.connect("tcp://admin@broker?password=admin!123")
               assert await client.ls("") == [".app", ".broker"]
               await client.disconnect()
         '')

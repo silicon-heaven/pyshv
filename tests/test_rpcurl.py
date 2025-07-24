@@ -4,7 +4,8 @@ import re
 
 import pytest
 
-from shv import RpcLogin, RpcLoginType, RpcProtocol, RpcUrl
+from shv.rpclogin import RpcLogin, RpcLoginType
+from shv.rpcurl import RpcProtocol, RpcUrl
 
 DATA = [
     ("unix:/dev/null", RpcUrl("/dev/null", protocol=RpcProtocol.UNIX)),

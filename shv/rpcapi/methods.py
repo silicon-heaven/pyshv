@@ -9,12 +9,12 @@ import dataclasses
 import typing
 import weakref
 
-from .rpcaccess import RpcAccess
-from .rpcdir import RpcDir
-from .rpcerrors import RpcInvalidParamError, RpcUserIDRequiredError
-from .rpcmessage import RpcMessage
-from .shvbase import SHVBase
-from .value import SHVType
+from ..rpcdef.access import RpcAccess
+from ..rpcdef.dir import RpcDir
+from ..rpcdef.errors import RpcInvalidParamError, RpcUserIDRequiredError
+from ..rpcmessage import RpcMessage
+from ..value import SHVType
+from .base import SHVBase
 
 SHVMethodT: typing.TypeAlias = collections.abc.Callable[
     [typing.Any, SHVBase.Request],
@@ -33,14 +33,15 @@ SHVSetMethodT: typing.TypeAlias = collections.abc.Callable[
 class SHVMethods(SHVBase):
     """SHV RPC methods and signals implementation helper.
 
-    The regular way to implement methods in :class:`shv.SHVBase` is by defining
-    :meth:`shv.SHVBase._ls`, :meth:`shv.SHVBase._dir`, and
-    :meth:`shv.SHVBase._method_call` methods. That provides ability to implement
-    discoverability as well as method implementation in various dynamic ways.
-    But in real world applications it is common that we just want to define
-    custom methods and having to implement these methods can be error-prone and
-    unnecessary complex. This class instead provides a way to define methods
-    that are discovered and their integration is handled automatically.
+    The regular way to implement methods in :class:`shv.rpcapi.SHVBase` is by
+    defining :meth:`shv.rpcapi.SHVBase._ls`, :meth:`shv.rpcapi.SHVBase._dir`,
+    and :meth:`shv.rpcapi.SHVBase._method_call` methods. That provides ability
+    to implement discoverability as well as method implementation in various
+    dynamic ways. But in real world applications it is common that we just want
+    to define custom methods and having to implement these methods can be
+    error-prone and unnecessary complex. This class instead provides a way to
+    define methods that are discovered and their integration is handled
+    automatically.
     """
 
     def __init__(
@@ -102,14 +103,14 @@ class SHVMethods(SHVBase):
           would not be called.
         - Verification of the access level.
         - Verifies if user's ID is required (based on the
-          :attr:`shv.RpcDir.flags`) and sends
-          :class:`shv.RpcUserIDRequiredError` error.
+          :attr:`shv.rpcdef.RpcDir.flags`) and sends
+          :class:`shv.rpcdef.RpcUserIDRequiredError` error.
 
         What application has to do on its own:
 
         - Implement the method behavior and return the method result.
-        - Validate parameter and raise :class:`shv.RpcInvalidParamError` for
-          invalid values.
+        - Validate parameter and raise :class:`shv.rpcdef.RpcInvalidParamError`
+          for invalid values.
         - Explicitly send signals.
         """
 
@@ -166,7 +167,7 @@ class SHVMethods(SHVBase):
     def method(
         cls, path: str, desc: RpcDir
     ) -> collections.abc.Callable[[SHVMethodT], SHVMethods.Method]:
-        """Decorate method to turn it to :class:`shv.SHVMethods.Method`.
+        """Decorate method to turn it to :class:`shv.rpcapi.methods.SHVMethods.Method`.
 
         :param path: SHV path this method is associated with.
         :param desc: Method description.

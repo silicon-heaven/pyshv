@@ -67,7 +67,6 @@ type_vars = {
     "SHVMethodT",
     "SHVGetMethodT",
     "SHVSetMethodT",
-    "NamedT",
 }
 
 autodoc_member_order = "bysource"
@@ -76,11 +75,7 @@ autodoc_default_options = {
     "undoc-members": True,
     "show-inheritance": True,
 }
-autodoc_type_aliases = {
-    "shv.rpcerrors.RpcError": "shv.RpcError",
-    "shv.rpcerrors.RpcErrorCode": "shv.RpcErrorCode",
-    **{v: v for v in type_vars},
-}
+autodoc_type_aliases = {v: v for v in type_vars}
 
 
 intersphinx_mapping = {

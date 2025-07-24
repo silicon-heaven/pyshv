@@ -5,7 +5,7 @@ from __future__ import annotations
 import collections.abc
 import typing
 
-from .rpcerrors import RpcInvalidParamError
+from .rpcdef.errors import RpcInvalidParamError
 from .value import SHVType, is_shvlist
 
 SHVT = typing.TypeVar("SHVT", bound=SHVType)
@@ -63,8 +63,8 @@ def shvget(
     :param key: Key or list of keys that should be recursively applied to the
       value.
     :param default: Default value used if value is not present.
-      :class:`shv.RpcInvalidParamError` is raised instead if :data:`NO_DEFAULT`
-      is specified.
+      :class:`shv.rpcdef.RpcInvalidParamError` is raised instead if
+      :data:`NO_DEFAULT` is specified.
     :return: extracted value or default.
     :raise RpcInvalidParamError: if the value is not present and no default was
       provided.
@@ -106,8 +106,8 @@ def shvgett(
       value.
     :param tp: Type of the expected value.
     :param default: Default value used if value is not present.
-      :class:`shv.RpcInvalidParamError` is raised instead if :data:`NO_DEFAULT`
-      is specified.
+      :class:`shv.rpcdef.RpcInvalidParamError` is raised instead if
+      :data:`NO_DEFAULT` is specified.
     :return: extracted value or default.
     :raise RpcInvalidParamError: if the value is not present and no default
       provided.
@@ -131,8 +131,8 @@ def shvarg(
     :param value: Some List to be sanitized.
     :param index: The index in list we want to access.
     :param default: Default value used if value is not present.
-      :class:`shv.RpcInvalidParamError` is raised instead if :data:`NO_DEFAULT`
-      is specified.
+      :class:`shv.rpcdef.RpcInvalidParamError` is raised instead if
+      :data:`NO_DEFAULT` is specified.
     :return: extracted value or default.
     :raise RpcInvalidParamError: if the value is not present and no default
       provided.
@@ -159,8 +159,8 @@ def shvargt(
     :param index: The index in list we want to access.
     :param tp: Type of the expected value.
     :param default: Default value used if value is not present.
-      :class:`shv.RpcInvalidParamError` is raised instead if :data:`NO_DEFAULT`
-      is specified.
+      :class:`shv.rpcdef.RpcInvalidParamError` is raised instead if
+      :data:`NO_DEFAULT` is specified.
     :return: extracted value or default.
     :raise RpcInvalidParamError: if the value is not present and no default
       provided.

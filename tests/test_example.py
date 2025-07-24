@@ -3,7 +3,8 @@
 import pytest
 
 import example_client
-from shv import RpcAccess, RpcMethodNotFoundError, shvmeta
+from shv import shvmeta
+from shv.rpcdef import RpcAccess, RpcMethodNotFoundError
 
 
 @pytest.mark.parametrize(

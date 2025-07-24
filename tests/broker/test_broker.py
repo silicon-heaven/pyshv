@@ -4,17 +4,17 @@ import dataclasses
 
 import pytest
 
-from shv import (
+from shv import shvmeta
+from shv.rpcapi.client import SHVClient
+from shv.rpcdef import (
     RpcAccess,
     RpcDir,
     RpcInvalidParamError,
     RpcLoginRequiredError,
-    RpcMessage,
     RpcMethodCallExceptionError,
     RpcMethodNotFoundError,
-    SHVClient,
-    shvmeta,
 )
+from shv.rpcmessage import RpcMessage
 from shv.rpctransport import RpcClientTCP
 
 

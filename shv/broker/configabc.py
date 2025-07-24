@@ -6,7 +6,7 @@ import abc
 import collections
 import collections.abc
 
-from ..rpcaccess import RpcAccess
+from ..rpcdef.access import RpcAccess
 from ..rpclogin import RpcLogin
 from ..rpcurl import RpcUrl
 

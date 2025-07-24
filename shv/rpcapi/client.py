@@ -9,14 +9,14 @@ import logging
 import time
 import typing
 
-from .rpclogin import RpcLogin, RpcLoginType
-from .rpcmessage import RpcMessage
-from .rpcparam import shvgett
-from .rpcri import rpcri_legacy_subscription
-from .rpctransport import RpcClient, connect_rpc_client
-from .rpcurl import RpcUrl
-from .shvbase import SHVBase
-from .value import SHVType
+from ..rpclogin import RpcLogin, RpcLoginType
+from ..rpcmessage import RpcMessage
+from ..rpcparam import shvgett
+from ..rpcri import rpcri_legacy_subscription
+from ..rpctransport import RpcClient, connect_rpc_client
+from ..rpcurl import RpcUrl
+from ..value import SHVType
+from .base import SHVBase
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 class SHVClient(SHVBase):
     """SHV RPC client made simple to use.
 
-    You most likely want to use this client instead of using :class:`RpcClient`
-    directly.
+    You most likely want to use this client instead of using
+    :class:`shv.rpctransport.RpcClient` directly.
 
     It is designed as a RPC peer that is connected to the SHV RPC Broker.
     """
@@ -190,8 +190,9 @@ class SHVClient(SHVBase):
     async def _login(self) -> None:
         """Login operation.
 
-        This implements standard :attr:`RpcLoginType.PLAIN`,
-        :attr:`RpcLoginType.SHA1`, and :attr:`RpcLoginType.TOKEN`.
+        This implements standard :attr:`shv.rpclogin.RpcLoginType.PLAIN`,
+        :attr:`shv.rpclogin.RpcLoginType.SHA1`, and
+        :attr:`shv.rpclogin.RpcLoginType.TOKEN`.
 
         Be aware when you are overwriting or extending this method as this is
         running on every reset and holds off any other messages.

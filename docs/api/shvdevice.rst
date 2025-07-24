@@ -1,5 +1,5 @@
 SHV RPC Device API
 ==================
 
-.. autoclass:: shv.SHVDevice
+.. autoclass:: shv.rpcapi.device.SHVDevice
    :private-members:

@@ -1,6 +1,6 @@
 SHV RPC Client
 ==============
 
-.. autoclass:: shv.SHVClient
+.. autoclass:: shv.rpcapi.client.SHVClient
    :private-members:
    :exclude-members: __restart_login, __subscribe

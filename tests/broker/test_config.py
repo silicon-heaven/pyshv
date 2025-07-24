@@ -2,8 +2,10 @@
 
 import pytest
 
-from shv import RpcAccess, RpcLogin, RpcLoginType, RpcProtocol, RpcUrl
 from shv.broker import RpcBrokerConfig
+from shv.rpcdef import RpcAccess
+from shv.rpclogin import RpcLogin, RpcLoginType
+from shv.rpcurl import RpcProtocol, RpcUrl
 
 
 def test_config(config):

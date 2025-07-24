@@ -8,16 +8,10 @@ import typing
 
 import pytest
 
-from shv import (
-    FileProviderRW,
-    RpcAccess,
-    RpcDir,
-    RpcFile,
-    RpcFileStat,
-    SHVBase,
-    SHVClient,
-    SHVType,
-)
+from shv import SHVType
+from shv.rpcapi import SHVBase
+from shv.rpcapi.client import SHVClient
+from shv.rpcdef.file import FileProviderRW, RpcAccess, RpcDir, RpcFile, RpcFileStat
 
 
 class FilesProvider(SHVClient):

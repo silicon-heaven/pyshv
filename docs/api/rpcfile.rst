@@ -1,4 +1,4 @@
 RPC Files
 =========
 
-.. automodule:: shv.rpcfile
+.. automodule:: shv.rpcdef.file

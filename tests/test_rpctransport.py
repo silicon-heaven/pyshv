@@ -17,7 +17,7 @@ import threading
 
 import pytest
 
-from shv import RpcMessage
+from shv.rpcmessage import RpcMessage
 from shv.rpctransport import (
     RpcClient,
     RpcClientPipe,

@@ -10,8 +10,8 @@ import typing
 from .chainpack import ChainPackWriter
 from .cpon import CponWriter
 from .path import SHVPath
-from .rpcaccess import RpcAccess
-from .rpcerrors import RpcError, RpcErrorCode
+from .rpcdef.access import RpcAccess
+from .rpcdef.errors import RpcError, RpcErrorCode
 from .value import (
     SHVIMap,
     SHVType,
@@ -153,7 +153,7 @@ class RpcMessage:
         """Create new message that is response to this one.
 
         :param result: The result value to be set in the response or
-          :py:class:`RpcError` to be reported as error result.
+          :class:`shv.rpcdef.RpcError` to be reported as error result.
         :return: The new message that is response to this one.
         """
         if self.type not in {self.Type.REQUEST, self.Type.REQUEST_ABORT}:
@@ -243,12 +243,12 @@ class RpcMessage:
 
     @property
     def shvpath(self) -> SHVPath:
-        """SHV path specified for this message as :class:`SHVPath`."""
+        """SHV path specified for this message as :class:`shv.path.SHVPath`."""
         return SHVPath(self.path)
 
     @shvpath.setter
     def shvpath(self, path: SHVPath) -> None:
-        """Set given :class:`SHVPath` as SHV path for this message."""
+        """Set given :class:`shv.path.SHVPath` as SHV path for this message."""
         self.path = str(path)
 
     @property
@@ -361,7 +361,7 @@ class RpcMessage:
 
     @property
     def rpc_access(self) -> RpcAccess | None:
-        """Access level as :class:`shv.RpcAccess`."""
+        """Access level as :class:`shv.rpcdef.RpcAccess`."""
         if (level := self._access_level) is not None:
             if not isinstance(level, int):
                 raise ValueError(f"Invalid AccessLevel type: {type(level)}")
@@ -374,7 +374,7 @@ class RpcMessage:
 
     @rpc_access.setter
     def rpc_access(self, access: RpcAccess | None) -> None:
-        """Set access level with :class:`shv.RpcAccess`."""
+        """Set access level with :class:`shv.rpcdef.RpcAccess`."""
         if access is not None:
             self.value.meta[self.Tag.ACCESS] = RpcAccess.tostr(access)
             self.value.meta[self.Tag.ACCESS_LEVEL] = access.value
@@ -428,7 +428,7 @@ class RpcMessage:
     def param(self) -> SHVType:
         """SHV parameters for the method call.
 
-        Usable only for :py:data:`Type.REQUEST` and :py:data:`Type.SIGNAL`.
+        Usable only for :data:`Type.REQUEST` and :data:`Type.SIGNAL`.
         """
         return self.value.get(self.Key.PARAM, None)
 
@@ -442,7 +442,7 @@ class RpcMessage:
 
     @property
     def abort(self) -> bool:
-        """The delay progress for the :py:data:`Type.REQUEST_ABORT`."""
+        """The delay progress for the :data:`Type.REQUEST_ABORT`."""
         res = self.value.get(self.Key.ABORT)
         if not isinstance(res, bool):
             raise ValueError(f"Invalid Abort: {res!r}")
@@ -460,7 +460,7 @@ class RpcMessage:
     def result(self) -> SHVType:
         """SHV method call result.
 
-        Usable only for :py:data:`Type.RESPONSE`.
+        Usable only for :data:`Type.RESPONSE`.
         """
         return self.value.get(self.Key.RESULT, None)
 
@@ -476,7 +476,7 @@ class RpcMessage:
     def error(self) -> RpcError:
         """SHV method call error.
 
-        Usable only for :py:data:`Type.ERROR`.
+        Usable only for :data:`Type.RESPONSE_ERROR`.
         """
         return RpcError.from_shv(self.value.get(self.Key.ERROR))
 
@@ -490,7 +490,7 @@ class RpcMessage:
 
     @property
     def delay(self) -> float:
-        """The delay progress for the :py:data:`Type.RESPONSE_DELAY`."""
+        """The delay progress for the :data:`Type.RESPONSE_DELAY`."""
         res = self.value.get(self.Key.DELAY)
         if not isinstance(res, float):
             raise ValueError(f"Invalid Delay: {res!r}")

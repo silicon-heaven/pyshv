@@ -6,25 +6,25 @@ user code they can be handled with try-catch as any other exception. That
 requires mapping of these errors to an appropriate Python :class:`Exception`
 class.
 
-There is a root exception for all SHV RPC errors :class:`shv.RpcError` but that
-should be used only for errors without assigned code. There is a dedicated
-children defined that should be preffered.
+There is a root exception for all SHV RPC errors :class:`shv.rpcdef.RpcError`
+but that should be used only for errors without assigned code. There is a
+dedicated children defined that should be preffered.
 
-.. autoclass:: shv.RpcError
+.. autoclass:: shv.rpcdef.RpcError
 
 Standard errors
 ---------------
 
-.. autoclass:: shv.RpcMethodNotFoundError
-.. autoclass:: shv.RpcInvalidParamError
-.. autoclass:: shv.RpcMethodCallExceptionError
-.. autoclass:: shv.RpcLoginRequiredError
-.. autoclass:: shv.RpcUserIDRequiredError
-.. autoclass:: shv.RpcNotImplementedError
-.. autoclass:: shv.RpcTryAgainLaterError
-.. autoclass:: shv.RpcRequestInvalidError
+.. autoclass:: shv.rpcdef.RpcMethodNotFoundError
+.. autoclass:: shv.rpcdef.RpcInvalidParamError
+.. autoclass:: shv.rpcdef.RpcMethodCallExceptionError
+.. autoclass:: shv.rpcdef.RpcLoginRequiredError
+.. autoclass:: shv.rpcdef.RpcUserIDRequiredError
+.. autoclass:: shv.rpcdef.RpcNotImplementedError
+.. autoclass:: shv.rpcdef.RpcTryAgainLaterError
+.. autoclass:: shv.rpcdef.RpcRequestInvalidError
 
 Utilities
 ---------
 
-.. autoclass:: shv.RpcErrorCode
+.. autoclass:: shv.rpcdef.errors.RpcErrorCode

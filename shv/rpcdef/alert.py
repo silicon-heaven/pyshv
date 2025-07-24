@@ -4,7 +4,7 @@ import datetime
 import enum
 import typing
 
-from .value import SHVIMapType, SHVType
+from ..value import SHVIMapType, SHVType
 
 
 class RpcAlert:

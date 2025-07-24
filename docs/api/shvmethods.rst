@@ -1,11 +1,11 @@
 SHV RPC Methods
 ===============
 
-.. autoclass:: shv.SHVMethods
+.. autoclass:: shv.rpcapi.methods.SHVMethods
 
 Type hints
 ----------
 
-.. autodata:: shv.shvmethods.SHVMethodT
-.. autodata:: shv.shvmethods.SHVGetMethodT
-.. autodata:: shv.shvmethods.SHVSetMethodT
+.. autodata:: shv.rpcapi.methods.SHVMethodT
+.. autodata:: shv.rpcapi.methods.SHVGetMethodT
+.. autodata:: shv.rpcapi.methods.SHVSetMethodT

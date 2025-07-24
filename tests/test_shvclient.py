@@ -5,13 +5,10 @@ import dataclasses
 
 import pytest
 
-from shv import (
-    RpcAccess,
-    RpcDir,
-    RpcLoginType,
-    SHVClient,
-    shvmeta,
-)
+from shv import shvmeta
+from shv.rpcapi.client import SHVClient
+from shv.rpcdef import RpcAccess, RpcDir
+from shv.rpclogin import RpcLoginType
 
 
 @pytest.mark.parametrize(

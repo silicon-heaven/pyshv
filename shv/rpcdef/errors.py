@@ -7,7 +7,7 @@ import enum
 import traceback
 import typing
 
-from .value import SHVType, is_shvimap
+from ..value import SHVType, is_shvimap
 
 
 class RpcErrorCode(enum.IntEnum):
@@ -72,7 +72,7 @@ class RpcError(RuntimeError):
 
     @property
     def error_code(self) -> RpcErrorCode:
-        """Provides access to the :class:`RpcErrorCode`."""
+        """Provides access to the :class:`shv.rpcdef.errors.RpcErrorCode`."""
         return RpcErrorCode(self.args[1])
 
     def to_shv(self) -> SHVType:
