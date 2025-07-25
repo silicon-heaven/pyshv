@@ -119,14 +119,12 @@ class SHVClient(SHVBase):
                 reconnect_attempt = 0
                 self._connected.set()
                 activity_task = asyncio.create_task(self._activity_loop())
-                try:
-                    await super()._loop()
-                    self.client.disconnect()  # write stays open so close it
-                    self._connected.clear()
-                finally:
-                    activity_task.cancel()
-                    with contextlib.suppress(asyncio.exceptions.CancelledError):
-                        await activity_task
+                await super()._loop()
+                self.client.disconnect()  # write stays open so close it
+                self._connected.clear()
+                activity_task.cancel()
+                with contextlib.suppress(asyncio.exceptions.CancelledError):
+                    await activity_task
             else:
                 try:
                     await self.client.reset()
