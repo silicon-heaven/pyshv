@@ -7,7 +7,6 @@ import fcntl
 import logging
 import os
 import pathlib
-import sys
 import termios
 import tty
 import typing
@@ -51,6 +50,8 @@ class RpcClientTTY(RpcClientStream):
     async def _open_connection(
         self,
     ) -> tuple[asyncio.StreamReader, asyncio.StreamWriter]:
+        loop = asyncio.get_running_loop()
+
         fd = os.open(self.port, os.O_RDWR)
         try:
             if not os.isatty(fd):
@@ -66,15 +67,11 @@ class RpcClientTTY(RpcClientStream):
             raise
         file = os.fdopen(fd, "wb")
 
-        loop = asyncio.get_running_loop()
-        reader = asyncio.StreamReader(loop=loop)
-        rprotocol = asyncio.StreamReaderProtocol(reader, loop=loop)
+        reader = asyncio.StreamReader()
+        rprotocol = asyncio.StreamReaderProtocol(reader)
         await loop.connect_read_pipe(lambda: rprotocol, file)
 
-        if sys.version_info < (3, 12):
-            wprotocol = rprotocol
-        else:
-            wprotocol = asyncio.StreamReaderProtocol(None, loop=loop)
+        wprotocol = asyncio.StreamReaderProtocol(asyncio.StreamReader())
         wtransport, _ = await loop.connect_write_pipe(lambda: wprotocol, file)
         writer = asyncio.StreamWriter(wtransport, wprotocol, None, loop)
 

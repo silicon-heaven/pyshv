@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import sys
 import typing
 
 from .stream import (
@@ -50,16 +49,13 @@ class RpcClientPipe(RpcClientStream):
 
         if isinstance(rpipe, int):
             rpipe = os.fdopen(rpipe, mode="rb")
-        reader = asyncio.StreamReader(loop=loop)
-        rprotocol = asyncio.StreamReaderProtocol(reader, loop=loop)
+        reader = asyncio.StreamReader()
+        rprotocol = asyncio.StreamReaderProtocol(reader)
         await loop.connect_read_pipe(lambda: rprotocol, rpipe)
 
         if isinstance(wpipe, int):
             wpipe = os.fdopen(wpipe, mode="wb")
-        if sys.version_info < (3, 12):
-            wprotocol = rprotocol
-        else:
-            wprotocol = asyncio.StreamReaderProtocol(None, loop=loop)
+        wprotocol = asyncio.StreamReaderProtocol(asyncio.StreamReader())
         wtransport, _ = await loop.connect_write_pipe(lambda: wprotocol, wpipe)
         writer = asyncio.StreamWriter(wtransport, wprotocol, None, loop)
 
