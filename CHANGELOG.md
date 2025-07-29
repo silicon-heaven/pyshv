@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- `Cpon.unpack` and `ChainPack.unpack` no longer raise `EOFError` if message is
+  not complete, instead it raises `ValueError` consistently with invalid format
 
 
 ## [0.10.0] - 2025-07-25

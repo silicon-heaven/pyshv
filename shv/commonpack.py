@@ -53,7 +53,7 @@ class CommonReader(abc.ABC):
 
         :param size: Number of bytes to read.
         :return: Read bytes.
-        :raise EOFError: in case EOF is encountered.
+        :raise ValueError: in case no enough data is available.
         """
         assert size > 0
         self.bytes_cnt += size
@@ -63,7 +63,7 @@ class CommonReader(abc.ABC):
         while size:
             read = self.stream.read(size)
             if not read:
-                raise EOFError("End of message or file encountered.")
+                raise ValueError("Unexpected end of message.")
             res += read
             size -= len(read)
         return res
@@ -72,7 +72,7 @@ class CommonReader(abc.ABC):
         """Read a single byte and return it as int.
 
         :return: Read byte.
-        :raise EOFError: in case EOF is encountered.
+        :raise ValueError: in case no enough data is available.
         """
         return self._read(1)[0]
 
@@ -86,12 +86,8 @@ class CommonReader(abc.ABC):
         Make sure that you use `0` to terminate what you are doing.
         """
         if not self.peek_byte:
-            try:
-                self.peek_byte = self._read(1)
-                self.bytes_cnt -= 1
-            except EOFError:
-                return 0
-        return self.peek_byte[0]
+            self.peek_byte = self.stream.read(1)
+        return self.peek_byte[0] if self.peek_byte else 0
 
     def _peek_drop(self) -> None:
         """Drop peeked data."""
@@ -102,8 +98,8 @@ class CommonReader(abc.ABC):
         """Read bytes and check that it is what we expected.
 
         :param data: Expected bytes.
-        :raise ValueError: when unexpected byte was received.
-        :raise EOFError: in case EOF is encountered.
+        :raise ValueError: when unexpected byte was received or not enough data
+          available.
         """
         b = self._read(len(data))
         if data != b:
@@ -114,7 +110,6 @@ class CommonReader(abc.ABC):
         """Read next SHV value.
 
         :raise ValueError: when unexpected byte was received.
-        :raise EOFError: in case EOF is encountered.
         """
 
     @classmethod
