@@ -12,7 +12,7 @@ import tomllib
 
 
 def _get_version() -> str:
-    pyproject = pathlib.Path(__file__).parent.parent / "pyproject.toml"
+    pyproject = pathlib.Path(__file__).parents[1] / "pyproject.toml"
     if pyproject.exists():
         with pyproject.open("rb") as f:
             res = tomllib.load(f)["project"]["version"]

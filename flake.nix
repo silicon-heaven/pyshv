@@ -5,11 +5,13 @@
 
   outputs = {
     self,
+    systems,
     flakepy,
     nixpkgs,
   }: let
-    inherit (flakepy.inputs.flake-utils.lib) eachDefaultSystem;
-    inherit (nixpkgs.lib) composeManyExtensions;
+    inherit (nixpkgs.lib) genAttrs composeManyExtensions;
+    forSystems = genAttrs (import systems);
+    withPkgs = func: forSystems (system: func self.legacyPackages.${system});
 
     pyproject = flakepy.lib.readPyproject ./. {
       # This extends mapping of python to nixpkgs package names, such as:
@@ -19,27 +21,26 @@
     pypackage = pyproject.buildPackage {
       meta.mainProgram = "template_package_name";
     };
-  in
-    {
-      overlays = {
-        pythonPackages = final: _: {
-          "${pyproject.pname}" = final.callPackage pypackage {};
-        };
-        pkgs = _: prev: {
-          pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [self.overlays.pythonPackages];
-        };
-        default = composeManyExtensions [
-          self.overlays.pkgs
-        ];
+  in {
+    overlays = {
+      pythonPackages = final: _: {
+        "${pyproject.pname}" = final.callPackage pypackage {};
       };
-    }
-    // eachDefaultSystem (system: let
-      pkgs = nixpkgs.legacyPackages.${system}.extend self.overlays.default;
-    in {
-      packages.default = pkgs.python3Packages."${pyproject.pname}";
-      legacyPackages = pkgs;
+      packages = _: prev: {
+        pythonPackagesExtensions =
+          prev.pythonPackagesExtensions ++ [self.overlays.pythonPackages];
+      };
+      default = composeManyExtensions [
+        self.overlays.packages
+      ];
+    };
 
-      devShells.default = pkgs.mkShell {
+    packages = withPkgs (pkgs: {
+      default = pkgs.python3Packages."${pyproject.pname}";
+    });
+
+    devShells = withPkgs (pkgs: {
+      default = pkgs.mkShell {
         packages = with pkgs; [
           deadnix
           editorconfig-checker
@@ -53,11 +54,17 @@
           (python3.withPackages (pypkgs:
               with pypkgs; [build sphinx-autobuild]))
         ];
-        inputsFrom = [self.packages.${system}.default];
+        inputsFrom = [pkgs.python3Packages."${pyproject.pname}"];
       };
-
-      checks.default = self.packages.${system}.default;
-
-      formatter = pkgs.alejandra;
     });
+
+    checks = forSystems (system: {
+      inherit (self.packages.${system}) default;
+    });
+    formatter = withPkgs (pkgs: pkgs.alejandra);
+
+    legacyPackages =
+      forSystems (system:
+        nixpkgs.legacyPackages.${system}.extend self.overlays.default);
+  };
 }
