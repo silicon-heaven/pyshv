@@ -164,12 +164,12 @@ class CponReader(commonpack.CommonReader):
                     res += b"\\"
                 elif b == ord('"'):
                     res += b'"'
-                elif b == ord("n"):
-                    res += b"\n"
-                elif b == ord("r"):
-                    res += b"\r"
                 elif b == ord("t"):
                     res += b"\t"
+                elif b == ord("r"):
+                    res += b"\r"
+                elif b == ord("n"):
+                    res += b"\n"
                 else:
                     hi = b
                     lo = self._read_byte()
@@ -356,23 +356,20 @@ class CponWriter(commonpack.CommonWriter):
 
     def write_blob(self, value: bytes | bytearray) -> None:  # noqa: D102
         self._writestr('b"')
+        mapping = {
+            ord("\\"): "\\\\",
+            ord('"'): '\\"',
+            ord("\t"): "\\t",
+            ord("\r"): "\\r",
+            ord("\n"): "\\n",
+        }
         for d in value:
-            if d >= 0x7F:
+            if (d <= 0x1F and d not in mapping) or d >= 0x7F:
                 self._writestr("\\")
                 self._writestr(self._nibble_to_hexdigit(d // 16))
                 self._writestr(self._nibble_to_hexdigit(d % 16))
             else:
-                self._writestr(
-                    {
-                        ord("\0"): "\\0",
-                        ord("\\"): "\\\\",
-                        ord("\t"): "\\t",
-                        ord("\b"): "\\b",
-                        ord("\r"): "\\r",
-                        ord("\n"): "\\n",
-                        ord('"'): '\\"',
-                    }.get(d, chr(d))
-                )
+                self._writestr(mapping.get(d, chr(d)))
         self._writestr('"')
 
     @staticmethod

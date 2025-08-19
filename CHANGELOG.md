@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   not complete, instead it raises `ValueError` consistently with invalid format
 
 ### Fixed
+- Invalid CPON packing of bytes (SHV Blobs) for values between 0x00 and 0x1f
+  (they were printed as text and not `\hh` as requested by SHV standard)
 - Inability to cancel `SHVClient.wait_for_login`
 
 
