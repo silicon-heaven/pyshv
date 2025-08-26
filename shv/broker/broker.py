@@ -418,8 +418,11 @@ class RpcBroker:
                                     RpcMethodCallExceptionError(str(exc))
                                 )
                             else:
-                                if self._login.idle_timeout:
-                                    self.IDLE_TIMEOUT = float(self._login.idle_timeout)
+                                self.IDLE_TIMEOUT = (
+                                    float(self._login.idle_timeout)
+                                    if self._login.idle_timeout
+                                    else type(self).IDLE_TIMEOUT
+                                )
                                 device_id = self._login.device_id
                                 logger.info(
                                     "Client %d logged in as user: %s%s",
