@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Cpon.unpack` and `ChainPack.unpack` no longer raise `EOFError` if message is
   not complete, instead it raises `ValueError` consistently with invalid format
 
+### Fixed
+- Inability to cancel `SHVClient.wait_for_login`
+
 
 ## [0.10.0] - 2025-07-25
 ### Added

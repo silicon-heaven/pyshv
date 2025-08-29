@@ -100,8 +100,9 @@ class SHVClient(SHVBase):
             try:
                 await self._login_task
                 return
-            except asyncio.CancelledError:
-                pass
+            except asyncio.CancelledError as exc:
+                if str(exc) != "Login task restart":
+                    raise
 
     async def disconnect(self) -> None:  # noqa: D102
         self.reconnects = 0
@@ -180,7 +181,7 @@ class SHVClient(SHVBase):
 
     def __restart_login(self) -> None:
         if not self._login_task.done():
-            self._login_task.cancel()
+            self._login_task.cancel("Login task restart")
         self._login_task = asyncio.create_task(self.__login())
 
     async def __login(self) -> None:
