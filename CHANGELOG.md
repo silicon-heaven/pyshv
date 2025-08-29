@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.10.1] - 2025-08-29
 ### Changed
 - `Cpon.unpack` and `ChainPack.unpack` no longer raise `EOFError` if message is
   not complete, instead it raises `ValueError` consistently with invalid format
@@ -428,7 +428,8 @@ pySHV now conforms with work in progress SHV standard 3.0!
 - Packing of empty string
 
 
-[unreleased]: https://gitlab.com/silicon-heaven/pyshv/compare/v0.10.0..HEAD
+[unreleased]: https://gitlab.com/silicon-heaven/pyshv/compare/v0.10.1..HEAD
+[0.10.1]: https://gitlab.com/silicon-heaven/pyshv/compare/v0.10.0..v0.10.1
 [0.10.0]: https://gitlab.com/silicon-heaven/pyshv/compare/v0.9.2..v0.10.0
 [0.9.2]: https://gitlab.com/silicon-heaven/pyshv/compare/v0.9.1..v0.9.2
 [0.9.1]: https://gitlab.com/silicon-heaven/pyshv/compare/v0.9.0..v0.9.1
