@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Suport for CAN transport layer
 
+### Changed
+- `RpcServer` and it's children's method `listen_forewer` renamed to
+  `listen_forever`
+
 
 ## [0.10.1] - 2025-08-29
 ### Changed

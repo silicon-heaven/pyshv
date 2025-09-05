@@ -291,7 +291,7 @@ class RpcServerStream(RpcServer):
             self._server = await self._create_server()
         await self._server.start_serving()
 
-    async def listen_forewer(self) -> None:
+    async def listen_forever(self) -> None:
         """Listen and block the calling coroutine until cancelation."""
         if self._server is None:
             self._server = await self._create_server()

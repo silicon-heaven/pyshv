@@ -170,7 +170,7 @@ class RpcServer(abc.ABC):
         """Start accepting new SHV connections."""
 
     @abc.abstractmethod
-    async def listen_forewer(self) -> None:
+    async def listen_forever(self) -> None:
         """Listen and block the calling coroutine until cancelation."""
 
     @abc.abstractmethod

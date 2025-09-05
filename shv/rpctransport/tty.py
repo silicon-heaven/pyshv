@@ -134,7 +134,7 @@ class RpcServerTTY(RpcServer):
         if not self.is_serving():
             self._task = asyncio.create_task(self._loop())
 
-    async def listen_forewer(self) -> None:  # noqa: D102
+    async def listen_forever(self) -> None:  # noqa: D102
         await self.listen()
         await self.wait_closed()
 

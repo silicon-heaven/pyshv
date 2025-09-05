@@ -627,7 +627,7 @@ class RpcServerCAN(RpcServer):
             self._close_event.clear()
             logger.debug("%s: Listening", self)
 
-    async def listen_forewer(self) -> None:  # noqa: D102
+    async def listen_forever(self) -> None:  # noqa: D102
         await self.listen()
         await self.wait_terminated()
 
