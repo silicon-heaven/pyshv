@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Suport for CAN transport layer
+- `RpcDir.Flag.LONG_EXECUTION`
 
 ### Changed
 - `RpcServer` and it's children's method `listen_forewer` renamed to

@@ -51,6 +51,7 @@ class RpcDir:
         NOT_IDEMPOTENT = 1 << 4
         USER_ID_REQUIRED = 1 << 5
         IS_UPDATABLE = 1 << 6
+        LONG_EXECUTION = 1 << 7
 
     name: str
     flags: Flag = dataclasses.field(default=Flag(0))
