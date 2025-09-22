@@ -24,6 +24,9 @@
           nativeCheckInputs
           ++ optional-dependencies.canbus
           ++ optional-dependencies.websockets;
+        disabledTests = [
+          "TestCAN" # These tests take a long time so let's disable them in Nix
+        ];
         meta = {
           inherit (pyproject.pyproject.project) description;
           homepage = "https://silicon-heaven.gitlab.io/";
