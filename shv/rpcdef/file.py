@@ -25,6 +25,14 @@ from .errors import RpcInvalidParamError
 class RpcFileStat:
     """The stat information for the RPC File."""
 
+    class Type(enum.IntEnum):
+        """File type defined for SHV File nodes."""
+
+        REGULAR = 0
+        MTD = 1
+
+    tp: Type
+    """Type of the SHV file node."""
     size: int
     """Size of the file in bytes."""
     page_size: int
@@ -35,6 +43,10 @@ class RpcFileStat:
     """Optional information about the latest data modification."""
     max_write: int | None = None
     """Optional maximal size in bytes of a single write that is accepted."""
+    max_read: int | None = None
+    """Maximal size of the read supported by file node."""
+    erase_size: int | None = None
+    """Size of the page on MTD file node type."""
 
     class Key(enum.IntEnum):
         """Key in the stat IMap."""
@@ -45,6 +57,8 @@ class RpcFileStat:
         ACCESS_TIME = 3
         MOD_TIME = 4
         MAX_WRITE = 5
+        MAX_READ = 6
+        ERASE_SIZE = 7
 
     def to_shv(self) -> SHVType:
         """Convert to SHV RPC representation."""
@@ -66,8 +80,6 @@ class RpcFileStat:
         """Create from SHV RPC representation."""
         if not is_shvimap(value):
             raise ValueError("Expected Map.")
-        if value.get(cls.Key.TYPE, 0) != 0:
-            raise ValueError("Unsupported type")
         access_time = shvget(value, cls.Key.ACCESS_TIME, None)
         access_time = (
             None if access_time is None else shvt(access_time, datetime.datetime)
@@ -76,17 +88,26 @@ class RpcFileStat:
         mod_time = None if mod_time is None else shvt(mod_time, datetime.datetime)
         max_write = shvget(value, cls.Key.MAX_WRITE, None)
         max_write = None if max_write is None else shvt(max_write, int)
+        max_read = shvget(value, cls.Key.MAX_READ, None)
+        max_read = None if max_read is None else shvt(max_read, int)
+        erase_size = shvget(value, cls.Key.ERASE_SIZE, None)
+        erase_size = None if erase_size is None else shvt(erase_size, int)
         return cls(
+            tp=cls.Type(shvgett(value, cls.Key.TYPE, int, 0)),
             size=shvgett(value, cls.Key.SIZE, int, 0),
             page_size=shvgett(value, cls.Key.PAGE_SIZE, int, 128),
             access_time=access_time,
             mod_time=mod_time,
             max_write=max_write,
+            max_read=max_read,
+            erase_size=erase_size,
         )
 
     @classmethod
     def for_path(cls, path: pathlib.Path | str) -> RpcFileStat:
         """Create stat information for the existing file.
+
+        This doesn't support MTD type!
 
         :param path: Path to the file for which stat should be provided.
         :return: The RPC stat object.
@@ -99,6 +120,7 @@ class RpcFileStat:
             raise FileNotFoundError("Not a regular file")
         stat = path.stat()
         return cls(
+            cls.Type.REGULAR,
             stat.st_size,
             stat.st_blksize,
             datetime.datetime.fromtimestamp(stat.st_atime),

@@ -158,7 +158,7 @@ async def test_file_bin_stat(file_bin, tmp_path):
     mod = datetime.datetime.fromtimestamp(stat.st_mtime, tz=datetime.UTC)
     mod = access.replace(microsecond=(mod.microsecond // 1000) * 1000)
     assert await file_bin.stat() == RpcFileStat(
-        stat.st_size, stat.st_blksize, access, mod
+        0, stat.st_size, stat.st_blksize, access, mod
     )
 
 
