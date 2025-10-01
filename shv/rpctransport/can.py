@@ -273,7 +273,7 @@ class SHVCAN:
 
         def _acknowledgementframe(self) -> can.Message:
             return self.local._frame(
-                False, is_fd=True, data=bytes((self.address, self._rcounter))
+                True, is_fd=True, data=bytes((self.address, self._rcounter))
             )
 
         def _disconnectframe(self) -> can.Message:
