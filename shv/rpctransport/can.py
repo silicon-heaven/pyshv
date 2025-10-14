@@ -15,6 +15,7 @@ import time
 import typing
 import weakref
 
+from .__canlog import patchlogger as __patchlogger
 from .abc import RpcClient, RpcServer
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,10 @@ try:
     import can.interfaces.socketcan
 
     CAN_IMPORT = None
+    __patchlogger(logging.getLogger("can"))
+    __patchlogger(logging.getLogger("can.interfaces.socketcan.socketcan"))
+    __patchlogger(logging.getLogger("can.interfaces.socketcan.socketcan.tx"))
+    __patchlogger(logging.getLogger("can.interfaces.socketcan.socketcan.rx"))
 except ImportError as exc:
     CAN_IMPORT = exc
 
