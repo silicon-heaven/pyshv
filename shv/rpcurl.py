@@ -291,8 +291,8 @@ class RpcUrl:
         if self.protocol is RpcProtocol.CAN:
             if opts := pqs.pop("caddr", []):
                 self.can_address = int(opts[0])
-                if not 0 < self.can_address < 64:
-                    raise ValueError("CAN address must be in range <1,64>")
+                if not 0 <= self.can_address < 128:
+                    raise ValueError("CAN address must be in range <0,127>")
 
     def to_url(self, public: bool = False) -> str:
         """Convert to string URL.

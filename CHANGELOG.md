@@ -9,10 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Suport for CAN transport layer
 - `RpcDir.Flag.LONG_EXECUTION`
+- Support for MTD file type, MaxRead, and EraseSize in `RpcFileStat`
 
 ### Changed
 - `RpcServer` and it's children's method `listen_forewer` renamed to
   `listen_forever`
+
+### Fixed
+- RPCURL `caddr` query attribute now supports addresses in range `<0,217>`
 
 
 ## [0.10.1] - 2025-08-29
