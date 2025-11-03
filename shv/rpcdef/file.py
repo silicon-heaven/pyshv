@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import binascii
 import collections
 import dataclasses
@@ -538,7 +539,8 @@ class FileProvider:
             case "stat" if request.access >= self.access_read:
                 return RpcFileStat.for_path(path).to_shv()
             case "size" if request.access >= self.access_read:
-                return path.stat().st_size
+                stat = await asyncio.get_running_loop().run_in_executor(None, path.stat)
+                return stat.st_size
             case "crc" if request.access >= self.access_read:
                 offset = shvargt(request.param, 0, int, 0)
                 size = shvarg(request.param, 1, None)
@@ -590,10 +592,8 @@ class FileProvider:
             ):
                 offset = shvargt(request.param, 0, int)
                 data = shvargt(request.param, 1, bytes)
-                if (
-                    self.access_truncate is None
-                    and (offset + len(data)) > path.stat().st_size
-                ):
+                stat = await asyncio.get_running_loop().run_in_executor(None, path.stat)
+                if self.access_truncate is None and (offset + len(data)) > stat.st_size:
                     raise RpcInvalidParamError(
                         "Write beyond the file boundary is not possible"
                     )

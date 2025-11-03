@@ -112,7 +112,7 @@ class RpcBroker:
             return super()._idle_message()
 
         async def disconnect(self) -> None:  # noqa: D102
-            logger.info("Disconnecting client with ID %s", str(self.broker_client_id))
+            logger.info("Disconnecting client with ID %s", self.broker_client_id)
             self._unregister()
             await super().disconnect()
 

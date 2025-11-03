@@ -3,7 +3,7 @@
   overlays,
 }: let
   inherit (builtins) readDir;
-  inherit (lib) filterAttrs hasSuffix mapAttrs' nameValuePair removeSuffix attrValues;
+  inherit (lib) filterAttrs hasSuffix mapAttrs' nameValuePair removeSuffix;
 
   modules =
     mapAttrs'

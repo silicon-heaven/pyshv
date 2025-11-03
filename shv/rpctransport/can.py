@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import collections
 import collections.abc
 import concurrent
 import dataclasses

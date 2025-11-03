@@ -63,7 +63,7 @@ class RpcClient(abc.ABC):
         await self._send(bytearray((ChainPack.ProtocolType,)) + msg.to_chainpack())
         self.last_send = time.monotonic()
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug("%s => %s", str(self), msg.to_string())
+            logger.debug("%s => %s", self, msg.to_string())
 
     @abc.abstractmethod
     async def _send(self, msg: bytes) -> None:
