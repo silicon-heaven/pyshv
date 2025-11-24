@@ -213,7 +213,7 @@ class RpcUrl:
                 if sr.port is None:
                     raise ValueError("CAN server address must be specified")
                 res.port = int(sr.port)
-                if not 0 < res.port < 128:
+                if not 0 <= res.port < 128:
                     raise ValueError(f"Invalid CAN server address: {res.port}")
                 if sr.path:
                     raise ValueError(

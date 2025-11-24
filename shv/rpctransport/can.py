@@ -320,7 +320,7 @@ class SHVCAN:
         :raise ValueError: In case address is not in correct range for static
           address or if address is already in use.
         """
-        if not 0x00 < address <= 0x7F:
+        if not 0x00 <= address <= 0x7F:
             raise ValueError("Address must be in range from 0x0 to 0x7F")
         return self.Local(self, address)
 
