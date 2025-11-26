@@ -83,7 +83,8 @@ class RpcDir:
     @classmethod
     def from_shv(cls, value: SHVType) -> RpcDir:
         """Create from SHV RPC representation."""
-        if not is_shvimap(value):
+        # Note: Map is for SHV2 compatibility
+        if not is_shvimap(value) and not is_shvmap(value):
             raise ValueError(f"Expected IMap but got {value!r}.")
         raccess = shvget(value, SHVGetKey("access", cls.Key.ACCESS), cls.access)
         rsignals = shvget(

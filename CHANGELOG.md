@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - RPCURL `caddr` query attribute now supports addresses in range `<0,217>`
+- `RpcDir.from_shv` support for SHV2 (previously causing `ValueError`
 
 
 ## [0.10.1] - 2025-08-29
