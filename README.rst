@@ -7,6 +7,7 @@ would require the change.
 
 * `📃 Sources <https://gitlab.elektroline.cz/emb/template/python>`__
 * `⁉️ Issue tracker <https://gitlab.elektroline.cz/emb/template/python/-/issues>`__
+* `📕 Documentation <https://gitlabpages.elektroline.cz/emb/template/python>`__
 
 
 Running tests

@@ -8,7 +8,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path("..").absolute()))
 
 project = "Project Template Python"
-copyright = "2024, Elektroline a.s."
+copyright = "2024-2025, Elektroline a.s."
 author = "Elektroline a.s."
 
 
@@ -18,8 +18,9 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
     "sphinx.ext.todo",
-    "sphinx_rtd_theme",
+    "sphinx_book_theme",
     "sphinx_mdinclude",
+    "sphinx_multiversion",
 ]
 
 templates_path = ["_templates"]
@@ -30,9 +31,31 @@ exclude_patterns = ["_build"]
 html_copy_source = True
 html_show_sourcelink = True
 html_show_copyright = False
-html_theme = "sphinx_rtd_theme"
+html_theme = "sphinx_book_theme"
 # html_static_path = ["_static"]
+html_sidebars = {
+    "**": [
+        "navbar-logo.html",
+        "icon-links.html",
+        "search-button-field.html",
+        "sbt-sidebar-nav.html",
+        "versioning.html",
+    ]
+}
+html_theme_options = {
+    "show_toc_level": 3,
+    "repository_url": "https://gitlab.elektroline.cz/emb/template/python",
+    "repository_branch": "master",
+    "path_to_docs": "docs",
+    "use_source_button": True,
+    "use_repository_button": True,
+    "use_edit_page_button": True,
+    "use_issues_button": True,
+}
 
+smv_tag_whitelist = r"^v.*$"
+smv_branch_whitelist = r"^master$"
+smv_remote_whitelist = r"^.*$"
 
 autodoc_typehints = "description"
 autodoc_member_order = "bysource"
