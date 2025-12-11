@@ -18,8 +18,11 @@ from shv.rpcri import rpcri_legacy_subscription, rpcri_match, rpcri_relative_to
         (":ls:*", "", "ls", "lsmod", True),
         ("*:ls", "foo", "ls", None, True),
         ("*/*/foo:ls", "one/two/foo", "ls", None, True),
+        ("**:ls", "", "ls", None, True),
         ("**:ls", "foo", "ls", None, True),
         ("**:ls", "foo/bar/boo", "ls", None, True),
+        ("foo/**:ls", "foo", "ls", None, True),
+        ("foo/**:ls", "foo/bar/boo", "ls", None, True),
         ("**/boo:ls", "foo/bar/boo", "ls", None, True),
         ("**/bar/**:ls", "foo/bar/boo", "ls", None, True),
         ("**/**/**:ls", "foo/bar/boo", "ls", None, True),
@@ -35,40 +38,22 @@ def test_rpcri_match(ri, path, method, signal, result):
     assert rpcri_match(ri, path, method, signal) is result
 
 
-# @pytest.mark.parametrize(
-#    "pattern,path,result",
-#    (
-#        ("", "", None),
-#        ("test/some", "test", "some"),
-#        ("test/some", "test/some", None),
-#        ("*/*", "foo", "*"),
-#        ("*/*", "foo/faa", None),
-#        ("**", "foo", "**"),
-#        ("foo/**", "foo", "**"),
-#        ("some/**", "foo", None),
-#        ("foo/**", "foo/bar", "**"),
-#        ("foo/**/some", "foo/bar", "**/some"),
-#        ("**/some", "foo/bar", "**/some"),
-#    ),
-# )
-# def test_tail_pattern(pattern, path, result):
-#    assert shvpath_tail(path, pattern) == result
-
-
 @pytest.mark.parametrize(
     "ri,path,res",
     (
         ("**:*:*", "", "**:*:*"),
-        # ("test/some:*:*chng", "", "test/some:*:*chng"),
+        ("test/some:*:*chng", "", "test/some:*:*chng"),
         ("test/some:*", "test", "some:*"),
-        # ("test/some:*", "test/", "some:*"),
         ("test/some:*", "test/some", None),
-        ("test/some:*", "test/some/", None),
         ("test/some:*", "test/som", None),
         ("test/some/*:*", "test/some", "*:*"),
         ("test/some/*:*", "test", "some/*:*"),
         ("test/some/*:*", "tes", None),
         ("test/some/*:*", "test/some/node", None),
+        ("test/**:*", "test/some", "**:*"),
+        ("test/some/**:*", "test/some", "**:*"),
+        ("test/some/**:*", "test/other", None),
+        ("test/some/other/**:*", "test/some", "other/**:*"),
         ("**/some/*:*", "test/it/some", "*:*"),
         ("**/some/*:*", "test/it", "**/some/*:*"),
     ),

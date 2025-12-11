@@ -82,7 +82,8 @@ def rpcri_legacy_subscription(ri: str) -> SHVType:
 
 def __pth_match(path: str, pattern: list[str]) -> int | None:
     i = 0
-    for node in path.split("/"):
+    pth = path.split("/")
+    for y, node in enumerate(pth):
         if i >= len(pattern):
             return None
         if pattern[i] == "**":
@@ -96,6 +97,9 @@ def __pth_match(path: str, pattern: list[str]) -> int | None:
         if not fnmatch.fnmatchcase(node, pattern[i]):
             return None
         i += 1
+        if i < len(pattern) and pattern[i] == "**" and y == len(pth) - 1:
+            # Last node in path and next pattern is ** then match it.
+            i += 1
     return i
 
 
@@ -119,6 +123,8 @@ def shvpath_tail(pattern: str, path: str) -> str | None:
     :return: Returns tail that can be used to match nodes bellow path or ``None`` in
       case pattern doesn't match the path or matches it exactly.
     """
+    if not path:  # Emptry string is root and everything is relative to the root
+        return pattern
     ptn = pattern.split("/")
     res = __pth_match(path, ptn)
     if len(ptn) == res and ptn[-1] == "**":

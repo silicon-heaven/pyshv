@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Support for custom access level in `SHVBase.call`
+- `rpcri` support for `foo/**` special tail case that matches `foo` as well
 
 ### Fixed
 - `RpcMessage.access` setter now joins list of strings to comma separated string
