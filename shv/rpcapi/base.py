@@ -180,6 +180,8 @@ class SHVBase:
         user_id: str | None = None,
         query_timeout: float | None = None,
         retry_timeout: float | None = None,
+        access_level: RpcAccess = RpcAccess.ADMIN,
+        extra_access: collections.abc.Sequence[str] = [],
         progress: collections.abc.Callable[
             [float | None], collections.abc.Awaitable[None] | None
         ]
@@ -212,6 +214,14 @@ class SHVBase:
           for this one call.
         :param retry_timeout: Override :attr:`shv.rpcapi.SHVBase.call_retry_timeout` just
           for this one call.
+        :param access_level: Access level the request should be sent with. In
+          default :value:`RpcAccess.ADMIN` is used. This is handy if you are
+          testing access levels, but in generic usage it is better to use the
+          default and let the SHV Brokers lower the default admin level.
+        :param extra_access: Additional access fields to be added. These are
+          string access specifiers that are not standardized in default. They
+          are available for special needs of access control. It is advised not
+          to use this unless absolutely needed.
         :param progress: An optional callback function that is called to report
           on progress of the call. It can be either function of coroutine. The
           argument passed is the float between 0 and 1 providing the progress
@@ -238,6 +248,10 @@ class SHVBase:
                     await ares
 
         request = RpcMessage.request(path, method, param, user_id=user_id)
+        if access_level is not RpcAccess.ADMIN:
+            request.rpc_access = access_level
+        if extra_access:
+            request.access = [*request.access, *extra_access]
         assert request.request_id not in self._responses
         queue = self._responses[request.request_id] = asyncio.Queue()
         try:
