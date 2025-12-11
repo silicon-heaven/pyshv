@@ -351,7 +351,7 @@ class RpcMessage:
     def access(self, access: collections.abc.Sequence[str]) -> None:
         """Set granted access sequence."""
         if access:
-            self.value.meta[self.Tag.ACCESS] = access
+            self.value.meta[self.Tag.ACCESS] = ",".join(access)
         else:
             self.value.meta.pop(self.Tag.ACCESS, None)
 
