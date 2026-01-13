@@ -128,8 +128,11 @@ else
 	[[ "$(releases | head -1)" == "$version" ]] ||
 		fail "The version $version isn't the latest release in CHANGELOG.md "
 
+	glab auth login \
+		--job-token "$CI_JOB_TOKEN" \
+		--hostname "$CI_SERVER_FQDN" \
+		--api-protocol "$CI_SERVER_PROTOCOL"
 	glab release create "$CI_COMMIT_TAG" \
 		--name "Release $version" \
-		--notes - \
-		<(latest_changelog)
+		--notes "$(latest_changelog)"
 fi
