@@ -128,12 +128,8 @@ else
 	[[ "$(releases | head -1)" == "$version" ]] ||
 		fail "The version $version isn't the latest release in CHANGELOG.md "
 
-	changelog="$(latest_changelog)"
-	[[ -n "$changelog" ]] ||
-		fail "Changelog is empty!"
-
-	release-cli create \
+	glab release create "$CI_COMMIT_TAG" \
 		--name "Release $version" \
-		--tag-name "$CI_COMMIT_TAG" \
-		--description "$changelog"
+		--notes - \
+		<(latest_changelog)
 fi

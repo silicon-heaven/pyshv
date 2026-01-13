@@ -144,10 +144,11 @@ gitlint:
 
 release:
   extends: .deploy
-  image: "registry.gitlab.com/gitlab-org/release-cli:latest"
-  script:
+  image: "registry.gitlab.com/gitlab-org/cli:latest"
+  before_script:
     - apk update && apk add bash gawk
-    - bash release.sh
+  script:
+    - ./release.sh
 
 gitlab-pypi:
   extends: [.nix, .deploy]
