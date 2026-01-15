@@ -186,6 +186,20 @@ class SHVUInt(int, SHVMeta):
     represent unsigned integer.
     """
 
+    @typing.overload
+    def __new__(cls, value: int) -> SHVUInt: ...
+    @typing.overload
+    def __new__(cls, value: str, base: int = 10) -> SHVUInt: ...
+    def __new__(cls, value: int | str = 0, base: int = 10) -> SHVUInt:  # noqa: D102
+        res = (
+            super().__new__(cls, value, base)
+            if isinstance(value, str)
+            else super().__new__(cls, value)
+        )
+        if res < 0:
+            raise ValueError("Negative value is not allowed for UInt")
+        return res
+
 
 class SHVFloat(float, SHVMeta):
     """Float with :class:`SHVMeta`."""

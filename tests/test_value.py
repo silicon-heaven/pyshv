@@ -203,6 +203,12 @@ def test_is_shvtype(value, expected):
     assert is_shvtype(value) is expected
 
 
+def test_uint_negative():
+    """Check that SHVUInt can't be initialized with negative integer."""
+    with pytest.raises(ValueError):
+        SHVUInt(-1)
+
+
 @pytest.mark.parametrize("cls,args", CLASSES)
 def test_meta_eq(cls, args):
     """meta_eq should compare metas to each other."""
