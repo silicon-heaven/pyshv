@@ -80,6 +80,10 @@ rpctype_dir = RpcTypeStandard(
 i{s:name:1,u[b:isGetter:1,b:isSetter,b:largeResult,b:notIndempotent,b:userIDRequired,b:isUpdatable]|n:flags,s|n:paramType,s|n:resultType,i(0,63):accessLevel,{s|n}:signals,{?}:extra:63}
 """
 
+rpctype_get = RpcTypeStandard("get", RpcTypeOptional(RpcTypeInteger(0)))
+"""
+i(0,)|n
+"""
 
 rpctype_alert = RpcTypeStandard(
     "alert",

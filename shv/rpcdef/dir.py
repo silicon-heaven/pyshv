@@ -118,7 +118,7 @@ class RpcDir:
     def getter(
         cls,
         name: str = "get",
-        param: str = "i(0,)|n",
+        param: str = "!get",
         result: str = "?",
         access: RpcAccess = RpcAccess.READ,
         signal: bool | str = False,

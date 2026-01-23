@@ -73,7 +73,7 @@ from shv.rpcdef import RpcAccess, RpcMethodNotFoundError
                 {
                     1: "lastResetUser",
                     2: 2,
-                    3: "i(0,)|n",
+                    3: "!get",
                     4: "s|n",
                     5: RpcAccess.READ,
                 },
@@ -102,7 +102,7 @@ from shv.rpcdef import RpcAccess, RpcMethodNotFoundError
                 {
                     1: "get",
                     2: 2,
-                    3: "i(0,)|n",
+                    3: "!get",
                     4: "[i]",
                     5: RpcAccess.READ,
                     6: {"chng": None},

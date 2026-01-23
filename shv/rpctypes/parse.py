@@ -28,6 +28,7 @@ from .standard import (
     rpctype_exchange_p,
     rpctype_exchange_r,
     rpctype_exchange_v,
+    rpctype_get,
     rpctype_getlog_p,
     rpctype_getlog_r,
     rpctype_history_records,
@@ -273,6 +274,8 @@ def rpctype_parse(rpctype: str) -> RpcType:
                 match parse_text_required():
                     case "dir":
                         res = rpctype_dir
+                    case "get":
+                        res = rpctype_get
                     case "alert":
                         res = rpctype_alert
                     case "clientInfo":
