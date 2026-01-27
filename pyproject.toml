@@ -46,7 +46,7 @@ build_py = "template_package_name.__setuptools__.BuildPy"
 
 [tool.coverage.run]
 branch = true
-omit = ["tests/*"]
+omit = ["template_package_name/__setuptools__.py", "tests/*"]
 [tool.coverage.report]
 exclude_lines = [
     "pragma: no cover",
