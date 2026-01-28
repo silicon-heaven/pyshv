@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import collections.abc
 import typing
 
-from .. import SHVType
+from .. import SHVListType, SHVType, is_shvlist
 from .any import rpctype_any
 from .base import RpcType
 
@@ -67,10 +66,47 @@ class RpcTypeList(RpcType):
                 lim = f"({self._min or ''},{self._max or ''})"
         return f"[{self._tp}]{lim}"
 
-    def validate(self, value: SHVType) -> typing.TypeGuard[collections.abc.Sequence]:  # noqa: D102
-        return isinstance(value, collections.abc.Sequence) and all(
-            self._tp.validate(v) for v in value
-        )
+    def is_valid(self, value: SHVType) -> typing.TypeGuard[SHVListType]:  # noqa: D102
+        return self.validate(value) is None
+
+    def validate(self, value: SHVType) -> str | None:  # noqa: D102
+        if not is_shvlist(value):
+            return "expected List"
+        vlen = len(value)
+        if self._min == self._max:
+            if vlen != self._max:
+                return f"expected {self._max} number of List items"
+        else:
+            if self._min is not None and vlen < self._min:
+                return f"expected at least {self._min} List items"
+            if self._max is not None and vlen > self._max:
+                return f"expected at most {self._max} List items"
+        for i, val in enumerate(value):
+            if (msg := self._tp.validate(val)) is not None:
+                return f"invalid List item {i}: {msg}"
+        return None
+
+    def inflate(self, value: SHVType) -> SHVType:  # noqa: D102
+        if not is_shvlist(value):
+            raise ValueError("expected List")
+        res = []
+        for i, v in enumerate(value):
+            try:
+                res.append(self._tp.inflate(v))
+            except ValueError as exc:
+                raise ValueError(f"invalid List item {i}: {exc.args[0]}") from exc
+        return res
+
+    def deflate(self, value: SHVType) -> SHVType:  # noqa: D102
+        if not is_shvlist(value):
+            raise ValueError("expected List")
+        res = []
+        for i, v in enumerate(value):
+            try:
+                res.append(self._tp.deflate(v))
+            except ValueError as exc:
+                raise ValueError(f"invalid List item {i}: {exc.args[0]}") from exc
+        return res
 
 
 rpctype_list = RpcTypeList()

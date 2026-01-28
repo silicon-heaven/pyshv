@@ -6,6 +6,7 @@ import re
 
 import pytest
 
+from shv import SHVUInt
 from shv.rpctypes import (
     RpcTypeAny,
     RpcTypeBitfield,
@@ -22,10 +23,12 @@ from shv.rpctypes import (
     RpcTypeMap,
     RpcTypeNull,
     RpcTypeOneOf,
+    RpcTypeOptional,
     RpcTypeParseError,
     RpcTypeString,
     RpcTypeStruct,
     RpcTypeTuple,
+    RpcTypeTupleItem,
     RpcTypeUnsigned,
     rpctype_alert,
     rpctype_any,
@@ -169,8 +172,8 @@ def test_obj2text(text, obj):
         ("i(", "Expected ',' at 2"),
         ("i[val:text]", "Expected number at 6"),
         ("i[:1]", "Text expected at 2"),
-        ("u[i:item]", "Type 'i' can't be in Bitfield"),
-        ("u[u(4,):item]", "Type 'u(4,)' can't be in Bitfield"),
+        ("u[i:item]", "Type 'i' not supported in Bitfield"),
+        ("u[u(4,):item]", "Type 'u(4,)' not supported in Bitfield"),
         ("u[u(7):one,u(3):two:2]", "Bit 2 is used in multiple items"),
         ("i[again,again]", "Duplicates are not allowed in enum"),
         ("i[zero,again:0]", "Reuse of the integer key 0"),
@@ -194,13 +197,45 @@ def test_textfail(text, errmsg):
 
 
 @pytest.mark.parametrize(
+    "obj,args,errmsg",
+    (
+        (RpcTypeUnsigned, [-2, 5], "Unsigned limit can't be negative number"),
+        (RpcTypeString, [-1], "String size can be only positive number"),
+        (RpcTypeBlob, [-1], "Blob size can be only positive number"),
+        (RpcTypeList, [rpctype_integer, -1], "List size can be only positive number"),
+        (RpcTypeTuple, [], "Tuple requires at least one item"),
+        (RpcTypeStruct, [{}], "Struct requires at least one item"),
+        (RpcTypeKeyStruct, [{}], "KeyStruct requires at least one item"),
+        (
+            RpcTypeBitfield,
+            [(-1, rpctype_bool, "foo")],
+            "Bit index can't be negative number",
+        ),
+        (
+            RpcTypeBitfield,
+            [(0, rpctype_string, "foo")],
+            "Type 's' not supported in Bitfield",
+        ),
+    ),
+)
+def test_initfail(obj, args, errmsg):
+    """Check the error message when initializing RPC type objects.
+
+    There are some checks that just can't be triggered through
+    ``test_textfail`` but they are present for the usage from Python directly.
+    """
+    with pytest.raises(ValueError, match=f"^{re.escape(errmsg)}$"):
+        obj(*args)
+
+
+@pytest.mark.parametrize(
     "obj,value",
     (
         (rpctype_null, None),
         (rpctype_bool, True),
         (rpctype_bool, False),
         (rpctype_integer, 42),
-        (rpctype_unsigned, 42),
+        (rpctype_unsigned, SHVUInt(42)),
         (rpctype_datetime, datetime.datetime.fromtimestamp(0)),
         (rpctype_decimal, decimal.Decimal("1.0")),
         (rpctype_double, 4.2),
@@ -210,6 +245,10 @@ def test_textfail(text, errmsg):
         (rpctype_map, {"foo": 42}),
         (rpctype_imap, {42: "foo"}),
         (rpctype_any, None),
+        (
+            RpcTypeDecimal(decimal.Decimal("0"), decimal.Decimal("100"), 2),
+            decimal.Decimal("0.01"),
+        ),
         (RpcTypeEnum({1: "foo", 3: "bar"}), 1),
         (
             RpcTypeTuple(
@@ -277,76 +316,161 @@ def test_textfail(text, errmsg):
         ),
     ),
 )
-def test_validate(obj, value):
+def test_is_valid(obj, value):
     """Check validation of the valid types."""
-    assert obj.validate(value)
+    assert obj.is_valid(value)
 
 
 @pytest.mark.parametrize(
-    "obj,value",
+    "obj,value,msg",
     (
-        (rpctype_null, 1),
-        (rpctype_bool, None),
-        (RpcTypeInteger(0, 3), 42),
-        (rpctype_unsigned, -1),
-        (rpctype_datetime, 42),
-        (rpctype_decimal, 42),
-        (rpctype_double, 42),
-        (rpctype_string, b"foo"),
-        (rpctype_blob, "foo"),
-        (rpctype_list, 42),
-        (rpctype_map, {42: "foo"}),
-        (rpctype_imap, {"foo": 42}),
-        (RpcTypeEnum({1: "foo", 3: "bar"}), 2),
-        (RpcTypeOneOf(rpctype_bool, rpctype_null), 42),
+        (rpctype_null, 1, "expected Null"),
+        (rpctype_bool, None, "expected Bool"),
+        (rpctype_integer, None, "expected Integer"),
+        (RpcTypeInteger(0, 3), -42, "less than minimum value 0"),
+        (RpcTypeInteger(0, 3), 42, "more than maximum value 3"),
+        (rpctype_unsigned, None, "expected Unsigned Integer"),
+        (rpctype_unsigned, 1, "expected Unsigned Integer"),
+        (RpcTypeUnsigned(1, 3), SHVUInt(0), "less than minimum value 1"),
+        (RpcTypeUnsigned(0, 3), SHVUInt(4), "more than maximum value 3"),
+        (RpcTypeEnum({0: "one", 1: "two"}), None, "expected Integer(Enum)"),
+        (RpcTypeEnum({0: "one", 1: "two"}), 2, "undefined value in Enum"),
+        (rpctype_datetime, 42, "expected DateTime"),
+        (rpctype_decimal, 42, "expected Decimal"),
         (
-            RpcTypeTuple(
-                (rpctype_bool, "one"),
-                (RpcTypeOneOf(rpctype_bool, rpctype_null), "second"),
-            ),
-            [42],
+            rpctype_decimal,
+            decimal.Decimal("inf"),
+            "only finite Decimal numbers are allowed",
         ),
         (
-            RpcTypeTuple(
-                (rpctype_bool, "one"),
-                (RpcTypeOneOf(rpctype_bool, rpctype_null), "second"),
-            ),
-            42,
+            rpctype_decimal,
+            decimal.Decimal("-inf"),
+            "only finite Decimal numbers are allowed",
         ),
         (
-            RpcTypeTuple(
-                (rpctype_bool, "one"),
-                (RpcTypeOneOf(rpctype_bool, rpctype_null), "second"),
-            ),
-            [True, True, True],
+            rpctype_decimal,
+            decimal.Decimal("nan"),
+            "only finite Decimal numbers are allowed",
+        ),
+        (
+            RpcTypeDecimal("-1.0", "1.0"),
+            decimal.Decimal("-1.01"),
+            "less than minimum value -1.0",
+        ),
+        (
+            RpcTypeDecimal("-1.0", "1.0"),
+            decimal.Decimal("1.01"),
+            "more than maximum value 1.0",
+        ),
+        (
+            RpcTypeDecimal("-1.0", "1.0", 1),
+            decimal.Decimal("0.51"),
+            "maximum precision is 1",
+        ),
+        (rpctype_double, None, "expected Double"),
+        (rpctype_string, b"foo", "expected String"),
+        (RpcTypeString(1, 3), "fooo", "can't be longer than 3 characters"),
+        (RpcTypeString(1, 3), "", "can't be shorter than 1 characters"),
+        (rpctype_blob, "foo", "expected Blob"),
+        (RpcTypeBlob(1, 3), b"fooo", "can't be longer than 3 bytes"),
+        (RpcTypeBlob(1, 3), b"", "can't be shorter than 1 bytes"),
+        (rpctype_list, 42, "expected List"),
+        (RpcTypeList(rpctype_integer, 2, 2), [1], "expected 2 number of List items"),
+        (RpcTypeList(rpctype_integer, 1, 3), [], "expected at least 1 List items"),
+        (
+            RpcTypeList(rpctype_integer, 1, 3),
+            [1, 2, 3, 4],
+            "expected at most 3 List items",
+        ),
+        (
+            RpcTypeList(rpctype_integer, 2, 2),
+            [0, 1.0],
+            "invalid List item 1: expected Integer",
+        ),
+        (
+            RpcTypeTuple((rpctype_integer, "x"), (rpctype_integer, "y")),
+            None,
+            "expected Tuple",
+        ),
+        (
+            RpcTypeTuple((rpctype_integer, "x"), (rpctype_integer, "y")),
+            [0, 0, 0],
+            "too many Tuple items",
+        ),
+        (
+            RpcTypeTuple((rpctype_integer, "x"), (rpctype_integer, "y")),
+            [0, None],
+            "invalid for Tuple item y: expected Integer",
+        ),
+        (rpctype_imap, {"foo": 42}, "expected IMap"),
+        (
+            RpcTypeIMap(rpctype_integer),
+            {42: "foo"},
+            "invalid IMap item 42: expected Integer",
         ),
         (
             RpcTypeStruct({
                 1: (rpctype_string, "name"),
                 2: (RpcTypeOneOf(rpctype_datetime, rpctype_null), "birth"),
             }),
-            {},
+            {"foo": 42},
+            "expected Struct",
         ),
         (
             RpcTypeStruct({
                 1: (rpctype_string, "name"),
                 2: (RpcTypeOneOf(rpctype_datetime, rpctype_null), "birth"),
             }),
-            {1: "john", 3: 42},
+            {3: "foo", 4: 42},
+            "undefined Struct key: 3, 4",
+        ),
+        (
+            RpcTypeStruct({
+                1: (rpctype_string, "name"),
+                2: (RpcTypeOptional(rpctype_datetime), "birth"),
+            }),
+            {1: 42},
+            "invalid Struct item 1: expected String",
+        ),
+        (rpctype_map, {42: "foo"}, "expected Map"),
+        (
+            RpcTypeMap(rpctype_integer),
+            {"foo": "foo"},
+            "invalid Map item foo: expected Integer",
         ),
         (
             RpcTypeKeyStruct({
                 "name": rpctype_string,
-                "birth": RpcTypeOneOf(rpctype_datetime, rpctype_null),
+                "birth": RpcTypeOptional(rpctype_datetime),
             }),
-            {},
+            {1: 42},
+            "expected KeyStruct",
         ),
         (
             RpcTypeKeyStruct({
                 "name": rpctype_string,
-                "birth": RpcTypeOneOf(rpctype_datetime, rpctype_null),
+                "birth": RpcTypeOptional(rpctype_datetime),
             }),
-            {"name": "john", "invalid": 42},
+            {"invalid": 42, "second": "foo"},
+            "undefined KeyStruct key: second, invalid",
+        ),
+        (
+            RpcTypeKeyStruct({
+                "name": rpctype_string,
+                "birth": RpcTypeOptional(rpctype_datetime),
+            }),
+            {"name": 42},
+            "invalid KeyStruct item name: expected String",
+        ),
+        (
+            RpcTypeBitfield(
+                (0, rpctype_bool, "bool"),
+                (4, RpcTypeUnsigned(0, 3), "umax"),
+                (6, RpcTypeUnsigned(2, 3), "ushift"),
+                (7, RpcTypeEnum({0: "one", 1: "two"}), "enum"),
+            ),
+            None,
+            "expected Bitfield",
         ),
         (
             RpcTypeBitfield(
@@ -356,12 +480,357 @@ def test_validate(obj, value):
                 (7, RpcTypeEnum({0: "one", 1: "two"}), "enum"),
             ),
             2,
+            "unused bits in Bitfield must be zero: 0b10",
+        ),
+        (
+            RpcTypeBitfield(
+                (0, rpctype_bool, "bool"),
+                (2, RpcTypeEnum({0: "zero", 2: "two"}), "enum"),
+            ),
+            5,
+            "invalid Bitfield item enum: undefined value in Enum",
+        ),
+        (RpcTypeOneOf(rpctype_bool, rpctype_null), 42, "expected Bool | expected Null"),
+    ),
+)
+def test_validate(obj, value, msg):
+    """Check validation of the invalid types."""
+    assert obj.validate(value) == msg
+
+
+INFLATE_DATA = [
+    (rpctype_null, None, None),
+    (rpctype_bool, True, True),
+    (rpctype_bool, False, False),
+    (rpctype_integer, 42, 42),
+    (RpcTypeEnum({1: "one", 2: "two"}), 1, "one"),
+    (RpcTypeEnum({1: "one", 2: "two"}), 2, "two"),
+    (rpctype_double, 1.0, 1.0),
+    (rpctype_decimal, decimal.Decimal("1.0"), decimal.Decimal("1.0")),
+    (rpctype_string, "foo", "foo"),
+    (
+        rpctype_datetime,
+        datetime.datetime.fromtimestamp(42),
+        datetime.datetime.fromtimestamp(42),
+    ),
+    (RpcTypeList(RpcTypeEnum({1: "foo", 2: "bar"})), [1, 2, 1], ["foo", "bar", "foo"]),
+    (
+        RpcTypeTuple((rpctype_integer, "x"), (rpctype_integer, "y")),
+        [42, 24],
+        {"x": 42, "y": 24},
+    ),
+    (
+        RpcTypeTuple(
+            (rpctype_string, "name"), (RpcTypeOptional(rpctype_datetime), "birth")
+        ),
+        ["foo"],
+        {"name": "foo", "birth": None},
+    ),
+    (
+        RpcTypeIMap(RpcTypeEnum({1: "foo", 2: "bar"})),
+        {1: 1, 2: 2, 3: 1},
+        {1: "foo", 2: "bar", 3: "foo"},
+    ),
+    (
+        RpcTypeStruct({
+            1: (rpctype_string, "name"),
+            2: (RpcTypeOptional(rpctype_datetime), "birth"),
+        }),
+        {1: "foo", 2: datetime.datetime.fromtimestamp(42)},
+        {"name": "foo", "birth": datetime.datetime.fromtimestamp(42)},
+    ),
+    (
+        RpcTypeStruct({
+            1: (rpctype_string, "name"),
+            2: (RpcTypeOptional(rpctype_datetime), "birth"),
+        }),
+        {1: "foo"},
+        {"name": "foo"},
+    ),
+    (
+        RpcTypeMap(RpcTypeEnum({1: "foo", 2: "bar"})),
+        {"one": 1, "two": 2, "three": 1},
+        {"one": "foo", "two": "bar", "three": "foo"},
+    ),
+    (
+        RpcTypeKeyStruct({
+            "type": RpcTypeEnum({1: "regular", 2: "device"}),
+            "path": rpctype_string,
+            "extra": RpcTypeOptional(rpctype_string),
+        }),
+        {"type": 1, "path": "/null"},
+        {"type": "regular", "path": "/null"},
+    ),
+    (
+        RpcTypeBitfield(
+            (0, rpctype_bool, "bool"),
+            (4, RpcTypeUnsigned(0, 3), "umax"),
+            (6, RpcTypeUnsigned(2, 3), "ushift"),
+            (7, RpcTypeEnum({0: "one", 1: "two"}), "enum"),
+        ),
+        0,
+        {"bool": False, "umax": SHVUInt(0), "ushift": SHVUInt(2), "enum": "one"},
+    ),
+    (
+        RpcTypeBitfield(
+            (0, rpctype_bool, "bool"),
+            (4, RpcTypeUnsigned(0, 3), "umax"),
+            (6, RpcTypeUnsigned(2, 3), "ushift"),
+            (7, RpcTypeEnum({0: "one", 1: "two"}), "enum"),
+        ),
+        0xF1,
+        {"bool": True, "umax": SHVUInt(3), "ushift": SHVUInt(3), "enum": "two"},
+    ),
+]
+
+
+@pytest.mark.parametrize("obj,deflated,inflated", INFLATE_DATA)
+def test_inflate(obj, deflated, inflated):
+    """Check that inflate provides expected result."""
+    assert obj.inflate(deflated) == inflated
+
+
+@pytest.mark.parametrize("obj,deflated,inflated", INFLATE_DATA)
+def test_deflate(obj, deflated, inflated):
+    """Check that deflate provides expected result."""
+    assert obj.deflate(inflated) == deflated
+
+
+@pytest.mark.parametrize(
+    "obj,val,errmsg",
+    (
+        (RpcTypeEnum({1: "one", 2: "two"}), 3, "undefined value in Enum"),
+        (RpcTypeEnum({1: "one", 2: "two"}), "three", "expected Integer(Enum)"),
+        (RpcTypeList(RpcTypeEnum({1: "foo", 2: "bar"})), None, "expected List"),
+        (
+            RpcTypeList(RpcTypeEnum({1: "foo", 2: "bar"})),
+            [None],
+            "invalid List item 0: expected Integer(Enum)",
+        ),
+        (
+            RpcTypeTuple((rpctype_integer, "x"), (rpctype_integer, "y")),
+            {"x": 42, "y": 24},
+            "expected Tuple",
+        ),
+        (
+            RpcTypeTuple((rpctype_integer, "x"), (rpctype_integer, "y")),
+            [42, None],
+            "invalid Tuple item 1: expected Integer",
+        ),
+        (RpcTypeIMap(RpcTypeEnum({1: "foo", 2: "bar"})), {"foo": 1}, "expected IMap"),
+        (
+            RpcTypeIMap(RpcTypeEnum({1: "foo", 2: "bar"})),
+            {1: None},
+            "invalid IMap item 1: expected Integer(Enum)",
+        ),
+        (
+            RpcTypeStruct({
+                1: (rpctype_string, "name"),
+                2: (RpcTypeOptional(rpctype_datetime), "birth"),
+            }),
+            {"foo": 1},
+            "expected Struct",
+        ),
+        (
+            RpcTypeStruct({
+                1: (rpctype_string, "name"),
+                2: (RpcTypeOptional(rpctype_datetime), "birth"),
+            }),
+            {1: "foo", 3: 42, 4: None},
+            "undefined Struct key: 3, 4",
+        ),
+        (
+            RpcTypeStruct({
+                1: (rpctype_string, "name"),
+                2: (RpcTypeOptional(rpctype_datetime), "birth"),
+            }),
+            {1: "foo", 2: 42},
+            "invalid Struct item 2: expected DateTime | expected Null",
+        ),
+        (RpcTypeMap(RpcTypeEnum({1: "foo", 2: "bar"})), {1: "foo"}, "expected Map"),
+        (
+            RpcTypeMap(RpcTypeEnum({1: "foo", 2: "bar"})),
+            {"foo": None},
+            "invalid Map item foo: expected Integer(Enum)",
+        ),
+        (
+            RpcTypeKeyStruct({
+                "type": RpcTypeEnum({1: "regular", 2: "device"}),
+                "path": rpctype_string,
+            }),
+            {1: "some"},
+            "expected KeyStruct",
+        ),
+        (
+            RpcTypeKeyStruct({
+                "type": RpcTypeEnum({1: "regular", 2: "device"}),
+                "path": rpctype_string,
+            }),
+            {"type": 1, "path": "/", "other": "some"},
+            "undefined KeyStruct key: other",
+        ),
+        (
+            RpcTypeKeyStruct({
+                "type": RpcTypeEnum({1: "regular", 2: "device"}),
+                "path": rpctype_string,
+            }),
+            {"type": 3, "path": "/"},
+            "invalid KeyStruct item type: undefined value in Enum",
+        ),
+        (
+            RpcTypeBitfield(
+                (0, rpctype_bool, "bool"),
+                (4, RpcTypeUnsigned(0, 3), "umax"),
+                (6, RpcTypeUnsigned(2, 3), "ushift"),
+                (7, RpcTypeEnum({0: "one", 1: "two"}), "enum"),
+            ),
+            None,
+            "expected Bitfield",
+        ),
+        (
+            RpcTypeBitfield(
+                (0, rpctype_bool, "bool"),
+                (4, RpcTypeUnsigned(0, 3), "umax"),
+                (6, RpcTypeUnsigned(2, 3), "ushift"),
+                (7, RpcTypeEnum({0: "one", 1: "two"}), "enum"),
+            ),
+            2,
+            "unused bits in Bitfield must be zero: 0b10",
+        ),
+        (
+            RpcTypeBitfield((0, RpcTypeUnsigned(0, 5), "uval")),
+            7,
+            "invalid Bitfield item 0: more than maximum value 5",
         ),
     ),
 )
-def test_validate_invalid(obj, value):
-    """Check validation of the invalid types."""
-    assert not obj.validate(value)
+def test_inflate_invalid(obj, val, errmsg):
+    with pytest.raises(ValueError, match=f"^{re.escape(errmsg)}$"):
+        obj.inflate(val)
+
+
+@pytest.mark.parametrize(
+    "obj,val,errmsg",
+    (
+        (RpcTypeEnum({1: "one", 2: "two"}), "three", "undefined value in Enum"),
+        (RpcTypeEnum({1: "one", 2: "two"}), 2, "expected String(Enum)"),
+        (RpcTypeList(RpcTypeEnum({1: "foo", 2: "bar"})), None, "expected List"),
+        (
+            RpcTypeList(RpcTypeEnum({1: "foo", 2: "bar"})),
+            [1],
+            "invalid List item 0: expected String(Enum)",
+        ),
+        (
+            RpcTypeTuple((rpctype_integer, "x"), (rpctype_integer, "y")),
+            [42, 24],
+            "expected Map(Tuple)",
+        ),
+        (
+            RpcTypeTuple((rpctype_integer, "x"), (rpctype_integer, "y")),
+            {"x": 42, "y": 24, "z": 12, "q": None},
+            "undefined Tuple key: q, z",
+        ),
+        (
+            RpcTypeTuple((rpctype_integer, "x"), (rpctype_integer, "y")),
+            {"x": 42, "y": None},
+            "invalid Tuple item 1: expected Integer",
+        ),
+        (
+            RpcTypeIMap(RpcTypeEnum({1: "foo", 2: "bar"})),
+            {"foo": None},
+            "expected IMap",
+        ),
+        (
+            RpcTypeIMap(RpcTypeEnum({1: "foo", 2: "bar"})),
+            {1: 3},
+            "invalid IMap item 1: expected String(Enum)",
+        ),
+        (
+            RpcTypeStruct({
+                1: (rpctype_string, "name"),
+                2: (RpcTypeOptional(rpctype_datetime), "birth"),
+            }),
+            {1: "foo"},
+            "expected Map(Struct)",
+        ),
+        (
+            RpcTypeStruct({
+                1: (rpctype_string, "name"),
+                2: (RpcTypeOptional(rpctype_datetime), "birth"),
+            }),
+            {"name": "foo", "invalid": None},
+            "undefined Struct key: invalid",
+        ),
+        (
+            RpcTypeStruct({
+                1: (rpctype_string, "name"),
+                2: (RpcTypeOptional(rpctype_datetime), "birth"),
+            }),
+            {"name": "foo", "birth": 42},
+            "invalid Struct item 2: expected DateTime | expected Null",
+        ),
+        (
+            RpcTypeMap(RpcTypeEnum({1: "foo", 2: "bar"})),
+            {1: None},
+            "expected Map",
+        ),
+        (
+            RpcTypeMap(RpcTypeEnum({1: "foo", 2: "bar"})),
+            {"foo": 3},
+            "invalid Map item foo: expected String(Enum)",
+        ),
+        (
+            RpcTypeKeyStruct({
+                "type": RpcTypeEnum({1: "regular", 2: "device"}),
+                "path": rpctype_string,
+            }),
+            {1: "foo"},
+            "expected KeyStruct",
+        ),
+        (
+            RpcTypeKeyStruct({
+                "type": RpcTypeEnum({1: "regular", 2: "device"}),
+                "path": rpctype_string,
+            }),
+            {"type": 1, "path": "/", "other": None},
+            "undefined KeyStruct key: other",
+        ),
+        (
+            RpcTypeKeyStruct({
+                "type": RpcTypeEnum({1: "regular", 2: "device"}),
+                "path": rpctype_string,
+            }),
+            {"type": "regular", "path": 42},
+            "invalid KeyStruct item path: expected String",
+        ),
+        (
+            RpcTypeBitfield((0, rpctype_bool, "bool")),
+            {1: "foo"},
+            "expected Map(Bitfield)",
+        ),
+        (
+            RpcTypeBitfield((0, rpctype_bool, "bool")),
+            {"bool": False, "invalid": None},
+            "undefined Bitfield key: invalid",
+        ),
+        (
+            RpcTypeBitfield(
+                (0, rpctype_bool, "bool"),
+                (1, RpcTypeUnsigned(0, 3), "umax"),
+            ),
+            {"bool": False},
+            "missing Bitfield item 1",
+        ),
+        (
+            RpcTypeBitfield((0, RpcTypeUnsigned(0, 3), "umax")),
+            {"umax": 42},
+            "invalid Bitfield item 0: expected Unsigned Integer",
+        ),
+    ),
+)
+def test_deflate_invalid(obj, val, errmsg):
+    with pytest.raises(ValueError, match=f"^{re.escape(errmsg)}$"):
+        obj.deflate(val)
 
 
 @pytest.mark.parametrize(
@@ -450,11 +919,11 @@ def test_tuple_attr():
         (rpctype_bool, "one"), (RpcTypeOneOf(rpctype_bool, rpctype_null), "second")
     )
     assert len(tp) == 2
-    assert tp[0] == (rpctype_bool, "one")
-    assert tp[0:2] == (
-        (rpctype_bool, "one"),
-        (RpcTypeOneOf(rpctype_bool, rpctype_null), "second"),
-    )
+    assert tp[0] == RpcTypeTupleItem(rpctype_bool, "one")
+    assert tp[0:2] == [
+        RpcTypeTupleItem(rpctype_bool, "one"),
+        RpcTypeTupleItem(RpcTypeOneOf(rpctype_bool, rpctype_null), "second"),
+    ]
 
 
 def test_struct_attr():
@@ -482,6 +951,41 @@ def test_bitfield_attr():
         (0, rpctype_bool, "bool"),
         (4, RpcTypeUnsigned(0, 3), "umax"),
     ]
+
+
+@pytest.mark.parametrize(
+    "tp",
+    (
+        rpctype_bool,
+        RpcTypeEnum({0: "zero", 1: "one"}),
+        RpcTypeUnsigned(0, 100),
+        RpcTypeUnsigned(42, 84),
+    ),
+)
+def test_bitfield_is_supported(tp):
+    assert RpcTypeBitfield.is_supported(tp)
+
+
+@pytest.mark.parametrize(
+    "tp",
+    (
+        rpctype_integer,
+        RpcTypeEnum({0: "zero", -1: "minus"}),
+    ),
+)
+def test_bitfield_not_is_supported(tp):
+    assert not RpcTypeBitfield.is_supported(tp)
+
+
+def test_deposit_invalid_value():
+    errmsg = "more than maximum value 3"
+    with pytest.raises(ValueError, match=f"^{re.escape(errmsg)}$"):
+        RpcTypeBitfield.deposit(SHVUInt(20), 0, RpcTypeUnsigned(0, 3))
+
+
+def test_oneof_dedup():
+    tp = RpcTypeOneOf(rpctype_bool, rpctype_null, rpctype_bool, rpctype_null)
+    assert tp.types == (rpctype_bool, rpctype_null)
 
 
 def test_any_attr():

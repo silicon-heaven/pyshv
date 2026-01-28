@@ -215,7 +215,7 @@ class SHVBase:
         :param retry_timeout: Override :attr:`shv.rpcapi.SHVBase.call_retry_timeout` just
           for this one call.
         :param access_level: Access level the request should be sent with. In
-          default :value:`RpcAccess.ADMIN` is used. This is handy if you are
+          default :data:`RpcAccess.ADMIN` is used. This is handy if you are
           testing access levels, but in generic usage it is better to use the
           default and let the SHV Brokers lower the default admin level.
         :param extra_access: Additional access fields to be added. These are

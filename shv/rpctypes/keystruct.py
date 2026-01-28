@@ -5,7 +5,7 @@ from __future__ import annotations
 import collections.abc
 import typing
 
-from .. import SHVMapType, SHVType
+from .. import SHVMapType, SHVType, is_shvmap
 from .base import RpcType
 
 
@@ -13,6 +13,8 @@ class RpcTypeKeyStruct(RpcType, collections.abc.Mapping[str, RpcType]):
     """The KeyStruct type representation."""
 
     def __init__(self, items: collections.abc.Mapping[str, RpcType]) -> None:
+        if len(items) == 0:
+            raise ValueError("KeyStruct requires at least one item")
         self._items = items
 
     def __eq__(self, other: object) -> bool:
@@ -30,14 +32,46 @@ class RpcTypeKeyStruct(RpcType, collections.abc.Mapping[str, RpcType]):
     def __len__(self) -> int:
         return len(self._items)
 
-    def validate(  # noqa: D102
-        self, value: SHVType
-    ) -> typing.TypeGuard[collections.abc.Mapping[str, SHVType]]:
-        return (
-            isinstance(value, collections.abc.Mapping)
-            and all(k in self._items for k in value)
-            and all(
-                v.validate(typing.cast(SHVMapType, value).get(k))
-                for k, v in self._items.items()
-            )
-        )
+    def is_valid(self, value: SHVType) -> typing.TypeGuard[SHVMapType]:  # noqa: D102
+        return self.validate(value) is None
+
+    def validate(self, value: SHVType) -> str | None:  # noqa: D102
+        if not is_shvmap(value):
+            return "expected KeyStruct"
+        if invalid := set(value) - set(self._items):
+            return f"undefined KeyStruct key: {', '.join(str(v) for v in invalid)}"
+        for k, item in self.items():
+            val = value.get(k, None)
+            if (msg := item.validate(val)) is not None:
+                return f"invalid KeyStruct item {k}: {msg}"
+        return None
+
+    def inflate(self, value: SHVType) -> SHVMapType:  # noqa: D102
+        if not is_shvmap(value):
+            raise ValueError("expected KeyStruct")
+        if unknown := set(value.keys()) - set(self._items):
+            raise ValueError(f"undefined KeyStruct key: {', '.join(unknown)}")
+        res = {}
+        for k, item in self._items.items():
+            try:
+                v = item.inflate(value.get(k, None))
+            except ValueError as exc:
+                raise ValueError(f"invalid KeyStruct item {k}: {exc.args[0]}") from exc
+            if v is not None:
+                res[k] = v
+        return res
+
+    def deflate(self, value: SHVType) -> SHVMapType:  # noqa: D102
+        if not is_shvmap(value):
+            raise ValueError("expected KeyStruct")
+        if unknown := set(value.keys()) - set(self._items):
+            raise ValueError(f"undefined KeyStruct key: {', '.join(unknown)}")
+        res = {}
+        for k, item in self._items.items():
+            try:
+                v = item.deflate(value.get(k, None))
+            except ValueError as exc:
+                raise ValueError(f"invalid KeyStruct item {k}: {exc.args[0]}") from exc
+            if v is not None:
+                res[k] = v
+        return res

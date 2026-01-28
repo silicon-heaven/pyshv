@@ -69,12 +69,17 @@ class RpcTypeInteger(RpcType):
             lim = f"({_strnum(self._min)},{_strnum(self._max)})"
         return f"i{lim}{self._unit}"
 
-    def validate(self, value: SHVType) -> typing.TypeGuard[int]:  # noqa: D102
-        return (
-            isinstance(value, int)
-            and (self._min is None or value >= self._min)
-            and (self._max is None or value <= self._max)
-        )
+    def is_valid(self, value: SHVType) -> typing.TypeGuard[int]:  # noqa: D102
+        return super().is_valid(value)
+
+    def validate(self, value: SHVType) -> str | None:  # noqa: D102
+        if not isinstance(value, int):
+            return "expected Integer"
+        if self._min is not None and value < self._min:
+            return f"less than minimum value {self._min}"
+        if self._max is not None and value > self._max:
+            return f"more than maximum value {self._max}"
+        return None
 
 
 rpctype_integer = RpcTypeInteger()

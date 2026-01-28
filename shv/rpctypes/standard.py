@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import typing
-
 from .. import SHVType
 from .any import rpctype_any
 from .base import RpcType
@@ -48,7 +46,7 @@ class RpcTypeStandard(RpcType):
             and self._tp == other._tp
         )
 
-    def validate(self, value: SHVType) -> typing.TypeGuard[SHVType]:  # noqa: D102
+    def validate(self, value: SHVType) -> str | None:  # noqa: D102
         return self._tp.validate(value)
 
 

@@ -23,8 +23,12 @@ class RpcTypeBool(RpcType):
         return "b"
 
     @staticmethod
-    def validate(value: SHVType) -> typing.TypeGuard[bool]:  # noqa: D102
+    def is_valid(value: SHVType) -> typing.TypeGuard[bool]:  # noqa: D102
         return is_shvbool(value)
+
+    @classmethod
+    def validate(cls, value: SHVType) -> str | None:  # noqa: D102
+        return "expected Bool" if not cls.is_valid(value) else None
 
 
 rpctype_bool = RpcTypeBool()

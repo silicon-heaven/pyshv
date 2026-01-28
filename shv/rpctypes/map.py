@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import collections.abc
 import typing
 
-from .. import SHVType
+from .. import SHVMapType, SHVType, is_shvmap
 from .any import rpctype_any
 from .base import RpcType
 
@@ -36,12 +35,38 @@ class RpcTypeMap(RpcType):
     def __str__(self) -> str:
         return f"{{{self._tp}}}"
 
-    def validate(  # noqa: D102
-        self, value: SHVType
-    ) -> typing.TypeGuard[collections.abc.Mapping[str, SHVType]]:
-        return isinstance(value, collections.abc.Mapping) and all(
-            isinstance(k, str) and self._tp.validate(v) for k, v in value.items()
-        )
+    def is_valid(self, value: SHVType) -> typing.TypeGuard[SHVMapType]:  # noqa: D102
+        return self.validate(value) is None
+
+    def validate(self, value: SHVType) -> str | None:  # noqa: D102
+        if not is_shvmap(value):
+            return "expected Map"
+        for k, val in value.items():
+            if (msg := self._tp.validate(val)) is not None:
+                return f"invalid Map item {k}: {msg}"
+        return None
+
+    def inflate(self, value: SHVType) -> SHVMapType:  # noqa: D102
+        if not is_shvmap(value):
+            raise ValueError("expected Map")
+        res = {}
+        for k, v in value.items():
+            try:
+                res[k] = self._tp.inflate(v)
+            except ValueError as exc:
+                raise ValueError(f"invalid Map item {k}: {exc.args[0]}") from exc
+        return res
+
+    def deflate(self, value: SHVType) -> SHVMapType:  # noqa: D102
+        if not is_shvmap(value):
+            raise ValueError("expected Map")
+        res = {}
+        for k, v in value.items():
+            try:
+                res[k] = self._tp.deflate(v)
+            except ValueError as exc:
+                raise ValueError(f"invalid Map item {k}: {exc.args[0]}") from exc
+        return res
 
 
 rpctype_map = RpcTypeMap()

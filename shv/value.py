@@ -169,7 +169,7 @@ class SHVBool(SHVMeta):
         return hash(self._value)
 
 
-def is_shvbool(value: object) -> typing.TypeGuard[bool | SHVBool]:
+def is_shvbool(value: object) -> typing.TypeGuard[SHVBoolType]:
     """Validate type of value as either :class:`bool` or :class:`SHVBool`."""
     return isinstance(value, bool | SHVBool)
 

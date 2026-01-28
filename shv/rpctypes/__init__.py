@@ -7,7 +7,12 @@ info. They also support validation of the :class:`shv.SHVType`.
 
 from .any import RpcTypeAny, rpctype_any
 from .base import RpcType
-from .bitfield import RpcTypeBitfield
+from .bitfield import (
+    RpcTypeBitfield,
+    RpcTypeBitfieldCompatible,
+    RpcTypeBitfieldItem,
+    SHVTypeBitfieldCompatible,
+)
 from .blob import RpcTypeBlob, rpctype_blob
 from .bool import RpcTypeBool, rpctype_bool
 from .datetime import RpcTypeDateTime, rpctype_datetime
@@ -30,20 +35,23 @@ from .standard import (
     rpctype_exchange_p,
     rpctype_exchange_r,
     rpctype_exchange_v,
+    rpctype_get,
     rpctype_getlog_p,
     rpctype_getlog_r,
     rpctype_history_records,
     rpctype_stat,
 )
 from .string import RpcTypeString, rpctype_string
-from .struct import RpcTypeStruct
-from .tuple import RpcTypeTuple
+from .struct import RpcTypeStruct, RpcTypeStructItem
+from .tuple import RpcTypeTuple, RpcTypeTupleItem
 from .unsigned import RpcTypeUnsigned, rpctype_unsigned
 
 __all__ = [
     "RpcType",
     "RpcTypeAny",
     "RpcTypeBitfield",
+    "RpcTypeBitfieldCompatible",
+    "RpcTypeBitfieldItem",
     "RpcTypeBlob",
     "RpcTypeBool",
     "RpcTypeDateTime",
@@ -60,11 +68,13 @@ __all__ = [
     "RpcTypeOptional",
     "RpcTypeParseError",
     "RpcTypeStandard",
-    "RpcTypeStandard",
     "RpcTypeString",
     "RpcTypeStruct",
+    "RpcTypeStructItem",
     "RpcTypeTuple",
+    "RpcTypeTupleItem",
     "RpcTypeUnsigned",
+    "SHVTypeBitfieldCompatible",
     "rpctype_alert",
     "rpctype_any",
     "rpctype_blob",
@@ -77,6 +87,7 @@ __all__ = [
     "rpctype_exchange_p",
     "rpctype_exchange_r",
     "rpctype_exchange_v",
+    "rpctype_get",
     "rpctype_getlog_p",
     "rpctype_getlog_r",
     "rpctype_history_records",

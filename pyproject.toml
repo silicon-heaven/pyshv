@@ -61,7 +61,7 @@ asyncio_mode = "auto"
 
 [tool.coverage.run]
 branch = true
-omit = ["tests/*"]
+omit = ["tests/*", "shv/__setuptools__.py"]
 [tool.coverage.report]
 exclude_lines = [
     "pragma: no cover",

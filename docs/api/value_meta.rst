@@ -1,7 +1,10 @@
 SHV Meta abstraction
 ====================
 
-The standard types in the
+ALl types in CPON and ChainPack can have meta attributes associated with them.
+There is no way to represent this with just native Python types. Thus we have to
+provide additional object representation that allows association of these meta
+attributes.
 
 SHV Meta
 --------

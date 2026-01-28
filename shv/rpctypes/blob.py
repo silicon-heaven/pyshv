@@ -62,12 +62,17 @@ class RpcTypeBlob(RpcType):
                 lim = f"({self._min or ''},{self._max or ''})"
         return f"x{lim}"
 
-    def validate(self, value: SHVType) -> typing.TypeGuard[bytes]:  # noqa: D102
-        return (
-            isinstance(value, bytes)
-            and (self._min is None or len(value) >= self._min)
-            and (self._max is None or len(value) <= self._max)
-        )
+    def is_valid(self, value: SHVType) -> typing.TypeGuard[bytes]:  # noqa: D102
+        return self.validate(value) is None
+
+    def validate(self, value: SHVType) -> str | None:  # noqa: D102
+        if not isinstance(value, bytes):
+            return "expected Blob"
+        if self._min is not None and len(value) < self._min:
+            return f"can't be shorter than {self._min} bytes"
+        if self._max is not None and len(value) > self._max:
+            return f"can't be longer than {self._max} bytes"
+        return None
 
 
 rpctype_blob = RpcTypeBlob()

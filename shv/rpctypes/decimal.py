@@ -18,8 +18,8 @@ class RpcTypeDecimal(RpcType):
 
     def __new__(  # noqa: D102
         cls,
-        minimum: decimal.Decimal | None = None,
-        maximum: decimal.Decimal | None = None,
+        minimum: decimal.Decimal | str | None = None,
+        maximum: decimal.Decimal | str | None = None,
         precision: int | None = None,
         unit: str = "",
     ) -> RpcTypeDecimal:
@@ -31,11 +31,15 @@ class RpcTypeDecimal(RpcType):
 
     def __init__(
         self,
-        minimum: decimal.Decimal | None = None,
-        maximum: decimal.Decimal | None = None,
+        minimum: decimal.Decimal | str | None = None,
+        maximum: decimal.Decimal | str | None = None,
         precision: int | None = None,
         unit: str = "",
     ) -> None:
+        if isinstance(minimum, str):
+            minimum = decimal.Decimal(minimum)
+        if isinstance(maximum, str):
+            maximum = decimal.Decimal(maximum)
         if minimum is not None and maximum is not None and minimum > maximum:
             raise ValueError("Minimum is greater than maximum")
         self._min = minimum
@@ -81,13 +85,24 @@ class RpcTypeDecimal(RpcType):
             lim = f"({_strdec(self._min)},{_strdec(self._max)}{precs})"
         return f"d{lim}{self._unit}"
 
-    def validate(self, value: SHVType) -> typing.TypeGuard[decimal.Decimal]:  # noqa: D102
-        return (
-            isinstance(value, decimal.Decimal)
-            and (self._min is None or value >= self._min)
-            and (self._max is None or value <= self._max)
-            # TODO precision
-        )
+    def is_valid(self, value: SHVType) -> typing.TypeGuard[decimal.Decimal]:  # noqa: D102
+        return self.validate(value) is None
+
+    def validate(self, value: SHVType) -> str | None:  # noqa: D102
+        if not isinstance(value, decimal.Decimal):
+            return "expected Decimal"
+        if not value.is_finite():
+            return "only finite Decimal numbers are allowed"
+        if self._min is not None and value < self._min:
+            return f"less than minimum value {self._min}"
+        if self._max is not None and value > self._max:
+            return f"more than maximum value {self._max}"
+        if self._precs is not None:
+            exp = value.normalize().as_tuple().exponent
+            assert isinstance(exp, int)  # It is finite so always True
+            if self._precs * -1 > exp:
+                return f"maximum precision is {self._precs}"
+        return None
 
 
 rpctype_decimal = RpcTypeDecimal()

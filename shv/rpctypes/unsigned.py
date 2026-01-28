@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from .. import SHVType
+from .. import SHVType, SHVUInt
 from ._tools import strnum as _strnum
 from .base import RpcType
 
@@ -74,13 +74,17 @@ class RpcTypeUnsigned(RpcType):
                 lim = f"({_strnum(self._min)},{_strnum(self._max)})"
         return f"u{lim}{self._unit}"
 
-    def validate(self, value: SHVType) -> typing.TypeGuard[int]:  # noqa: D102
-        return (
-            isinstance(value, int)
-            and value >= 0
-            and (self._min is None or value >= self._min)
-            and (self._max is None or value <= self._max)
-        )
+    def is_valid(self, value: SHVType) -> typing.TypeGuard[int]:  # noqa: D102
+        return super().is_valid(value)
+
+    def validate(self, value: SHVType) -> str | None:  # noqa: D102
+        if not isinstance(value, SHVUInt):
+            return "expected Unsigned Integer"
+        if self._min is not None and value < self._min:
+            return f"less than minimum value {self._min}"
+        if self._max is not None and value > self._max:
+            return f"more than maximum value {self._max}"
+        return None
 
 
 rpctype_unsigned = RpcTypeUnsigned()

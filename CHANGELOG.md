@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `rpctype_get` that provides `!get` type hint as added in the latest SHV 3.0
   standard revision
+- `RpcType.inflate` and `RpcType.deflate` methods providing a way to decode and
+  encode complex types to more readable forms
 
 ### Fixed
 - `SHVUInt` could have been initialized with negative value

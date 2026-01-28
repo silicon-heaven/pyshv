@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import decimal
 import re
+import typing
 
 from .any import RpcTypeAny
 from .base import RpcType
-from .bitfield import RpcTypeBitfield
+from .bitfield import RpcTypeBitfield, RpcTypeBitfieldCompatible, RpcTypeBitfieldItem
 from .blob import RpcTypeBlob
 from .bool import rpctype_bool
 from .datetime import RpcTypeDateTime
@@ -222,13 +223,13 @@ def rpctype_parse(rpctype: str) -> RpcType:
         bitems = []
         ikey = 0
         while True:
-            tp = parse()
+            tp = typing.cast(RpcTypeBitfieldCompatible, parse())
             tpsiz = RpcTypeBitfield.bitsize(tp)
             check(":")
             key = parse_text_required()
             if hasc(":"):
                 ikey = parse_number_required()
-            bitems.append((ikey, tp, key))
+            bitems.append(RpcTypeBitfieldItem(ikey, tp, key))
             ikey += tpsiz or 0
             if hasc("]"):
                 break

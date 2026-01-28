@@ -32,7 +32,7 @@ class RpcFileStat:
         REGULAR = 0
         MTD = 1
 
-    tp: Type
+    tp: RpcFileStat.Type
     """Type of the SHV file node."""
     size: int
     """Size of the file in bytes."""

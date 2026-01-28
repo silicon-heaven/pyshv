@@ -42,5 +42,26 @@ class RpcTypeEnum(RpcType, collections.abc.Mapping[int, str]):
     def __len__(self) -> int:
         return len(self._items)
 
-    def validate(self, value: SHVType) -> typing.TypeGuard[int]:  # noqa: D102
-        return isinstance(value, int) and value in self
+    def is_valid(self, value: SHVType) -> typing.TypeGuard[int]:  # noqa: D102
+        return super().is_valid(value)
+
+    def validate(self, value: SHVType) -> str | None:  # noqa: D102
+        if not isinstance(value, int):
+            return "expected Integer(Enum)"
+        if value not in self:
+            return "undefined value in Enum"
+        return None
+
+    def inflate(self, value: SHVType) -> SHVType:  # noqa: D102
+        if msg := self.validate(value):
+            raise ValueError(msg)
+        assert isinstance(value, int)
+        return self[value]
+
+    def deflate(self, value: SHVType) -> SHVType:  # noqa: D102
+        if not isinstance(value, str):
+            raise ValueError("expected String(Enum)")
+        try:
+            return next(i for i, name in self.items() if name == value)
+        except StopIteration as exc:
+            raise ValueError("undefined value in Enum") from exc

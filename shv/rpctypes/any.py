@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import typing
-
 from .. import SHVType
 from .base import RpcType
 
@@ -35,8 +33,8 @@ class RpcTypeAny(RpcType):
         return f"?{f'({self._alias})' if self._alias else ''}"
 
     @staticmethod
-    def validate(value: SHVType) -> typing.TypeGuard[SHVType]:  # noqa: D102
-        return True
+    def validate(value: SHVType) -> str | None:  # noqa: D102
+        return None
 
 
 rpctype_any = RpcTypeAny()

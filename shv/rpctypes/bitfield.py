@@ -5,88 +5,160 @@ from __future__ import annotations
 import collections.abc
 import typing
 
-from .. import SHVType
+from .. import SHVBoolType, SHVMapType, SHVType, SHVUInt, is_shvmap
 from .base import RpcType
-from .bool import RpcTypeBool
+from .bool import RpcTypeBool, rpctype_bool
 from .enum import RpcTypeEnum
 from .unsigned import RpcTypeUnsigned
 
+SHVTypeBitfieldCompatible: typing.TypeAlias = SHVBoolType | SHVUInt | int
+RpcTypeBitfieldCompatible: typing.TypeAlias = (
+    RpcTypeBool | RpcTypeEnum | RpcTypeUnsigned
+)
 
-class RpcTypeBitfield(RpcType, collections.abc.Sequence[tuple[int, RpcType, str]]):
+
+class RpcTypeBitfieldItem(typing.NamedTuple):
+    """Single Item definition for the :class:`RpcTypeBitfield`."""
+
+    startbit: int
+    """The bit in the bitfield this item starts on."""
+    tp: RpcTypeBitfieldCompatible
+    """RPC type for the item."""
+    key: str
+    """String alias used to identify this item."""
+
+
+class RpcTypeBitfield(RpcType, collections.abc.Sequence[RpcTypeBitfieldItem]):
     """The Bitfield type representation."""
 
-    def __init__(self, *items: tuple[int, RpcType, str]) -> None:
-        self._items = sorted(items, key=lambda v: v[0])
+    def __init__(
+        self, *items: RpcTypeBitfieldItem | tuple[int, RpcTypeBitfieldCompatible, str]
+    ) -> None:
+        self._items = sorted(
+            (
+                item
+                if isinstance(item, RpcTypeBitfieldItem)
+                else RpcTypeBitfieldItem(*item)
+                for item in items
+            ),
+            key=lambda v: v.startbit,
+        )
         self._mask = 0
         end = -1
-        for i in self._items:
-            if i[0] < 0:
+        for item in self._items:
+            if item.startbit < 0:
                 raise ValueError("Bit index can't be negative number")
-            if i[0] <= end:
-                raise ValueError(f"Bit {i[0]} is used in multiple items")
-            size = self.bitsize(i[1])
-            if size is None:
-                raise ValueError(f"Type '{i[1]}' can't be in Bitfield")
-            end = i[0] + size - 1
-            self._mask |= 2**size - 1 << i[0]
+            if item.startbit <= end:
+                raise ValueError(f"Bit {item.startbit} is used in multiple items")
+            size = self.bitsize(item.tp)
+            end = item.startbit + size - 1
+            self._mask |= 2**size - 1 << item.startbit
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, RpcTypeBitfield) and self._items == other._items
 
     def __str__(self) -> str:
         defs = (
-            f"{tp}:{key}" if i is None else f"{tp}:{key}:{i}"
-            for tp, key, i in self.__seqiter(self._items)
+            f"{tp}:{key}" if startbit is None else f"{tp}:{key}:{startbit}"
+            for tp, key, startbit in self.__seqiter(self._items)
         )
         return f"u[{','.join(defs)}]"
 
     @classmethod
     def __seqiter(
-        cls,
-        iiter: collections.abc.Iterable[tuple[int, RpcType, str]],
-    ) -> collections.abc.Iterator[tuple[RpcType, str, int | None]]:
+        cls, iiter: collections.abc.Iterable[RpcTypeBitfieldItem]
+    ) -> collections.abc.Iterator[tuple[RpcTypeBitfieldCompatible, str, int | None]]:
         expected = 0
-        for i, tp, key in iiter:
-            yield tp, key, None if expected == i else i
-            size = cls.bitsize(tp)
+        for item in iiter:
+            yield (
+                item.tp,
+                item.key,
+                None if expected == item.startbit else item.startbit,
+            )
+            size = cls.bitsize(item.tp)
             assert isinstance(size, int)
-            expected = i + size
+            expected = item.startbit + size
 
     @typing.overload
-    def __getitem__(self, i: int, /) -> tuple[int, RpcType, str]: ...
+    def __getitem__(self, i: int, /) -> RpcTypeBitfieldItem: ...
 
     @typing.overload
     def __getitem__(
         self, i: slice, /
-    ) -> collections.abc.Sequence[tuple[int, RpcType, str]]: ...
+    ) -> collections.abc.Sequence[RpcTypeBitfieldItem]: ...
 
     def __getitem__(
         self, i: int | slice
-    ) -> tuple[int, RpcType, str] | collections.abc.Sequence[tuple[int, RpcType, str]]:
+    ) -> RpcTypeBitfieldItem | collections.abc.Sequence[RpcTypeBitfieldItem]:
         return self._items[i]
 
     def __len__(self) -> int:
         return len(self._items)
 
-    def validate(self, value: SHVType) -> typing.TypeGuard[int]:  # noqa: D102
-        return (
-            isinstance(value, int)
-            and value ^ value & self._mask == 0
-            and all(
-                True
-                if isinstance(tp, RpcTypeBool)
-                else tp.validate(self.extract(value, s, tp))
-                for s, tp, _ in self
+    def is_valid(self, value: SHVType) -> typing.TypeGuard[int]:  # noqa: D102
+        return self.validate(value) is None
+
+    def validate(self, value: SHVType) -> str | None:  # noqa: D102
+        if not isinstance(value, int):
+            return "expected Bitfield"
+        if (v := self._mask & value ^ value) != 0:
+            return f"unused bits in Bitfield must be zero: {bin(v)}"
+        for item in self:
+            if not isinstance(item.tp, RpcTypeBool):  # Bit is always valid for Bool
+                try:
+                    self.extract(value, item.startbit, item.tp)
+                except ValueError as exc:
+                    return f"invalid Bitfield item {item.key}: {exc.args[0]}"
+        return None
+
+    def inflate(self, value: SHVType) -> SHVMapType:  # noqa: D102
+        if not isinstance(value, int):
+            raise ValueError("expected Bitfield")
+        if (vi := self._mask & value ^ value) != 0:
+            raise ValueError(f"unused bits in Bitfield must be zero: {bin(vi)}")
+        res = {}
+        for i, item in enumerate(self):
+            try:
+                v = item.tp.inflate(self.extract(value, item.startbit, item.tp))
+            except ValueError as exc:
+                raise ValueError(f"invalid Bitfield item {i}: {exc.args[0]}") from exc
+            res[item.key] = v
+        return res
+
+    def deflate(self, value: SHVType) -> int:  # noqa: D102
+        if not is_shvmap(value):
+            raise ValueError("expected Map(Bitfield)")
+        if unknown := set(value.keys()) - {item[2] for item in self._items}:
+            raise ValueError(f"undefined Bitfield key: {', '.join(unknown)}")
+        res = 0
+        for i, item in enumerate(self):
+            try:
+                v = item.tp.deflate(value[item.key])
+            except KeyError as exc:
+                raise ValueError(f"missing Bitfield item {i}") from exc
+            except ValueError as exc:
+                raise ValueError(f"invalid Bitfield item {i}: {exc.args[0]}") from exc
+            res = self.deposit(
+                typing.cast(SHVTypeBitfieldCompatible, v), item.startbit, item.tp, res
             )
+        return res
+
+    @staticmethod
+    def is_supported(tp: RpcType) -> typing.TypeGuard[RpcTypeBitfieldCompatible]:
+        """Check if given type is compatible with bitfield."""
+        return (
+            tp is rpctype_bool
+            or (isinstance(tp, RpcTypeEnum) and all(v >= 0 for v in tp))
+            or (isinstance(tp, RpcTypeUnsigned) and tp.minimum >= 0)
         )
 
     @staticmethod
-    def bitsize(tp: RpcType) -> int | None:
+    def bitsize(tp: RpcTypeBitfieldCompatible) -> int:
         """Calculate bit size required for this type if supported.
 
         :param tp: The type bit size should be deduced for.
-        :return: Number bits to be used in the bitfield or ``None`` if it can't
-          be included.
+        :return: Number bits to be used in the bitfield.
+        :raise ValueError: in case ``tp`` is not of compatible type.
         """
         match tp:
             case RpcTypeBool():
@@ -96,28 +168,87 @@ class RpcTypeBitfield(RpcType, collections.abc.Sequence[tuple[int, RpcType, str]
                     return (tp.maximum - tp.minimum).bit_length()
             case RpcTypeEnum():
                 return max(tp).bit_length()
-        return None
+        raise ValueError(f"Type '{tp}' not supported in Bitfield")
 
     @classmethod
-    def extract(cls, value: int, start: int, tp: RpcType) -> int:
+    @typing.overload
+    def extract(cls, value: int, start: int, tp: RpcTypeBool) -> bool: ...
+
+    @classmethod
+    @typing.overload
+    def extract(cls, value: int, start: int, tp: RpcTypeEnum) -> int: ...
+
+    @classmethod
+    @typing.overload
+    def extract(cls, value: int, start: int, tp: RpcTypeUnsigned) -> SHVUInt: ...
+
+    @classmethod
+    def extract(
+        cls, value: int, start: int, tp: RpcTypeBitfieldCompatible
+    ) -> SHVTypeBitfieldCompatible:
         """Extract integer based on the provided type and start.
 
         The handling is based on the type:
         * ``b``: ``1`` is returned for true and ``0`` for false.
-        * ``u(MAX)``: number is returned as extracter.
+        * ``u(MAX)``: number is returned as extracted.
         * ``u(MIN,MAX)``: number is returned with added ``MIN``.
-        * ``i[]``: number is returned as extracted.
+        * ``i[...]``: number is returned as extracted.
+
+        :param value: The Bitfield value.
+        :param start: Bit offset to the type.
+        :param tp: Type of the value to be extracted.
+        :raise ValueError: In case extracted value is invalid for the given
+          type or if type is not supported in Bitfield at all.
         """
-        size = cls.bitsize(tp)
-        if size is None:
-            raise ValueError(f"Type '{tp} can't be in Bitfield")
-        result: int = value >> start & (2**size - 1)
-        if isinstance(tp, RpcTypeUnsigned) and tp.minimum > 0:
-            result += tp.minimum
-        return result
+        bitsize = cls.bitsize(tp)
+        match tp:
+            case RpcTypeBool():
+                return True if value & 1 << start else False
+            case RpcTypeUnsigned():
+                ures = SHVUInt((value >> start & (2**bitsize - 1)) + tp.minimum)
+                if msg := tp.validate(ures):
+                    raise ValueError(msg)
+                return ures
+            case RpcTypeEnum():
+                eres = int(value >> start & (2**bitsize - 1))
+                if msg := tp.validate(eres):
+                    raise ValueError(msg)
+                return eres
+            case _:  # pragma: no cover
+                raise NotImplementedError
 
     @classmethod
-    def deposit(cls, value: int, start: int, tp: RpcType, update: int = 0) -> int:
+    @typing.overload
+    def deposit(cls, value: bool, start: int, tp: RpcTypeBool, update: int) -> int: ...
+
+    @classmethod
+    @typing.overload
+    def deposit(cls, value: int, start: int, tp: RpcTypeEnum, update: int) -> int: ...
+
+    @classmethod
+    @typing.overload
+    def deposit(
+        cls, value: SHVUInt, start: int, tp: RpcTypeUnsigned, update: int
+    ) -> int: ...
+
+    @classmethod
+    @typing.overload
+    def deposit(
+        cls,
+        value: SHVTypeBitfieldCompatible,
+        start: int,
+        tp: RpcTypeBitfieldCompatible,
+        update: int,
+    ) -> int: ...
+
+    @classmethod
+    def deposit(
+        cls,
+        value: SHVTypeBitfieldCompatible,
+        start: int,
+        tp: RpcTypeBitfieldCompatible,
+        update: int = 0,
+    ) -> int:
         """Insert integer based on the provided type and start.
 
         The handling is based on the type:
@@ -125,15 +256,30 @@ class RpcTypeBitfield(RpcType, collections.abc.Sequence[tuple[int, RpcType, str]
         * ``u(MAX)``: number is inserted as is.
         * ``u(MIN,MAX)``: number is inserted minus the ``MIN``.
         * ``i[]``: number is inserted as is.
+
+        :param value: The value to be set in the bitfield.
+        :param start: Bit offset to the type.
+        :param tp: Type of the value to be deposited.
+        :param update: The value to be updated with passed value. This allows
+          actual cumulation of values in the bitfield's value.
+        :raise ValueError: In case passed value is invalid for the given type
+          or if type is not supported in Bitfield at all.
         """
-        if isinstance(value, bool):
-            value = 1 if value else 0
-        elif not tp.validate(value):
-            raise ValueError(f"Value '{value}' is invalid for type '{tp}'")
-        elif isinstance(tp, RpcTypeUnsigned) and tp.minimum > 0:
-            value -= tp.minimum
-        size = cls.bitsize(tp)
-        if size is None:
-            raise ValueError(f"Type '{tp} can't be in Bitfield")
-        mask: int = 2**size - 1
-        return (value & mask) << start | update ^ mask << start
+        bitsize = cls.bitsize(tp)
+        if msg := tp.validate(value):
+            raise ValueError(msg)
+        match tp:
+            case RpcTypeBool():
+                rvalue = 1 if value else 0
+            case RpcTypeUnsigned():
+                assert isinstance(value, SHVUInt)
+                rvalue = int(value) - tp.minimum
+            case RpcTypeEnum():
+                assert isinstance(value, int)
+                rvalue = value
+            case _:  # pragma: no cover
+                raise NotImplementedError
+        mask: int = 2**bitsize - 1
+        if rvalue != rvalue & mask:  # pragma: no cover
+            raise RuntimeError("Value won't fit but is valid: implementation error")
+        return (update ^ update & mask << start) | rvalue << start

@@ -22,9 +22,14 @@ class RpcTypeDateTime(RpcType):
     def __str__(self) -> str:
         return "t"
 
+    def is_valid(self, value: SHVType) -> typing.TypeGuard[datetime.datetime]:  # noqa: D102
+        return self.validate(value) is None
+
     @staticmethod
-    def validate(value: SHVType) -> typing.TypeGuard[datetime.datetime]:  # noqa: D102
-        return isinstance(value, datetime.datetime)
+    def validate(value: SHVType) -> str | None:  # noqa: D102
+        if not isinstance(value, datetime.datetime):
+            return "expected DateTime"
+        return None
 
 
 rpctype_datetime = RpcTypeDateTime()
