@@ -10,15 +10,25 @@ from .. import SHVType
 class RpcType(abc.ABC):
     """The base for the RPC Type specifications."""
 
-    def is_valid(self, value: SHVType) -> bool:
-        """Check if given value is of this type."""
-        return self.validate(value) is None
+    def is_valid(self, value: SHVType, is_updatable: bool = False) -> bool:
+        """Check if given value is of this type.
+
+        :param value: The value to be validated.
+        :oaram is_updatable: If :data:`shv.shvdef.RpcDir.Flag.IS_UPDATABLE` was
+          specified for this type. This is used only to validate argument for
+          the method call that has this flag. Otherwise it should be ``False``.
+        :return: ``True`` if value matches the type and ``False`` otherwise.
+        """
+        return self.validate(value, is_updatable) is None
 
     @abc.abstractmethod
-    def validate(self, value: SHVType) -> str | None:
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:
         """Validate and possibly return error if invalid.
 
         :param value: Value to be validated.
+        :oaram is_updatable: If :data:`shv.shvdef.RpcDir.Flag.IS_UPDATABLE` was
+          specified for this type. This is used only to validate argument for
+          the method call that has this flag. Otherwise it should be ``False``.
         :return: ``None`` in case it is valid and string with English sentense
           explaining the validation error cause.
         """

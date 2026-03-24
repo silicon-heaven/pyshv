@@ -66,10 +66,12 @@ class RpcTypeList(RpcType):
                 lim = f"({self._min or ''},{self._max or ''})"
         return f"[{self._tp}]{lim}"
 
-    def is_valid(self, value: SHVType) -> typing.TypeGuard[SHVListType]:  # noqa: D102
-        return self.validate(value) is None
+    def is_valid(  # noqa: D102
+        self, value: SHVType, is_updatable: bool = False
+    ) -> typing.TypeGuard[SHVListType]:
+        return self.validate(value, is_updatable) is None
 
-    def validate(self, value: SHVType) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not is_shvlist(value):
             return "expected List"
         vlen = len(value)
@@ -82,7 +84,7 @@ class RpcTypeList(RpcType):
             if self._max is not None and vlen > self._max:
                 return f"expected at most {self._max} List items"
         for i, val in enumerate(value):
-            if (msg := self._tp.validate(val)) is not None:
+            if (msg := self._tp.validate(val, is_updatable)) is not None:
                 return f"invalid List item {i}: {msg}"
         return None
 

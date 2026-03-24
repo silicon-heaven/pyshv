@@ -33,7 +33,7 @@ class RpcTypeAny(RpcType):
         return f"?{f'({self._alias})' if self._alias else ''}"
 
     @staticmethod
-    def validate(value: SHVType) -> str | None:  # noqa: D102
+    def validate(value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         return None
 
 

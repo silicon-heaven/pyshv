@@ -22,11 +22,13 @@ class RpcTypeDateTime(RpcType):
     def __str__(self) -> str:
         return "t"
 
-    def is_valid(self, value: SHVType) -> typing.TypeGuard[datetime.datetime]:  # noqa: D102
-        return self.validate(value) is None
+    def is_valid(  # noqa: D102
+        self, value: SHVType, is_updatable: bool = False
+    ) -> typing.TypeGuard[datetime.datetime]:
+        return self.validate(value, is_updatable) is None
 
     @staticmethod
-    def validate(value: SHVType) -> str | None:  # noqa: D102
+    def validate(value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not isinstance(value, datetime.datetime):
             return "expected DateTime"
         return None

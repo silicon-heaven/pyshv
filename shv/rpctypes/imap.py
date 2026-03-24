@@ -35,14 +35,16 @@ class RpcTypeIMap(RpcType):
     def __str__(self) -> str:
         return f"i{{{self._tp}}}"
 
-    def is_valid(self, value: SHVType) -> typing.TypeGuard[SHVIMapType]:  # noqa: D102
-        return self.validate(value) is None
+    def is_valid(  # noqa: D102
+        self, value: SHVType, is_updatable: bool = False
+    ) -> typing.TypeGuard[SHVIMapType]:
+        return self.validate(value, is_updatable) is None
 
-    def validate(self, value: SHVType) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not is_shvimap(value):
             return "expected IMap"
         for i, val in value.items():
-            if (msg := self._tp.validate(val)) is not None:
+            if (msg := self._tp.validate(val, is_updatable)) is not None:
                 return f"invalid IMap item {i}: {msg}"
         return None
 

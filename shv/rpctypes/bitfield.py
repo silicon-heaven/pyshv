@@ -95,10 +95,12 @@ class RpcTypeBitfield(RpcType, collections.abc.Sequence[RpcTypeBitfieldItem]):
     def __len__(self) -> int:
         return len(self._items)
 
-    def is_valid(self, value: SHVType) -> typing.TypeGuard[int]:  # noqa: D102
-        return self.validate(value) is None
+    def is_valid(  # noqa: D102
+        self, value: SHVType, is_updatable: bool = False
+    ) -> typing.TypeGuard[int]:
+        return self.validate(value, is_updatable) is None
 
-    def validate(self, value: SHVType) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not isinstance(value, int):
             return "expected Bitfield"
         if (v := self._mask & value ^ value) != 0:

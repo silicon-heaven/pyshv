@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   standard revision
 - `RpcType.inflate` and `RpcType.deflate` methods providing a way to decode and
   encode complex types to more readable forms
+- `is_updatable` argument to the `RpcType.is_valid` and `RpcType.validate`
+  providing check consistent with `RpcDir.Flag.IS_UPDATABLE` flag
 
 ### Fixed
 - `SHVUInt` could have been initialized with negative value

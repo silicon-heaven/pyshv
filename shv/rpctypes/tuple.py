@@ -58,10 +58,12 @@ class RpcTypeTuple(RpcType, collections.abc.Sequence[RpcTypeTupleItem]):
             res -= 1
         return res
 
-    def is_valid(self, value: SHVType) -> typing.TypeGuard[SHVListType]:  # noqa: D102
-        return self.validate(value) is None
+    def is_valid(  # noqa: D102
+        self, value: SHVType, is_updatable: bool = False
+    ) -> typing.TypeGuard[SHVListType]:
+        return self.validate(value, is_updatable) is None
 
-    def validate(self, value: SHVType) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not is_shvlist(value):
             return "expected Tuple"
         vlen = len(value)
@@ -69,8 +71,9 @@ class RpcTypeTuple(RpcType, collections.abc.Sequence[RpcTypeTupleItem]):
             return "too many Tuple items"
         for i, item in enumerate(self._items):
             val = value[i] if i < vlen else None
-            if (msg := item.tp.validate(val)) is not None:
-                return f"invalid for Tuple item {item.key}: {msg}"
+            if val is not None or not is_updatable:  # Allow None on update
+                if (msg := item.tp.validate(val, is_updatable)) is not None:
+                    return f"invalid for Tuple item {item.key}: {msg}"
         return None
 
     def inflate(self, value: SHVType) -> SHVMapType:  # noqa: D102

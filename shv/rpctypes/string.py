@@ -62,10 +62,12 @@ class RpcTypeString(RpcType):
                 lim = f"({self._min or ''},{self._max or ''})"
         return f"s{lim}"
 
-    def is_valid(self, value: SHVType) -> typing.TypeGuard[str]:  # noqa: D102
-        return self.validate(value) is None
+    def is_valid(  # noqa: D102
+        self, value: SHVType, is_updatable: bool = False
+    ) -> typing.TypeGuard[str]:
+        return self.validate(value, is_updatable) is None
 
-    def validate(self, value: SHVType) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not isinstance(value, str):
             return "expected String"
         if self._min is not None and len(value) < self._min:

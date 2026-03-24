@@ -74,10 +74,12 @@ class RpcTypeUnsigned(RpcType):
                 lim = f"({_strnum(self._min)},{_strnum(self._max)})"
         return f"u{lim}{self._unit}"
 
-    def is_valid(self, value: SHVType) -> typing.TypeGuard[int]:  # noqa: D102
-        return super().is_valid(value)
+    def is_valid(  # noqa: D102
+        self, value: SHVType, is_updatable: bool = False
+    ) -> typing.TypeGuard[int]:
+        return super().is_valid(value, is_updatable)
 
-    def validate(self, value: SHVType) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not isinstance(value, SHVUInt):
             return "expected Unsigned Integer"
         if self._min is not None and value < self._min:

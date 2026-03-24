@@ -67,18 +67,21 @@ class RpcTypeStruct(RpcType, collections.abc.Mapping[int, RpcTypeStructItem]):
     def __len__(self) -> int:
         return len(self._items)
 
-    def is_valid(self, value: SHVType) -> typing.TypeGuard[SHVIMapType]:  # noqa: D102
-        return self.validate(value) is None
+    def is_valid(  # noqa: D102
+        self, value: SHVType, is_updatable: bool = False
+    ) -> typing.TypeGuard[SHVIMapType]:
+        return self.validate(value, is_updatable) is None
 
-    def validate(self, value: SHVType) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not is_shvimap(value):
             return "expected Struct"
         if invalid := set(value) - set(self._items):
             return f"undefined Struct key: {', '.join(str(v) for v in invalid)}"
         for i, item in self.items():
             val = value.get(i, None)
-            if (msg := item[0].validate(val)) is not None:
-                return f"invalid Struct item {i}: {msg}"
+            if val is not None or not is_updatable:  # Allow None on update
+                if (msg := item[0].validate(val, is_updatable)) is not None:
+                    return f"invalid Struct item {i}: {msg}"
         return None
 
     def inflate(self, value: SHVType) -> SHVMapType:  # noqa: D102

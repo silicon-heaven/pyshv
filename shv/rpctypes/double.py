@@ -36,11 +36,14 @@ class RpcTypeDouble(RpcType):
     def __str__(self) -> str:
         return f"f{self._unit}"
 
-    def is_valid(self, value: SHVType) -> typing.TypeGuard[float]:  # noqa: D102
-        return self.validate(value) is None
+    @classmethod
+    def is_valid(  # noqa: D102
+        cls, value: SHVType, is_updatable: bool = False
+    ) -> typing.TypeGuard[float]:
+        return cls.validate(value, is_updatable) is None
 
     @staticmethod
-    def validate(value: SHVType) -> str | None:  # noqa: D102
+    def validate(value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not isinstance(value, float):
             return "expected Double"
         return None

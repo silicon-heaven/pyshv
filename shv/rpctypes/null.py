@@ -23,10 +23,12 @@ class RpcTypeNull(RpcType):
         return "n"
 
     @staticmethod
-    def is_valid(value: SHVType) -> typing.TypeGuard[None]:  # noqa: D102
+    def is_valid(  # noqa: D102
+        value: SHVType, is_updatable: bool = False
+    ) -> typing.TypeGuard[None]:
         return is_shvnull(value)
 
-    def validate(self, value: SHVType) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not self.is_valid(value):
             return "expected Null"
         return None

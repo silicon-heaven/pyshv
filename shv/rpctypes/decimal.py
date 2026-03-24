@@ -85,10 +85,12 @@ class RpcTypeDecimal(RpcType):
             lim = f"({_strdec(self._min)},{_strdec(self._max)}{precs})"
         return f"d{lim}{self._unit}"
 
-    def is_valid(self, value: SHVType) -> typing.TypeGuard[decimal.Decimal]:  # noqa: D102
-        return self.validate(value) is None
+    def is_valid(  # noqa: D102
+        self, value: SHVType, is_updatable: bool = False
+    ) -> typing.TypeGuard[decimal.Decimal]:
+        return self.validate(value, is_updatable) is None
 
-    def validate(self, value: SHVType) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not isinstance(value, decimal.Decimal):
             return "expected Decimal"
         if not value.is_finite():
