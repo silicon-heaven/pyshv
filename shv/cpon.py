@@ -312,7 +312,10 @@ class CponReader(commonpack.CommonReader):
             mant, _, exp = sval.replace("P", "p").partition("p")
             return float(mant) * (2.0 ** int(exp))
         if tp is decimal.Decimal:
-            return tp(bval.decode("ascii"))  # type: ignore
+            try:
+                return tp(bval.decode("ascii"))  # type: ignore
+            except decimal.ConversionSyntax as exc:
+                raise ValueError from exc
         return tp(bval, 0)  # type: ignore
 
 

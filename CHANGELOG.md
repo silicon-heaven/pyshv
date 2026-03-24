@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `SHVUInt` could have been initialized with negative value
+- `Cpon.unpack` failing with udocumented `decimal.ConversionSyntax`
 
 
 ## [0.12.0] - 2025-12-15
