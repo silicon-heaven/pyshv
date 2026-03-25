@@ -26,16 +26,15 @@ class ExampleDevice(SHVClient, SHVMethods):
         self.tracks = {str(i): list(range(i)) for i in range(1, 9)}
         self.last_reset_user: str | None = None
 
-    @SHVMethods.property("numberOfTracks", signal=True)
+    @SHVMethods.property("numberOfTracks", "i(1,)", signal=True)
     def number_of_tracks(self, oldness: int | None) -> SHVType:
         """SHV property getter numberOfTrack."""
         return len(self.tracks)
 
-    @SHVMethods.property_setter(number_of_tracks)
+    @SHVMethods.property_setter(number_of_tracks, check_param=True)
     async def number_of_tracks_set(self, param: SHVType, user_id: str | None) -> None:
         """SHV property getter numberOfTrack."""
-        if not isinstance(param, int) or param < 1:
-            raise RpcInvalidParamError("Int greater than 0 expected")
+        assert isinstance(param, int)
         oldlen = len(self.tracks)
         if oldlen != param:
             self.tracks = {
@@ -61,6 +60,7 @@ class ExampleDevice(SHVClient, SHVMethods):
             access=RpcAccess.COMMAND,
             extra={"description": "Reset all tracks to their initial state"},
         ),
+        check_param=True,
     )
     async def track_reset(self, request: SHVBase.Request) -> SHVType:
         """SHV method track:reset."""
@@ -72,7 +72,9 @@ class ExampleDevice(SHVClient, SHVMethods):
                 await self._send(RpcMessage.signal(f"track/{k}", value=self.tracks[k]))
         return None
 
-    @SHVMethods.method("track", RpcDir.getter("lastResetUser", result="s|n"))
+    @SHVMethods.method(
+        "track", RpcDir.getter("lastResetUser", result="s|n"), check_param=True
+    )
     async def track_last_reset_user(self, request: SHVBase.Request) -> SHVType:
         """SHV method track:lastResetUser."""
         return self.last_reset_user

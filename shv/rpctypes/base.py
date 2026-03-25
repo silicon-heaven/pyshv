@@ -14,7 +14,7 @@ class RpcType(abc.ABC):
         """Check if given value is of this type.
 
         :param value: The value to be validated.
-        :oaram is_updatable: If :data:`shv.shvdef.RpcDir.Flag.IS_UPDATABLE` was
+        :oaram is_updatable: If :data:`shv.rpcdef.RpcDir.Flag.IS_UPDATABLE` was
           specified for this type. This is used only to validate argument for
           the method call that has this flag. Otherwise it should be ``False``.
         :return: ``True`` if value matches the type and ``False`` otherwise.
@@ -26,7 +26,7 @@ class RpcType(abc.ABC):
         """Validate and possibly return error if invalid.
 
         :param value: Value to be validated.
-        :oaram is_updatable: If :data:`shv.shvdef.RpcDir.Flag.IS_UPDATABLE` was
+        :oaram is_updatable: If :data:`shv.rpcdef.RpcDir.Flag.IS_UPDATABLE` was
           specified for this type. This is used only to validate argument for
           the method call that has this flag. Otherwise it should be ``False``.
         :return: ``None`` in case it is valid and string with English sentense

@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   encode complex types to more readable forms
 - `is_updatable` argument to the `RpcType.is_valid` and `RpcType.validate`
   providing check consistent with `RpcDir.Flag.IS_UPDATABLE` flag
+- `SHVMethods.Method` attribute `check_param` that causes parameter to be
+  checked agaisnt type hint
+- `SHVMethods.method` and `SHVMethods.property_setter` now have `check_param`
+  parameter passing it to the `SHVMethods.Method`
 
 ### Fixed
 - `SHVUInt` could have been initialized with negative value

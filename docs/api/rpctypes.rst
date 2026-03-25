@@ -2,6 +2,8 @@ RPC Type hints
 ==============
 
 .. automodule:: shv.rpctypes
+.. autodata:: shv.rpctypes.SHVTypeBitfieldCompatible
+.. autodata:: shv.rpctypes.RpcTypeBitfieldCompatible
 
 Predefined types
 ----------------

@@ -13,6 +13,7 @@ from ..rpcdef.access import RpcAccess
 from ..rpcdef.dir import RpcDir
 from ..rpcdef.errors import RpcInvalidParamError, RpcUserIDRequiredError
 from ..rpcmessage import RpcMessage
+from ..rpctypes import rpctype_parse
 from ..value import SHVType
 from .base import SHVBase
 
@@ -124,6 +125,13 @@ class SHVMethods(SHVBase):
         """
         func: SHVMethodT
         """Python method providing the implementation."""
+        check_param: bool
+        """If method parameter should be validated against type hint.
+
+        In case the parameter doesn't match the type hint then
+        :exception:`shv.rpcdef.RpcInvalidParamError` is raise even before the
+        wrapped function is called.
+        """
 
         _bound: weakref.ReferenceType[SHVMethods] | None = None
 
@@ -158,6 +166,9 @@ class SHVMethods(SHVBase):
             shvmethods = self._bound() if self._bound is not None else None
             if shvmethods is None:
                 raise UnboundLocalError
+            if self.check_param:
+                if msg := rpctype_parse(self.desc.param).validate(request.param):
+                    raise RpcInvalidParamError(msg)
             res = self.func(shvmethods, request)
             if asyncio.iscoroutine(res):
                 res = await res
@@ -165,20 +176,21 @@ class SHVMethods(SHVBase):
 
     @classmethod
     def method(
-        cls, path: str, desc: RpcDir
+        cls, path: str, desc: RpcDir, check_param: bool = False
     ) -> collections.abc.Callable[[SHVMethodT], SHVMethods.Method]:
         """Decorate method to turn it to :class:`shv.rpcapi.methods.SHVMethods.Method`.
 
         :param path: SHV path this method is associated with.
         :param desc: Method description.
+        :param check_param: If method parameter should be validated.
         """
-        return lambda func: cls.Method(path, desc, func)
+        return lambda func: cls.Method(path, desc, func, check_param)
 
     @classmethod
     def property(
         cls,
         path: str,
-        tp: str = "Any",
+        tp: str = "?",
         access: RpcAccess = RpcAccess.READ,
         signal: bool | str = False,
     ) -> collections.abc.Callable[[SHVGetMethodT], SHVMethods.Method]:
@@ -203,14 +215,13 @@ class SHVMethods(SHVBase):
             def substitut(
                 obj: SHVMethods, request: SHVBase.Request
             ) -> collections.abc.Coroutine[None, None, SHVType] | SHVType:
-                if request.param is not None and not isinstance(request.param, int):
-                    raise RpcInvalidParamError("Only Int or Null allowed")
-                return func(obj, request.param)
+                return func(obj, typing.cast(int | None, request.param))
 
             return cls.Method(
                 path,
                 RpcDir.getter(result=tp, access=access, signal=signal),
                 substitut,
+                True,
             )
 
         return wrapper
@@ -220,6 +231,7 @@ class SHVMethods(SHVBase):
         cls,
         getter: Method,
         access: RpcAccess = RpcAccess.WRITE,
+        check_param: bool = False,
     ) -> collections.abc.Callable[[SHVSetMethodT], SHVMethods.Method]:
         """Decorate method to make it set method for the property node.
 
@@ -228,6 +240,7 @@ class SHVMethods(SHVBase):
 
         :param getter: The reference to the ``get`` method.
         :param access: Minimal access level required for ``set`` method.
+        :param check_param: If parameter should be validated against type hint.
         """
         if getter.desc.name != "get":
             raise ValueError("Can be used only on method get")
@@ -242,6 +255,7 @@ class SHVMethods(SHVBase):
                 getter.path,
                 RpcDir.setter(param=getter.desc.result, access=access),
                 substitut,
+                check_param,
             )
 
         return wrapper

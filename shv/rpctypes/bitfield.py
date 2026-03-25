@@ -12,9 +12,11 @@ from .enum import RpcTypeEnum
 from .unsigned import RpcTypeUnsigned
 
 SHVTypeBitfieldCompatible: typing.TypeAlias = SHVBoolType | SHVUInt | int
+"""Type alias for the types that can be stored in the bitfield."""
 RpcTypeBitfieldCompatible: typing.TypeAlias = (
     RpcTypeBool | RpcTypeEnum | RpcTypeUnsigned
 )
+"""Rpc types that can be part of the bitfield."""
 
 
 class RpcTypeBitfieldItem(typing.NamedTuple):

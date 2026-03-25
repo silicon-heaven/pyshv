@@ -4,7 +4,7 @@ import pytest
 
 import example_client
 from shv import shvmeta
-from shv.rpcdef import RpcAccess, RpcMethodNotFoundError
+from shv.rpcdef import RpcAccess, RpcInvalidParamError, RpcMethodNotFoundError
 
 
 @pytest.mark.parametrize(
@@ -127,6 +127,17 @@ async def test_call(example_device, client, path, method, param, result):
     res = await client.call(path, method, param)
     assert res == result
     assert shvmeta(res) == shvmeta(result)
+
+
+async def test_number_of_tracks(example_device, client):
+    assert await client.call("test/device/numberOfTracks", "get") == 8
+    assert await client.call("test/device/numberOfTracks", "set", 4) is None
+    with pytest.raises(RpcInvalidParamError, match=r"expected Integer"):
+        await client.call("test/device/numberOfTracks", "set", "foo")
+    with pytest.raises(RpcInvalidParamError, match=r"less than minimum value 1"):
+        await client.call("test/device/numberOfTracks", "set", 0)
+    with pytest.raises(RpcInvalidParamError, match=r"expected Integer | expected Null"):
+        await client.call("test/device/numberOfTracks", "get", "foo")
 
 
 async def test_set(example_device, client):
