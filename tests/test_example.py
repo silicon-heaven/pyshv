@@ -132,11 +132,11 @@ async def test_call(example_device, client, path, method, param, result):
 async def test_number_of_tracks(example_device, client):
     assert await client.call("test/device/numberOfTracks", "get") == 8
     assert await client.call("test/device/numberOfTracks", "set", 4) is None
-    with pytest.raises(RpcInvalidParamError, match=r"expected Integer"):
+    with pytest.raises(RpcInvalidParamError, match=r"Expected Integer"):
         await client.call("test/device/numberOfTracks", "set", "foo")
-    with pytest.raises(RpcInvalidParamError, match=r"less than minimum value 1"):
+    with pytest.raises(RpcInvalidParamError, match=r"Expected minimal value 1"):
         await client.call("test/device/numberOfTracks", "set", 0)
-    with pytest.raises(RpcInvalidParamError, match=r"expected Integer | expected Null"):
+    with pytest.raises(RpcInvalidParamError, match=r"Expected Integer \| Null"):
         await client.call("test/device/numberOfTracks", "get", "foo")
 
 

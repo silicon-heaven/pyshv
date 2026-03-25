@@ -29,8 +29,8 @@ class RpcType(abc.ABC):
         :oaram is_updatable: If :data:`shv.rpcdef.RpcDir.Flag.IS_UPDATABLE` was
           specified for this type. This is used only to validate argument for
           the method call that has this flag. Otherwise it should be ``False``.
-        :return: ``None`` in case it is valid and string with English sentense
-          explaining the validation error cause.
+        :return: ``None`` in case it is valid and string with failing check.
+          The string describes expectation that wasn't fulfilled.
         """
 
     def inflate(self, value: SHVType) -> SHVType:

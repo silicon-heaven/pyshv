@@ -49,9 +49,9 @@ class RpcTypeEnum(RpcType, collections.abc.Mapping[int, str]):
 
     def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not isinstance(value, int):
-            return "expected Integer(Enum)"
+            return "Integer(Enum)"
         if value not in self:
-            return "undefined value in Enum"
+            return "defined in Enum"
         return None
 
     def inflate(self, value: SHVType) -> SHVType:  # noqa: D102
@@ -62,8 +62,8 @@ class RpcTypeEnum(RpcType, collections.abc.Mapping[int, str]):
 
     def deflate(self, value: SHVType) -> SHVType:  # noqa: D102
         if not isinstance(value, str):
-            raise ValueError("expected String(Enum)")
+            raise ValueError("String(Enum)")
         try:
             return next(i for i, name in self.items() if name == value)
         except StopIteration as exc:
-            raise ValueError("undefined value in Enum") from exc
+            raise ValueError("defined in Enum") from exc

@@ -168,7 +168,7 @@ class SHVMethods(SHVBase):
                 raise UnboundLocalError
             if self.check_param:
                 if msg := rpctype_parse(self.desc.param).validate(request.param):
-                    raise RpcInvalidParamError(msg)
+                    raise RpcInvalidParamError("Expected " + msg)
             res = self.func(shvmethods, request)
             if asyncio.iscoroutine(res):
                 res = await res

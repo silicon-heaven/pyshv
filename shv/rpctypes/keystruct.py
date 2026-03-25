@@ -39,42 +39,42 @@ class RpcTypeKeyStruct(RpcType, collections.abc.Mapping[str, RpcType]):
 
     def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not is_shvmap(value):
-            return "expected KeyStruct"
+            return "KeyStruct(Map)"
         if invalid := set(value) - set(self._items):
-            return f"undefined KeyStruct key: {', '.join(str(v) for v in invalid)}"
+            return f"defined KeyStruct keys: {', '.join(str(v) for v in invalid)}"
         for k, item in self.items():
             val = value.get(k, None)
             if val is not None or not is_updatable:  # Allow None on update
                 if (msg := item.validate(val, is_updatable)) is not None:
-                    return f"invalid KeyStruct item {k}: {msg}"
+                    return f"KeyStruct item {k}: {msg}"
         return None
 
     def inflate(self, value: SHVType) -> SHVMapType:  # noqa: D102
         if not is_shvmap(value):
-            raise ValueError("expected KeyStruct")
+            raise ValueError("KeyStruct(Map)")
         if unknown := set(value.keys()) - set(self._items):
-            raise ValueError(f"undefined KeyStruct key: {', '.join(unknown)}")
+            raise ValueError(f"defined KeyStruct keys: {', '.join(unknown)}")
         res = {}
         for k, item in self._items.items():
             try:
                 v = item.inflate(value.get(k, None))
             except ValueError as exc:
-                raise ValueError(f"invalid KeyStruct item {k}: {exc.args[0]}") from exc
+                raise ValueError(f"KeyStruct item {k}: {exc.args[0]}") from exc
             if v is not None:
                 res[k] = v
         return res
 
     def deflate(self, value: SHVType) -> SHVMapType:  # noqa: D102
         if not is_shvmap(value):
-            raise ValueError("expected KeyStruct")
+            raise ValueError("KeyStruct(Map)")
         if unknown := set(value.keys()) - set(self._items):
-            raise ValueError(f"undefined KeyStruct key: {', '.join(unknown)}")
+            raise ValueError(f"defined KeyStruct keys: {', '.join(unknown)}")
         res = {}
         for k, item in self._items.items():
             try:
                 v = item.deflate(value.get(k, None))
             except ValueError as exc:
-                raise ValueError(f"invalid KeyStruct item {k}: {exc.args[0]}") from exc
+                raise ValueError(f"KeyStruct item {k}: {exc.args[0]}") from exc
             if v is not None:
                 res[k] = v
         return res

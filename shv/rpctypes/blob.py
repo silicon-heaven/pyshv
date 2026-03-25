@@ -69,11 +69,11 @@ class RpcTypeBlob(RpcType):
 
     def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not isinstance(value, bytes):
-            return "expected Blob"
+            return "Blob"
         if self._min is not None and len(value) < self._min:
-            return f"can't be shorter than {self._min} bytes"
+            return f"at least {self._min} bytes"
         if self._max is not None and len(value) > self._max:
-            return f"can't be longer than {self._max} bytes"
+            return f"at most {self._max} bytes"
         return None
 
 

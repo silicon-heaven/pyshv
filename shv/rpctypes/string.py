@@ -69,11 +69,11 @@ class RpcTypeString(RpcType):
 
     def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not isinstance(value, str):
-            return "expected String"
+            return "String"
         if self._min is not None and len(value) < self._min:
-            return f"can't be shorter than {self._min} characters"
+            return f"at least {self._min} characters"
         if self._max is not None and len(value) > self._max:
-            return f"can't be longer than {self._max} characters"
+            return f"at most {self._max} characters"
         return None
 
 

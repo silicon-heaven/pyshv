@@ -30,7 +30,7 @@ class RpcTypeBool(RpcType):
 
     @classmethod
     def validate(cls, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
-        return "expected Bool" if not cls.is_valid(value) else None
+        return "Bool" if not cls.is_valid(value) else None
 
 
 rpctype_bool = RpcTypeBool()

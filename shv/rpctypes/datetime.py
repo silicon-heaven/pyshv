@@ -30,7 +30,7 @@ class RpcTypeDateTime(RpcType):
     @staticmethod
     def validate(value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not isinstance(value, datetime.datetime):
-            return "expected DateTime"
+            return "DateTime"
         return None
 
 

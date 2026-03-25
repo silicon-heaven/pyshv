@@ -76,11 +76,11 @@ class RpcTypeInteger(RpcType):
 
     def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not isinstance(value, int):
-            return "expected Integer"
+            return "Integer"
         if self._min is not None and value < self._min:
-            return f"less than minimum value {self._min}"
+            return f"minimal value {self._min}"
         if self._max is not None and value > self._max:
-            return f"more than maximum value {self._max}"
+            return f"maximal value {self._max}"
         return None
 
 

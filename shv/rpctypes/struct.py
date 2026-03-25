@@ -74,44 +74,44 @@ class RpcTypeStruct(RpcType, collections.abc.Mapping[int, RpcTypeStructItem]):
 
     def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not is_shvimap(value):
-            return "expected Struct"
+            return "Struct(IMap)"
         if invalid := set(value) - set(self._items):
-            return f"undefined Struct key: {', '.join(str(v) for v in invalid)}"
+            return f"defined Struct keys: {', '.join(str(v) for v in invalid)}"
         for i, item in self.items():
             val = value.get(i, None)
             if val is not None or not is_updatable:  # Allow None on update
                 if (msg := item[0].validate(val, is_updatable)) is not None:
-                    return f"invalid Struct item {i}: {msg}"
+                    return f"Struct item {i}: {msg}"
         return None
 
     def inflate(self, value: SHVType) -> SHVMapType:  # noqa: D102
         if not is_shvimap(value):
-            raise ValueError("expected Struct")
+            raise ValueError("Struct(IMap)")
         if unknown := set(value.keys()) - set(self._items):
             raise ValueError(
-                f"undefined Struct key: {', '.join(str(v) for v in unknown)}"
+                f"defined Struct keys: {', '.join(str(v) for v in unknown)}"
             )
         res = {}
         for i, item in self._items.items():
             try:
                 v = item[0].inflate(value.get(i, None))
             except ValueError as exc:
-                raise ValueError(f"invalid Struct item {i}: {exc.args[0]}") from exc
+                raise ValueError(f"Struct item {i}: {exc.args[0]}") from exc
             if v is not None:
                 res[item[1]] = v
         return res
 
     def deflate(self, value: SHVType) -> SHVIMapType:  # noqa: D102
         if not is_shvmap(value):
-            raise ValueError("expected Map(Struct)")
+            raise ValueError("Map(Struct)")
         if unknown := set(value.keys()) - set(self._index):
-            raise ValueError(f"undefined Struct key: {', '.join(unknown)}")
+            raise ValueError(f"defined Struct keys: {', '.join(unknown)}")
         res = {}
         for i, item in self._items.items():
             try:
                 v = item[0].deflate(value.get(item[1], None))
             except ValueError as exc:
-                raise ValueError(f"invalid Struct item {i}: {exc.args[0]}") from exc
+                raise ValueError(f"Struct item {i}: {exc.args[0]}") from exc
             if v is not None:
                 res[i] = v
         return res

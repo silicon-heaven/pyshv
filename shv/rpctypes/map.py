@@ -42,32 +42,32 @@ class RpcTypeMap(RpcType):
 
     def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not is_shvmap(value):
-            return "expected Map"
+            return "Map"
         for k, val in value.items():
             if (msg := self._tp.validate(val, is_updatable)) is not None:
-                return f"invalid Map item {k}: {msg}"
+                return f"Map item {k}: {msg}"
         return None
 
     def inflate(self, value: SHVType) -> SHVMapType:  # noqa: D102
         if not is_shvmap(value):
-            raise ValueError("expected Map")
+            raise ValueError("Map")
         res = {}
         for k, v in value.items():
             try:
                 res[k] = self._tp.inflate(v)
             except ValueError as exc:
-                raise ValueError(f"invalid Map item {k}: {exc.args[0]}") from exc
+                raise ValueError(f"Map item {k}: {exc.args[0]}") from exc
         return res
 
     def deflate(self, value: SHVType) -> SHVMapType:  # noqa: D102
         if not is_shvmap(value):
-            raise ValueError("expected Map")
+            raise ValueError("Map")
         res = {}
         for k, v in value.items():
             try:
                 res[k] = self._tp.deflate(v)
             except ValueError as exc:
-                raise ValueError(f"invalid Map item {k}: {exc.args[0]}") from exc
+                raise ValueError(f"Map item {k}: {exc.args[0]}") from exc
         return res
 
 

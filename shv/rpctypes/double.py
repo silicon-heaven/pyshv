@@ -45,7 +45,7 @@ class RpcTypeDouble(RpcType):
     @staticmethod
     def validate(value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not isinstance(value, float):
-            return "expected Double"
+            return "Double"
         return None
 
 

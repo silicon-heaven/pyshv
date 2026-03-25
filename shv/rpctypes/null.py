@@ -30,7 +30,7 @@ class RpcTypeNull(RpcType):
 
     def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not self.is_valid(value):
-            return "expected Null"
+            return "Null"
         return None
 
 

@@ -92,13 +92,13 @@ class RpcTypeDecimal(RpcType):
 
     def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not isinstance(value, decimal.Decimal):
-            return "expected Decimal"
+            return "Decimal"
         if not value.is_finite():
-            return "only finite Decimal numbers are allowed"
+            return "finite Decimal number"
         if self._min is not None and value < self._min:
-            return f"less than minimum value {self._min}"
+            return f"minimal value {self._min}"
         if self._max is not None and value > self._max:
-            return f"more than maximum value {self._max}"
+            return f"maximal value {self._max}"
         if self._precs is not None:
             exp = value.normalize().as_tuple().exponent
             assert isinstance(exp, int)  # It is finite so always True

@@ -104,44 +104,44 @@ class RpcTypeBitfield(RpcType, collections.abc.Sequence[RpcTypeBitfieldItem]):
 
     def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not isinstance(value, int):
-            return "expected Bitfield"
+            return "Bitfield(Int)"
         if (v := self._mask & value ^ value) != 0:
-            return f"unused bits in Bitfield must be zero: {bin(v)}"
+            return f"unused bits in Bitfield to be zero: {bin(v)}"
         for item in self:
             if not isinstance(item.tp, RpcTypeBool):  # Bit is always valid for Bool
                 try:
                     self.extract(value, item.startbit, item.tp)
                 except ValueError as exc:
-                    return f"invalid Bitfield item {item.key}: {exc.args[0]}"
+                    return f"Bitfield item {item.key}: {exc.args[0]}"
         return None
 
     def inflate(self, value: SHVType) -> SHVMapType:  # noqa: D102
         if not isinstance(value, int):
-            raise ValueError("expected Bitfield")
+            raise ValueError("Bitfield(Int)")
         if (vi := self._mask & value ^ value) != 0:
-            raise ValueError(f"unused bits in Bitfield must be zero: {bin(vi)}")
+            raise ValueError(f"unused bits in Bitfield to be zero: {bin(vi)}")
         res = {}
         for i, item in enumerate(self):
             try:
                 v = item.tp.inflate(self.extract(value, item.startbit, item.tp))
             except ValueError as exc:
-                raise ValueError(f"invalid Bitfield item {i}: {exc.args[0]}") from exc
+                raise ValueError(f"Bitfield item {i}: {exc.args[0]}") from exc
             res[item.key] = v
         return res
 
     def deflate(self, value: SHVType) -> int:  # noqa: D102
         if not is_shvmap(value):
-            raise ValueError("expected Map(Bitfield)")
+            raise ValueError("Map(Bitfield)")
         if unknown := set(value.keys()) - {item[2] for item in self._items}:
-            raise ValueError(f"undefined Bitfield key: {', '.join(unknown)}")
+            raise ValueError(f"defined Bitfield keys: {', '.join(unknown)}")
         res = 0
         for i, item in enumerate(self):
             try:
                 v = item.tp.deflate(value[item.key])
             except KeyError as exc:
-                raise ValueError(f"missing Bitfield item {i}") from exc
+                raise ValueError(f"Bitfield item {i}") from exc
             except ValueError as exc:
-                raise ValueError(f"invalid Bitfield item {i}: {exc.args[0]}") from exc
+                raise ValueError(f"Bitfield item {i}: {exc.args[0]}") from exc
             res = self.deposit(
                 typing.cast(SHVTypeBitfieldCompatible, v), item.startbit, item.tp, res
             )

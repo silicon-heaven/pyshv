@@ -65,20 +65,20 @@ class RpcTypeTuple(RpcType, collections.abc.Sequence[RpcTypeTupleItem]):
 
     def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not is_shvlist(value):
-            return "expected Tuple"
+            return "Tuple(List)"
         vlen = len(value)
         if vlen > len(self._items):
-            return "too many Tuple items"
+            return f"at most {len(self._items)} items"
         for i, item in enumerate(self._items):
             val = value[i] if i < vlen else None
             if val is not None or not is_updatable:  # Allow None on update
                 if (msg := item.tp.validate(val, is_updatable)) is not None:
-                    return f"invalid for Tuple item {item.key}: {msg}"
+                    return f"Tuple item {item.key}: {msg}"
         return None
 
     def inflate(self, value: SHVType) -> SHVMapType:  # noqa: D102
         if not is_shvlist(value):
-            raise ValueError("expected Tuple")
+            raise ValueError("Tuple(List)")
         vlen = len(value)
         res = {}
         for i, item in enumerate(self._items):
@@ -86,15 +86,15 @@ class RpcTypeTuple(RpcType, collections.abc.Sequence[RpcTypeTupleItem]):
             try:
                 res[item.key] = item.tp.inflate(v)
             except ValueError as exc:
-                raise ValueError(f"invalid Tuple item {i}: {exc.args[0]}") from exc
+                raise ValueError(f"Tuple item {i}: {exc.args[0]}") from exc
         return res
 
     def deflate(self, value: SHVType) -> SHVListType:  # noqa: D102
         if not is_shvmap(value):
-            raise ValueError("expected Map(Tuple)")
+            raise ValueError("Map(Tuple)")
         keys = set(value.keys())
         if unknown := keys - {v.key for v in self}:
-            raise ValueError(f"undefined Tuple key: {', '.join(unknown)}")
+            raise ValueError(f"defined Tuple keys: {', '.join(unknown)}")
         minlen = self.minlen()
         res = []
         for i, item in enumerate(self._items):
@@ -102,7 +102,7 @@ class RpcTypeTuple(RpcType, collections.abc.Sequence[RpcTypeTupleItem]):
             try:
                 res.append(item.tp.deflate(v))
             except ValueError as exc:
-                raise ValueError(f"invalid Tuple item {i}: {exc.args[0]}") from exc
+                raise ValueError(f"Tuple item {i}: {exc.args[0]}") from exc
             keys.remove(item.key)
             if not keys and i >= minlen:
                 break

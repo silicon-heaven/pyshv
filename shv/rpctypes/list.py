@@ -73,41 +73,41 @@ class RpcTypeList(RpcType):
 
     def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
         if not is_shvlist(value):
-            return "expected List"
+            return "List"
         vlen = len(value)
         if self._min == self._max:
             if vlen != self._max:
-                return f"expected {self._max} number of List items"
+                return f"{self._max} number of List items"
         else:
             if self._min is not None and vlen < self._min:
-                return f"expected at least {self._min} List items"
+                return f"at least {self._min} List items"
             if self._max is not None and vlen > self._max:
-                return f"expected at most {self._max} List items"
+                return f"at most {self._max} List items"
         for i, val in enumerate(value):
             if (msg := self._tp.validate(val, is_updatable)) is not None:
-                return f"invalid List item {i}: {msg}"
+                return f"List item {i}: {msg}"
         return None
 
     def inflate(self, value: SHVType) -> SHVType:  # noqa: D102
         if not is_shvlist(value):
-            raise ValueError("expected List")
+            raise ValueError("List")
         res = []
         for i, v in enumerate(value):
             try:
                 res.append(self._tp.inflate(v))
             except ValueError as exc:
-                raise ValueError(f"invalid List item {i}: {exc.args[0]}") from exc
+                raise ValueError(f"List item {i}: {exc.args[0]}") from exc
         return res
 
     def deflate(self, value: SHVType) -> SHVType:  # noqa: D102
         if not is_shvlist(value):
-            raise ValueError("expected List")
+            raise ValueError("List")
         res = []
         for i, v in enumerate(value):
             try:
                 res.append(self._tp.deflate(v))
             except ValueError as exc:
-                raise ValueError(f"invalid List item {i}: {exc.args[0]}") from exc
+                raise ValueError(f"List item {i}: {exc.args[0]}") from exc
         return res
 
 
