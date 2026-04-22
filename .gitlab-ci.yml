@@ -87,6 +87,12 @@ shellcheck:
   script:
     - git ls-files '**.sh' | xargs nix run --quiet .#shellcheck
 
+sphinx-lint:
+  extends: .lint
+  script: |
+      git ls-files '**.rst' '**.py' |
+        xargs nix run --quiet .#sphinx-lint -- --max-line-length 88 --enable all
+
 statix:
   extends: .lint
   script:

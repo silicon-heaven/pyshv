@@ -42,18 +42,22 @@
     devShells = withPkgs (pkgs: {
       default = pkgs.mkShell {
         packages = with pkgs; [
+          # Linters and formatters
           deadnix
+          docstrfmt
           editorconfig-checker
           gitlint
           mypy
           ruff
-          docstrfmt
           shellcheck
           shfmt
           statix
+          # Documentation
+          sphinx-autobuild
+          sphinx-lint
+          # Release
+          (python3.withPackages (pypkgs: [pypkgs.build]))
           twine
-          (python3.withPackages (pypkgs:
-              with pypkgs; [build sphinx-autobuild]))
         ];
         inputsFrom = [pkgs.python3Packages."${pyproject.pname}"];
       };
