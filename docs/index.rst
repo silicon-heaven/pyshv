@@ -1,13 +1,14 @@
 .. include:: ../README.rst
 
-Table of contents
------------------
+###################
+ Table of contents
+###################
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   CHANGELOG
-   template/index
-   api
+    CHANGELOG
+    template/index
+    api
 
 :ref:`genindex`

@@ -47,6 +47,7 @@
           gitlint
           mypy
           ruff
+          docstrfmt
           shellcheck
           shfmt
           statix

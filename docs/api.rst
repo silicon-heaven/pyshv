@@ -1,4 +1,5 @@
-API reference
-=============
+###############
+ API reference
+###############
 
 .. automodule:: template_package_name

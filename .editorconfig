@@ -17,8 +17,8 @@ trim_trailing_whitespace = false
 max_line_length = 72
 [*.rst]
 indent_style = space
-indent_size = 3
-max_line_length = 80
+indent_size = 4
+max_line_length = 88
 # Trailing whitespaces have meaning in RST
 trim_trailing_whitespace = false
 
