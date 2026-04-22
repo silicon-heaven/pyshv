@@ -62,6 +62,12 @@ nix-check:
   script:
     - nix flake check
 
+docs:
+  extends: .test
+  allow_failure: true
+  script:
+    - nix develop --quiet -c sphinx-build --nitpicky --fail-on-warning docs html
+
 include:
   - template: Security/Secret-Detection.gitlab-ci.yml
 

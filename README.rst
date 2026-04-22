@@ -20,9 +20,9 @@ This project contains basic tests in directory tests; see the dependencies in th
 To run tests you have to use **pytest**. To run all tests just run it in the top level
 directory of the project:
 
-::
+.. code-block:: console
 
-    pytest
+    $ pytest
 
 See the `pytest documentation <https://docs.pytest.org/>`__ for more info.
 
@@ -32,6 +32,6 @@ See the `pytest documentation <https://docs.pytest.org/>`__ for more info.
 
 The documentation is available in ``docs`` directory. You can build it using:
 
-::
+.. code-block:: console
 
-    sphinx-build -b html docs docs-html
+    $ sphinx-build -b html docs docs-html
