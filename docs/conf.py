@@ -20,7 +20,6 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx_book_theme",
     "sphinx_mdinclude",
-    "sphinx_multiversion",
 ]
 
 templates_path = ["_templates"]
@@ -52,10 +51,6 @@ html_theme_options = {
     "use_edit_page_button": True,
     "use_issues_button": True,
 }
-
-smv_tag_whitelist = r"^v.*$"
-smv_branch_whitelist = r"^master$"
-smv_remote_whitelist = r"^.*$"
 
 autodoc_typehints = "description"
 autodoc_member_order = "bysource"

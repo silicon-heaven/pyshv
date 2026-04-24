@@ -1,24 +1,54 @@
-{% if versions %}
-<nav class="bd-links bd-docs-nav">
+<nav id="versioning-nav" class="bd-links bd-docs-nav" hidden>
   <div class="bd-toc-item navbar-nav">
     <ul class="nav bd-sidenav">
     <li class="toctree-l1 has-children">
       <p class="caption" aria-level="2" role="heading">
-        <span class="caption-text">Version:  {{ current_version.name }}</span>
+        <span id="versioning-label" class="caption-text"></span>
       </p>
       <details>
         <summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></summary>
-        <ul>
-          {%- for item in versions.branches %}
-          <li class="toctree-l2 {% if item == current_version %}current{% endif %} "><a class="reference" href="{{item.url}}">{{item.name}}</a></li>
-          {%- endfor %}
-          {%- for item in versions.tags|reverse %}
-          <li class="toctree-l2 {% if item == current_version %}current{% endif %} "><a class="reference" href="{{item.url}}">{{item.name}}</a></li>
-          {%- endfor %}
+        <ul id="versioning-list">
         </ul>
       </details>
     </li>
   </ul>
   </div>
 </nav>
-{% endif %}
+
+<script>
+async function loadVersions() {
+  try {
+    const res = await fetch("./{{ pathto("versions.json", 1) }}");
+    const data = await res.json();
+
+    const nav = document.getElementById("versioning-nav");
+    const label = document.getElementById("versioning-label");
+    const list = document.getElementById("versioning-list");
+    if (!nav || !list || !label) {
+      console.error("Failed to locate versioning elements.")
+      return;
+    }
+
+    nav.removeAttribute("hidden");
+
+    label.textContent = `Version: ${data.current}`;
+
+    data.versions.forEach(v => {
+      const li = document.createElement("li");
+      li.className = "toctree-l2";
+
+      const a = document.createElement("a");
+      a.className = "reference";
+      a.href = "{{ pathto("..", 1) }}/" + v;
+      a.textContent = v;
+
+      li.appendChild(a);
+      list.appendChild(li);
+    });
+  } catch (e) {
+    console.error("Failed to load versions:", e);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadVersions);
+</script>

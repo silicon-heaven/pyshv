@@ -27,7 +27,6 @@ docs = [
   "sphinx",
   "sphinx-book-theme",
   "sphinx-mdinclude",
-  "sphinx-multiversion",
 ]
 
 [project.scripts]
