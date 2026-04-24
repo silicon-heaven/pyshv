@@ -2,6 +2,7 @@
 # Script that builds documentations for different Git references and stitches
 # them together so they can be switched.
 set -eu
+in="$(git rev-parse --show-toplevel)"
 out="$1"
 shift
 
@@ -13,16 +14,21 @@ while read -r ref; do
 	versions+=("${ref#refs/tags/}")
 done < <(git for-each-ref --format "%(refname)" 'refs/tags/v*' | sort -Vr)
 
+mkdir -p "$out"
+tmpdir="$(mktemp -d)"
+trap 'rm -rf -- "$tmpdir"' INT QUIT TERM
+
+template_file="docs/_templates/versioning.html"
+
 # Build documentation for every version and deploy it to the output directory
 for ref in "${versions[@]}"; do
 	echo -e "\e[0Ksection_start:$(date +%s):${ref}[collapsed=true]\r\e[0K$*"
-	if res="$(
-		nix build --no-link --print-out-paths \
-			".?submodules=1&ref=${ref}#default.doc"
-	)"; then
-		mkdir -p "$out"
-		rm -rf "${out:?}/${ref}"
-		cp -r --no-preserve=mode "$res"/share/doc/*/html "$out/$ref"
+	{
+		src="${tmpdir}/${ref}"
+		git clone -c advice.detachedHead=false --quiet --revision="$ref" . "$src"
+		cp "${in}/${template_file}" "${src}/${template_file}"
+
+		nix develop ".?ref=${ref}" --quiet -c sphinx-build "$src/docs" "$out/$ref"
 		{
 			echo "{"
 			echo "  \"current\": \"${ref}\"",
@@ -39,7 +45,9 @@ for ref in "${versions[@]}"; do
 			echo "  ]"
 			echo "}"
 		} >"$out/$ref/versions.json"
-	fi
+
+		rm -rf "$src"
+	} || echo "!FAILED!"
 	echo -e "\e[0Ksection_end:$(date +%s):$ref\r\e[0K"
 done
 
