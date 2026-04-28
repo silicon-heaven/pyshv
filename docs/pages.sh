@@ -6,7 +6,7 @@ in="$(git rev-parse --show-toplevel)"
 out="$1"
 shift
 
-git fetch # To get all references
+git fetch origin # To get all references
 
 # Collect versions
 versions=("$CI_DEFAULT_BRANCH")
@@ -24,11 +24,13 @@ template_file="docs/_templates/versioning.html"
 for ref in "${versions[@]}"; do
 	echo -e "\e[0Ksection_start:$(date +%s):${ref}[collapsed=true]\r\e[0K$*"
 	{
+		gref="$ref"
+		[[ "$ref" == v* ]] || gref="origin/$ref" # For branches
 		src="${tmpdir}/${ref}"
-		git clone -c advice.detachedHead=false --quiet --revision="$ref" . "$src"
+		git worktree add --detach "$src" "$gref"
 		cp "${in}/${template_file}" "${src}/${template_file}"
 
-		nix develop ".?ref=${ref}" --quiet -c sphinx-build "$src/docs" "$out/$ref"
+		nix develop ".?ref=${gref}" --quiet -c sphinx-build "$src/docs" "$out/$ref"
 		{
 			echo "{"
 			echo "  \"current\": \"${ref}\"",

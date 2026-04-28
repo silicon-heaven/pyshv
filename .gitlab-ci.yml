@@ -175,7 +175,6 @@ pages:
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
   needs: ["devenv"]
   script:
-    - git fetch
     - bash docs/pages.sh public
   artifacts:
     paths:
