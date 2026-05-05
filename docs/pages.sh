@@ -30,7 +30,8 @@ for ref in "${versions[@]}"; do
 		git worktree add --detach "$src" "$gref"
 		cp "${in}/${template_file}" "${src}/${template_file}"
 
-		nix develop ".?ref=${gref}" --quiet -c sphinx-build "$src/docs" "$out/$ref"
+		nix develop ".?ref=${gref}" --quiet -c \
+			sphinx-build --doctree-dir "$tmpdir/.doctree-$ref" "$src/docs" "$out/$ref"
 		{
 			echo "{"
 			echo "  \"current\": \"${ref}\"",
