@@ -55,6 +55,7 @@
           # Documentation
           sphinx-autobuild
           sphinx-lint
+          fdupes
           # Release
           (python3.withPackages (pypkgs: [pypkgs.build]))
           twine

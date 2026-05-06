@@ -22,7 +22,7 @@ template_file="docs/_templates/versioning.html"
 
 # Build documentation for every version and deploy it to the output directory
 for ref in "${versions[@]}"; do
-	echo -e "\e[0Ksection_start:$(date +%s):${ref}[collapsed=true]\r\e[0K$*"
+	echo -e "\e[0Ksection_start:$(date +%s):${ref}[collapsed=true]\r\e[0K${ref}"
 	{
 		gref="$ref"
 		[[ "$ref" == v* ]] || gref="origin/$ref" # For branches
@@ -52,6 +52,17 @@ for ref in "${versions[@]}"; do
 		rm -rf "$src"
 	} || echo "!FAILED!"
 	echo -e "\e[0Ksection_end:$(date +%s):$ref\r\e[0K"
+done
+
+# Deduplicate files to reduce size
+fdupes --recurse --symlinks "$out" | while read -r line; do
+	if [[ -z "$line" ]]; then
+		ref=""
+	elif [[ -z "${ref:-}" ]]; then
+		ref="$line"
+	else
+		ln -sf "$(realpath -s --relative-to="${line%/*}" "$ref")" "$line"
+	fi
 done
 
 # Add redirecting index to the root
