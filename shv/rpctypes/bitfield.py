@@ -29,6 +29,10 @@ class RpcTypeBitfieldItem(typing.NamedTuple):
     key: str
     """String alias used to identify this item."""
 
+    def extract(self, value: int) -> SHVTypeBitfieldCompatible:
+        """Extract this item out of the given integer."""
+        return RpcTypeBitfield.extract(value, self.startbit, self.tp)
+
 
 class RpcTypeBitfield(RpcType, collections.abc.Sequence[RpcTypeBitfieldItem]):
     """The Bitfield type representation."""
@@ -129,12 +133,12 @@ class RpcTypeBitfield(RpcType, collections.abc.Sequence[RpcTypeBitfieldItem]):
             res[item.key] = v
         return res
 
-    def deflate(self, value: SHVType) -> int:  # noqa: D102
+    def deflate(self, value: SHVType) -> SHVUInt:  # noqa: D102
         if not is_shvmap(value):
             raise ValueError("Map(Bitfield)")
         if unknown := set(value.keys()) - {item[2] for item in self._items}:
             raise ValueError(f"defined Bitfield keys: {', '.join(unknown)}")
-        res = 0
+        res = SHVUInt(0)
         for i, item in enumerate(self):
             try:
                 v = item.tp.deflate(value[item.key])
@@ -223,17 +227,21 @@ class RpcTypeBitfield(RpcType, collections.abc.Sequence[RpcTypeBitfieldItem]):
 
     @classmethod
     @typing.overload
-    def deposit(cls, value: bool, start: int, tp: RpcTypeBool, update: int) -> int: ...
+    def deposit(
+        cls, value: bool, start: int, tp: RpcTypeBool, update: int
+    ) -> SHVUInt: ...
 
     @classmethod
     @typing.overload
-    def deposit(cls, value: int, start: int, tp: RpcTypeEnum, update: int) -> int: ...
+    def deposit(
+        cls, value: int, start: int, tp: RpcTypeEnum, update: int
+    ) -> SHVUInt: ...
 
     @classmethod
     @typing.overload
     def deposit(
         cls, value: SHVUInt, start: int, tp: RpcTypeUnsigned, update: int
-    ) -> int: ...
+    ) -> SHVUInt: ...
 
     @classmethod
     @typing.overload
@@ -243,7 +251,7 @@ class RpcTypeBitfield(RpcType, collections.abc.Sequence[RpcTypeBitfieldItem]):
         start: int,
         tp: RpcTypeBitfieldCompatible,
         update: int,
-    ) -> int: ...
+    ) -> SHVUInt: ...
 
     @classmethod
     def deposit(
@@ -252,7 +260,7 @@ class RpcTypeBitfield(RpcType, collections.abc.Sequence[RpcTypeBitfieldItem]):
         start: int,
         tp: RpcTypeBitfieldCompatible,
         update: int = 0,
-    ) -> int:
+    ) -> SHVUInt:
         """Insert integer based on the provided type and start.
 
         The handling is based on the type:
@@ -286,4 +294,4 @@ class RpcTypeBitfield(RpcType, collections.abc.Sequence[RpcTypeBitfieldItem]):
         mask: int = 2**bitsize - 1
         if rvalue != rvalue & mask:  # pragma: no cover
             raise RuntimeError("Value won't fit but is valid: implementation error")
-        return (update ^ update & mask << start) | rvalue << start
+        return SHVUInt((update ^ update & mask << start) | rvalue << start)
