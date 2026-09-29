@@ -164,7 +164,9 @@ async def test_call_lost(con):
     rid = RpcMessage.next_request_id() - 1
     assert msg == RpcMessage.request("test", "lost", None, rid)
     await con[1].send(msg.make_response(RpcRequestInvalidError("Lost")))
-    assert await con[1].receive() == RpcMessage.request("test", "lost", None, rid)
+    msg = await con[1].receive()
+    rid = RpcMessage.next_request_id() - 1
+    assert msg == RpcMessage.request("test", "lost", None, rid)
     await con[1].send(msg.make_response("value"))
     assert await task == "value"
 

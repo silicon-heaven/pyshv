@@ -275,6 +275,7 @@ class SHVBase:
                                         rid = request.new_request_id()
                                         self._responses[rid] = queue
                                     case RpcRequestInvalidError():
+                                        request.new_request_id()
                                         self._responses[request.request_id] = queue
                                     case RpcTryAgainLaterError():
                                         await callback_progress(None)
