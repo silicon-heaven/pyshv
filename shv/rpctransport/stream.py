@@ -152,6 +152,7 @@ class _RpcProtocolSerial(RpcTransportProtocol):
                     crc32_br += await read(siz - len(crc32_br))
                 crc32_b = cls.deescape(crc32_br)
                 if int.from_bytes(crc32_b, "big") != binascii.crc32(data):
+                    logger.debug(f"Ignoring corrupted message: {bytes(data)!r}")
                     continue
             return cls.deescape(data)
 
