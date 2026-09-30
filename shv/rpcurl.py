@@ -209,10 +209,10 @@ class RpcUrl:
                     if sr.port is not None:
                         res.port = int(sr.port)
             case RpcProtocol.CAN:
-                res.location = sr.hostname or ""
                 if sr.port is None:
                     raise ValueError("CAN server address must be specified")
-                res.port = int(sr.port)
+                res.location = sr.netloc[: -(len(str(sr.port)) + 1)] or ""
+                res.port = sr.port
                 if not 0 <= res.port < 128:
                     raise ValueError(f"Invalid CAN server address: {res.port}")
                 if sr.path:

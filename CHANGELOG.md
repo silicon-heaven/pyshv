@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `SHVBase.call` will use new request ID when resending request after
   `RpcRequestInvalidError` to prevent mixup of responses
+- `RpcUrl.parse` of CAN with upper case interface name being parsed as lowercase
 
 
 ## [0.13.0] - 2026-03-25

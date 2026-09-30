@@ -104,6 +104,10 @@ DATA = [
         "can://vcan0:1?caddr=63",
         RpcUrl("vcan0", protocol=RpcProtocol.CAN, port=1, can_address=63),
     ),
+    (
+        "can://canIFM_0:1",
+        RpcUrl("canIFM_0", protocol=RpcProtocol.CAN, port=1),
+    ),
 ]
 
 
