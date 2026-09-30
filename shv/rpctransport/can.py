@@ -431,6 +431,9 @@ class SHVCAN:
         elif not peer._rdata or counter == peer._rcounter:
             return  # We don't have start or copy of previous message
         elif counter != ((peer._rcounter + 1) % 0x80):
+            logger.debug(
+                "%s: CAN frame was lost and message is dropped for peer %s", self, src
+            )
             return peer._rdata.clear()  # Missed frame or message abort
         peer._rcounter = msg.data[1]
         peer._rdata.extend(msg.data[2:])
