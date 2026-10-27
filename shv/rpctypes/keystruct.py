@@ -32,12 +32,12 @@ class RpcTypeKeyStruct(RpcType, collections.abc.Mapping[str, RpcType]):
     def __len__(self) -> int:
         return len(self._items)
 
-    def is_valid(  # noqa: D102
+    def is_valid(  # ruff: ignore[undocumented-public-method]
         self, value: SHVType, is_updatable: bool = False
     ) -> typing.TypeGuard[SHVMapType]:
         return self.validate(value, is_updatable) is None
 
-    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]
         if not is_shvmap(value):
             return "KeyStruct(Map)"
         if invalid := set(value) - set(self._items):
@@ -49,7 +49,7 @@ class RpcTypeKeyStruct(RpcType, collections.abc.Mapping[str, RpcType]):
                     return f"KeyStruct item {k}: {msg}"
         return None
 
-    def inflate(self, value: SHVType) -> SHVMapType:  # noqa: D102
+    def inflate(self, value: SHVType) -> SHVMapType:  # ruff: ignore[undocumented-public-method]
         if not is_shvmap(value):
             raise ValueError("KeyStruct(Map)")
         if unknown := set(value.keys()) - set(self._items):
@@ -64,7 +64,7 @@ class RpcTypeKeyStruct(RpcType, collections.abc.Mapping[str, RpcType]):
                 res[k] = v
         return res
 
-    def deflate(self, value: SHVType) -> SHVMapType:  # noqa: D102
+    def deflate(self, value: SHVType) -> SHVMapType:  # ruff: ignore[undocumented-public-method]
         if not is_shvmap(value):
             raise ValueError("KeyStruct(Map)")
         if unknown := set(value.keys()) - set(self._items):

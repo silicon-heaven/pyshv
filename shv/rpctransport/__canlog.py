@@ -4,5 +4,5 @@ import logging
 
 
 def patchlogger(logger: logging.Logger) -> None:
-    setattr(logger, "debug", lambda *args, **kwargs: logger.log(9, *args, **kwargs))  # noqa: B010
-    setattr(logger, "info", lambda *args, **kwargs: logger.log(9, *args, **kwargs))  # noqa: B010
+    setattr(logger, "debug", lambda *args, **kwargs: logger.log(9, *args, **kwargs))  # ruff: ignore[set-attr-with-constant]
+    setattr(logger, "info", lambda *args, **kwargs: logger.log(9, *args, **kwargs))  # ruff: ignore[set-attr-with-constant]

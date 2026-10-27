@@ -14,7 +14,7 @@ class RpcTypeIMap(RpcType):
 
     __obj: RpcTypeIMap | None = None
 
-    def __new__(cls, tp: RpcType = rpctype_any) -> RpcTypeIMap:  # noqa: D102
+    def __new__(cls, tp: RpcType = rpctype_any) -> RpcTypeIMap:  # ruff: ignore[undocumented-public-method]
         if tp is rpctype_any:
             if cls.__obj is None:
                 cls.__obj = super().__new__(cls)
@@ -35,12 +35,12 @@ class RpcTypeIMap(RpcType):
     def __str__(self) -> str:
         return f"i{{{self._tp}}}"
 
-    def is_valid(  # noqa: D102
+    def is_valid(  # ruff: ignore[undocumented-public-method]
         self, value: SHVType, is_updatable: bool = False
     ) -> typing.TypeGuard[SHVIMapType]:
         return self.validate(value, is_updatable) is None
 
-    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]
         if not is_shvimap(value):
             return "IMap"
         for i, val in value.items():
@@ -48,7 +48,7 @@ class RpcTypeIMap(RpcType):
                 return f"IMap item {i}: {msg}"
         return None
 
-    def inflate(self, value: SHVType) -> SHVIMapType:  # noqa: D102
+    def inflate(self, value: SHVType) -> SHVIMapType:  # ruff: ignore[undocumented-public-method]
         if not is_shvimap(value):
             raise ValueError("IMap")
         res = {}
@@ -59,7 +59,7 @@ class RpcTypeIMap(RpcType):
                 raise ValueError(f"IMap item {i}: {exc.args[0]}") from exc
         return res
 
-    def deflate(self, value: SHVType) -> SHVIMapType:  # noqa: D102
+    def deflate(self, value: SHVType) -> SHVIMapType:  # ruff: ignore[undocumented-public-method]
         if not is_shvimap(value):
             raise ValueError("IMap")
         res = {}

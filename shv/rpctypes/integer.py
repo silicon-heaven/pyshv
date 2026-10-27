@@ -14,7 +14,7 @@ class RpcTypeInteger(RpcType):
 
     __obj: RpcTypeInteger | None = None
 
-    def __new__(  # noqa: D102
+    def __new__(  # ruff: ignore[undocumented-public-method]
         cls,
         minimum: int | None = None,
         maximum: int | None = None,
@@ -69,12 +69,12 @@ class RpcTypeInteger(RpcType):
             lim = f"({_strnum(self._min)},{_strnum(self._max)})"
         return f"i{lim}{self._unit}"
 
-    def is_valid(  # noqa: D102
+    def is_valid(  # ruff: ignore[undocumented-public-method]
         self, value: SHVType, is_updatable: bool = False
     ) -> typing.TypeGuard[int]:
         return super().is_valid(value, is_updatable)
 
-    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]
         if not isinstance(value, int):
             return "Integer"
         if self._min is not None and value < self._min:

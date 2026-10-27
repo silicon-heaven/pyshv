@@ -187,7 +187,7 @@ class RpcFile:
         self._flags = flags
         self._offset: int = 0
         self._read_offset: int = 0
-        self._read_buffer: bytes = b""
+        self._read_buffer: bytearray = bytearray()
         self._write_offset: int = 0
         self._write_buffer: bytearray = bytearray()
         self.__page_size: int | None = None
@@ -370,7 +370,7 @@ class RpcFile:
         doff = self._offset + len(result) - pstart
         result += data[doff : (doff + size - len(result)) if size > 0 else None]
         self._offset += len(result)
-        return result
+        return bytes(result)
 
     async def readuntil(self, separator: bytes = b"\n") -> bytes:
         """Read and return one line from the file from the current offset."""
@@ -566,7 +566,7 @@ class FileProvider:
                 size = shvarg(request.param, 1, None)
                 if size is not None:
                     size = shvt(size, int)
-                hash = hashlib.sha1()  # noqa PLR6301
+                hash = hashlib.sha1()  # ruff: ignore[builtin-variable-shadowing, hashlib-insecure-hash-function]
                 with path.open("rb") as file:
                     file.seek(offset)
                     while size is None or size > 0:

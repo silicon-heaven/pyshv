@@ -13,6 +13,7 @@
       text = ''
         #!${testPython}/bin/python3
         import asyncio
+
         from shv.rpcapi.client import SHVClient
 
 

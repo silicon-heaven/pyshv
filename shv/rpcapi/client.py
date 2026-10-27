@@ -36,9 +36,9 @@ class SHVClient(SHVBase):
         self,
         client: RpcClient,
         login: RpcLogin,
-        *args: typing.Any,  # noqa ANN401
+        *args: typing.Any,  # ruff: ignore[any-type]
         reconnects: int = 1,
-        **kwargs: typing.Any,  # noqa ANN401
+        **kwargs: typing.Any,  # ruff: ignore[any-type]
     ) -> None:
         super().__init__(client, *args, **kwargs)
         self.login: RpcLogin = login
@@ -70,8 +70,8 @@ class SHVClient(SHVBase):
     async def connect(
         cls: type[typing.Self],
         url: RpcUrl | str,
-        *args: typing.Any,  # noqa ANN401
-        **kwargs: typing.Any,  # noqa ANN401
+        *args: typing.Any,  # ruff: ignore[any-type]
+        **kwargs: typing.Any,  # ruff: ignore[any-type]
     ) -> typing.Self:
         """Connect and login to the SHV broker.
 
@@ -104,7 +104,7 @@ class SHVClient(SHVBase):
                 if str(exc) != "Login task restart":
                     raise
 
-    async def disconnect(self) -> None:  # noqa: D102
+    async def disconnect(self) -> None:  # ruff: ignore[undocumented-public-method]
         self.reconnects = 0
         await super().disconnect()
 
@@ -227,7 +227,7 @@ class SHVClient(SHVBase):
         for ri in self._subscribes:
             await self.__subscribe(ri)
 
-    async def call(self, *args: typing.Any, **kwargs: typing.Any) -> SHVType:  # noqa: D102, ANN401
+    async def call(self, *args: typing.Any, **kwargs: typing.Any) -> SHVType:  # ruff: ignore[undocumented-public-method, any-type]
         while True:
             with contextlib.suppress(EOFError):
                 return await super().call(*args, **kwargs)

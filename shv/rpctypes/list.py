@@ -14,7 +14,7 @@ class RpcTypeList(RpcType):
 
     __obj: RpcTypeList | None = None
 
-    def __new__(  # noqa: D102
+    def __new__(  # ruff: ignore[undocumented-public-method]
         cls, tp: RpcType = rpctype_any, minlen: int = 0, maxlen: int | None = None
     ) -> RpcTypeList:
         if tp is rpctype_any and minlen == 0 and maxlen is None:
@@ -66,12 +66,12 @@ class RpcTypeList(RpcType):
                 lim = f"({self._min or ''},{self._max or ''})"
         return f"[{self._tp}]{lim}"
 
-    def is_valid(  # noqa: D102
+    def is_valid(  # ruff: ignore[undocumented-public-method]
         self, value: SHVType, is_updatable: bool = False
     ) -> typing.TypeGuard[SHVListType]:
         return self.validate(value, is_updatable) is None
 
-    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]
         if not is_shvlist(value):
             return "List"
         vlen = len(value)
@@ -88,7 +88,7 @@ class RpcTypeList(RpcType):
                 return f"List item {i}: {msg}"
         return None
 
-    def inflate(self, value: SHVType) -> SHVType:  # noqa: D102
+    def inflate(self, value: SHVType) -> SHVType:  # ruff: ignore[undocumented-public-method]
         if not is_shvlist(value):
             raise ValueError("List")
         res = []
@@ -99,7 +99,7 @@ class RpcTypeList(RpcType):
                 raise ValueError(f"List item {i}: {exc.args[0]}") from exc
         return res
 
-    def deflate(self, value: SHVType) -> SHVType:  # noqa: D102
+    def deflate(self, value: SHVType) -> SHVType:  # ruff: ignore[undocumented-public-method]
         if not is_shvlist(value):
             raise ValueError("List")
         res = []

@@ -49,7 +49,7 @@ class PTYPort:
 
     @classmethod
     @contextlib.contextmanager
-    def new(cls) -> collections.abc.Iterator[PTYPort]:
+    def new(cls) -> collections.abc.Generator[PTYPort, None, None]:
         """Context function that provides PTY based ports.
 
         :return: Tuple with two strings containing paths to the pty ports and
@@ -64,10 +64,12 @@ class PTYPort:
             target=cls._exchange, args=(pty1_master, pty2_master, event)
         )
         thread.start()
-        yield cls(os.ttyname(pty1_slave), os.ttyname(pty2_slave), event)
-        os.close(pty1_slave)
-        os.close(pty2_slave)
-        thread.join()
+        try:
+            yield cls(os.ttyname(pty1_slave), os.ttyname(pty2_slave), event)
+        finally:
+            os.close(pty1_slave)
+            os.close(pty2_slave)
+            thread.join()
 
     @staticmethod
     def _exchange(fd1: int, fd2: int, event: threading.Event) -> None:
@@ -390,8 +392,7 @@ class TestCAN(ServerLink):
         await server_client.wait_disconnect()
 
     @pytest.mark.skip(reason="Reconnect after disconnect closes CAN bus")
-    async def test_reconnect(self, clients, server):
-        ...
+    async def test_reconnect(self, clients, server): ...
 
     @pytest.mark.parametrize(
         "size",
@@ -416,8 +417,8 @@ class TestCAN(ServerLink):
             await lastone.dynamic_local()
 
         for local in dynamic:
-            await local.deactivate()
-        await lastone.terminate()
+            local.deactivate()
+        lastone.terminate()
 
     async def test_dynamic_address_concurrent(self) -> None:
         """Check that we can assign dynamic addresses concurrently."""
@@ -429,4 +430,4 @@ class TestCAN(ServerLink):
         assert len(set(con.address for con in dynamic)) == 100
 
         for local in dynamic:
-            await local.deactivate()
+            local.deactivate()

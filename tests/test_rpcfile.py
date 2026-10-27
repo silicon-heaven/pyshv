@@ -19,9 +19,9 @@ class FilesProvider(SHVClient):
 
     def __init__(
         self,
-        *args: typing.Any,  # noqa ANNN401
+        *args: typing.Any,  # ruff: ignore[any-type]
         path: pathlib.Path,
-        **kwargs: typing.Any,  # noqa ANNN401
+        **kwargs: typing.Any,  # ruff: ignore[any-type]
     ) -> None:
         self.path = path
         super().__init__(*args, **kwargs)  # notype

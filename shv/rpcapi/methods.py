@@ -17,15 +17,15 @@ from ..rpctypes import rpctype_parse
 from ..value import SHVType
 from .base import SHVBase
 
-SHVMethodT: typing.TypeAlias = collections.abc.Callable[
+type SHVMethodT = collections.abc.Callable[
     [typing.Any, SHVBase.Request],
     SHVType | collections.abc.Coroutine[None, None, SHVType],
 ]
-SHVGetMethodT: typing.TypeAlias = collections.abc.Callable[
+type SHVGetMethodT = collections.abc.Callable[
     [typing.Any, int | None],
     collections.abc.Coroutine[None, None, SHVType] | SHVType,
 ]
-SHVSetMethodT: typing.TypeAlias = collections.abc.Callable[
+type SHVSetMethodT = collections.abc.Callable[
     [typing.Any, SHVType, str | None],
     collections.abc.Coroutine[None, None, None] | None,
 ]
@@ -47,8 +47,8 @@ class SHVMethods(SHVBase):
 
     def __init__(
         self,
-        *args: typing.Any,  # noqa ANN401
-        **kwargs: typing.Any,  # noqa ANN401
+        *args: typing.Any,  # ruff: ignore[any-type]
+        **kwargs: typing.Any,  # ruff: ignore[any-type]
     ) -> None:
         self._methods: dict[str, dict[str, SHVMethods.Method]] = (
             collections.defaultdict(dict)

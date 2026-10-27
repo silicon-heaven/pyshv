@@ -71,7 +71,7 @@ class RpcAlert:
             raise ValueError(f"Must be string but is: {type(value)}")
         return value
 
-    @id.setter  # noqa: A003
+    @id.setter  # ruff: ignore[builtin-attribute-shadowing]
     def id(self, value: str) -> None:
         self.value[self.Key.ID] = value
 

@@ -94,9 +94,9 @@
     checks = withPkgs (pkgs:
       import ./nixos/tests nixpkgs.lib.nixos pkgs self.nixosModules
       // {
-        python311 = pkgs.python311Packages."${pyproject.pname}";
         python312 = pkgs.python312Packages."${pyproject.pname}";
         python313 = pkgs.python313Packages."${pyproject.pname}";
+        python314 = pkgs.python314Packages."${pyproject.pname}";
       });
     formatter = withPkgs (pkgs: pkgs.alejandra);
 

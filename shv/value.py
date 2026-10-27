@@ -10,12 +10,12 @@ import functools
 import itertools
 import typing
 
-SHVNullType: typing.TypeAlias = typing.Union["SHVNull", None]
-SHVBoolType: typing.TypeAlias = typing.Union[bool, "SHVBool"]
-SHVListType: typing.TypeAlias = collections.abc.Sequence["SHVType"]
-SHVMapType: typing.TypeAlias = collections.abc.Mapping[str, "SHVType"]
-SHVIMapType: typing.TypeAlias = collections.abc.Mapping[int, "SHVType"]
-SHVType: typing.TypeAlias = (
+type SHVNullType = SHVNull | None
+type SHVBoolType = SHVBool | bool
+type SHVListType = collections.abc.Sequence["SHVType"]
+type SHVMapType = collections.abc.Mapping[str, "SHVType"]
+type SHVIMapType = collections.abc.Mapping[int, "SHVType"]
+type SHVType = (
     SHVNullType
     | SHVBoolType
     | int
@@ -30,10 +30,10 @@ SHVType: typing.TypeAlias = (
     | SHVIMapType
     | SHVMapType
 )
-SHVMetaType: typing.TypeAlias = collections.abc.MutableMapping[int | str, SHVType]
+type SHVMetaType = collections.abc.MutableMapping[int | str, SHVType]
 
 
-class SHVMeta(abc.ABC):  # noqa B024
+class SHVMeta(abc.ABC):  # ruff: ignore[abstract-base-class-without-abstract-method] B024
     """SHV values can have meta with attributes associated with them.
 
     This provides meta attribute that can be added to other types. Only create
@@ -190,7 +190,7 @@ class SHVUInt(int, SHVMeta):
     def __new__(cls, value: int) -> SHVUInt: ...
     @typing.overload
     def __new__(cls, value: str, base: int = 10) -> SHVUInt: ...
-    def __new__(cls, value: int | str = 0, base: int = 10) -> SHVUInt:  # noqa: D102
+    def __new__(cls, value: int | str = 0, base: int = 10) -> SHVUInt:  # ruff: ignore[undocumented-public-method]
         res = (
             super().__new__(cls, value, base)
             if isinstance(value, str)

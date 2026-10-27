@@ -13,7 +13,7 @@ class RpcTypeDouble(RpcType):
 
     __obj: RpcTypeDouble | None = None
 
-    def __new__(cls, unit: str = "") -> RpcTypeDouble:  # noqa: D102
+    def __new__(cls, unit: str = "") -> RpcTypeDouble:  # ruff: ignore[undocumented-public-method]
         if not unit:
             if cls.__obj is None:
                 cls.__obj = super().__new__(cls)
@@ -37,13 +37,13 @@ class RpcTypeDouble(RpcType):
         return f"f{self._unit}"
 
     @classmethod
-    def is_valid(  # noqa: D102
+    def is_valid(  # ruff: ignore[undocumented-public-method]
         cls, value: SHVType, is_updatable: bool = False
     ) -> typing.TypeGuard[float]:
         return cls.validate(value, is_updatable) is None
 
     @staticmethod
-    def validate(value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
+    def validate(value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]
         if not isinstance(value, float):
             return "Double"
         return None

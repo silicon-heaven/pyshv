@@ -13,7 +13,7 @@ class RpcTypeBlob(RpcType):
 
     __obj: RpcTypeBlob | None = None
 
-    def __new__(  # noqa: D102
+    def __new__(  # ruff: ignore[undocumented-public-method]
         cls,
         minlen: int = 0,
         maxlen: int | None = None,
@@ -62,12 +62,12 @@ class RpcTypeBlob(RpcType):
                 lim = f"({self._min or ''},{self._max or ''})"
         return f"x{lim}"
 
-    def is_valid(  # noqa: D102
+    def is_valid(  # ruff: ignore[undocumented-public-method]
         self, value: SHVType, is_updatable: bool = False
     ) -> typing.TypeGuard[bytes]:
         return self.validate(value, is_updatable) is None
 
-    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]
         if not isinstance(value, bytes):
             return "Blob"
         if self._min is not None and len(value) < self._min:

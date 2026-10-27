@@ -18,7 +18,7 @@ class RpcBrokerRoleABC(abc.ABC):
     def name(self) -> str:
         """Name of the role used to identify it externally."""
 
-    def mount_point(  # noqa PLR6301
+    def mount_point(  # ruff: ignore[no-self-use]
         self, existing: collections.abc.Set[str] = frozenset()
     ) -> str | None:
         """Provide mount point for this role.
@@ -34,7 +34,7 @@ class RpcBrokerRoleABC(abc.ABC):
         """
         return None
 
-    def initial_subscriptions(self) -> collections.abc.Iterator[str]:  # noqa PLR6301
+    def initial_subscriptions(self) -> collections.abc.Iterator[str]:  # ruff: ignore[no-self-use]
         """Iterate over subscription the peer should be initialized with.
 
         These subscription should be inserted as the initial set of
@@ -44,7 +44,7 @@ class RpcBrokerRoleABC(abc.ABC):
         """
         return iter([])
 
-    def access_level(self, path: str, method: str) -> RpcAccess | None:  # noqa PLR6301
+    def access_level(self, path: str, method: str) -> RpcAccess | None:  # ruff: ignore[no-self-use]
         """Deduce the access level (if any) for given method.
 
         Note that all users have implicit browse access to the root node,
@@ -70,11 +70,11 @@ class RpcBrokerConfigABC(abc.ABC):
         """
         return ""
 
-    def listens(self) -> collections.abc.Iterator[RpcUrl]:  # noqa PLR6301
+    def listens(self) -> collections.abc.Iterator[RpcUrl]:  # ruff: ignore[no-self-use]
         """Iterate over URLs where Broker should listen to."""
         return iter([])
 
-    def connections(self) -> collections.abc.Iterator[tuple[RpcUrl, RpcBrokerRoleABC]]:  # noqa PLR6301
+    def connections(self) -> collections.abc.Iterator[tuple[RpcUrl, RpcBrokerRoleABC]]:  # ruff: ignore[no-self-use]
         """Iterate over URLs and their setup where Broker should connect to."""
         return iter([])
 

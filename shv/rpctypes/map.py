@@ -14,7 +14,7 @@ class RpcTypeMap(RpcType):
 
     __obj: RpcTypeMap | None = None
 
-    def __new__(cls, tp: RpcType = rpctype_any) -> RpcTypeMap:  # noqa: D102
+    def __new__(cls, tp: RpcType = rpctype_any) -> RpcTypeMap:  # ruff: ignore[undocumented-public-method]
         if tp is rpctype_any:
             if cls.__obj is None:
                 cls.__obj = super().__new__(cls)
@@ -35,12 +35,12 @@ class RpcTypeMap(RpcType):
     def __str__(self) -> str:
         return f"{{{self._tp}}}"
 
-    def is_valid(  # noqa: D102
+    def is_valid(  # ruff: ignore[undocumented-public-method]
         self, value: SHVType, is_updatable: bool = False
     ) -> typing.TypeGuard[SHVMapType]:
         return self.validate(value, is_updatable) is None
 
-    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]
         if not is_shvmap(value):
             return "Map"
         for k, val in value.items():
@@ -48,7 +48,7 @@ class RpcTypeMap(RpcType):
                 return f"Map item {k}: {msg}"
         return None
 
-    def inflate(self, value: SHVType) -> SHVMapType:  # noqa: D102
+    def inflate(self, value: SHVType) -> SHVMapType:  # ruff: ignore[undocumented-public-method]
         if not is_shvmap(value):
             raise ValueError("Map")
         res = {}
@@ -59,7 +59,7 @@ class RpcTypeMap(RpcType):
                 raise ValueError(f"Map item {k}: {exc.args[0]}") from exc
         return res
 
-    def deflate(self, value: SHVType) -> SHVMapType:  # noqa: D102
+    def deflate(self, value: SHVType) -> SHVMapType:  # ruff: ignore[undocumented-public-method]
         if not is_shvmap(value):
             raise ValueError("Map")
         res = {}

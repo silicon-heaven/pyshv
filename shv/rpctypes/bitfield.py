@@ -11,11 +11,9 @@ from .bool import RpcTypeBool, rpctype_bool
 from .enum import RpcTypeEnum
 from .unsigned import RpcTypeUnsigned
 
-SHVTypeBitfieldCompatible: typing.TypeAlias = SHVBoolType | SHVUInt | int
+type SHVTypeBitfieldCompatible = SHVBoolType | SHVUInt | int
 """Type alias for the types that can be stored in the bitfield."""
-RpcTypeBitfieldCompatible: typing.TypeAlias = (
-    RpcTypeBool | RpcTypeEnum | RpcTypeUnsigned
-)
+type RpcTypeBitfieldCompatible = RpcTypeBool | RpcTypeEnum | RpcTypeUnsigned
 """Rpc types that can be part of the bitfield."""
 
 
@@ -101,12 +99,12 @@ class RpcTypeBitfield(RpcType, collections.abc.Sequence[RpcTypeBitfieldItem]):
     def __len__(self) -> int:
         return len(self._items)
 
-    def is_valid(  # noqa: D102
+    def is_valid(  # ruff: ignore[undocumented-public-method]
         self, value: SHVType, is_updatable: bool = False
     ) -> typing.TypeGuard[int]:
         return self.validate(value, is_updatable) is None
 
-    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]
         if not isinstance(value, int):
             return "Bitfield(Int)"
         if (v := self._mask & value ^ value) != 0:
@@ -119,7 +117,7 @@ class RpcTypeBitfield(RpcType, collections.abc.Sequence[RpcTypeBitfieldItem]):
                     return f"Bitfield item {item.key}: {exc.args[0]}"
         return None
 
-    def inflate(self, value: SHVType) -> SHVMapType:  # noqa: D102
+    def inflate(self, value: SHVType) -> SHVMapType:  # ruff: ignore[undocumented-public-method]
         if not isinstance(value, int):
             raise ValueError("Bitfield(Int)")
         if (vi := self._mask & value ^ value) != 0:
@@ -133,7 +131,7 @@ class RpcTypeBitfield(RpcType, collections.abc.Sequence[RpcTypeBitfieldItem]):
             res[item.key] = v
         return res
 
-    def deflate(self, value: SHVType) -> SHVUInt:  # noqa: D102
+    def deflate(self, value: SHVType) -> SHVUInt:  # ruff: ignore[undocumented-public-method]
         if not is_shvmap(value):
             raise ValueError("Map(Bitfield)")
         if unknown := set(value.keys()) - {item[2] for item in self._items}:

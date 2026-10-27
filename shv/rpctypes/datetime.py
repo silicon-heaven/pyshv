@@ -14,7 +14,7 @@ class RpcTypeDateTime(RpcType):
 
     __obj = None
 
-    def __new__(cls) -> RpcTypeDateTime:  # noqa: D102
+    def __new__(cls) -> RpcTypeDateTime:  # ruff: ignore[undocumented-public-method]
         if cls.__obj is None:
             cls.__obj = object.__new__(cls)
         return cls.__obj
@@ -22,13 +22,13 @@ class RpcTypeDateTime(RpcType):
     def __str__(self) -> str:
         return "t"
 
-    def is_valid(  # noqa: D102
+    def is_valid(  # ruff: ignore[undocumented-public-method]
         self, value: SHVType, is_updatable: bool = False
     ) -> typing.TypeGuard[datetime.datetime]:
         return self.validate(value, is_updatable) is None
 
     @staticmethod
-    def validate(value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
+    def validate(value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]
         if not isinstance(value, datetime.datetime):
             return "DateTime"
         return None

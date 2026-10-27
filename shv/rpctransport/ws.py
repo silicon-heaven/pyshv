@@ -49,7 +49,7 @@ class RpcClientWebSockets(RpcClient):
             return f"ws:{self.location}"
         return f"ws:{self.location}:{self.port}"
 
-    async def _send(self, msg: bytes) -> None:
+    async def _send(self, msg: bytes | bytearray) -> None:
         if self._wsp is None:
             raise EOFError("Not connected")
         try:
@@ -205,7 +205,7 @@ class _RpcServerWebSockets(RpcServer):
             self._close_task: asyncio.Task | None = None
             self._server = server
 
-        async def _send(self, msg: bytes) -> None:
+        async def _send(self, msg: bytes | bytearray) -> None:
             try:
                 await self.wsp.send(msg)
             except (

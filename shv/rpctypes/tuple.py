@@ -58,12 +58,12 @@ class RpcTypeTuple(RpcType, collections.abc.Sequence[RpcTypeTupleItem]):
             res -= 1
         return res
 
-    def is_valid(  # noqa: D102
+    def is_valid(  # ruff: ignore[undocumented-public-method]
         self, value: SHVType, is_updatable: bool = False
     ) -> typing.TypeGuard[SHVListType]:
         return self.validate(value, is_updatable) is None
 
-    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]
         if not is_shvlist(value):
             return "Tuple(List)"
         vlen = len(value)
@@ -76,7 +76,7 @@ class RpcTypeTuple(RpcType, collections.abc.Sequence[RpcTypeTupleItem]):
                     return f"Tuple item {item.key}: {msg}"
         return None
 
-    def inflate(self, value: SHVType) -> SHVMapType:  # noqa: D102
+    def inflate(self, value: SHVType) -> SHVMapType:  # ruff: ignore[undocumented-public-method]
         if not is_shvlist(value):
             raise ValueError("Tuple(List)")
         vlen = len(value)
@@ -89,7 +89,7 @@ class RpcTypeTuple(RpcType, collections.abc.Sequence[RpcTypeTupleItem]):
                 raise ValueError(f"Tuple item {i}: {exc.args[0]}") from exc
         return res
 
-    def deflate(self, value: SHVType) -> SHVListType:  # noqa: D102
+    def deflate(self, value: SHVType) -> SHVListType:  # ruff: ignore[undocumented-public-method]
         if not is_shvmap(value):
             raise ValueError("Map(Tuple)")
         keys = set(value.keys())

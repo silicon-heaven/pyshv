@@ -42,25 +42,25 @@ class RpcTypeEnum(RpcType, collections.abc.Mapping[int, str]):
     def __len__(self) -> int:
         return len(self._items)
 
-    def is_valid(  # noqa: D102
+    def is_valid(  # ruff: ignore[undocumented-public-method]
         self, value: SHVType, is_updatable: bool = False
     ) -> typing.TypeGuard[int]:
         return super().is_valid(value, is_updatable)
 
-    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]
         if not isinstance(value, int):
             return "Integer(Enum)"
         if value not in self:
             return "defined in Enum"
         return None
 
-    def inflate(self, value: SHVType) -> SHVType:  # noqa: D102
+    def inflate(self, value: SHVType) -> SHVType:  # ruff: ignore[undocumented-public-method]
         if msg := self.validate(value):
             raise ValueError(msg)
         assert isinstance(value, int)
         return self[value]
 
-    def deflate(self, value: SHVType) -> SHVType:  # noqa: D102
+    def deflate(self, value: SHVType) -> SHVType:  # ruff: ignore[undocumented-public-method]
         if not isinstance(value, str):
             raise ValueError("String(Enum)")
         try:

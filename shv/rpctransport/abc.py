@@ -35,7 +35,7 @@ class RpcClient(abc.ABC):
         """
 
     @classmethod
-    async def connect(cls, *args: typing.Any, **kwargs: typing.Any) -> typing.Self:  # noqa ANN401
+    async def connect(cls, *args: typing.Any, **kwargs: typing.Any) -> typing.Self:  # ruff: ignore[any-type]
         """Connect client.
 
         This conveniently combines object initialization and call to
@@ -60,13 +60,13 @@ class RpcClient(abc.ABC):
         :param msg: Message to be sent
         :raise EOFError: when client is not connected.
         """
-        await self._send(bytearray((ChainPack.ProtocolType,)) + msg.to_chainpack())
+        await self._send(bytes((ChainPack.ProtocolType,)) + msg.to_chainpack())
         self.last_send = time.monotonic()
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug("%s => %s", self, msg.to_string())
 
     @abc.abstractmethod
-    async def _send(self, msg: bytes) -> None:
+    async def _send(self, msg: bytes | bytearray) -> None:
         """Child's implementation of message sending."""
 
     async def receive(self) -> RpcMessage | Control:
@@ -150,7 +150,7 @@ class RpcClient(abc.ABC):
     def _disconnect(self) -> None:
         """Child's implementation of message sending."""
 
-    async def wait_disconnect(self) -> None:  # noqa D027
+    async def wait_disconnect(self) -> None:  # ruff: ignore[empty-method-without-abstract-decorator]
         """Wait for the client's disconnection."""
 
 

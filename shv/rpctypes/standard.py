@@ -46,7 +46,7 @@ class RpcTypeStandard(RpcType):
             and self._tp == other._tp
         )
 
-    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]
         return self._tp.validate(value, is_updatable)
 
 

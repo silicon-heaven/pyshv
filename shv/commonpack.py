@@ -128,7 +128,7 @@ class CommonWriter(abc.ABC):
         self.stream = stream or io.BytesIO()
         self.bytes_cnt = 0
 
-    def _write(self, data: bytes | int) -> None:
+    def _write(self, data: bytes | bytearray | int) -> None:
         if isinstance(data, int):
             data = bytes([data])
         self.bytes_cnt += len(data)

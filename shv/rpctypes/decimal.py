@@ -16,7 +16,7 @@ class RpcTypeDecimal(RpcType):
 
     __obj: RpcTypeDecimal | None = None
 
-    def __new__(  # noqa: D102
+    def __new__(  # ruff: ignore[undocumented-public-method]
         cls,
         minimum: decimal.Decimal | str | None = None,
         maximum: decimal.Decimal | str | None = None,
@@ -85,12 +85,12 @@ class RpcTypeDecimal(RpcType):
             lim = f"({_strdec(self._min)},{_strdec(self._max)}{precs})"
         return f"d{lim}{self._unit}"
 
-    def is_valid(  # noqa: D102
+    def is_valid(  # ruff: ignore[undocumented-public-method]
         self, value: SHVType, is_updatable: bool = False
     ) -> typing.TypeGuard[decimal.Decimal]:
         return self.validate(value, is_updatable) is None
 
-    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]
         if not isinstance(value, decimal.Decimal):
             return "Decimal"
         if not value.is_finite():

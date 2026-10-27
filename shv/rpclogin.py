@@ -40,7 +40,7 @@ class RpcLoginType(enum.Enum):
     """Plain login format should be used."""
     SHA1 = "SHA1"
     """Use hash algorithm SHA1 (preferred and common default)."""
-    TOKEN = "TOKEN"  # noqa: S105
+    TOKEN = "TOKEN"  # ruff: ignore[hardcoded-password-string]
     """Use token login."""
 
 
@@ -128,12 +128,12 @@ class RpcLogin:
             case RpcLoginType.PLAIN, RpcLoginType.PLAIN:
                 pass
             case RpcLoginType.PLAIN, RpcLoginType.SHA1:
-                password = hashlib.sha1(password.encode("utf-8")).hexdigest()  # noqa PLR6301
+                password = hashlib.sha1(password.encode("utf-8")).hexdigest()  # ruff: ignore[hashlib-insecure-hash-function]
                 login_type = RpcLoginType.SHA1
             case RpcLoginType.SHA1, RpcLoginType.PLAIN:
-                rpass = hashlib.sha1(  # noqa PLR6301
+                rpass = hashlib.sha1(  # ruff: ignore[hashlib-insecure-hash-function]
                     nonce.encode("utf-8")
-                    + hashlib.sha1(rpass.encode("utf-8")).hexdigest().encode("utf-8")  # noqa PLR6301
+                    + hashlib.sha1(rpass.encode("utf-8")).hexdigest().encode("utf-8")  # ruff: ignore[hashlib-insecure-hash-function]
                 ).hexdigest()
             case RpcLoginType.SHA1, RpcLoginType.SHA1:
                 pass
@@ -143,7 +143,7 @@ class RpcLogin:
             case RpcLoginType.PLAIN:
                 return rpass == password
             case RpcLoginType.SHA1:
-                m = hashlib.sha1()  # noqa PLR6301
+                m = hashlib.sha1()  # ruff: ignore[hashlib-insecure-hash-function]
                 m.update(nonce.encode("utf-8"))
                 m.update(password.encode("utf-8"))  # password must be SHA1
                 return rpass == m.hexdigest()
@@ -207,9 +207,9 @@ class RpcLogin:
             password = self.password
             if self.login_type is RpcLoginType.PLAIN and not secure:
                 login["type"] = RpcLoginType.SHA1.value
-                password = hashlib.sha1(self.password.encode("utf-8")).hexdigest()  # noqa S324
+                password = hashlib.sha1(self.password.encode("utf-8")).hexdigest()  # ruff: ignore[hashlib-insecure-hash-function]
             if login["type"] == RpcLoginType.SHA1.value:
-                m = hashlib.sha1()  # noqa S324
+                m = hashlib.sha1()  # ruff: ignore[hashlib-insecure-hash-function]
                 if nonce is None:  # pragma: no cover
                     raise ValueError("Nonce must be provided")
                 m.update(nonce.encode("utf-8"))

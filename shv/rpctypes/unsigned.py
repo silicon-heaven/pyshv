@@ -14,7 +14,7 @@ class RpcTypeUnsigned(RpcType):
 
     __obj: RpcTypeUnsigned | None = None
 
-    def __new__(  # noqa: D102
+    def __new__(  # ruff: ignore[undocumented-public-method]
         cls,
         minimum: int = 0,
         maximum: int | None = None,
@@ -74,12 +74,12 @@ class RpcTypeUnsigned(RpcType):
                 lim = f"({_strnum(self._min)},{_strnum(self._max)})"
         return f"u{lim}{self._unit}"
 
-    def is_valid(  # noqa: D102
+    def is_valid(  # ruff: ignore[undocumented-public-method]
         self, value: SHVType, is_updatable: bool = False
     ) -> typing.TypeGuard[int]:
         return super().is_valid(value, is_updatable)
 
-    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]
         if not isinstance(value, SHVUInt):
             return "Unsigned Integer"
         if self._min is not None and value < self._min:
