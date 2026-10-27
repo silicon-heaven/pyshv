@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed
 - Minimal supported version is now Python 3.12
+- `SHVCAN` now expects factory function that initializes CAN bus
 
 ### Fixed
 - `SHVCAN` is now terminated alongside with `RcpClientCAN` on the object delete
