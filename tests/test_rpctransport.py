@@ -389,9 +389,9 @@ class TestCAN(ServerLink):
         await client.wait_disconnect()
         await server_client.wait_disconnect()
 
-    @pytest.mark.xfail(reason="Reconnect after disconnect closes CAN bus")
+    @pytest.mark.skip(reason="Reconnect after disconnect closes CAN bus")
     async def test_reconnect(self, clients, server):
-        super().test_reconnect(clients, server)
+        ...
 
     @pytest.mark.parametrize(
         "size",

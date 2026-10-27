@@ -174,7 +174,7 @@ class SHVCAN:
             """Stop listening for new connections."""
             self._new_peer_callback = None
 
-        async def deactivate(self) -> None:
+        def deactivate(self) -> None:
             """Close the local address.
 
             This won't disconnect any existing connections. You must do that
@@ -185,7 +185,7 @@ class SHVCAN:
                     raise RuntimeError("There are still existing connections.")
                 del self.shvcan._locals[self.address]
                 if self._new_peer_callback is None and not self.shvcan._locals:
-                    await self.shvcan.terminate()
+                    self.shvcan.terminate()
 
         def _rtrframe(self, dlc: int) -> can.Message:
             priority = dlc not in {SHVCAN.DLC.ADDR_ACQ}
@@ -263,7 +263,7 @@ class SHVCAN:
                 del self.local._peers[self.address]
                 await self.local.shvcan._send_frames((self._disconnectframe(),))
                 if self.local._new_peer_callback is None and not self.local._peers:
-                    await self.local.deactivate()
+                    self.local.deactivate()
 
         def _dataframe(
             self, data: bytes, first: bool = False, last: bool = False
@@ -308,6 +308,14 @@ class SHVCAN:
             return self.bus.channel
         else:
             return self.bus.channel_info
+
+    @property
+    def active(self) -> bool:
+        """Check if the instance is still active or not.
+
+        The instance is active if there are some existing local addresses.
+        """
+        return bool(self._locals)
 
     def existing_local(self, address: int) -> SHVCAN.Local:
         """Get existing :class:`SHVCAN.Local` for given address."""
@@ -355,7 +363,7 @@ class SHVCAN:
         """Remove previous added discovery callback with :meth:`register_discovery_callback`."""
         self._discovery_cbs.remove(cb)
 
-    async def terminate(self) -> None:
+    def terminate(self) -> None:
         """Terminate the CAN instance."""
         if self._locals:
             raise RuntimeError("There are still existing locals.")
@@ -510,6 +518,12 @@ class RpcClientCAN(RpcClient):
         self._disconect_task: asyncio.Task | None = None
         self._disconnect_event = asyncio.Event()
 
+    def __del__(self) -> None:
+        if self._peer is not None:
+            self._peer.local.deactivate()
+        if not self._shvcan.active:
+            self._shvcan.terminate()
+
     @property
     def shvcan(self) -> SHVCAN:
         """Access to the associated :class:`SHVCAN`."""
@@ -606,6 +620,9 @@ class RpcServerCAN(RpcServer):
         self._clients: weakref.WeakSet[RpcServerCAN.Client] = weakref.WeakSet()
         self._close_event = asyncio.Event()
 
+    def __del__(self) -> None:
+        self.terminate()
+
     @property
     def shvcan(self) -> SHVCAN:
         """Access to the associated :class:`SHVCAN`."""
@@ -656,7 +673,7 @@ class RpcServerCAN(RpcServer):
         if self._local is not None:
             await self._close_event.wait()
             if not self._local._peers:
-                await self._local.deactivate()
+                self._local.deactivate()
             self._local = None
 
     def terminate(self) -> None:  # noqa: D102
@@ -721,11 +738,11 @@ class RpcServerCAN(RpcServer):
             return self._peer.connected
 
         def _disconnect(self) -> None:
-            if self._peer is not None and self._disconect_task is None:
+            if self._peer.connected and self._disconect_task is None:
                 self._disconnect_task = asyncio.create_task(self._peer.disconnect())
                 self._disconnect_event.set()
 
         async def wait_disconnect(self) -> None:  # noqa D027
-            if self._peer is not None:
+            if self._peer.connected:
                 await self._disconnect_event.wait()
                 await self._disconnect_task
