@@ -49,8 +49,8 @@ class RpcBroker:
             self,
             client: RpcClient,
             broker: RpcBroker,
-            *args: typing.Any,  # noqa ANN401
-            **kwargs: typing.Any,  # noqa ANN401
+            *args: typing.Any,  # ruff: ignore[any-type]
+            **kwargs: typing.Any,  # ruff: ignore[any-type]
         ) -> None:
             super().__init__(client, *args, **kwargs)
             self._send_queue: collections.deque[RpcMessage]
@@ -111,7 +111,7 @@ class RpcBroker:
                 return self._send_queue.popleft()
             return super()._idle_message()
 
-        async def disconnect(self) -> None:  # noqa: D102
+        async def disconnect(self) -> None:  # ruff: ignore[undocumented-public-method]
             logger.info("Disconnecting client with ID %s", self.broker_client_id)
             self._unregister()
             await super().disconnect()
@@ -344,7 +344,7 @@ class RpcBroker:
         that are not participating in SHV RPC.
         """
 
-        def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:  # noqa ANN204
+        def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:  # ruff: ignore[any-type]
             super().__init__(*args, **kwargs)
             self.IDLE_TIMEOUT = self.IDLE_TIMEOUT_LOGIN
             self._role: RpcBrokerRoleABC | None = None
@@ -468,15 +468,15 @@ class RpcBroker:
 
         def __init__(
             self,
-            *args: typing.Any,  # noqa ANN204
+            *args: typing.Any,  # ruff: ignore[any-type]
             role: RpcBrokerRoleABC,
-            **kwargs: typing.Any,  # noqa ANN204
+            **kwargs: typing.Any,  # ruff: ignore[any-type]
         ) -> None:
             super().__init__(*args, **kwargs)
             self._role = role
 
         @property
-        def role(self) -> RpcBrokerRoleABC:  # noqa D102
+        def role(self) -> RpcBrokerRoleABC:  # ruff: ignore[undocumented-public-method] D102
             return self._role
 
         async def _login(self) -> None:

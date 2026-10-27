@@ -566,7 +566,7 @@ class FileProvider:
                 size = shvarg(request.param, 1, None)
                 if size is not None:
                     size = shvt(size, int)
-                hash = hashlib.sha1()  # noqa PLR6301
+                hash = hashlib.sha1()  # ruff: ignore[builtin-variable-shadowing, hashlib-insecure-hash-function]
                 with path.open("rb") as file:
                     file.seek(offset)
                     while size is None or size > 0:

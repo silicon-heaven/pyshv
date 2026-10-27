@@ -55,13 +55,13 @@ class RpcServerUnix(RpcServerStream):
     async def _create_server(self) -> asyncio.Server:
         return await asyncio.start_unix_server(self._client_connect, path=self.location)
 
-    async def listen(self) -> None:  # noqa: D102
+    async def listen(self) -> None:  # ruff: ignore[undocumented-public-method]
         was_listening = self.is_serving()
         await super().listen()
         if not was_listening:
             logger.debug("%s: Listening for clients", self)
 
-    def close(self) -> None:  # noqa: D102
+    def close(self) -> None:  # ruff: ignore[undocumented-public-method]
         was_listening = self.is_serving()
         super().close()
         if was_listening and (self._server is None or self._server.is_serving()):

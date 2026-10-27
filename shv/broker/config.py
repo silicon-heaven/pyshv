@@ -25,7 +25,7 @@ class NamedProtocol(typing.Protocol):
     """The typing protocol for the objects with ``name`` property."""
 
     @property
-    def name(self) -> str: ...  # noqa: D102
+    def name(self) -> str: ...  # ruff: ignore[undocumented-public-method]
 
 
 NamedT = typing.TypeVar("NamedT", bound=NamedProtocol)
@@ -193,7 +193,7 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
                 self._mount_point = mount_point
 
             @property
-            def name(self) -> str:  # noqa D102
+            def name(self) -> str:  # ruff: ignore[undocumented-public-method]
                 return "-".join(self.user.roles)
 
             def _autosetup(self) -> RpcBrokerConfig.Autosetup | None:
@@ -212,7 +212,7 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
                     None,
                 )
 
-            def mount_point(  # noqa D102
+            def mount_point(  # ruff: ignore[undocumented-public-method]
                 self, existing: collections.abc.Set[str] = frozenset()
             ) -> str | None:
                 if self._mount_point is None and (autosetup := self._autosetup()):
@@ -222,11 +222,11 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
                     )
                 return self._mount_point
 
-            def initial_subscriptions(self) -> collections.abc.Iterator[str]:  # noqa D102
+            def initial_subscriptions(self) -> collections.abc.Iterator[str]:  # ruff: ignore[undocumented-public-method]
                 if autosetup := self._autosetup():
                     yield from autosetup.subscriptions
 
-            def access_level(self, path: str, method: str) -> RpcAccess | None:  # noqa PLR6301
+            def access_level(self, path: str, method: str) -> RpcAccess | None:  # ruff: ignore[undocumented-public-method]
                 return nmax(
                     self.config.roles[r].access_level(path, method)
                     for r in self.user.roles
@@ -255,18 +255,18 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
                 self.connection = connection
 
             @property
-            def name(self) -> str:  # noqa D102
+            def name(self) -> str:  # ruff: ignore[undocumented-public-method]
                 return "+".join(self.connection.roles)
 
-            def mount_point(  # noqa D102
+            def mount_point(  # ruff: ignore[undocumented-public-method]
                 self, existing: collections.abc.Set[str] = frozenset()
             ) -> str | None:
                 return self.connection.mount_point
 
-            def initial_subscriptions(self) -> collections.abc.Iterator[str]:  # noqa D102
+            def initial_subscriptions(self) -> collections.abc.Iterator[str]:  # ruff: ignore[undocumented-public-method]
                 yield from self.connection.subscriptions
 
-            def access_level(self, path: str, method: str) -> RpcAccess | None:  # noqa PLR6301
+            def access_level(self, path: str, method: str) -> RpcAccess | None:  # ruff: ignore[undocumented-public-method]
                 return nmax(
                     self.config.roles[r].access_level(path, method)
                     for r in self.connection.roles
@@ -315,7 +315,7 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
         })
 
     @property
-    def name(self) -> str:  # noqa D102
+    def name(self) -> str:  # ruff: ignore[undocumented-public-method]
         return self._name
 
     def listens(self) -> collections.abc.Iterator[RpcUrl]:
@@ -329,7 +329,7 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
         for connect in self.connect:
             yield connect.url, connect.Role(self, connect)
 
-    def login(self, login: RpcLogin, nonce: str) -> RpcBrokerRoleABC | None:  # noqa D102
+    def login(self, login: RpcLogin, nonce: str) -> RpcBrokerRoleABC | None:  # ruff: ignore[undocumented-public-method]
         if (user := self.users.get(login.username, None)) and login.validate_password(
             user.password, nonce, user.login_type
         ):

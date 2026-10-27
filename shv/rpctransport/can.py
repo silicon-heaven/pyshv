@@ -191,7 +191,7 @@ class SHVCAN:
             priority = dlc not in {SHVCAN.DLC.ADDR_ACQ}
             return self._frame(priority, is_remote_frame=True, dlc=dlc)
 
-        def _frame(self, priority: bool, **kwargs: typing.Any) -> can.Message:  # noqa: ANN401
+        def _frame(self, priority: bool, **kwargs: typing.Any) -> can.Message:  # ruff: ignore[any-type]
             return can.Message(
                 arbitration_id=SHVCAN.CANID_SHVCAN
                 + SHVCAN.CANID_UNUSED
@@ -213,7 +213,7 @@ class SHVCAN:
 
         _sendlock: asyncio.Lock = dataclasses.field(default_factory=asyncio.Lock)
         _scounter: int = dataclasses.field(
-            default_factory=lambda: random.randrange(0x7F)  # noqa: S311
+            default_factory=lambda: random.randrange(0x7F)  # ruff: ignore[suspicious-non-cryptographic-random-usage]
         )
 
         _rdata: bytearray = dataclasses.field(default_factory=bytearray)
@@ -283,7 +283,7 @@ class SHVCAN:
         def _disconnectframe(self) -> can.Message:
             return self.local._frame(False, is_fd=True, data=bytes((self.address,)))
 
-    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:  # noqa: ANN401
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:  # ruff: ignore[any-type]
         if CAN_IMPORT is not None:
             raise CAN_IMPORT
         self._args = args
@@ -341,7 +341,7 @@ class SHVCAN:
         # TODO possibly also exclude those we are already communicating with
         available = [v for v in range(0x80, 0x100) if v not in self._locals]
         while available:
-            local = self.Local(self, random.choice(available))  # noqa: S311
+            local = self.Local(self, random.choice(available))  # ruff: ignore[suspicious-non-cryptographic-random-usage]
             try:
                 await local.dynamic_address_acquire()
             except self.AddressAcquisitionError as exc:
@@ -558,7 +558,7 @@ class RpcClientCAN(RpcClient):
             raise EOFError("Peer disconnected")
         return res
 
-    async def reset(self) -> None:  # noqa: D102
+    async def reset(self) -> None:  # ruff: ignore[undocumented-public-method]
         if not self.connected:
             if self._client_address is None:
                 local = await self._shvcan.dynamic_local()
@@ -573,7 +573,7 @@ class RpcClientCAN(RpcClient):
         await super().reset()
 
     @property
-    def connected(self) -> bool:  # noqa: D102
+    def connected(self) -> bool:  # ruff: ignore[undocumented-public-method]
         return self._peer is not None and self._peer.connected
 
     def _disconnect(self) -> None:
@@ -581,7 +581,7 @@ class RpcClientCAN(RpcClient):
             self._disconnect_task = asyncio.create_task(self._peer.disconnect())
             self._disconnect_event.set()
 
-    async def wait_disconnect(self) -> None:  # noqa D027
+    async def wait_disconnect(self) -> None:  # ruff: ignore[undocumented-public-method]
         if self._peer is not None:
             await self._disconnect_event.wait()
             await self._disconnect_task
@@ -638,10 +638,10 @@ class RpcServerCAN(RpcServer):
             return self._address
         return self._local.address
 
-    def is_serving(self) -> bool:  # noqa: D102
+    def is_serving(self) -> bool:  # ruff: ignore[undocumented-public-method]
         return self._local is not None and self._local.listening
 
-    async def listen(self) -> None:  # noqa: D102
+    async def listen(self) -> None:  # ruff: ignore[undocumented-public-method]
         if not self.is_serving():
             if self._address is None:
                 self._local = await self._shvcan.dynamic_local()
@@ -651,7 +651,7 @@ class RpcServerCAN(RpcServer):
             self._close_event.clear()
             logger.debug("%s: Listening", self)
 
-    async def listen_forever(self) -> None:  # noqa: D102
+    async def listen_forever(self) -> None:  # ruff: ignore[undocumented-public-method]
         await self.listen()
         await self.wait_terminated()
 
@@ -662,26 +662,26 @@ class RpcServerCAN(RpcServer):
         if isinstance(res, collections.abc.Awaitable):
             await res
 
-    def close(self) -> None:  # noqa: D102
+    def close(self) -> None:  # ruff: ignore[undocumented-public-method]
         if self.is_serving():
             assert self._local is not None
             self._local.unbind()
             self._close_event.set()
             logger.debug("%s: No longer listening", self)
 
-    async def wait_closed(self) -> None:  # noqa: D102
+    async def wait_closed(self) -> None:  # ruff: ignore[undocumented-public-method]
         if self._local is not None:
             await self._close_event.wait()
             if not self._local._peers:
                 self._local.deactivate()
             self._local = None
 
-    def terminate(self) -> None:  # noqa: D102
+    def terminate(self) -> None:  # ruff: ignore[undocumented-public-method]
         self.close()
         for client in self._clients:
             client.disconnect()
 
-    async def wait_terminated(self) -> None:  # noqa: D102
+    async def wait_terminated(self) -> None:  # ruff: ignore[undocumented-public-method]
         await self.wait_closed()
         res = await asyncio.gather(
             *(c.wait_disconnect() for c in self._clients),
@@ -734,7 +734,7 @@ class RpcServerCAN(RpcServer):
             return res
 
         @property
-        def connected(self) -> bool:  # noqa: D102
+        def connected(self) -> bool:  # ruff: ignore[undocumented-public-method]
             return self._peer.connected
 
         def _disconnect(self) -> None:
@@ -742,7 +742,7 @@ class RpcServerCAN(RpcServer):
                 self._disconnect_task = asyncio.create_task(self._peer.disconnect())
                 self._disconnect_event.set()
 
-        async def wait_disconnect(self) -> None:  # noqa D027
+        async def wait_disconnect(self) -> None:  # ruff: ignore[undocumented-public-method]
             if self._peer.connected:
                 await self._disconnect_event.wait()
                 await self._disconnect_task

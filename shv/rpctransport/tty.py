@@ -41,7 +41,7 @@ class RpcClientTTY(RpcClientStream):
     def __str__(self) -> str:
         return f"tty:{self.port}"
 
-    async def reset(self) -> None:  # noqa: D102
+    async def reset(self) -> None:  # ruff: ignore[undocumented-public-method]
         was_connected = self.connected
         await super().reset()
         if not was_connected and self.connected:
@@ -73,7 +73,7 @@ class RpcClientTTY(RpcClientStream):
 
         wprotocol = asyncio.StreamReaderProtocol(asyncio.StreamReader())
         wtransport, _ = await loop.connect_write_pipe(lambda: wprotocol, file)
-        writer = asyncio.StreamWriter(wtransport, wprotocol, None, loop)
+        writer = asyncio.StreamWriter(wtransport, wprotocol, reader, loop)
 
         return reader, writer
 
@@ -127,36 +127,36 @@ class RpcServerTTY(RpcServer):
             else:
                 await asyncio.sleep(5)
 
-    def is_serving(self) -> bool:  # noqa: D102
+    def is_serving(self) -> bool:  # ruff: ignore[undocumented-public-method]
         return self._task is not None and not self._task.done()
 
-    async def listen(self) -> None:  # noqa: D102
+    async def listen(self) -> None:  # ruff: ignore[undocumented-public-method]
         if not self.is_serving():
             self._task = asyncio.create_task(self._loop())
 
-    async def listen_forever(self) -> None:  # noqa: D102
+    async def listen_forever(self) -> None:  # ruff: ignore[undocumented-public-method]
         await self.listen()
         await self.wait_closed()
 
-    def close(self) -> None:  # noqa: D102
+    def close(self) -> None:  # ruff: ignore[undocumented-public-method]
         if self._task is not None:
             self._task.cancel()
 
-    async def wait_closed(self) -> None:  # noqa: D102
+    async def wait_closed(self) -> None:  # ruff: ignore[undocumented-public-method]
         if self._task is not None:
             with contextlib.suppress(asyncio.CancelledError):
                 await self._task
 
-    def terminate(self) -> None:  # noqa D102
+    def terminate(self) -> None:  # ruff: ignore[undocumented-public-method]
         self.close()
         self.client.disconnect()
 
-    async def wait_terminated(self) -> None:  # noqa D102
+    async def wait_terminated(self) -> None:  # ruff: ignore[undocumented-public-method]
         await self.wait_closed()
         await self.client.wait_disconnect()
 
 
-def _cfmakeraw(mode: typing.Any) -> None:  # noqa: ANN401
+def _cfmakeraw(mode: typing.Any) -> None:  # ruff: ignore[any-type]
     """Make termios mode raw.
 
     License: Python Software Foundation License Version 2

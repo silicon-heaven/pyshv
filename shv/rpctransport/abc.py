@@ -35,7 +35,7 @@ class RpcClient(abc.ABC):
         """
 
     @classmethod
-    async def connect(cls, *args: typing.Any, **kwargs: typing.Any) -> typing.Self:  # noqa ANN401
+    async def connect(cls, *args: typing.Any, **kwargs: typing.Any) -> typing.Self:  # ruff: ignore[any-type]
         """Connect client.
 
         This conveniently combines object initialization and call to
@@ -150,7 +150,7 @@ class RpcClient(abc.ABC):
     def _disconnect(self) -> None:
         """Child's implementation of message sending."""
 
-    async def wait_disconnect(self) -> None:  # noqa D027
+    async def wait_disconnect(self) -> None:  # ruff: ignore[empty-method-without-abstract-decorator]
         """Wait for the client's disconnection."""
 
 

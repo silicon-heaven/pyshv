@@ -70,11 +70,11 @@ class RpcProtocolBlock(RpcTransportProtocol):
     """SHV RPC Stream protocol."""
 
     @classmethod
-    def annotate(cls, msg: bytes) -> bytes:  # noqa: D102
+    def annotate(cls, msg: bytes) -> bytes:  # ruff: ignore[undocumented-public-method]
         return ChainPack.pack_uint_data(len(msg)) + msg
 
     @classmethod
-    async def receive(  # noqa: D102
+    async def receive(  # ruff: ignore[undocumented-public-method]
         cls,
         read: collections.abc.Callable[[int], collections.abc.Awaitable[bytes]],
     ) -> bytes:
@@ -173,11 +173,11 @@ class RpcProtocolSerial(_RpcProtocolSerial):
     """SHV RPC Serial protocol."""
 
     @classmethod
-    def uses_crc(cls) -> bool:  # noqa: D102
+    def uses_crc(cls) -> bool:  # ruff: ignore[undocumented-public-method]
         return False
 
     @classmethod
-    async def receive(  # noqa: D102
+    async def receive(  # ruff: ignore[undocumented-public-method]
         cls,
         read: collections.abc.Callable[[int], collections.abc.Awaitable[bytes]],
     ) -> bytes:
@@ -188,11 +188,11 @@ class RpcProtocolSerialCRC(_RpcProtocolSerial):
     """SHV RPC Serial protocol with CRC32 message validation."""
 
     @classmethod
-    def uses_crc(cls) -> bool:  # noqa: D102
+    def uses_crc(cls) -> bool:  # ruff: ignore[undocumented-public-method]
         return True
 
     @classmethod
-    async def receive(  # noqa: D102
+    async def receive(  # ruff: ignore[undocumented-public-method]
         cls,
         read: collections.abc.Callable[[int], collections.abc.Awaitable[bytes]],
     ) -> bytes:
@@ -307,20 +307,20 @@ class RpcServerStream(RpcServer):
         if isinstance(res, collections.abc.Awaitable):
             await res
 
-    def close(self) -> None:  # noqa D102
+    def close(self) -> None:  # ruff: ignore[undocumented-public-method]
         if self._server is not None:
             self._server.close()
 
-    async def wait_closed(self) -> None:  # noqa D102
+    async def wait_closed(self) -> None:  # ruff: ignore[undocumented-public-method]
         if self._server is not None:
             await self._server.wait_closed()
 
-    def terminate(self) -> None:  # noqa D102
+    def terminate(self) -> None:  # ruff: ignore[undocumented-public-method]
         self.close()
         for client in self._clients:
             client.disconnect()
 
-    async def wait_terminated(self) -> None:  # noqa D102
+    async def wait_terminated(self) -> None:  # ruff: ignore[undocumented-public-method]
         await self.wait_closed()
         res = await asyncio.gather(
             *(c.wait_disconnect() for c in self._clients),

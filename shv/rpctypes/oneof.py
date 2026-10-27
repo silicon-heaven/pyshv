@@ -50,7 +50,7 @@ class RpcTypeOneOf(RpcType):
     def __str__(self) -> str:
         return "|".join(str(t) for t in self._types)
 
-    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
+    def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]
         msgs = []
         for tp in self._types:
             if (msg := tp.validate(value, is_updatable)) is not None:

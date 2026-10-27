@@ -8,11 +8,8 @@ import typing
 from .rpcdef.errors import RpcInvalidParamError
 from .value import SHVType, is_shvlist
 
-SHVT = typing.TypeVar("SHVT", bound=SHVType)
-"""Generic type specifying the parametrization bount to :data:`shv.SHVType`."""
 
-
-def shvt(value: SHVType, tp: type[SHVT]) -> SHVT:
+def shvt[T: SHVType](value: SHVType, tp: type[T]) -> T:
     """Check type of value.
 
     This is just simple type check of parameter for simple types.
@@ -33,7 +30,7 @@ class NoDefaultType:
     def __new__(cls) -> NoDefaultType:
         """Implement as singleton."""
         if not hasattr(cls, "instance"):
-            cls.instance = super(NoDefaultType, cls).__new__(cls)  # noqa UP008
+            cls.instance = super(NoDefaultType, cls).__new__(cls)  # ruff: ignore[super-call-with-parameters]
         return cls.instance
 
 
@@ -89,12 +86,12 @@ def shvget(
     return value
 
 
-def shvgett(
+def shvgett[T: SHVType](
     value: SHVType,
     key: str | int | SHVGetKey | collections.abc.Sequence[str | int | SHVGetKey],
-    tp: type[SHVT],
-    default: SHVT | NoDefaultType = NO_DEFAULT,
-) -> SHVT:
+    tp: type[T],
+    default: T | NoDefaultType = NO_DEFAULT,
+) -> T:
     """Variant of :func:`shvget` that also checks for type.
 
     It is very common to query SHVType for keys and expecting a specific type or
@@ -147,12 +144,12 @@ def shvarg(
     return default
 
 
-def shvargt(
+def shvargt[T: SHVType](
     value: SHVType,
     index: int,
-    tp: type[SHVT],
-    default: SHVT | NoDefaultType = NO_DEFAULT,
-) -> SHVT:
+    tp: type[T],
+    default: T | NoDefaultType = NO_DEFAULT,
+) -> T:
     """Variant of :func:`shvarg` that also checks for type.
 
     :param value: Some List to be sanitized.

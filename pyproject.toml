@@ -18,7 +18,7 @@ classifiers = [
   "Topic :: System :: Networking",
   "Typing :: Typed",
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 
 [project.urls]
 "Homepage" = "https://gitlab.com/silicon-heaven/pyshv"
@@ -69,8 +69,6 @@ exclude_lines = [
     "@typing.overload",
 ]
 
-[tool.ruff]
-target-version = "py311"
 [tool.ruff.lint]
 select = [
   "F", "E", "W", "I", "N", "D", "UP", "YTT", "ANN", "ASYNC", "ASYNC1", "S", "BLE",
@@ -79,41 +77,54 @@ select = [
 ignore = [
   # Magic methods have defined behavior so what is there to document. __init__
   # should be documented in class docstring.
-  "D105", "D107",
+  "undocumented-magic-method", "undocumented-public-init",
   # These have conflicting rules.
-  "D203", "D213",
+  "incorrect-blank-line-before-class", "multi-line-summary-second-line",
   # Ignore too long lines (format tackles that)
-  "E501",
+  "line-too-long",
   # It is nice that assert should not be used for input checking but it can be
   # also used for internal consistency checking.
-  "S101", "B011",
+  "assert", "assert-false",
   # subprocess can be insecurely used but not is insecure by design
-  "S404", "S603", "S607",
+  "suspicious-subprocess-import", "subprocess-without-shell-equals-true",
+  "start-process-with-partial-path",
   # Catching Exception is valid and safe in some cases and thus should be allowed
-  "BLE001",
+  "blind-except",
   # Relative imports can't be mixed up
-  "A005",
+  "stdlib-module-shadowing",
   # Conflict with formatter
-  "COM812",
+  "missing-trailing-comma",
   # Remove too-many limit for more complex code.
-  "PLR0904", "PLR0911", "PLR0912", "PLR0913", "PLR0917", "PLR2004", "PLR1702",
-  "PLR0915", "PLR0916",
+  "too-many-public-methods", "too-many-return-statements", "too-many-branches",
+  "too-many-arguments", "too-many-positional-arguments",
+  "magic-value-comparison", "too-many-nested-blocks", "too-many-statements",
+  "too-many-boolean-expressions",
   # This seems like a wrong rule
-  "PLW1641",
+  "eq-without-hash",
 ]
 preview = true
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = [
-  "D100", "D101", "D102", "D103", "D104", "S101", "S106", "ANN001", "ANN002",
-  "ANN003", "ANN201", "ANN202", "ANN204", "ANN205", "PLR6301",
+  "undocumented-public-module", "undocumented-public-class",
+  "undocumented-public-method", "undocumented-public-function",
+  "undocumented-public-package", "assert", "hardcoded-password-func-arg",
+  "missing-type-function-argument", "missing-type-args",
+  "missing-type-kwargs", "missing-return-type-undocumented-public-function",
+  "missing-return-type-private-function", "missing-return-type-special-method",
+  "missing-return-type-static-method", "no-self-use",
 ]
-"docs/conf.py" = ["D100", "D103", "A001", "ANN201", "ANN001"]
+"docs/conf.py" = [
+  "undocumented-public-module", "undocumented-public-function",
+  "builtin-variable-shadowing",
+  "missing-return-type-undocumented-public-function",
+  "missing-type-function-argument"
+]
 [tool.ruff.format]
 docstring-code-format = true
 preview = true
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 ignore_missing_imports = true
 disallow_untyped_defs = true
 warn_redundant_casts = true

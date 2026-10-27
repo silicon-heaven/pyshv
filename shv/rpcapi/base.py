@@ -534,7 +534,7 @@ class SHVBase:
             return any(v == param for v in self._ls(path))
         raise RpcInvalidParamError("Use Null or String with node name")
 
-    def _ls(self, path: str) -> collections.abc.Iterator[str]:  # noqa: PLR6301
+    def _ls(self, path: str) -> collections.abc.Iterator[str]:  # ruff: ignore[no-self-use]
         """Implement ``ls`` method for all nodes.
 
         The default implementation supports `.app` path. Your implementation
@@ -603,7 +603,7 @@ class SHVBase:
             return any(v.name == param for v in self._dir(path))
         raise RpcInvalidParamError("Use Null or Bool or String with node name")
 
-    def _dir(self, path: str) -> collections.abc.Iterator[RpcDir]:  # noqa: PLR6301
+    def _dir(self, path: str) -> collections.abc.Iterator[RpcDir]:  # ruff: ignore[no-self-use]
         """Implement ``dir`` method for all nodes.
 
         This implementation is called only for valid paths

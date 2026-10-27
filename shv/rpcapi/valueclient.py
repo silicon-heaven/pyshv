@@ -29,7 +29,7 @@ class SHVValueClient(SHVClient, collections.abc.Mapping):
     To access subscribed value you can index this object with SHV path to it.
     """
 
-    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:  # noqa ANNN401
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:  # ruff: ignore[any-type]
         super().__init__(*args, **kwargs)  # notype
         self._cache: dict[str, tuple[float, SHVType]] = {}
         self._handlers: dict[
@@ -116,7 +116,7 @@ class SHVValueClient(SHVClient, collections.abc.Mapping):
         self,
         path: str,
         value: SHVType = None,
-        timeout: float | int | None = 5.0,  # noqa ASYNC109
+        timeout: float | int | None = 5.0,  # ruff: ignore[async-function-with-timeout]
         get_period: float = 1.0,
     ) -> SHVType:
         """Wait for property change.

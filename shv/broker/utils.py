@@ -8,7 +8,7 @@ import itertools
 import typing
 
 
-class Comparable(typing.Protocol):
+class Comparable[T](typing.Protocol):
     """Protocol for annotating comparable types."""
 
     @abc.abstractmethod
@@ -20,10 +20,7 @@ class Comparable(typing.Protocol):
         pass
 
 
-T = typing.TypeVar("T", bound=Comparable)
-
-
-def nmin(*vals: collections.abc.Iterator[T | None] | T | None) -> T | None:
+def nmin[T](*vals: collections.abc.Iterator[T | None] | T | None) -> T | None:
     """Get minimum or ``None`` if all values were ``None``."""
     res: T | None = None
     itr = (v if isinstance(v, collections.abc.Iterator) else iter([v]) for v in vals)
@@ -33,7 +30,7 @@ def nmin(*vals: collections.abc.Iterator[T | None] | T | None) -> T | None:
     return res
 
 
-def nmax(*vals: collections.abc.Iterator[T | None] | T | None) -> T | None:
+def nmax[T](*vals: collections.abc.Iterator[T | None] | T | None) -> T | None:
     """Get maximum or ``None`` if all values were ``None``."""
     res: T | None = None
     itr = (v if isinstance(v, collections.abc.Iterator) else iter([v]) for v in vals)

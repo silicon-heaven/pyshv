@@ -52,14 +52,14 @@ class RpcError(RuntimeError):
     ) -> RpcError:
         """Create an appropriate exception based on the code."""
         ncls = cls.shv_error_map.get(cls.shv_error_code if code is None else code, cls)
-        return super(RpcError, cls).__new__(ncls)  # noqa UP008
+        return super(RpcError, cls).__new__(ncls)  # ruff: ignore[super-call-with-parameters]
 
     def __init__(
         self, msg: str | None = None, code: RpcErrorCode | None = None
     ) -> None:
         super().__init__(msg, self.shv_error_code if code is None else code)
 
-    def __init_subclass__(cls, *args: typing.Any, **kwargs: typing.Any) -> None:  # noqa: ANN401
+    def __init_subclass__(cls, *args: typing.Any, **kwargs: typing.Any) -> None:  # ruff: ignore[any-type]
         super().__init_subclass__(*args, **kwargs)
         if cls.shv_error_code in RpcError.shv_error_map:
             raise TypeError(f"RPC Error already defined for {cls.shv_error_code}")

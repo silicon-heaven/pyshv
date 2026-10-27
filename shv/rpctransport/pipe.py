@@ -32,7 +32,7 @@ class RpcClientPipe(RpcClientStream):
     def __str__(self) -> str:
         return "pipe"
 
-    async def _open_connection(  # noqa PLR6301
+    async def _open_connection(  # ruff: ignore[no-self-use]
         self,
     ) -> tuple[asyncio.StreamReader, asyncio.StreamWriter]:
         raise ConnectionError("Pipes can't be reconnected")

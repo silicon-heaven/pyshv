@@ -32,7 +32,7 @@ class SHVDevice(SHVClient):
     DEVICE_ALERTS: bool = True
     """Control if alerts will be available in the SHV Device."""
 
-    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:  # noqa ANNN401
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:  # ruff: ignore[any-type]
         self._alerts: list[RpcAlert] = []
         super().__init__(*args, **kwargs)  # notype
 
@@ -109,6 +109,6 @@ class SHVDevice(SHVClient):
             case ".device/alerts" if self.DEVICE_ALERTS:
                 yield RpcDir.getter(result="[!alert]", signal=True)
 
-    def _device_reset(self) -> None:  # noqa: PLR6301
+    def _device_reset(self) -> None:  # ruff: ignore[no-self-use]
         """Trigger called to perform the device reset."""
         raise RpcNotImplementedError

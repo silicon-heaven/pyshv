@@ -14,7 +14,7 @@ class RpcTypeBool(RpcType):
 
     __obj = None
 
-    def __new__(cls) -> RpcTypeBool:  # noqa: D102
+    def __new__(cls) -> RpcTypeBool:  # ruff: ignore[undocumented-public-method]
         if cls.__obj is None:
             cls.__obj = object.__new__(cls)
         return cls.__obj
@@ -23,13 +23,13 @@ class RpcTypeBool(RpcType):
         return "b"
 
     @staticmethod
-    def is_valid(  # noqa: D102
+    def is_valid(  # ruff: ignore[undocumented-public-method]
         value: SHVType, is_updatable: bool = False
     ) -> typing.TypeGuard[bool]:
         return is_shvbool(value)
 
     @classmethod
-    def validate(cls, value: SHVType, is_updatable: bool = False) -> str | None:  # noqa: D102
+    def validate(cls, value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]
         return "Bool" if not cls.is_valid(value) else None
 
 

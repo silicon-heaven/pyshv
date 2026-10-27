@@ -8,7 +8,7 @@ from setuptools.command.build_py import build_py as _build_py
 class BuildPy(_build_py):
     """Custom package build step."""
 
-    def run(self) -> None:  # noqa: D102
+    def run(self) -> None:  # ruff: ignore[undocumented-public-method]
         package = pathlib.Path(__file__).parent.name
         buildlib = pathlib.Path(self.build_lib) / package
         buildlib.mkdir(parents=True, exist_ok=True)

@@ -47,7 +47,7 @@ class RpcClientTCP(RpcClientStream):
         return await asyncio.open_connection(self.location, self.port, ssl=self.ssl)
 
     @property
-    def secure(self) -> bool:  # noqa: D102
+    def secure(self) -> bool:  # ruff: ignore[undocumented-public-method]
         return self.ssl is not None
 
 
@@ -92,13 +92,13 @@ class RpcServerTCP(RpcServerStream):
             ssl=self.ssl,
         )
 
-    async def listen(self) -> None:  # noqa: D102
+    async def listen(self) -> None:  # ruff: ignore[undocumented-public-method]
         was_listening = self.is_serving()
         await super().listen()
         if not was_listening:
             logger.debug("%s: Listening for clients", self)
 
-    def close(self) -> None:  # noqa: D102
+    def close(self) -> None:  # ruff: ignore[undocumented-public-method]
         was_listening = self.is_serving()
         super().close()
         if was_listening and (self._server is None or not self._server.is_serving()):
@@ -125,6 +125,6 @@ class RpcServerTCP(RpcServerStream):
             return f"tcp:{location}:{peername[1]}"
 
         @property
-        def secure(self) -> bool:  # noqa: D102
+        def secure(self) -> bool:  # ruff: ignore[undocumented-public-method]
             assert isinstance(self._server, RpcServerTCP)
             return self._server.ssl is not None

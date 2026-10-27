@@ -103,7 +103,7 @@ class ChainPack:
 class ChainPackReader(commonpack.CommonReader):
     """Read data in ChainPack format."""
 
-    def read(self) -> SHVType:  # noqa: D102
+    def read(self) -> SHVType:  # ruff: ignore[undocumented-public-method]
         packing_schema = self._read_byte()
         if packing_schema < 64:
             return SHVUInt(packing_schema & 63)
@@ -175,7 +175,7 @@ class ChainPackReader(commonpack.CommonReader):
             num = (num << 8) + r
         return num, bitlen
 
-    def read_uint_data(self) -> int:  # noqa: D102
+    def read_uint_data(self) -> int:  # ruff: ignore[undocumented-public-method]
         num, _ = self._read_uint_data_helper()
         return num
 
@@ -315,55 +315,55 @@ class ChainPackWriter(commonpack.CommonWriter):
         for i in range(0, byte_cnt):
             self._write(data[i])
 
-    def write_meta(self, meta: SHVMetaType) -> None:  # noqa: D102
+    def write_meta(self, meta: SHVMetaType) -> None:  # ruff: ignore[undocumented-public-method]
         self._write(ChainPack.Schema.CP_MetaMap)
         for k, v in meta.items():
             self.write(k)
             self.write(v)
         self._write(ChainPack.Schema.CP_TERM)
 
-    def write_null(self) -> None:  # noqa: D102
+    def write_null(self) -> None:  # ruff: ignore[undocumented-public-method]
         self._write(ChainPack.Schema.CP_Null)
 
-    def write_bool(self, value: bool) -> None:  # noqa: D102
+    def write_bool(self, value: bool) -> None:  # ruff: ignore[undocumented-public-method]
         self._write(ChainPack.Schema.CP_TRUE if value else ChainPack.Schema.CP_FALSE)
 
-    def write_blob(self, value: bytes | bytearray) -> None:  # noqa: D102
+    def write_blob(self, value: bytes | bytearray) -> None:  # ruff: ignore[undocumented-public-method]
         self._write(ChainPack.Schema.CP_Blob)
         self.write_uint_data(len(value))
         self._write(value)
 
-    def write_string(self, value: str) -> None:  # noqa: D102
+    def write_string(self, value: str) -> None:  # ruff: ignore[undocumented-public-method]
         bstring = value.encode("utf-8")
         self._write(ChainPack.Schema.CP_String)
         self.write_uint_data(len(bstring))
         self._write(bstring)
 
-    def write_cstring(self, value: str) -> None:  # noqa: D102
+    def write_cstring(self, value: str) -> None:  # ruff: ignore[undocumented-public-method]
         bstring = value.encode("utf-8")
         self._write(ChainPack.Schema.CP_CString)
         self._write(bstring)
         self._write(b"\0")
 
-    def write_uint(self, value: int) -> None:  # noqa: D102
+    def write_uint(self, value: int) -> None:  # ruff: ignore[undocumented-public-method]
         if value < 64:
             self._write(value % 64)
         else:
             self._write(ChainPack.Schema.CP_UInt)
             self.write_uint_data(value)
 
-    def write_uint_data(self, value: int) -> None:  # noqa: D102
+    def write_uint_data(self, value: int) -> None:  # ruff: ignore[undocumented-public-method]
         bitcnt = value.bit_length()
         self._write_uint_data_helper(value, bitcnt)
 
-    def write_int(self, value: int) -> None:  # noqa: D102
+    def write_int(self, value: int) -> None:  # ruff: ignore[undocumented-public-method]
         if 0 <= value < 64:
             self._write((value % 64) + 64)
         else:
             self._write(ChainPack.Schema.CP_Int)
             self.write_int_data(value)
 
-    def write_int_data(self, value: int) -> None:  # noqa: D102
+    def write_int_data(self, value: int) -> None:  # ruff: ignore[undocumented-public-method]
         num: int = abs(value)
         neg: bool = value < 0
 
@@ -375,37 +375,37 @@ class ChainPackWriter(commonpack.CommonWriter):
             num |= sign_bit_mask
         self._write_uint_data_helper(num, bitlen)
 
-    def write_double(self, value: float) -> None:  # noqa: D102
+    def write_double(self, value: float) -> None:  # ruff: ignore[undocumented-public-method]
         self._write(ChainPack.Schema.CP_Double)
         self._write(struct.pack("<d", value))  # little endian
 
-    def write_decimal(self, value: decimal.Decimal) -> None:  # noqa: D102
+    def write_decimal(self, value: decimal.Decimal) -> None:  # ruff: ignore[undocumented-public-method]
         mantissa, exponent = decimal_rexp(value)
         self._write(ChainPack.Schema.CP_Decimal)
         self.write_int_data(mantissa)
         self.write_int_data(exponent)
 
-    def write_list(self, value: SHVListType) -> None:  # noqa: D102
+    def write_list(self, value: SHVListType) -> None:  # ruff: ignore[undocumented-public-method]
         self._write(ChainPack.Schema.CP_List)
         for val in value:
             self.write(val)
         self._write(ChainPack.Schema.CP_TERM)
 
-    def write_map(self, value: SHVMapType) -> None:  # noqa: D102
+    def write_map(self, value: SHVMapType) -> None:  # ruff: ignore[undocumented-public-method]
         self._write(ChainPack.Schema.CP_Map)
         for k, v in value.items():
             self.write(k)
             self.write(v)
         self._write(ChainPack.Schema.CP_TERM)
 
-    def write_imap(self, value: SHVIMapType) -> None:  # noqa: D102
+    def write_imap(self, value: SHVIMapType) -> None:  # ruff: ignore[undocumented-public-method]
         self._write(ChainPack.Schema.CP_IMap)
         for k, v in value.items():
             self.write(k)
             self.write(v)
         self._write(ChainPack.Schema.CP_TERM)
 
-    def write_datetime(self, value: datetime.datetime) -> None:  # noqa: D102
+    def write_datetime(self, value: datetime.datetime) -> None:  # ruff: ignore[undocumented-public-method]
         self._write(ChainPack.Schema.CP_DateTime)
         res = int(value.timestamp() * 1000) - (ChainPack.SHV_EPOCH_SEC * 1000)
         tzdelta = value.utcoffset()
