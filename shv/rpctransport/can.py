@@ -283,14 +283,13 @@ class SHVCAN:
         def _disconnectframe(self) -> can.Message:
             return self.local._frame(False, is_fd=True, data=bytes((self.address,)))
 
-    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:  # ruff: ignore[any-type]
+    def __init__(self, factory: collections.abc.Callable[[], can.BusABC]) -> None:
         if CAN_IMPORT is not None:
             raise CAN_IMPORT
-        self._args = args
-        self._kwargs = kwargs
+        self._factory = factory
         self._locals: weakref.WeakValueDictionary[int, SHVCAN.Local]
         self._locals = weakref.WeakValueDictionary()
-        self.bus = can.Bus(*self._args, **self._kwargs)
+        self.bus = factory()
         if self.bus.protocol is not can.CanProtocol.CAN_FD:
             self.bus.shutdown()
             raise ValueError("Only CAN-FD is supported")
@@ -477,7 +476,7 @@ class SHVCAN:
     @classmethod
     def socketcan(cls, interface: str) -> SHVCAN:
         """Get :class:`SHVCAN` for given socket CAN interface."""
-        return cls(channel=interface, interface="socketcan", fd=True)
+        return cls(lambda: can.Bus(channel=interface, interface="socketcan", fd=True))
 
     @classmethod
     def virtualcan(cls, name: str) -> SHVCAN:
@@ -486,7 +485,9 @@ class SHVCAN:
         This virtual interface should be used primarilly for the testing of the
         CAN functionality. It works only in single process.
         """
-        return cls(name, interface="virtual", protocol=can.CanProtocol.CAN_FD)
+        return cls(
+            lambda: can.Bus(name, interface="virtual", protocol=can.CanProtocol.CAN_FD)
+        )
 
 
 class RpcClientCAN(RpcClient):
