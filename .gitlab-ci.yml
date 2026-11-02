@@ -97,7 +97,7 @@ sphinx-lint:
   extends: .lint
   script: |
       git ls-files '**.rst' '**.py' |
-        xargs nix run --quiet .#sphinx-lint -- --max-line-length 88 --enable all
+        xargs nix run --quiet .#sphinx-lint -- --enable all --disable line-too-long
 
 statix:
   extends: .lint

@@ -11,7 +11,7 @@ import typing
 
 from ..rpcdef.errors import RpcMethodCallExceptionError, RpcMethodNotFoundError
 from ..rpcri import rpcri_match
-from ..value import SHVMapType, SHVType, shvmeta, shvmeta_eq
+from ..value import SHVMapType, SHVType, SHVTypeAlias, shvmeta, shvmeta_eq
 from .base import SHVBase
 from .client import SHVClient
 
@@ -31,9 +31,9 @@ class SHVValueClient(SHVClient, collections.abc.Mapping):
 
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:  # ruff: ignore[any-type]
         super().__init__(*args, **kwargs)  # notype
-        self._cache: dict[str, tuple[float, SHVType]] = {}
+        self._cache: dict[str, tuple[float, SHVTypeAlias]] = {}
         self._handlers: dict[
-            str, collections.abc.Callable[[SHVValueClient, str, SHVType], None]
+            str, collections.abc.Callable[[SHVValueClient, str, SHVTypeAlias], None]
         ] = {}
         self._futures: dict[str, list[asyncio.Future]] = {}
 
@@ -69,7 +69,7 @@ class SHVValueClient(SHVClient, collections.abc.Mapping):
 
     def _get_handler(
         self, path: str
-    ) -> collections.abc.Callable[[SHVValueClient, str, SHVType], None] | None:
+    ) -> collections.abc.Callable[[SHVValueClient, str, SHVTypeAlias], None] | None:
         """Get the handler for the longest path match."""
         split_key = path.split("/")
         paths = (
@@ -175,7 +175,8 @@ class SHVValueClient(SHVClient, collections.abc.Mapping):
     def on_change(
         self,
         path: str,
-        callback: collections.abc.Callable[[SHVValueClient, str, SHVType], None] | None,
+        callback: collections.abc.Callable[[SHVValueClient, str, SHVTypeAlias], None]
+        | None,
     ) -> None:
         """Register callback handler called when value change is reported.
 
@@ -211,7 +212,9 @@ class SHVValueClient(SHVClient, collections.abc.Mapping):
         """
         if path not in self._futures:
             self._futures[path] = []
-        future: asyncio.Future[SHVType] = asyncio.get_running_loop().create_future()
+        future: asyncio.Future[SHVTypeAlias] = (
+            asyncio.get_running_loop().create_future()
+        )
         self._futures[path].append(future)
         return await future
 

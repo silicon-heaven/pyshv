@@ -876,17 +876,17 @@ def test_blob_attr():
 
 
 def test_list_attr():
-    assert rpctype_list.type is rpctype_any
+    assert rpctype_list.rpctype is rpctype_any
     assert rpctype_list.minlen == 0
     assert rpctype_list.maxlen is None
 
 
 def test_map_attr():
-    assert rpctype_map.type is rpctype_any
+    assert rpctype_map.rpctype is rpctype_any
 
 
 def test_imap_attr():
-    assert rpctype_imap.type is rpctype_any
+    assert rpctype_imap.rpctype is rpctype_any
 
 
 def test_enum_attr():
@@ -1019,4 +1019,4 @@ def test_standard_repr(tp, name, text):
     """Compare standard types against representation in standard."""
     assert tp.name == name
     assert str(tp) == f"!{name}"
-    assert str(tp.type) == text
+    assert str(tp.rpctype) == text

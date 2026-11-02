@@ -464,8 +464,8 @@ class FileProvider:
     """Implementation helper that provides local files over SHV RPC.
 
     This should be used from :class:`shv.rpcapi.SHVBase` based classes. The appropriate
-    file provide is instanciated and for the appropriate file nodes all `dir` and other
-    method calls are delefated to this helper.
+    file provide is instanciated and for the appropriate file nodes all ``dir`` and
+    other method calls are delefated to this helper.
     """
 
     access_read: RpcAccess = RpcAccess.READ

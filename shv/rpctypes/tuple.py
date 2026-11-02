@@ -5,7 +5,14 @@ from __future__ import annotations
 import collections.abc
 import typing
 
-from .. import SHVListType, SHVMapType, SHVType, is_shvlist, is_shvmap
+from ..value import (
+    SHVListType,
+    SHVListTypeAlias,
+    SHVMapType,
+    SHVType,
+    is_shvlist,
+    is_shvmap,
+)
 from .base import RpcType
 
 
@@ -60,7 +67,7 @@ class RpcTypeTuple(RpcType, collections.abc.Sequence[RpcTypeTupleItem]):
 
     def is_valid(  # ruff: ignore[undocumented-public-method]
         self, value: SHVType, is_updatable: bool = False
-    ) -> typing.TypeGuard[SHVListType]:
+    ) -> typing.TypeGuard[SHVListTypeAlias]:
         return self.validate(value, is_updatable) is None
 
     def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]

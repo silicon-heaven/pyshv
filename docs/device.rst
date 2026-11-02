@@ -50,7 +50,7 @@ mclient.custom.signal("NewCustomValue")`` to send ``chng`` signal with provided 
 This will send first defined signal but you can also specify which signal to send with
 ``signal`` argument if multiple signals were defined for the method in its descriptor.
 
-The method implementation can be coroutine and thus you can use `await` in it. The
+The method implementation can be coroutine and thus you can use ``await`` in it. The
 :attr:`shv.rpcapi.SHVBase.Request.progress` should be updated in case implementation
 awaits for some longer tasks.
 

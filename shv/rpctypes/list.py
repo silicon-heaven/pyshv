@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from .. import SHVListType, SHVType, is_shvlist
+from ..value import SHVListTypeAlias, SHVType, is_shvlist
 from .any import rpctype_any
 from .base import RpcType
 
@@ -35,7 +35,7 @@ class RpcTypeList(RpcType):
         self._max = maxlen
 
     @property
-    def type(self) -> RpcType:
+    def rpctype(self) -> RpcType:
         """Content type allowed to be used in the list."""
         return self._tp
 
@@ -68,7 +68,7 @@ class RpcTypeList(RpcType):
 
     def is_valid(  # ruff: ignore[undocumented-public-method]
         self, value: SHVType, is_updatable: bool = False
-    ) -> typing.TypeGuard[SHVListType]:
+    ) -> typing.TypeGuard[SHVListTypeAlias]:
         return self.validate(value, is_updatable) is None
 
     def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]

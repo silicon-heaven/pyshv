@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from .. import SHVIMapType, SHVType, is_shvimap
+from ..value import SHVIMapType, SHVIMapTypeAlias, SHVType, is_shvimap
 from .any import rpctype_any
 from .base import RpcType
 
@@ -25,7 +25,7 @@ class RpcTypeIMap(RpcType):
         self._tp = tp
 
     @property
-    def type(self) -> RpcType:
+    def rpctype(self) -> RpcType:
         """Content type allowed to be used in the IMap as values."""
         return self._tp
 
@@ -37,7 +37,7 @@ class RpcTypeIMap(RpcType):
 
     def is_valid(  # ruff: ignore[undocumented-public-method]
         self, value: SHVType, is_updatable: bool = False
-    ) -> typing.TypeGuard[SHVIMapType]:
+    ) -> typing.TypeGuard[SHVIMapTypeAlias]:
         return self.validate(value, is_updatable) is None
 
     def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]

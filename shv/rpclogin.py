@@ -13,11 +13,9 @@ import typing
 
 from .rpcdef.errors import RpcInvalidParamError
 from .rpcparam import shvgett
-from .value import SHVMapType, SHVType, is_shvmap
+from .value import SHVMapType, SHVMapTypeAlias, SHVType, SHVTypeAlias, is_shvmap
 
 logger = logging.getLogger(__name__)
-
-T = typing.TypeVar("T")
 
 
 @functools.lru_cache
@@ -59,7 +57,7 @@ class RpcLogin:
     """The token provided by previous login."""
     login_type: RpcLoginType = RpcLoginType.PLAIN
     """Type of the login to be used (specifies format of the password)."""
-    options: dict[str, SHVType] = dataclasses.field(default_factory=dict)
+    options: dict[str, SHVTypeAlias] = dataclasses.field(default_factory=dict)
     """Additional options passed with login to the RPC Broker to configure session."""
 
     opt_device_id: dataclasses.InitVar[str | None] = None
@@ -100,7 +98,7 @@ class RpcLogin:
     def idle_timeout(self, value: int | None) -> None:
         self.__dictmerge({"idleWatchDogTimeOut": value}, self.options)
 
-    def extend_options(self, options: dict[str, SHVType]) -> None:
+    def extend_options(self, options: dict[str, SHVTypeAlias]) -> None:
         """Merge passed options with curent ones.
 
         This is handy if you have your options and only need to fill standard ones
@@ -150,7 +148,7 @@ class RpcLogin:
                 raise NotImplementedError
 
     @classmethod
-    def __dictget(cls, src: SHVType, tp: type[T], *key: str) -> T | None:
+    def __dictget[T](cls, src: SHVType, tp: type[T], *key: str) -> T | None:
         if not key:
             return src if isinstance(src, tp) else None
         if not is_shvmap(src) or key[0] not in src:
@@ -159,8 +157,8 @@ class RpcLogin:
 
     @classmethod
     def __dictmerge(
-        cls, src: SHVMapType, dest: dict[str, SHVType]
-    ) -> dict[str, SHVType]:
+        cls, src: SHVMapType, dest: dict[str, SHVTypeAlias]
+    ) -> dict[str, SHVTypeAlias]:
         for k, v in src.items():
             if (
                 is_shvmap(v)
@@ -185,7 +183,7 @@ class RpcLogin:
     def to_shv(
         self,
         nonce: str | None = None,
-        custom_options: SHVMapType | None = None,
+        custom_options: SHVMapTypeAlias | None = None,
         secure: bool = False,
     ) -> SHVType:
         """RPC Login parameter in the parameter format for login method.
@@ -195,7 +193,7 @@ class RpcLogin:
         :param custom_options: These are additional options to be added to the login
             options.
         :param secure: Specifies if the transport is secure. On insecure transport
-            layers the `SHA1` password is used even if this login specifies `PLAIN`.
+            layers the ``SHA1`` password is used even if this login specifies ``PLAIN``.
 
         :returns: Parameters to be passed to login method call.
         """

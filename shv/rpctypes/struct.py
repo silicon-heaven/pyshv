@@ -5,7 +5,14 @@ from __future__ import annotations
 import collections.abc
 import typing
 
-from .. import SHVIMapType, SHVMapType, SHVType, is_shvimap, is_shvmap
+from ..value import (
+    SHVIMapType,
+    SHVIMapTypeAlias,
+    SHVMapType,
+    SHVType,
+    is_shvimap,
+    is_shvmap,
+)
 from .base import RpcType
 
 
@@ -69,7 +76,7 @@ class RpcTypeStruct(RpcType, collections.abc.Mapping[int, RpcTypeStructItem]):
 
     def is_valid(  # ruff: ignore[undocumented-public-method]
         self, value: SHVType, is_updatable: bool = False
-    ) -> typing.TypeGuard[SHVIMapType]:
+    ) -> typing.TypeGuard[SHVIMapTypeAlias]:
         return self.validate(value, is_updatable) is None
 
     def validate(self, value: SHVType, is_updatable: bool = False) -> str | None:  # ruff: ignore[undocumented-public-method]

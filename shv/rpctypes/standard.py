@@ -32,7 +32,7 @@ class RpcTypeStandard(RpcType):
         return self._name
 
     @property
-    def type(self) -> RpcType:
+    def rpctype(self) -> RpcType:
         """Type this standard type represents."""
         return self._tp
 

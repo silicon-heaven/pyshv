@@ -6,7 +6,7 @@ import collections.abc
 import typing
 
 from .rpcdef.errors import RpcInvalidParamError
-from .value import SHVType, is_shvlist
+from .value import SHVType, SHVTypeAlias, is_shvlist
 
 
 def shvt[T: SHVType](value: SHVType, tp: type[T]) -> T:
@@ -52,7 +52,7 @@ class SHVGetKey(typing.NamedTuple):
 def shvget(
     value: SHVType,
     key: str | int | SHVGetKey | collections.abc.Sequence[str | int | SHVGetKey],
-    default: SHVType | NoDefaultType = NO_DEFAULT,
+    default: SHVTypeAlias | NoDefaultType = NO_DEFAULT,
 ) -> SHVType:
     """Get value from (i)map or (i)map of (i)maps or default.
 
@@ -119,7 +119,7 @@ def shvgett[T: SHVType](
 def shvarg(
     value: SHVType,
     index: int,
-    default: SHVType | NoDefaultType = NO_DEFAULT,
+    default: SHVTypeAlias | NoDefaultType = NO_DEFAULT,
 ) -> SHVType:
     """Get value from list or default.
 

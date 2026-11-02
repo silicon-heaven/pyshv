@@ -8,8 +8,8 @@
  Type hints
 ************
 
-.. autodata:: shv.rpcapi.methods.SHVMethodT
+.. autotype:: shv.rpcapi.methods.SHVMethodT
 
-.. autodata:: shv.rpcapi.methods.SHVGetMethodT
+.. autotype:: shv.rpcapi.methods.SHVGetMethodT
 
-.. autodata:: shv.rpcapi.methods.SHVSetMethodT
+.. autotype:: shv.rpcapi.methods.SHVSetMethodT

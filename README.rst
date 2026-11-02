@@ -30,7 +30,7 @@ This project contains basic tests in directory tests; see the dependencies in th
 ``pyproject.toml`` file.
 
 This project contains tests in directory tests; see the dependencies in the
-`pyproject.toml` file.
+``pyproject.toml`` file.
 
 .. code-block:: console
 

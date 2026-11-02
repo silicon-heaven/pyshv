@@ -28,7 +28,7 @@ from ..rpcmessage import RpcMessage
 from ..rpcparam import shvargt
 from ..rpcri import rpcri_match, rpcri_relative_to
 from ..rpctransport import RpcClient, RpcServer, create_rpc_server, init_rpc_client
-from ..value import SHVType
+from ..value import SHVType, SHVTypeAlias
 from .config import RpcBrokerConfigABC, RpcBrokerRoleABC
 from .utils import nmax, nmin
 
@@ -305,7 +305,7 @@ class RpcBroker:
                             return await self.__broker.unsubscribe(self, request.param)
             return await super()._method_call(request)
 
-        def infomap(self) -> dict[str, SHVType]:
+        def infomap(self) -> dict[str, SHVTypeAlias]:
             """Produce Map with client's info.
 
             This is info provided to administator to inform it about this client.
@@ -442,7 +442,7 @@ class RpcBroker:
             self._login = None
             self._role = None
 
-        def infomap(self) -> dict[str, SHVType]:
+        def infomap(self) -> dict[str, SHVTypeAlias]:
             """Produce Map with client's info.
 
             This is info provided to administator to inform it about this client.

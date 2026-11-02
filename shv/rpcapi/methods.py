@@ -30,6 +30,10 @@ type SHVSetMethodT = collections.abc.Callable[
     collections.abc.Coroutine[None, None, None] | None,
 ]
 
+# TODO these are aliases used to convince Sphinx to document types correctly
+SHVMethodTAlias = SHVMethodT
+SHVGetMethodTAlias = SHVGetMethodT
+
 
 class SHVMethods(SHVBase):
     """SHV RPC methods and signals implementation helper.
@@ -77,7 +81,7 @@ class SHVMethods(SHVBase):
         return await super()._method_call(request)
 
     def _ls(self, path: str) -> collections.abc.Iterator[str]:
-        """Implement `ls` method for registered methods."""
+        """Implement ``ls`` method for registered methods."""
         yield from super()._ls(path)
         yield from self._ls_node_for_path(path, iter(self._methods))
 
@@ -122,14 +126,14 @@ class SHVMethods(SHVBase):
         This defines method name, acceess level as well as other options that are
         considered on method call request.
         """
-        func: SHVMethodT
+        func: SHVMethodTAlias
         """Python method providing the implementation."""
         check_param: bool
         """If method parameter should be validated against type hint.
 
         In case the parameter doesn't match the type hint then
-        :exception:`shv.rpcdef.RpcInvalidParamError` is raise even before the wrapped
-        function is called.
+        :exc:`shv.rpcdef.RpcInvalidParamError` is raise even before the wrapped function
+        is called.
         """
 
         _bound: weakref.ReferenceType[SHVMethods] | None = None
@@ -176,7 +180,7 @@ class SHVMethods(SHVBase):
     @classmethod
     def method(
         cls, path: str, desc: RpcDir, check_param: bool = False
-    ) -> collections.abc.Callable[[SHVMethodT], SHVMethods.Method]:
+    ) -> collections.abc.Callable[[SHVMethodTAlias], SHVMethods.Method]:
         """Decorate method to turn it to :class:`shv.rpcapi.methods.SHVMethods.Method`.
 
         :param path: SHV path this method is associated with.
@@ -192,7 +196,7 @@ class SHVMethods(SHVBase):
         tp: str = "?",
         access: RpcAccess = RpcAccess.READ,
         signal: bool | str = False,
-    ) -> collections.abc.Callable[[SHVGetMethodT], SHVMethods.Method]:
+    ) -> collections.abc.Callable[[SHVGetMethodTAlias], SHVMethods.Method]:
         """Decorate method to use method as ``get`` property method.
 
         The properties are common standard ways to organize access to the values exposed
@@ -204,13 +208,13 @@ class SHVMethods(SHVBase):
 
         :param path: SHV path for this property.
         :param tp: Type description provided by this property.
-        :param access: Minimal access level required for `get` method.
+        :param access: Minimal access level required for ``get`` method.
         :param signal: If property has signal associated with it and optionally its
-            name. `chng` is used if `True` is provided and `False` (the] default) is
-            used for no signal at all.
+            name. ``chng`` is used if ``True`` is provided and ``False`` (the] default)
+            is used for no signal at all.
         """
 
-        def wrapper(func: SHVGetMethodT) -> SHVMethods.Method:
+        def wrapper(func: SHVGetMethodTAlias) -> SHVMethods.Method:
             def substitut(
                 obj: SHVMethods, request: SHVBase.Request
             ) -> collections.abc.Coroutine[None, None, SHVType] | SHVType:

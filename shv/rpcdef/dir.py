@@ -8,7 +8,7 @@ import functools
 import typing
 
 from ..rpcparam import SHVGetKey, shvget, shvgett
-from ..value import SHVMapType, SHVType, is_shvimap, is_shvmap
+from ..value import SHVMapType, SHVType, SHVTypeAlias, is_shvimap, is_shvmap
 from .access import RpcAccess
 
 
@@ -54,12 +54,12 @@ class RpcDir:
         LONG_EXECUTION = 1 << 7
 
     name: str
-    flags: Flag = dataclasses.field(default=Flag(0))
+    flags: RpcDir.Flag = dataclasses.field(default=Flag(0))
     param: str = "n"
     result: str = "n"
     access: RpcAccess = RpcAccess.BROWSE
     signals: dict[str, str] = dataclasses.field(default_factory=dict)
-    extra: dict[str, SHVType] = dataclasses.field(default_factory=dict)
+    extra: dict[str, SHVTypeAlias] = dataclasses.field(default_factory=dict)
 
     def to_shv(self, extra: bool = False) -> SHVType:
         """Convert to SHV RPC representation."""
@@ -131,9 +131,9 @@ class RpcDir:
         :param param: Type of the parameter this getter expects.
         :param result: Type of the result this getter provides.
         :param access: Minimal granted access level for this getter.
-        :param signal: Allows specifying property change signal. You can specify `True`
-            to get default `"chng"` signal or you can specify custom signal name (should
-            end with *chng*).
+        :param signal: Allows specifying property change signal. You can specify
+            ``True`` to get default ``"chng"`` signal or you can specify custom signal
+            name (should end with *chng*).
         :param flags: Flags assigned to the method. :py:data:`Flag.GETTER` is always
             set.
         :param description: Short description of the value.

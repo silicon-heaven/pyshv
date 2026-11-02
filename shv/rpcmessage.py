@@ -15,6 +15,7 @@ from .rpcdef.errors import RpcError, RpcErrorCode
 from .value import (
     SHVIMap,
     SHVType,
+    SHVTypeAlias,
     is_shvlist,
     shvmeta_eq,
 )
@@ -147,7 +148,7 @@ class RpcMessage:
             return self.Type.SIGNAL
         return None
 
-    def make_response(self, result: SHVType | RpcError = None) -> RpcMessage:
+    def make_response(self, result: SHVTypeAlias | RpcError = None) -> RpcMessage:
         """Create new message that is response to this one.
 
         :param result: The result value to be set in the response or

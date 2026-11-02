@@ -5,16 +5,16 @@
 These are type hint definitions provided by the ``shv`` package. They are used to hint
 on the types.
 
-.. autodata:: shv.SHVType
+.. autotype:: shv.SHVType
 
-.. autodata:: shv.SHVNullType
+.. autotype:: shv.SHVNullType
 
-.. autodata:: shv.SHVBoolType
+.. autotype:: shv.SHVBoolType
 
-.. autodata:: shv.SHVListType
+.. autotype:: shv.SHVListType
 
-.. autodata:: shv.SHVMapType
+.. autotype:: shv.SHVMapType
 
-.. autodata:: shv.SHVIMapType
+.. autotype:: shv.SHVIMapType
 
-.. autodata:: shv.SHVMetaType
+.. autotype:: shv.SHVMetaType

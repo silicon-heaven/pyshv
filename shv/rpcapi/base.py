@@ -212,9 +212,9 @@ class SHVBase:
         :param retry_timeout: Override :attr:`shv.rpcapi.SHVBase.call_retry_timeout`
             just for this one call.
         :param access_level: Access level the request should be sent with. In default
-            :data:`RpcAccess.ADMIN` is used. This is handy if you are testing access
-            levels, but in generic usage it is better to use the default and let the SHV
-            Brokers lower the default admin level.
+            :attr:`shv.rpcdef.RpcAccess.ADMIN` is used. This is handy if you are testing
+            access levels, but in generic usage it is better to use the default and let
+            the SHV Brokers lower the default admin level.
         :param extra_access: Additional access fields to be added. These are string
             access specifiers that are not standardized in default. They are available
             for special needs of access control. It is advised not to use this unless
@@ -543,7 +543,7 @@ class SHVBase:
     def _ls(self, path: str) -> collections.abc.Iterator[str]:  # ruff: ignore[no-self-use]
         """Implement ``ls`` method for all nodes.
 
-        The default implementation supports `.app` path. Your implementation should
+        The default implementation supports ``.app`` path. Your implementation should
         yield child nodes.
 
         Always call this as first before you yield your own methods to provide users

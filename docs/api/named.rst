@@ -13,5 +13,3 @@ simple implementation provides exactly that.
 .. autoclass:: shv.broker.config.NamedMap
 
 .. autoclass:: shv.broker.config.NamedProtocol
-
-.. autodata:: shv.broker.config.NamedT

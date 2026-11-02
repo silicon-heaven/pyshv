@@ -10,8 +10,8 @@ implementation reading the TOML configuration file format.
  Standard configuration
 ************************
 
-This is standard in the meaning of configuration defined and described for `pyshvbroker`
-but not in terms of SHV standard!
+This is standard in the meaning of configuration defined and described for
+``pyshvbroker`` but not in terms of SHV standard!
 
 .. autoclass:: shv.broker.RpcBrokerConfig
 

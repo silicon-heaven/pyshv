@@ -10,14 +10,23 @@ class RpcAccess(enum.IntEnum):
     """Method access level."""
 
     BROWSE = 1
+    """Access level ``bws``."""
     READ = 8
+    """Access level ``rd``."""
     WRITE = 16
+    """Access level ``wr``."""
     COMMAND = 24
+    """Access level ``cmd``."""
     CONFIG = 32
+    """Access level ``cfg``."""
     SERVICE = 40
+    """Access level ``srv``."""
     SUPER_SERVICE = 48
+    """Access level ``ssrv``."""
     DEVEL = 56
+    """Access level ``dev``."""
     ADMIN = 63
+    """Access level ``su``."""
 
     @classmethod
     @functools.cache

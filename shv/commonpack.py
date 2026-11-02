@@ -82,7 +82,7 @@ class CommonReader(abc.ABC):
     def _peek_byte(self) -> int:
         """Peek a single byte and return it as int.
 
-        Peeked byte is actually read from the stream and is stored to `peek_byte`.
+        Peeked byte is actually read from the stream and is stored to :attr:`peek_byte`.
 
         :returns: Peeked byte. This also returns `0` when EOF is encountered. Make sure
             that you use `0` to terminate what you are doing.

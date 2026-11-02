@@ -12,9 +12,9 @@ import typing
 
 type SHVNullType = SHVNull | None
 type SHVBoolType = SHVBool | bool
-type SHVListType = collections.abc.Sequence["SHVType"]
-type SHVMapType = collections.abc.Mapping[str, "SHVType"]
-type SHVIMapType = collections.abc.Mapping[int, "SHVType"]
+type SHVListType = collections.abc.Sequence[SHVType]
+type SHVMapType = collections.abc.Mapping[str, SHVType]
+type SHVIMapType = collections.abc.Mapping[int, SHVType]
 type SHVType = (
     SHVNullType
     | SHVBoolType
@@ -33,6 +33,16 @@ type SHVType = (
 type SHVMetaType = collections.abc.MutableMapping[int | str, SHVType]
 
 
+# TODO these are aliases used to convince Sphinx to document types correctly
+SHVTypeAlias = SHVType
+SHVNullTypeAlias = SHVNullType
+SHVBoolTypeAlias = SHVBoolType
+SHVListTypeAlias = SHVListType
+SHVMapTypeAlias = SHVMapType
+SHVIMapTypeAlias = SHVIMapType
+SHVMetaTypeAlias = SHVMetaType
+
+
 class SHVMeta(abc.ABC):  # ruff: ignore[abstract-base-class-without-abstract-method] B024
     """SHV values can have meta with attributes associated with them.
 
@@ -40,8 +50,8 @@ class SHVMeta(abc.ABC):  # ruff: ignore[abstract-base-class-without-abstract-met
     that has as parent this class and the class you want to wrap. The SHVMeta provides
     you with meta attribute that you can use to store and access meta attributes. Thanks
     to it being both parent of SHVMeta as well as original type you can use isinstance
-    to detect type. For example to check if type is `int` you can use ``isinstance(foo,
-    int)``.
+    to detect type. For example to check if type is :class:`int` you can use
+    ``isinstance(foo, int)``.
 
     .. warning::
 
@@ -65,14 +75,19 @@ class SHVMeta(abc.ABC):  # ruff: ignore[abstract-base-class-without-abstract-met
         return self._meta
 
     @staticmethod
-    def new(value: object, meta: SHVMetaType | None = None) -> SHVType:
+    def new(value: object, meta: SHVMetaTypeAlias | None = None) -> SHVType:
         """Create new value with given meta.
 
         This select an appropriate class based on the value passed.
 
         You can also use it to set meta value to newly created object because when
-        `value` is of `SHVMeta` it returns the same object and only updates provided
-        meta.
+        ``value`` is of :class:`SHVMeta` it returns the same object and only updates
+        provided meta.
+
+        :param value: Value for given meta to be associated with.
+        :param meta: Meta to be associated with given value.
+
+        :returns: :type:`SHVType` with associated meta.
         """
         res: SHVMeta | None = None
         if isinstance(value, SHVMeta):
@@ -151,7 +166,7 @@ class SHVNull(SHVMeta):
         return hash(None)
 
 
-def is_shvnull(value: object) -> typing.TypeGuard[SHVNullType]:
+def is_shvnull(value: object) -> typing.TypeGuard[SHVNullTypeAlias]:
     """Validate type of the value as either ``None`` or :class:`shv.SHVNull`."""
     return value is None or isinstance(value, SHVNull)
 
@@ -172,7 +187,7 @@ class SHVBool(SHVMeta):
         return hash(self._value)
 
 
-def is_shvbool(value: object) -> typing.TypeGuard[SHVBoolType]:
+def is_shvbool(value: object) -> typing.TypeGuard[SHVBoolTypeAlias]:
     """Validate type of value as either :class:`bool` or :class:`SHVBool`."""
     return isinstance(value, bool | SHVBool)
 
@@ -185,8 +200,8 @@ class SHVUInt(int, SHVMeta):
     """Unsigned integer with :class:`SHVMeta`.
 
     There is no unsigned type in Python and thus compared to :class:`SHVInt` (that can
-    be interchanged with `int`) you have to always use this class to represent unsigned
-    integer.
+    be interchanged with :class:`int`) you have to always use this class to represent
+    unsigned integer.
     """
 
     @typing.overload
@@ -243,19 +258,19 @@ class SHVDatetime(datetime.datetime, SHVMeta):
     """Date and time with :class:`SHVMeta`."""
 
 
-class SHVList(list[SHVType], SHVMeta):
+class SHVList(list[SHVTypeAlias], SHVMeta):
     """List of :class:`SHVMeta` values."""
 
 
-class SHVMap(dict[str, SHVType], SHVMeta):
+class SHVMap(dict[str, SHVTypeAlias], SHVMeta):
     """Dictionary with :class:`SHVMeta`."""
 
 
-class SHVIMap(dict[int, SHVType], SHVMeta):
+class SHVIMap(dict[int, SHVTypeAlias], SHVMeta):
     """Dictionary with :class:`SHVMeta`."""
 
 
-def is_shvlist(value: object) -> typing.TypeGuard[SHVListType]:
+def is_shvlist(value: object) -> typing.TypeGuard[SHVListTypeAlias]:
     """Check if given value can be SHV List."""
     return (
         isinstance(value, collections.abc.Sequence)
@@ -264,7 +279,7 @@ def is_shvlist(value: object) -> typing.TypeGuard[SHVListType]:
     )
 
 
-def is_shvmap(value: object) -> typing.TypeGuard[SHVMapType]:
+def is_shvmap(value: object) -> typing.TypeGuard[SHVMapTypeAlias]:
     """Check if given value can be SHV Map."""
     return (
         isinstance(value, collections.abc.Mapping)
@@ -273,7 +288,7 @@ def is_shvmap(value: object) -> typing.TypeGuard[SHVMapType]:
     )
 
 
-def is_shvimap(value: object) -> typing.TypeGuard[SHVIMapType]:
+def is_shvimap(value: object) -> typing.TypeGuard[SHVIMapTypeAlias]:
     """Check if given value can be SHV IMap."""
     return (
         isinstance(value, collections.abc.Mapping)
@@ -282,8 +297,8 @@ def is_shvimap(value: object) -> typing.TypeGuard[SHVIMapType]:
     )
 
 
-def is_shvtype(value: object) -> typing.TypeGuard[SHVType]:
-    """Validate type of the value as SHVType."""
+def is_shvtype(value: object) -> typing.TypeGuard[SHVTypeAlias]:
+    """Validate type of the value as :type:`SHVType`."""
     return (
         is_shvnull(value)
         or is_shvbool(value)

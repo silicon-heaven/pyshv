@@ -98,7 +98,7 @@ for them with :func:`shv.rpcapi.client.SHVClient.subscribe` that expects `Resour
 Identifier <https://silicon-heaven.github.io/shv-doc/rpcri.html>`__ to be provided.
 
 :class:`shv.rpcapi.valueclient.SHVValueClient` caches subscribed values and you can
-quickly access them using subscribe operator (that is Python operator `[]`).
+quickly access them using subscribe operator (that is Python operator ``[]``).
 
 >>> await client.subscribe("test/device/track/**:*:*")
 >>> await client.get_snapshot("test/device/track/**:*:*")

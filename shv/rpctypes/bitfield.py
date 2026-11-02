@@ -12,9 +12,12 @@ from .enum import RpcTypeEnum
 from .unsigned import RpcTypeUnsigned
 
 type SHVTypeBitfieldCompatible = SHVBoolType | SHVUInt | int
-"""Type alias for the types that can be stored in the bitfield."""
 type RpcTypeBitfieldCompatible = RpcTypeBool | RpcTypeEnum | RpcTypeUnsigned
-"""Rpc types that can be part of the bitfield."""
+
+
+# TODO these are aliases used to convince Sphinx to document types correctly
+SHVTypeBitfieldCompatibleAlias = SHVTypeBitfieldCompatible
+RpcTypeBitfieldCompatibleAlias = RpcTypeBitfieldCompatible
 
 
 class RpcTypeBitfieldItem(typing.NamedTuple):
@@ -36,7 +39,8 @@ class RpcTypeBitfield(RpcType, collections.abc.Sequence[RpcTypeBitfieldItem]):
     """The Bitfield type representation."""
 
     def __init__(
-        self, *items: RpcTypeBitfieldItem | tuple[int, RpcTypeBitfieldCompatible, str]
+        self,
+        *items: RpcTypeBitfieldItem | tuple[int, RpcTypeBitfieldCompatible, str],
     ) -> None:
         self._items = sorted(
             (
@@ -71,7 +75,9 @@ class RpcTypeBitfield(RpcType, collections.abc.Sequence[RpcTypeBitfieldItem]):
     @classmethod
     def __seqiter(
         cls, iiter: collections.abc.Iterable[RpcTypeBitfieldItem]
-    ) -> collections.abc.Iterator[tuple[RpcTypeBitfieldCompatible, str, int | None]]:
+    ) -> collections.abc.Iterator[
+        tuple[RpcTypeBitfieldCompatibleAlias, str, int | None]
+    ]:
         expected = 0
         for item in iiter:
             yield (
@@ -150,7 +156,7 @@ class RpcTypeBitfield(RpcType, collections.abc.Sequence[RpcTypeBitfieldItem]):
         return res
 
     @staticmethod
-    def is_supported(tp: RpcType) -> typing.TypeGuard[RpcTypeBitfieldCompatible]:
+    def is_supported(tp: RpcType) -> typing.TypeGuard[RpcTypeBitfieldCompatibleAlias]:
         """Check if given type is compatible with bitfield."""
         return (
             tp is rpctype_bool

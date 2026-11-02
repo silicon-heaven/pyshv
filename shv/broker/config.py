@@ -28,17 +28,13 @@ class NamedProtocol(typing.Protocol):
     def name(self) -> str: ...  # ruff: ignore[undocumented-public-method]
 
 
-NamedT = typing.TypeVar("NamedT", bound=NamedProtocol)
-"""Type variable used for :class:`NamedProtocol` like classes."""
-
-
-class NamedMap(collections.abc.Mapping[str, NamedT]):
+class NamedMap[T: NamedProtocol](collections.abc.Mapping[str, T]):
     """Helper to store and access objects that have name property."""
 
-    def __init__(self, items: collections.abc.Iterable[NamedT] | None = None) -> None:
+    def __init__(self, items: collections.abc.Iterable[T] | None = None) -> None:
         self._items = {i.name: i for i in (items or [])}
 
-    def __getitem__(self, name: str) -> NamedT:
+    def __getitem__(self, name: str) -> T:
         return self._items[name]
 
     def __iter__(self) -> collections.abc.Iterator[str]:
@@ -53,7 +49,7 @@ class NamedMap(collections.abc.Mapping[str, NamedT]):
     def __repr__(self) -> str:
         return repr(list(self._items.values()))
 
-    def add(self, item: NamedT) -> None:
+    def add(self, item: T) -> None:
         """Add a new item. This replaced old user with the same name."""
         self._items[item.name] = item
 
