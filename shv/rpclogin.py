@@ -32,8 +32,8 @@ def _get_user() -> str:
 class RpcLoginType(enum.Enum):
     """Enum specifying which login type should be used.
 
-    The string values are the exact string representation used in SHV RPC
-    protocol identifying these login types.
+    The string values are the exact string representation used in SHV RPC protocol
+    identifying these login types.
     """
 
     PLAIN = "PLAIN"
@@ -103,8 +103,8 @@ class RpcLogin:
     def extend_options(self, options: dict[str, SHVType]) -> None:
         """Merge passed options with curent ones.
 
-        This is handy if you have your options and only need to fill standard
-        ones provided by this class.
+        This is handy if you have your options and only need to fill standard ones
+        provided by this class.
 
         :param options: Dictionary with items used to extend options.
         """
@@ -115,9 +115,8 @@ class RpcLogin:
     ) -> bool:
         """Validate this login against given password and nonce.
 
-        The arguments passed to this method are for the expected password that
-        user should provide. The password can be either in plain text or hashed
-        with SHA1.
+        The arguments passed to this method are for the expected password that user
+        should provide. The password can be either in plain text or hashed with SHA1.
 
         :param password: The reference password.
         :param nonce: Nonce used for SHA1 login.
@@ -191,14 +190,14 @@ class RpcLogin:
     ) -> SHVType:
         """RPC Login parameter in the parameter format for login method.
 
-        :param nonce: The string with random characters returned from hello
-          method call that is used for SHA1 login.
-        :param custom_options: These are additional options to be added to the
-          login options.
-        :param secure: Specifies if the transport is secure. On insecure
-          transport layers the `SHA1` password is used even if this login
-          specifies `PLAIN`.
-        :return: Parameters to be passed to login method call.
+        :param nonce: The string with random characters returned from hello method call
+            that is used for SHA1 login.
+        :param custom_options: These are additional options to be added to the login
+            options.
+        :param secure: Specifies if the transport is secure. On insecure transport
+            layers the `SHA1` password is used even if this login specifies `PLAIN`.
+
+        :returns: Parameters to be passed to login method call.
         """
         login = {"type": self.login_type.value}
         if self.login_type is RpcLoginType.TOKEN:
@@ -232,8 +231,10 @@ class RpcLogin:
         """Create from SHV RPC login method parameter.
 
         :param value: The value that was received as login method parameter.
-        :return: The :class:`RpcLogin` object.
-        :raise RpcInvalidParamError: If parameter is invalid in some way.
+
+        :returns: The :class:`RpcLogin` object.
+
+        :raises RpcInvalidParamError: If parameter is invalid in some way.
         """
         if not is_shvmap(value):
             raise RpcInvalidParamError("Expected Map.")

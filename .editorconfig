@@ -6,17 +6,35 @@ charset = utf-8
 end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
+
+[*.md]
+indent_style = space
+indent_size = 2
+max_line_length = 80
+# Trailing whitespaces have meaning in Markdown
+trim_trailing_whitespace = false
+[CHANGELOG.md]
+max_line_length = 72
+[*.rst]
 indent_style = space
 indent_size = 4
+max_line_length = 88
+# Trailing whitespaces have meaning in RST
+trim_trailing_whitespace = false
 
 [*.sh]
 indent_style = tab
+tab_width = 4
+indent_size = 4
+max_line_length = 80
 
 [*.py]
+indent_style = space
+indent_size = 4
 max_line_length = 79
 
-# Usually config files
-[*.{toml,yml,nix}]
+[*.{nix,yml,toml}]
+indent_style  = space
 indent_size = 2
 
 [*.{diff,patch}]

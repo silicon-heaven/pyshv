@@ -47,7 +47,9 @@ def rpctype_parse(rpctype: str) -> RpcType:
     """Parse the given value as RPC Type string.
 
     :param rpctype: The string representation of the RPC type hint.
-    :return: The object representation.
+
+    :returns: The object representation.
+
     :raises RpcTypeParseError: In case type hint has invalid format.
     """
     i = 0

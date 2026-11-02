@@ -69,14 +69,15 @@ class ChainPack:
     def unpack_uint_data(data: bytes | bytearray) -> int:
         """Unpack given value as unsigned int data.
 
-        The existence of this is pretty much just to support Stream transport
-        protocol for SHV RPC. You probably do not want to use this for anything
-        else.
+        The existence of this is pretty much just to support Stream transport protocol
+        for SHV RPC. You probably do not want to use this for anything else.
 
-        :param data: Data that should contain unsigned integer in Chainpack
-          format. Unused bytes at the end are ignored.
-        :return: unpacked integer.
-        :raise ValueError: in case of invalid data.
+        :param data: Data that should contain unsigned integer in Chainpack format.
+            Unused bytes at the end are ignored.
+
+        :returns: unpacked integer.
+
+        :raises ValueError: in case of invalid data.
         """
         try:
             return ChainPackReader(data).read_uint_data()
@@ -87,12 +88,12 @@ class ChainPack:
     def pack_uint_data(value: int) -> bytes:
         """Pack given value as unsigned int data.
 
-        The existence of this is pretty much just to support Stream transport
-        protocol for SHV RPC. You probably do not want to use this for anything
-        else.
+        The existence of this is pretty much just to support Stream transport protocol
+        for SHV RPC. You probably do not want to use this for anything else.
 
         :param value: Unsigned integer to be packed.
-        :return: bytes with unsigned integer.
+
+        :returns: bytes with unsigned integer.
         """
         bio = io.BytesIO()
         writer = ChainPackWriter(bio)
@@ -279,8 +280,8 @@ class ChainPackWriter(commonpack.CommonWriter):
     def _bytes_needed(cls, bit_len: int) -> int:
         """Calculate needed maximum number of bytes.
 
-        Return max bit length >= bit_len, which can be encoded by same number of
-        bytes number of bytes needed to encode bit_len.
+        Return max bit length >= bit_len, which can be encoded by same number of bytes
+        number of bytes needed to encode bit_len.
         """
         if bit_len <= 28:
             cnt = ((bit_len - 1) // 7) + 1

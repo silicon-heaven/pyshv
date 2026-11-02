@@ -23,8 +23,8 @@ from .value import (
 class RpcMessage:
     """Single SHV RPC message representation.
 
-    :param rpc_val: The value of the received and unpacked SHV RPC message or
-      ``None`` in case you want to create a new message instead.
+    :param rpc_val: The value of the received and unpacked SHV RPC message or ``None``
+        in case you want to create a new message instead.
     """
 
     _last_request_id: typing.ClassVar[int] = 0
@@ -34,16 +34,15 @@ class RpcMessage:
     def next_request_id(cls) -> int:
         """Provide unique request identifier.
 
-        The identifier won't repeat for this application in a reasonable time as
-        it is just simple counter that wrap after a long time.
+        The identifier won't repeat for this application in a reasonable time as it is
+        just simple counter that wrap after a long time.
 
-        In most cases we could get away with not wrapping the counter at all
-        because it is unlikely that we would run out of common implementation
-        limit of 64 bits (this is limit in other implementations not Python).
-        But further messages would be increased in size. Instead we choose to
-        rollover counter every now often (every 15 minutes). That is because of
-        a reasonable expectation that request ID is used right away and call
-        timeout won't be in minutes.
+        In most cases we could get away with not wrapping the counter at all because it
+        is unlikely that we would run out of common implementation limit of 64 bits
+        (this is limit in other implementations not Python). But further messages would
+        be increased in size. Instead we choose to rollover counter every now often
+        (every 15 minutes). That is because of a reasonable expectation that request ID
+        is used right away and call timeout won't be in minutes.
         """
         tmono = time.monotonic()
         if cls._last_request_id_rollover + (15 * 60) < tmono:
@@ -92,9 +91,8 @@ class RpcMessage:
     class Type(enum.Enum):
         """The message type definition.
 
-        This is defined to allow message differenciate in ``match``. It is more
-        specific than SHV standard to allow easier implementation of different
-        messages handling.
+        This is defined to allow message differenciate in ``match``. It is more specific
+        than SHV standard to allow easier implementation of different messages handling.
         """
 
         REQUEST = enum.auto()
@@ -153,8 +151,9 @@ class RpcMessage:
         """Create new message that is response to this one.
 
         :param result: The result value to be set in the response or
-          :class:`shv.rpcdef.RpcError` to be reported as error result.
-        :return: The new message that is response to this one.
+            :class:`shv.rpcdef.RpcError` to be reported as error result.
+
+        :returns: The new message that is response to this one.
         """
         if self.type not in {self.Type.REQUEST, self.Type.REQUEST_ABORT}:
             raise ValueError("Response can be created from request only.")
@@ -171,7 +170,8 @@ class RpcMessage:
         """Create new message that is response delay for this one.
 
         :param progress: The progress to be reported.
-        :return: The new message that is response delay to this one.
+
+        :returns: The new message that is response delay to this one.
         """
         if self.type not in {self.Type.REQUEST, self.Type.REQUEST_ABORT}:
             raise ValueError("Response delay can be created from request only.")
@@ -216,7 +216,7 @@ class RpcMessage:
     def new_request_id(self) -> int:
         """Set new request ID.
 
-        :return: The new request ID.
+        :returns: The new request ID.
         """
         self.request_id = self.next_request_id()
         return self.request_id
@@ -531,10 +531,10 @@ class RpcMessage:
         :param path: SHV path for signal.
         :param method: method name for signal.
         :param param: Parameters passed to the method.
-        :param rid: Request identifier for this message. It is automatically
-          assigned if ``None`` is passed.
-        :param cids: The caller IDs. This can be used with methods using a
-          unique CallerIds sequence to establish session.
+        :param rid: Request identifier for this message. It is automatically assigned if
+            ``None`` is passed.
+        :param cids: The caller IDs. This can be used with methods using a unique
+            CallerIds sequence to establish session.
         :param user_id: User's ID to be caried with request message.
         """
         res = cls()
@@ -580,15 +580,12 @@ class RpcMessage:
     ) -> RpcMessage:
         """Create ``lsmod`` signal message.
 
-        This provides creation of "lsmod" signal message that must be used when
-        you are changing the nodes tree to signal clients about that. The
-        argument specifies top level nodes added or removed (based on the
-        mapping value).
+        This provides creation of "lsmod" signal message that must be used when you are
+        changing the nodes tree to signal clients about that. The argument specifies top
+        level nodes added or removed (based on the mapping value).
 
-        :param path: SHV path to the valid node which children were added or
-          removed.
-        :param nodes: Map where key is node name of the node that is top level
-          node, that was either added (for value ``True``) or removed (for value
-          ``False``).
+        :param path: SHV path to the valid node which children were added or removed.
+        :param nodes: Map where key is node name of the node that is top level node,
+            that was either added (for value ``True``) or removed (for value ``False``).
         """
         return cls.signal(path, "lsmod", "ls", nodes, RpcAccess.BROWSE)

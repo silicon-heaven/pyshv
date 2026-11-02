@@ -36,24 +36,23 @@ logger = logging.getLogger(__name__)
 class SHVBase:
     """SHV RPC object API base class.
 
-    You want to use this if you plan to implement your own specific RPC message
-    handler but in most cases you might want to use
-    :class:`shv.rpcapi.client.SHVClient` or :class:`shv.rpcapi.device.SHVDevice`
-    instead.
+    You want to use this if you plan to implement your own specific RPC message handler
+    but in most cases you might want to use :class:`shv.rpcapi.client.SHVClient` or
+    :class:`shv.rpcapi.device.SHVDevice` instead.
 
-    Messages are handled in an asyncio loop and based on the type of the message
-    the different operation is performed.
+    Messages are handled in an asyncio loop and based on the type of the message the
+    different operation is performed.
 
     :param client: The RPC client instance to wrap and manage.
-    :param call_query_timeout: Timeout in seconds before query is used to check
-      the request status. The shorter time will cause faster message lost
-      detection while the longer
-    :param call_retry_timeout: Timeout in seconds when the request is sent
-      again if there is no response received from the device.
+    :param call_query_timeout: Timeout in seconds before query is used to check the
+        request status. The shorter time will cause faster message lost detection while
+        the longer
+    :param call_retry_timeout: Timeout in seconds when the request is sent again if
+        there is no response received from the device.
     :param user_id: The default user ID to be used.
-    :param peer_shv_version: The assumed SHV version of the peer. In default
-      the exact version is detected but sometimes it is desirable to skip this
-      check of enforce a different version for testing purposes.
+    :param peer_shv_version: The assumed SHV version of the peer. In default the exact
+        version is detected but sometimes it is desirable to skip this check of enforce
+        a different version for testing purposes.
     """
 
     IDLE_TIMEOUT: float = 180
@@ -62,8 +61,7 @@ class SHVBase:
     APP_NAME: str = "pyshv"
     """Name of the application reported to the SHV.
 
-    You can change this value in child class to report a more accurate
-    application name.
+    You can change this value in child class to report a more accurate application name.
     """
     APP_VERSION: str = VERSION
     """Version of the application reported to the SHV.
@@ -94,12 +92,12 @@ class SHVBase:
         self.call_retry_timeout = call_retry_timeout
         """Timeout in seconds before :meth:`call` send request again.
 
-        Be aware how this interacts with :attr:`SHVBase.call_query_timeout`.
-        This should be longer to ensure that we try to query the request before
-        it is submitted as the whole again.
+        Be aware how this interacts with :attr:`SHVBase.call_query_timeout`. This should
+        be longer to ensure that we try to query the request before it is submitted as
+        the whole again.
 
-        This timeout is applied only if we get no response for given amount of
-        time. Any response on query on voluntary one extends this timeout.
+        This timeout is applied only if we get no response for given amount of time. Any
+        response on query on voluntary one extends this timeout.
         """
         self._requests: dict[tuple[int, ...], tuple[asyncio.Task, SHVBase.Request]] = {}
         self._responses: dict[int, asyncio.Queue[RpcMessage | None]] = {}
@@ -112,12 +110,11 @@ class SHVBase:
     async def disconnect(self) -> None:
         """Disconnect an existing connection.
 
-        The call to the disconnect when client is not connected is silently
-        ignored.
+        The call to the disconnect when client is not connected is silently ignored.
 
         Await blocks until disconnect is completed. You can use
-        ``x.client.disconnect()`` to only initialize disconnect without waiting
-        for it to take an effect.
+        ``x.client.disconnect()`` to only initialize disconnect without waiting for it
+        to take an effect.
         """
         self.task.cancel()
         self.client.disconnect()
@@ -166,8 +163,8 @@ class SHVBase:
     async def reset(self) -> None:
         """Reset the client and connection.
 
-        This calls :meth:`shv.rpctransport.RpcClient.reset` as well as reset of
-        the internal state.
+        This calls :meth:`shv.rpctransport.RpcClient.reset` as well as reset of the
+        internal state.
         """
         await self.client.reset()
         self._reset()
@@ -189,51 +186,52 @@ class SHVBase:
     ) -> SHVType:
         """Call given method on given path with given parameter.
 
-        Note that this is coroutine and thus it is up to you if you await it or
-        use asyncio tasks. You can also freely use :func:`asyncio.timeout` to
-        timeout the call.
+        Note that this is coroutine and thus it is up to you if you await it or use
+        asyncio tasks. You can also freely use :func:`asyncio.timeout` to timeout the
+        call.
 
-        The delivery of the messages is not ensure in SHV network (they can be
-        dropped due to multiple reasons without informing the source of the
-        message) and thus this method can send the request message multiple
-        times if it doesn't receive an appropriate response.
+        The delivery of the messages is not ensure in SHV network (they can be dropped
+        due to multiple reasons without informing the source of the message) and thus
+        this method can send the request message multiple times if it doesn't receive an
+        appropriate response.
 
         :param path: SHV path method is associated with.
         :param method: SHV method name to be called.
         :param param: Parameter passed to the called method.
-        :param user_id: UserID added to the method call request. This is required
-          by some RPC methods to identify the user and they will respond with
-          :class:`shv.rpcdef.RpcUserIDRequiredError` if it is missing. This is
-          caught by this method and request will be attempted again with User
-          ID ``""``. If you know that method needs User ID then you can prevent
-          this round trip by setting this argument to ``""``. On the other hand
-          sending all requests with User ID wastes with bandwidth. In general
-          usage you should use :attr:`shv.rpcapi.SHVBase.user_id` instead of
-          just ``""`` to use the object default.
-        :param query_timeout: Override :attr:`shv.rpcapi.SHVBase.call_query_timeout` just
-          for this one call.
-        :param retry_timeout: Override :attr:`shv.rpcapi.SHVBase.call_retry_timeout` just
-          for this one call.
-        :param access_level: Access level the request should be sent with. In
-          default :data:`RpcAccess.ADMIN` is used. This is handy if you are
-          testing access levels, but in generic usage it is better to use the
-          default and let the SHV Brokers lower the default admin level.
-        :param extra_access: Additional access fields to be added. These are
-          string access specifiers that are not standardized in default. They
-          are available for special needs of access control. It is advised not
-          to use this unless absolutely needed.
-        :param progress: An optional callback function that is called to report
-          on progress of the call. It can be either function of coroutine. The
-          argument passed is the float between 0 and 1 providing the progress
-          signalization or ``None`` to signal that
-          :class:`shv.rpcdef.RpcTryAgainLaterError` was received. If you need
-          to pass additional arguments to the function then use
-          :func:`functools.partial`.
-        :return: Return value on successful method call.
-        :raise RpcError: The call result in error that is propagated by raising
-          :class:`shv.rpcdef.RpcError` or its children based on the failure.
-        :raise EOFError: when client disconnected and thus request can't be
-          sent or response received.
+        :param user_id: UserID added to the method call request. This is required by
+            some RPC methods to identify the user and they will respond with
+            :class:`shv.rpcdef.RpcUserIDRequiredError` if it is missing. This is caught
+            by this method and request will be attempted again with User ID ``""``. If
+            you know that method needs User ID then you can prevent this round trip by
+            setting this argument to ``""``. On the other hand sending all requests with
+            User ID wastes with bandwidth. In general usage you should use
+            :attr:`shv.rpcapi.SHVBase.user_id` instead of just ``""`` to use the object
+            default.
+        :param query_timeout: Override :attr:`shv.rpcapi.SHVBase.call_query_timeout`
+            just for this one call.
+        :param retry_timeout: Override :attr:`shv.rpcapi.SHVBase.call_retry_timeout`
+            just for this one call.
+        :param access_level: Access level the request should be sent with. In default
+            :data:`RpcAccess.ADMIN` is used. This is handy if you are testing access
+            levels, but in generic usage it is better to use the default and let the SHV
+            Brokers lower the default admin level.
+        :param extra_access: Additional access fields to be added. These are string
+            access specifiers that are not standardized in default. They are available
+            for special needs of access control. It is advised not to use this unless
+            absolutely needed.
+        :param progress: An optional callback function that is called to report on
+            progress of the call. It can be either function of coroutine. The argument
+            passed is the float between 0 and 1 providing the progress signalization or
+            ``None`` to signal that :class:`shv.rpcdef.RpcTryAgainLaterError` was
+            received. If you need to pass additional arguments to the function then use
+            :func:`functools.partial`.
+
+        :returns: Return value on successful method call.
+
+        :raises RpcError: The call result in error that is propagated by raising
+            :class:`shv.rpcdef.RpcError` or its children based on the failure.
+        :raises EOFError: when client disconnected and thus request can't be sent or
+            response received.
         """
         query_timeout = (
             self.call_query_timeout if query_timeout is None else query_timeout
@@ -313,8 +311,10 @@ class SHVBase:
         """List child nodes of the node on the specified path.
 
         :param path: SHV path to the node we want children to be listed for.
-        :return: list of child nodes.
-        :raise RpcMethodNotFoundError: when there is no such path.
+
+        :returns: list of child nodes.
+
+        :raises RpcMethodNotFoundError: when there is no such path.
         """
         res = await self.call(path, "ls")
         if not isinstance(res, list):  # pragma: no cover
@@ -326,8 +326,10 @@ class SHVBase:
 
         :param path: SHV path to the node with possible child of given name.
         :param name: Name of the child node.
-        :return: ``True`` if there is such child and ``False`` if not.
-        :raise RpcMethodNotFoundError: when there is no such path.
+
+        :returns: ``True`` if there is such child and ``False`` if not.
+
+        :raises RpcMethodNotFoundError: when there is no such path.
         """
         res = await self.call(path, "ls", name)
         if not isinstance(res, bool):  # pragma: no cover
@@ -339,8 +341,10 @@ class SHVBase:
 
         :param path: SHV path to the node we want methods to be listed for.
         :param details: If detailed listing should be performed instead of standard one.
-        :return: list of the node's methods.
-        :raise RpcMethodNotFoundError: when there is no such path.
+
+        :returns: list of the node's methods.
+
+        :raises RpcMethodNotFoundError: when there is no such path.
         """
         res = await self.call(path, "dir", True if details else None)
         if isinstance(res, list):  # pragma: no cover
@@ -352,8 +356,10 @@ class SHVBase:
 
         :param path: SHV path to the node we want methods to be listed for.
         :param name: Name of the method which existence should be checked.
-        :return: ``True`` if method exists and ``False`` otherwise.
-        :raise RpcMethodNotFoundError: when there is no such path.
+
+        :returns: ``True`` if method exists and ``False`` otherwise.
+
+        :raises RpcMethodNotFoundError: when there is no such path.
         """
         res = await self.call(path, "dir", name)
         # list, null and mapping is backward compatibility
@@ -377,10 +383,9 @@ class SHVBase:
     async def _send_loop(self) -> None:
         """Loop used to send messages.
 
-        We have a dedicated loop to send messages to identify if there is an
-        empty bandwidth. Simply if there are no messages to be sent through
-        :meth:`_send` then we can use :meth:`_idle_message` to generate idle
-        messages.
+        We have a dedicated loop to send messages to identify if there is an empty
+        bandwidth. Simply if there are no messages to be sent through :meth:`_send` then
+        we can use :meth:`_idle_message` to generate idle messages.
         """
         while True:
             await self.__send_semaphore.acquire()
@@ -405,18 +410,18 @@ class SHVBase:
     async def _send(self, msg: RpcMessage) -> None:
         """Send message.
 
-        You should be using this method instead of ``self.client.send`` to
-        ensure that send can be correctly overwritten and optionally postponed
-        or blocked by child implementations.
+        You should be using this method instead of ``self.client.send`` to ensure that
+        send can be correctly overwritten and optionally postponed or blocked by child
+        implementations.
 
-        This is intentionally marked as protected (accessible only by class and
-        its children methods) because generic message must be send only for
-        valid paths and methods and that is something only class itself can
-        ensure. Your implemntation should provide public methods that protects
-        against call with invalid path or method.
+        This is intentionally marked as protected (accessible only by class and its
+        children methods) because generic message must be send only for valid paths and
+        methods and that is something only class itself can ensure. Your implemntation
+        should provide public methods that protects against call with invalid path or
+        method.
 
-        Note that this is coroutine and thus it is up to you if you await it or
-        use asyncio tasks.
+        Note that this is coroutine and thus it is up to you if you await it or use
+        asyncio tasks.
 
         :param msg: The message to be send.
         """
@@ -428,10 +433,10 @@ class SHVBase:
     def _idle_message(self) -> RpcMessage | None:
         """Messages to be sent when there is bandwidth for them.
 
-        In general we just try to propagate all messages but some of the
-        messages might not have to be sent if we don't have bandwidth for them
-        at the moment. These are commonly messages not directly requested by
-        other side such as signals or some of the delayed responses.
+        In general we just try to propagate all messages but some of the messages might
+        not have to be sent if we don't have bandwidth for them at the moment. These are
+        commonly messages not directly requested by other side such as signals or some
+        of the delayed responses.
         """
         for _, request in self._requests.values():
             if request._progress_dirty:
@@ -492,11 +497,12 @@ class SHVBase:
     async def _method_call(self, request: SHVBase.Request) -> SHVType:
         """Handle request.
 
-        Be aware that :class:`asyncio.CancelledError` can be raised to abort
-        the request.
+        Be aware that :class:`asyncio.CancelledError` can be raised to abort the
+        request.
 
         :param request: SHV RPC request message info.
-        :return: result of the method call. To report error you should raise
+
+        :returns: result of the method call. To report error you should raise
             :exc:`shv.rpcdef.RpcError`.
         """
         match request.path, request.method:
@@ -537,14 +543,15 @@ class SHVBase:
     def _ls(self, path: str) -> collections.abc.Iterator[str]:  # ruff: ignore[no-self-use]
         """Implement ``ls`` method for all nodes.
 
-        The default implementation supports `.app` path. Your implementation
-        should yield child nodes.
+        The default implementation supports `.app` path. Your implementation should
+        yield child nodes.
 
-        Always call this as first before you yield your own methods to provide
-        users with standard nodes.
+        Always call this as first before you yield your own methods to provide users
+        with standard nodes.
 
         :param path: SHV path that should be listed.
-        :return: Iterator over child nodes of the node on the path.
+
+        :returns: Iterator over child nodes of the node on the path.
         """
         if not path:
             yield ".app"
@@ -556,24 +563,28 @@ class SHVBase:
     ) -> collections.abc.Iterator[str]:
         """Help with :meth:`_ls` implementation.
 
-        This is helper designed to be called from :meth:`_ls` and simplifies a
-        common operation that is extraction of the node name from the full path.
+        This is helper designed to be called from :meth:`_ls` and simplifies a common
+        operation that is extraction of the node name from the full path.
 
-        With this function you effectively can remove the code like this from
-        your codebase::
+        With this function you effectively can remove the code like this from your
+        codebase:
+
+        ::
 
             fpath = "some/path/to/the/node"
             path = f"{path}/" if path else ""
             if fpath.startswith(path):
                 yield fpath[len(path) :].partition("/")[0]
 
-        And replace it with just::
+        And replace it with just:
+
+        ::
 
             yield from self._ls_node_for_path(path, "some/path/to/the/node")
 
         :param path: ``path`` parameter passed to :meth:`_ls`.
-        :param full_path: Path or iterator over paths the node name should be
-          extracted from.
+        :param full_path: Path or iterator over paths the node name should be extracted
+            from.
         """
         if path:
             path = f"{path}/"
@@ -585,8 +596,9 @@ class SHVBase:
         """Check that :meth:`_ls` reports this path as existing.
 
         :param path: SHV path to be validated.
-        :return: ``True`` if :meth:`_ls` on parent node reports node with this
-          tail piece. ``False`` is returned otherwise.
+
+        :returns: ``True`` if :meth:`_ls` on parent node reports node with this tail
+            piece. ``False`` is returned otherwise.
         """
         if not path:
             return True  # The root path always exists
@@ -609,11 +621,12 @@ class SHVBase:
         This implementation is called only for valid paths
         (:meth:`shv.rpcapi.SHVBase._valid_path`).
 
-        Always call this as first before you yield your own methods to provide
-        users with standard ones.
+        Always call this as first before you yield your own methods to provide users
+        with standard ones.
 
         :param path: SHV path method should be listed for.
-        :return: List of methods associated with given node.
+
+        :returns: List of methods associated with given node.
         """
         yield RpcDir.stddir()
         yield RpcDir.stdls()
@@ -634,8 +647,8 @@ class SHVBase:
     class Request:
         """Set of parameters passed to the :meth:`shv.rpcapi.SHVBase._method_call`.
 
-        This is provided as one data class to allow easier method typing as
-        well as ability to more freely add or remove info items.
+        This is provided as one data class to allow easier method typing as well as
+        ability to more freely add or remove info items.
         """
 
         def __init__(self, msg: RpcMessage, shvbase: SHVBase) -> None:
@@ -678,9 +691,8 @@ class SHVBase:
         def caller_ids(self) -> collections.abc.Sequence[int]:
             """The sequence of the IDs for the caller.
 
-            This sequence uniquely identifies this caller for this
-            application, thus it can be used to have unique context specific to
-            the caller.
+            This sequence uniquely identifies this caller for this application, thus it
+            can be used to have unique context specific to the caller.
             """
             return self._msg.caller_ids
 
@@ -703,8 +715,8 @@ class SHVBase:
     class Signal:
         """Set of parameters passed to the :meth:`SHVBase._got_signal`.
 
-        This is provided as one data class to allow easier method typing as
-        well as ability to more freely add or remove info items.
+        This is provided as one data class to allow easier method typing as well as
+        ability to more freely add or remove info items.
         """
 
         def __init__(self, msg: RpcMessage) -> None:

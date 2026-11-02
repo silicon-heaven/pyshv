@@ -46,18 +46,16 @@ class SHVClient(SHVBase):
         self.reconnects: int = reconnects
         """Number of attempted reconnects before giving up.
 
-        Any negative number means no limit in reconnects, zero is for no
-        reconnects (client must already be connected) and one for only initial
-        connection.
+        Any negative number means no limit in reconnects, zero is for no reconnects
+        (client must already be connected) and one for only initial connection.
 
         Reconnects are attepted with increased amount of time between them. This
-        increase is capped on cca. 1 minute after six attempts. This doesn't
-        include timeouts that are part of the reconnect process itself (such as
-        timeout of network socket).
+        increase is capped on cca. 1 minute after six attempts. This doesn't include
+        timeouts that are part of the reconnect process itself (such as timeout of
+        network socket).
 
-        This affects the real reconnect (when receive would raise
-        :class:`EOFError`). The reset is handled automatically no matter this
-        settings.
+        This affects the real reconnect (when receive would raise :class:`EOFError`).
+        The reset is handled automatically no matter this settings.
         """
         self._subscribes: set[str] = set()
         self._connected = asyncio.Event()
@@ -78,7 +76,8 @@ class SHVClient(SHVBase):
         Any additional parameters after ``url`` are passed to class initialization.
 
         :param url: SHV RPC URL to the broker
-        :return: Connected instance.
+
+        :returns: Connected instance.
         """
         if isinstance(url, str):
             url = RpcUrl.parse(url)
@@ -93,8 +92,7 @@ class SHVClient(SHVBase):
     async def wait_for_login(self) -> None:
         """Wait for login completion.
 
-        This also propagates any exception that we encounter during the login
-        process.
+        This also propagates any exception that we encounter during the login process.
         """
         while True:
             try:
@@ -111,8 +109,7 @@ class SHVClient(SHVBase):
     async def _loop(self) -> None:
         """Loop run in asyncio task to receive messages.
 
-        On top of the parent implementation this also performs reconnection
-        attempts.
+        On top of the parent implementation this also performs reconnection attempts.
         """
         reconnect_attempt = 0
         while self.reconnects < 0 or self.reconnects >= reconnect_attempt:
@@ -156,12 +153,12 @@ class SHVClient(SHVBase):
     async def _send(self, msg: RpcMessage) -> None:
         """Send message.
 
-        You should be using this method instead of ``self.client.send`` to
-        ensure that send can be correctly overwritten and optionally postponed
-        or blocked by child implementations.
+        You should be using this method instead of ``self.client.send`` to ensure that
+        send can be correctly overwritten and optionally postponed or blocked by child
+        implementations.
 
-        This class adds login sequence and thus it is ensured that login is
-        performed before any other message is sent to the peer.
+        This class adds login sequence and thus it is ensured that login is performed
+        before any other message is sent to the peer.
         """
         await self._connected.wait()
         if (
@@ -195,8 +192,8 @@ class SHVClient(SHVBase):
         :attr:`shv.rpclogin.RpcLoginType.SHA1`, and
         :attr:`shv.rpclogin.RpcLoginType.TOKEN`.
 
-        Be aware when you are overwriting or extending this method as this is
-        running on every reset and holds off any other messages.
+        Be aware when you are overwriting or extending this method as this is running on
+        every reset and holds off any other messages.
         """
         secure = self.client.secure
         if self.login.login_type is RpcLoginType.SHA1 or (
@@ -221,8 +218,8 @@ class SHVClient(SHVBase):
 
         In default this restores all subscriptions added up to that point.
 
-        Be aware when you are overwriting or extending this method as this is
-        running on every reset and holds off any other messages.
+        Be aware when you are overwriting or extending this method as this is running on
+        every reset and holds off any other messages.
         """
         for ri in self._subscribes:
             await self.__subscribe(ri)
@@ -237,8 +234,7 @@ class SHVClient(SHVBase):
     async def subscribe(self, ri: str) -> bool:
         """Perform subscribe for signals on given path.
 
-        Subscribe is always performed on the node itself as well as all its
-        children.
+        Subscribe is always performed on the node itself as well as all its children.
 
         :param ri: SHV RPC RI for subscription to be added.
         """
@@ -260,8 +256,8 @@ class SHVClient(SHVBase):
         """Perform unsubscribe for signals on given path.
 
         :param ri: SHV RPC RI for subscription to be removed.
-        :return: ``True`` in case such subscribe was located and ``False``
-          otherwise.
+
+        :returns: ``True`` in case such subscribe was located and ``False`` otherwise.
         """
         compat = await self.peer_shv_version() < (3, 0)
         resp = bool(
@@ -278,11 +274,11 @@ class SHVClient(SHVBase):
     def subscriptions(self) -> collections.abc.Iterator[str]:
         """Iterate over all subscriptions.
 
-        Note that this uses local subscription cache. It won't reach for the
-        current set of subscriptions on the server. This in not be an issue in
-        almost all cases because because servers allow subscription
-        modifications only to the current client and you should always use
-        :meth:`subscribe` and :meth:`unsubscribe` and in such case there should
-        be no way this cache gets invalidated compared to the Broker.
+        Note that this uses local subscription cache. It won't reach for the current set
+        of subscriptions on the server. This in not be an issue in almost all cases
+        because because servers allow subscription modifications only to the current
+        client and you should always use :meth:`subscribe` and :meth:`unsubscribe` and
+        in such case there should be no way this cache gets invalidated compared to the
+        Broker.
         """
         yield from iter(self._subscribes)

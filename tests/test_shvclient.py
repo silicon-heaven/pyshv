@@ -140,8 +140,8 @@ async def test_dir_exists(client, path, name, result):
 async def test_sha_login(shvbroker, url):
     """Check that we can login with sha1 password.
 
-    Commonly we login with plain password in tests here but we need to check
-    ability to login with SHA1 hashed password as well.
+    Commonly we login with plain password in tests here but we need to check ability to
+    login with SHA1 hashed password as well.
     """
     nurl = dataclasses.replace(
         url,
@@ -164,8 +164,8 @@ async def test_disconnect(client):
 async def test_reconnect(client, shvbroker):
     """Checks that client reconnects itself if broker disconnects it.
 
-    This uses broker's API to disconnect itself. Broker will give us a new
-    client ID and that way we will identify that we successfully reconnected.
+    This uses broker's API to disconnect itself. Broker will give us a new client ID and
+    that way we will identify that we successfully reconnected.
     """
     client.reconnects = 2
     info = await client.call(".broker/currentClient", "info")

@@ -38,8 +38,7 @@ logger = logging.getLogger(__name__)
 class RpcBroker:
     """SHV RPC broker.
 
-    The broker manages multiple RpcClient instances and exchanges messages
-    between them.
+    The broker manages multiple RpcClient instances and exchanges messages between them.
     """
 
     class Client(SHVBase):
@@ -80,8 +79,7 @@ class RpcBroker:
         def role(self) -> RpcBrokerRoleABC | None:
             """Role assigned in the broker.
 
-            Can be used to query configuration for different rules for this
-            client.
+            Can be used to query configuration for different rules for this client.
             """
 
         async def peer_is_broker(self) -> bool:
@@ -96,10 +94,10 @@ class RpcBroker:
         def send(self, msg: RpcMessage) -> None:
             """Propagate given message to this peer.
 
-            This provides a way for other clients to queue messages to be sent
-            by this client. THis is because Broker peers are propagating
-            messages from one to the other. This won't block but it also won't
-            ensure that message won't be dropped.
+            This provides a way for other clients to queue messages to be sent by this
+            client. THis is because Broker peers are propagating messages from one to
+            the other. This won't block but it also won't ensure that message won't be
+            dropped.
 
             :param msg: Message to be sent.
             """
@@ -310,8 +308,7 @@ class RpcBroker:
         def infomap(self) -> dict[str, SHVType]:
             """Produce Map with client's info.
 
-            This is info provided to administator to inform it about this
-            client.
+            This is info provided to administator to inform it about this client.
             """
             return {
                 "clientId": self.broker_client_id,
@@ -340,8 +337,8 @@ class RpcBroker:
         IDLE_TIMEOUT_LOGIN: float = 5
         """:attr:`shv.rpcapi.SHVBase.IDLE_TIMEOUT` set for clients without user.
 
-        This is intentionally shorter to quickly disconnect inactive clients
-        that are not participating in SHV RPC.
+        This is intentionally shorter to quickly disconnect inactive clients that are
+        not participating in SHV RPC.
         """
 
         def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:  # ruff: ignore[any-type]
@@ -448,8 +445,7 @@ class RpcBroker:
         def infomap(self) -> dict[str, SHVType]:
             """Produce Map with client's info.
 
-            This is info provided to administator to inform it about this
-            client.
+            This is info provided to administator to inform it about this client.
 
             On top of the standard one it provides also info about device ID.
             """
@@ -494,9 +490,9 @@ class RpcBroker:
         self._subs: dict[str, dict[int, float | None]] = {}
         """Subscriptions.
 
-        RI filters signals and value contains map of all client IDs this
-        subscription was requested by and specified end of the subscription
-        live for that specific client.
+        RI filters signals and value contains map of all client IDs this subscription
+        was requested by and specified end of the subscription live for that specific
+        client.
         """
         self._subs_task: asyncio.Task | None = None
         self.__subs_changed = asyncio.Event()
@@ -506,9 +502,11 @@ class RpcBroker:
         """Register RPC peer to the broker.
 
         :param client: Client object to register.
+
         :returns: Assigned client's ID in this broker.
-        :raise ValueError: when registering with these parameters is for some
-          reason not possible.
+
+        :raises ValueError: when registering with these parameters is for some reason
+            not possible.
         """
         if client.role is None:
             raise ValueError("Client must have role assigned.")
@@ -549,7 +547,8 @@ class RpcBroker:
         """Unregister RPC peer and thus remove it from broker.
 
         :param client: Client object registration to be removed.
-        :raise ValueError: when passed client is not registered.
+
+        :raises ValueError: when passed client is not registered.
         """
         cid = client.broker_client_id
         if cid is None:
@@ -580,7 +579,8 @@ class RpcBroker:
         """Lookup client with given ID.
 
         :param cid: ID of the client either as string or as integer.
-        :return: :class:`RpcBroker.Client` when such client is located and ``None``
+
+        :returns: :class:`RpcBroker.Client` when such client is located and ``None``
             otherwise.
         """
         try:
@@ -591,8 +591,8 @@ class RpcBroker:
     def client_on_path(self, path: str) -> tuple[Client, str] | None:
         """Locate client mounted on given path.
 
-        :return: client associated with this mount point and path relative to
-            the client or None if there is no such client.
+        :returns: client associated with this mount point and path relative to the
+            client or None if there is no such client.
         """
         if path.startswith(".broker/client/"):
             pth = path.split("/")
@@ -618,8 +618,8 @@ class RpcBroker:
         """Get mount point for this client.
 
         :param client: The client object that mount point should be received for.
-        :return: The mount point of the client or ``None`` in case there is
-          none.
+
+        :returns: The mount point of the client or ``None`` in case there is none.
         """
         try:
             return next(
@@ -636,8 +636,9 @@ class RpcBroker:
         """Iterate over subscriptions this broker manages.
 
         :param client: The optional filtering over client's subscriptions.
-        :return: Iterator over subscriptions and their deadline (when they are
-          no longer valid).
+
+        :returns: Iterator over subscriptions and their deadline (when they are no
+            longer valid).
         """
         yield from (
             (
@@ -656,8 +657,9 @@ class RpcBroker:
         :param client: Client object this subscription is requested by.
         :param ri: The resource identifier for the subscription.
         :param ttl: Time to live for this subscription.
-        :returns: ``False`` if this subscription was already present or ``True``
-          if it is a new one.
+
+        :returns: ``False`` if this subscription was already present or ``True`` if it
+            is a new one.
         """
         if client.broker_client_id is None:
             raise ValueError("Client must be registered")
@@ -672,8 +674,8 @@ class RpcBroker:
 
         :param client: Client object this subscription is requested by.
         :param ri: The resource identifier for the subscription.
-        :returns: ``False`` if no subscription was removed and ``True``
-          otherwise.
+
+        :returns: ``False`` if no subscription was removed and ``True`` otherwise.
         """
         if client.broker_client_id is None:
             raise ValueError("Client must be registered")
@@ -714,8 +716,8 @@ class RpcBroker:
     def _subs_notify(self) -> None:
         """Alert :meth:`_subs_loop` that changes to the subscriptions was made.
 
-        This not only notifies running subscription loop but also starts it when
-        it is not running.
+        This not only notifies running subscription loop but also starts it when it is
+        not running.
         """
         if self._subs_task is None or self._subs_task.done():
             self._subs_task = asyncio.create_task(self._subs_loop())
@@ -725,8 +727,8 @@ class RpcBroker:
     async def _subs_loop(self) -> None:
         """Subscriptions management loop.
 
-        This loop manages subscriptions in broker. It removes timed out
-        subscriptions and propagates needed subscriptions to the sub-brokers.
+        This loop manages subscriptions in broker. It removes timed out subscriptions
+        and propagates needed subscriptions to the sub-brokers.
         """
         loop = asyncio.get_running_loop()
         subsubs: dict[str, float] = {}
@@ -787,8 +789,8 @@ class RpcBroker:
 
         This also initializes configured connections.
 
-        :param connect_timeout: The timeout before we stop waiting for
-           connections to be established.
+        :param connect_timeout: The timeout before we stop waiting for connections to be
+            established.
         """
 
         def add(client: RpcClient) -> None:

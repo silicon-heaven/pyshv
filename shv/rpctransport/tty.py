@@ -81,8 +81,8 @@ class RpcClientTTY(RpcClientStream):
 class RpcServerTTY(RpcServer):
     """RPC server waiting for TTY to appear.
 
-    This actually only maintains a single client as there can't be more than one
-    client on single TTY.
+    This actually only maintains a single client as there can't be more than one client
+    on single TTY.
     """
 
     def __init__(
@@ -159,13 +159,12 @@ class RpcServerTTY(RpcServer):
 def _cfmakeraw(mode: typing.Any) -> None:  # ruff: ignore[any-type]
     """Make termios mode raw.
 
-    License: Python Software Foundation License Version 2
-    Source: CPython (tty.py)
+    License: Python Software Foundation License Version 2 Source: CPython (tty.py)
     Author: Steen Lumholt.
 
-    This is copy of the code provided in standard Python library since Python
-    3.12. The switch to the ``tty.cfmakeraw`` should be made once minimal
-    version is at least that.
+    This is copy of the code provided in standard Python library since Python 3.12. The
+    switch to the ``tty.cfmakeraw`` should be made once minimal version is at least
+    that.
     """
     # Clear all POSIX.1-2017 input mode flags.
     # See chapter 11 "General Terminal Interface"

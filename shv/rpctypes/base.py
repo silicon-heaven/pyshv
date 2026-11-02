@@ -14,10 +14,11 @@ class RpcType(abc.ABC):
         """Check if given value is of this type.
 
         :param value: The value to be validated.
-        :oaram is_updatable: If :data:`shv.rpcdef.RpcDir.Flag.IS_UPDATABLE` was
-          specified for this type. This is used only to validate argument for
-          the method call that has this flag. Otherwise it should be ``False``.
-        :return: ``True`` if value matches the type and ``False`` otherwise.
+        :param is_updatable: If :data:`shv.rpcdef.RpcDir.Flag.IS_UPDATABLE` was
+            specified for this type. This is used only to validate argument for the
+            method call that has this flag. Otherwise it should be ``False``.
+
+        :returns: ``True`` if value matches the type and ``False`` otherwise.
         """
         return self.validate(value, is_updatable) is None
 
@@ -26,22 +27,26 @@ class RpcType(abc.ABC):
         """Validate and possibly return error if invalid.
 
         :param value: Value to be validated.
+
+        :returns: ``None`` in case it is valid and string with failing check. The string
+            describes expectation that wasn't fulfilled.
+
         :oaram is_updatable: If :data:`shv.rpcdef.RpcDir.Flag.IS_UPDATABLE` was
-          specified for this type. This is used only to validate argument for
-          the method call that has this flag. Otherwise it should be ``False``.
-        :return: ``None`` in case it is valid and string with failing check.
-          The string describes expectation that wasn't fulfilled.
+            specified for this type. This is used only to validate argument for the
+            method call that has this flag. Otherwise it should be ``False``.
         """
 
     def inflate(self, value: SHVType) -> SHVType:
         """Convert some container types to Maps.
 
-        This is advantegous if you want to get readable version of some more
-        cryptic types (such as Struct or Bitfield).
+        This is advantegous if you want to get readable version of some more cryptic
+        types (such as Struct or Bitfield).
 
         :param value: Value to be inflated.
-        :return: Inflated value.
-        :raise ValueError: In case passed value doesn't match the type.
+
+        :returns: Inflated value.
+
+        :raises ValueError: In case passed value doesn't match the type.
         """
         if (msg := self.validate(value)) is not None:
             raise ValueError(msg)
@@ -53,8 +58,10 @@ class RpcType(abc.ABC):
         This is reverse operation of :meth:`inflate`.
 
         :param value: Value to be deflated.
-        :return: Deflated value.
-        :raise ValueError: In case passed value doesn't match the type.
+
+        :returns: Deflated value.
+
+        :raises ValueError: In case passed value doesn't match the type.
         """
         if (msg := self.validate(value)) is not None:
             raise ValueError(msg)

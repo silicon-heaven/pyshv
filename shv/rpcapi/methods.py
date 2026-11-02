@@ -34,15 +34,14 @@ type SHVSetMethodT = collections.abc.Callable[
 class SHVMethods(SHVBase):
     """SHV RPC methods and signals implementation helper.
 
-    The regular way to implement methods in :class:`shv.rpcapi.SHVBase` is by
-    defining :meth:`shv.rpcapi.SHVBase._ls`, :meth:`shv.rpcapi.SHVBase._dir`,
-    and :meth:`shv.rpcapi.SHVBase._method_call` methods. That provides ability
-    to implement discoverability as well as method implementation in various
-    dynamic ways. But in real world applications it is common that we just want
-    to define custom methods and having to implement these methods can be
-    error-prone and unnecessary complex. This class instead provides a way to
-    define methods that are discovered and their integration is handled
-    automatically.
+    The regular way to implement methods in :class:`shv.rpcapi.SHVBase` is by defining
+    :meth:`shv.rpcapi.SHVBase._ls`, :meth:`shv.rpcapi.SHVBase._dir`, and
+    :meth:`shv.rpcapi.SHVBase._method_call` methods. That provides ability to implement
+    discoverability as well as method implementation in various dynamic ways. But in
+    real world applications it is common that we just want to define custom methods and
+    having to implement these methods can be error-prone and unnecessary complex. This
+    class instead provides a way to define methods that are discovered and their
+    integration is handled automatically.
     """
 
     def __init__(
@@ -93,15 +92,15 @@ class SHVMethods(SHVBase):
     class Method:
         """The definition of the RPC Method.
 
-        This allows you to define methods as attributes of the object and such
-        methods are automatically discovered and used. Note that the discovery
-        is performed on object initialization.
+        This allows you to define methods as attributes of the object and such methods
+        are automatically discovered and used. Note that the discovery is performed on
+        object initialization.
 
-        The following is provided and thus not required to be performed in the
-        method itself:
+        The following is provided and thus not required to be performed in the method
+        itself:
 
-        - Check if SHV path and method name matches as otherwise this method
-          would not be called.
+        - Check if SHV path and method name matches as otherwise this method would not
+          be called.
         - Verification of the access level.
         - Verifies if user's ID is required (based on the
           :attr:`shv.rpcdef.RpcDir.flags`) and sends
@@ -110,8 +109,8 @@ class SHVMethods(SHVBase):
         What application has to do on its own:
 
         - Implement the method behavior and return the method result.
-        - Validate parameter and raise :class:`shv.rpcdef.RpcInvalidParamError`
-          for invalid values.
+        - Validate parameter and raise :class:`shv.rpcdef.RpcInvalidParamError` for
+          invalid values.
         - Explicitly send signals.
         """
 
@@ -120,8 +119,8 @@ class SHVMethods(SHVBase):
         desc: RpcDir
         """Method description.
 
-        This defines method name, acceess level as well as other options that
-        are considered on method call request.
+        This defines method name, acceess level as well as other options that are
+        considered on method call request.
         """
         func: SHVMethodT
         """Python method providing the implementation."""
@@ -129,8 +128,8 @@ class SHVMethods(SHVBase):
         """If method parameter should be validated against type hint.
 
         In case the parameter doesn't match the type hint then
-        :exception:`shv.rpcdef.RpcInvalidParamError` is raise even before the
-        wrapped function is called.
+        :exception:`shv.rpcdef.RpcInvalidParamError` is raise even before the wrapped
+        function is called.
         """
 
         _bound: weakref.ReferenceType[SHVMethods] | None = None
@@ -196,19 +195,19 @@ class SHVMethods(SHVBase):
     ) -> collections.abc.Callable[[SHVGetMethodT], SHVMethods.Method]:
         """Decorate method to use method as ``get`` property method.
 
-        The properties are common standard ways to organize access to the values
-        exposed over SHV. This decorator provides an easier way to implement
-        these common methods by validating the parameter.
+        The properties are common standard ways to organize access to the values exposed
+        over SHV. This decorator provides an easier way to implement these common
+        methods by validating the parameter.
 
-        The decorated function is called in wrapper that on top of the
-        :class:`Method` handling also verifies the parameter.
+        The decorated function is called in wrapper that on top of the :class:`Method`
+        handling also verifies the parameter.
 
         :param path: SHV path for this property.
         :param tp: Type description provided by this property.
         :param access: Minimal access level required for `get` method.
-        :param signal: If property has signal associated with it and optionally
-          its name. `chng` is used if `True` is provided and `False` (the]
-          default) is used for no signal at all.
+        :param signal: If property has signal associated with it and optionally its
+            name. `chng` is used if `True` is provided and `False` (the] default) is
+            used for no signal at all.
         """
 
         def wrapper(func: SHVGetMethodT) -> SHVMethods.Method:
@@ -235,8 +234,8 @@ class SHVMethods(SHVBase):
     ) -> collections.abc.Callable[[SHVSetMethodT], SHVMethods.Method]:
         """Decorate method to make it set method for the property node.
 
-        This is a companion decorator to the :meth:`property` that allows
-        addition of the ``set`` method to the property node.
+        This is a companion decorator to the :meth:`property` that allows addition of
+        the ``set`` method to the property node.
 
         :param getter: The reference to the ``get`` method.
         :param access: Minimal access level required for ``set`` method.

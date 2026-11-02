@@ -14,26 +14,26 @@ from .rpcri import shvpath_match
 class SHVPath:
     """The SHV path helper.
 
-    This is designed to be close to the :mod:`pathlib` while providing the SHV
-    path specific behavior. But some of the methods just doesn't make sense in
-    the respect of the SHV path (such as ``is_absolute``).
+    This is designed to be close to the :mod:`pathlib` while providing the SHV path
+    specific behavior. But some of the methods just doesn't make sense in the respect of
+    the SHV path (such as ``is_absolute``).
 
-    We can't easily use :mod:`pathlib` based version because there are huge
-    differences in the implementation (not external API) between Python 3.11
-    and 3.12 and later versions.
+    We can't easily use :mod:`pathlib` based version because there are huge differences
+    in the implementation (not external API) between Python 3.11 and 3.12 and later
+    versions.
 
     The rules for the SHV path are:
 
     - White characters (like spaces) are not allowed.
     - SHV path can't be absolute (can't start with ``/``).
     - ``""`` is parent of every path.
-    - The combination of SHV path and string representing an absolute path
-      (appending absolute path to SHV) results into only absolute path being
-      used (while leading ``/`` is removed). This behavior is not derived from
-      SHV path but rather from :mod:`pathlib`.
-    - ``..`` is being interpreted as upped directory and thus removes upper
-      node from the SHV path. This is extension of the standard SHV path
-      behavior as SHV standard do not specify ``..`` interpretation.
+    - The combination of SHV path and string representing an absolute path (appending
+      absolute path to SHV) results into only absolute path being used (while leading
+      ``/`` is removed). This behavior is not derived from SHV path but rather from
+      :mod:`pathlib`.
+    - ``..`` is being interpreted as upped directory and thus removes upper node from
+      the SHV path. This is extension of the standard SHV path behavior as SHV standard
+      do not specify ``..`` interpretation.
     """
 
     def __init__(self, *pathsegments: str | os.PathLike) -> None:
@@ -155,8 +155,8 @@ class SHVPath:
     def joinpath(self, *pathsegments: str | os.PathLike) -> SHVPath:
         """Join paths together.
 
-        Calling this method is equivalent to combining the path with each of
-        the given path segments in turn.
+        Calling this method is equivalent to combining the path with each of the given
+        path segments in turn.
         """
         return type(self)(*self._parts, *pathsegments)
 

@@ -333,8 +333,7 @@ async def test_sub_mount(shvbroker, url):
 async def test_client_reset(client):
     """Check that client can reset its connection and login again.
 
-    After reconnection client must always have unique ID and thus we deteect
-    only that.
+    After reconnection client must always have unique ID and thus we deteect only that.
     """
     cid = await client.call(".broker/currentClient", "info")
     await client.reset()

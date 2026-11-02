@@ -26,17 +26,18 @@ def convert(
 ) -> bytes | None:
     """Convert ChainPack to Cpon or vice versa.
 
-    This also allows conversion from the same type to the same one. This can be
-    used to validate format for example.
+    This also allows conversion from the same type to the same one. This can be used to
+    validate format for example.
 
     :param inp: Input data in ChainPack or Cpon or path to the file with them.
     :param inf: Input data format.
-    :param outp: Ouput where `None` results in data returned from the function
-        and file or IO into the write to those.
+    :param outp: Ouput where `None` results in data returned from the function and file
+        or IO into the write to those.
     :param outf: Output data format.
-    :param options: Cpon writer options. This is used only when:
-        `outf == CPFormat.CPON`.
-    :return: Bytes in case `odata` was `None` otherwise `None`.
+    :param options: Cpon writer options. This is used only when: `outf ==
+        CPFormat.CPON`.
+
+    :returns: Bytes in case `odata` was `None` otherwise `None`.
     """
     if isinstance(inp, str):
         inp = inp.encode("utf-8")

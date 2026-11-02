@@ -111,9 +111,11 @@ class RpcFileStat:
         This doesn't support MTD type!
 
         :param path: Path to the file for which stat should be provided.
-        :return: The RPC stat object.
-        :raises FileNotFoundError: If there is no such file or if path exists
-          but doesn't lead to the file.
+
+        :returns: The RPC stat object.
+
+        :raises FileNotFoundError: If there is no such file or if path exists but
+            doesn't lead to the file.
         """
         if isinstance(path, str):
             path = pathlib.Path(path)
@@ -140,11 +142,10 @@ def _iceil(val: int, mult: int) -> int:
 class RpcFile:
     """RPC file accessed over :class:`shv.rpcapi.SHVBase`.
 
-    :param client: The :class:`shv.rpcapi.SHVBase` based client used to
-      communicate.
+    :param client: The :class:`shv.rpcapi.SHVBase` based client used to communicate.
     :param path: SHV path to the file node.
-    :param buffered: If reading and writing should be backed by local buffer to
-      transfer data in chunks suggested by the device.
+    :param buffered: If reading and writing should be backed by local buffer to transfer
+        data in chunks suggested by the device.
     :param append: If writing should be done through append instead of write.
     """
 
@@ -154,9 +155,8 @@ class RpcFile:
         APPEND = enum.auto()
         """Write in append mode.
 
-        The append mode changes the used write operation from 'write' to
-        'append'. That way writes are always at the end of the file regardless
-        of the current offset.
+        The append mode changes the used write operation from 'write' to 'append'. That
+        way writes are always at the end of the file regardless of the current offset.
         """
         R_BUFFERED = enum.auto()
         """Buffered read.
@@ -166,11 +166,10 @@ class RpcFile:
         W_BUFFERED = enum.auto()
         """Buffered write.
 
-        Write operations are buffered. The exact behavior depends if ``APPEND`
-        is used as well or not. Writes are buffered up to the maximum write size
-        signaled by file (or page size of not provided) if ``APPEND`` is not
-        used. With ``APPEND`` all writes are buffered until
-        :meth:`RpcFile.flush` is awaited
+        Write operations are buffered. The exact behavior depends if ``APPEND` is used
+        as well or not. Writes are buffered up to the maximum write size signaled by
+        file (or page size of not provided) if ``APPEND`` is not used. With ``APPEND``
+        all writes are buffered until :meth:`RpcFile.flush` is awaited
         """
         BUFFERED = R_BUFFERED | W_BUFFERED
         """The combination of the read and write buffering."""
@@ -202,11 +201,11 @@ class RpcFile:
     def offset(self) -> int:
         """Offset in bytes from the start of the file.
 
-        This is used as offset for subsequent reads and write operations (with
-        exception if append mode is used).
+        This is used as offset for subsequent reads and write operations (with exception
+        if append mode is used).
 
-        The offset gets modified automatically by reading and writing. You can
-        also set it to perform seek.
+        The offset gets modified automatically by reading and writing. You can also set
+        it to perform seek.
         """
         return self._offset
 
@@ -263,11 +262,12 @@ class RpcFile:
     async def crc32(self, offset: int | None = 0, size: int | None = None) -> int:
         """Calculate CRC32 checksum of the data.
 
-        :param offset: offset from the file start or current file offset if
-          ``None`` is passed.
-        :param size: number of bytes since offset used to calculate checksum or
-          all of them up to the end of the file in case ``None`` is passed.
-        :return: Calculated CRC32 value.
+        :param offset: offset from the file start or current file offset if ``None`` is
+            passed.
+        :param size: number of bytes since offset used to calculate checksum or all of
+            them up to the end of the file in case ``None`` is passed.
+
+        :returns: Calculated CRC32 value.
         """
         if offset == 0 and size is None:
             param = None
@@ -279,11 +279,12 @@ class RpcFile:
     async def sha1(self, offset: int | None = 0, size: int | None = None) -> bytes:
         """Calculate SHA1 checksum of the data.
 
-        :param offset: offset from the file start or current file offset if
-          ``None`` is passed.
-        :param size: number of bytes since offset used to calculate checksum or
-          all of them up to the end of the file in case ``None`` is passed.
-        :return: Calculated SHA1 value.
+        :param offset: offset from the file start or current file offset if ``None`` is
+            passed.
+        :param size: number of bytes since offset used to calculate checksum or all of
+            them up to the end of the file in case ``None`` is passed.
+
+        :returns: Calculated SHA1 value.
         """
         if offset == 0 and size is None:
             param = None
@@ -331,8 +332,8 @@ class RpcFile:
     async def read(self, size: int = -1) -> bytes:
         """Read at most given number of bytes.
 
-        :param size: Maximum number of bytes to read. The value 0 or less is the
-          no size limit.
+        :param size: Maximum number of bytes to read. The value 0 or less is the no size
+            limit.
         """
         if self.Flag.R_BUFFERED not in self._flags:
             result = await self._unbuf_read(self._offset, size)
@@ -434,11 +435,10 @@ class RpcFile:
     async def flush(self) -> None:
         """Flush data buffered for write by previous :meth:`write` calls.
 
-        This is required only if buffering is enabled. It otherwise does
-        nothing.
+        This is required only if buffering is enabled. It otherwise does nothing.
 
-        Note that in combination of buffering and append mode this must be
-        called because write will never flush buffer on its own.
+        Note that in combination of buffering and append mode this must be called
+        because write will never flush buffer on its own.
         """
         if self.Flag.W_BUFFERED not in self._flags:
             return
@@ -451,8 +451,8 @@ class RpcFile:
     async def truncate(self, size: int | None = None) -> None:
         """Truncate file size.
 
-        :param size: Truncate to this specific size or to the current offset in
-          case of ``None``.
+        :param size: Truncate to this specific size or to the current offset in case of
+            ``None``.
         """
         await self.client.call(
             self._path, "truncate", size if size is not None else self._offset
@@ -463,9 +463,9 @@ class RpcFile:
 class FileProvider:
     """Implementation helper that provides local files over SHV RPC.
 
-    This should be used from :class:`shv.rpcapi.SHVBase` based classes. The
-    appropriate file provide is instanciated and for the appropriate file nodes
-    all `dir` and other method calls are delefated to this helper.
+    This should be used from :class:`shv.rpcapi.SHVBase` based classes. The appropriate
+    file provide is instanciated and for the appropriate file nodes all `dir` and other
+    method calls are delefated to this helper.
     """
 
     access_read: RpcAccess = RpcAccess.READ
@@ -480,11 +480,10 @@ class FileProvider:
     def dir(self) -> collections.abc.Iterator[RpcDir]:
         """Provide method descriptions for this file access.
 
-        This should be called from :meth:`shv.rpcapi.SHVBase._dir`
-        implementation for file nodes.
+        This should be called from :meth:`shv.rpcapi.SHVBase._dir` implementation for
+        file nodes.
 
-        :return: Iterator over method descriptions appropriate for this
-          provider.
+        :returns: Iterator over method descriptions appropriate for this provider.
         """
         yield RpcDir.getter("stat", "n", "!stat", self.access_read)
         yield RpcDir.getter("size", "n", "i(0,)", self.access_read)
@@ -524,16 +523,17 @@ class FileProvider:
         This should be called from :meth:`shv.rpcapi.SHVBase._method_call`
         implementation for file nodes.
 
-        :param path: Path to the file that should be accessed. This is not SHV
-          path but rather a real local file path.
+        :param path: Path to the file that should be accessed. This is not SHV path but
+            rather a real local file path.
         :param request: The request parameter from
-          :meth:`shv.rpcapi.SHVBase._method_call`.
-        :return: The value that should be provided as result of the method call.
-        :raises FileNotFoundError: If file pointed to by ``path`` doesn't
-          exists.
+            :meth:`shv.rpcapi.SHVBase._method_call`.
+
+        :returns: The value that should be provided as result of the method call.
+
+        :raises FileNotFoundError: If file pointed to by ``path`` doesn't exists.
         :raises RpcInvalidParamError: If parameter is invalid.
-        :raises NotImplementedError: If requested method is not implemented or
-          too low access level was provided.
+        :raises NotImplementedError: If requested method is not implemented or too low
+            access level was provided.
         """
         match request.method:
             case "stat" if request.access >= self.access_read:

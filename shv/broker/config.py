@@ -97,19 +97,19 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
         mount_point: str | None = None
         """Mount point assigned by this autosetup.
 
-        Mount point can contain `%` prefix stand-ins that are replaced when
-        applied for the real mount point.
+        Mount point can contain `%` prefix stand-ins that are replaced when applied for
+        the real mount point.
 
-        * ``%d`` is replaced with device ID provided by client in login.
-        * ``%r`` is replaced with role assigned to the user (multiple roles are
-          joined with ``-``).
-        * ``%u`` is replaced with user's name.
-        * ``%i`` is a unique number. This is used in case mount point without it
-          already exists. It starts on ``1`` and the first unused mount point is
-          used while counting upward.
-        * ``%I`` is a unique number from ``0`` that is increased until not yet
-          used mount point is located.
-        * ``%%`` is replaced with plain ``%``
+        - ``%d`` is replaced with device ID provided by client in login.
+        - ``%r`` is replaced with role assigned to the user (multiple roles are joined
+          with ``-``).
+        - ``%u`` is replaced with user's name.
+        - ``%i`` is a unique number. This is used in case mount point without it already
+          exists. It starts on ``1`` and the first unused mount point is used while
+          counting upward.
+        - ``%I`` is a unique number from ``0`` that is increased until not yet used
+          mount point is located.
+        - ``%%`` is replaced with plain ``%``
         """
         subscriptions: set[str] = dataclasses.field(default_factory=set)
         """Set of initial subscriptions."""
@@ -348,8 +348,11 @@ class RpcBrokerConfig(RpcBrokerConfigABC):
         """Read configuration from file.
 
         :param file: Path to the configuration file.
-        :return: Broker configuration instance.
-        :raise RpcBrokerConfigurationError: When there is an issue in the configuration.
+
+        :returns: Broker configuration instance.
+
+        :raises RpcBrokerConfigurationError: When there is an issue in the
+            configuration.
         """
         with path.open("rb") as f:
             data = tomllib.load(f)

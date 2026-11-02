@@ -16,7 +16,9 @@ def shvt[T: SHVType](value: SHVType, tp: type[T]) -> T:
 
     :param value: The value received as parameter for SHV RPC.
     :param tp: Python type the value should be of.
-    :return: The value.
+
+    :returns: The value.
+
     :raises RpcInvalidParamError: If doesn't match what was provided in value.
     """
     if not isinstance(value, tp):
@@ -54,19 +56,20 @@ def shvget(
 ) -> SHVType:
     """Get value from (i)map or (i)map of (i)maps or default.
 
-    It is very common to query SHVType for keys and support both IMap as well as
-    Map at the same time. This can be any number of nested Maps or IMaps. This
-    simplifies access for such types.
+    It is very common to query SHVType for keys and support both IMap as well as Map at
+    the same time. This can be any number of nested Maps or IMaps. This simplifies
+    access for such types.
 
     :param value: Some Map or IMap to be accessed
-    :param key: Key or list of keys that should be recursively applied to the
-      value.
+    :param key: Key or list of keys that should be recursively applied to the value.
     :param default: Default value used if value is not present.
-      :class:`shv.rpcdef.RpcInvalidParamError` is raised instead if
-      :data:`NO_DEFAULT` is specified.
-    :return: extracted value or default.
-    :raise RpcInvalidParamError: if the value is not present and no default was
-      provided.
+        :class:`shv.rpcdef.RpcInvalidParamError` is raised instead if :data:`NO_DEFAULT`
+        is specified.
+
+    :returns: extracted value or default.
+
+    :raises RpcInvalidParamError: if the value is not present and no default was
+        provided.
     """
     for k in [key] if isinstance(key, str | int | SHVGetKey) else key:
         if not isinstance(value, collections.abc.Mapping):
@@ -96,20 +99,19 @@ def shvgett[T: SHVType](
 ) -> T:
     """Variant of :func:`shvget` that also checks for type.
 
-    It is very common to query SHVType for keys and expecting a specific type or
-    using default value if it is present or is of invalid type. It is a fails
-    safe approach.
+    It is very common to query SHVType for keys and expecting a specific type or using
+    default value if it is present or is of invalid type. It is a fails safe approach.
 
     :param value: Some Map or IMap to be accessed
-    :param key: Key or list of keys that should be recursively applied to the
-      value.
+    :param key: Key or list of keys that should be recursively applied to the value.
     :param tp: Type of the expected value.
     :param default: Default value used if value is not present.
-      :class:`shv.rpcdef.RpcInvalidParamError` is raised instead if
-      :data:`NO_DEFAULT` is specified.
-    :return: extracted value or default.
-    :raise RpcInvalidParamError: if the value is not present and no default
-      provided.
+        :class:`shv.rpcdef.RpcInvalidParamError` is raised instead if :data:`NO_DEFAULT`
+        is specified.
+
+    :returns: extracted value or default.
+
+    :raises RpcInvalidParamError: if the value is not present and no default provided.
     """
     return shvt(shvget(value, key, default), tp)
 
@@ -121,20 +123,21 @@ def shvarg(
 ) -> SHVType:
     """Get value from list or default.
 
-    Some methods expect sequence of values (tuples) as their parameters. This
-    helps with parsing such value.
+    Some methods expect sequence of values (tuples) as their parameters. This helps with
+    parsing such value.
 
-    There is special exception that if the argument is not list then it is
-    considered to be the first argument in the list.
+    There is special exception that if the argument is not list then it is considered to
+    be the first argument in the list.
 
     :param value: Some List to be sanitized.
     :param index: The index in list we want to access.
     :param default: Default value used if value is not present.
-      :class:`shv.rpcdef.RpcInvalidParamError` is raised instead if
-      :data:`NO_DEFAULT` is specified.
-    :return: extracted value or default.
-    :raise RpcInvalidParamError: if the value is not present and no default
-      provided.
+        :class:`shv.rpcdef.RpcInvalidParamError` is raised instead if :data:`NO_DEFAULT`
+        is specified.
+
+    :returns: extracted value or default.
+
+    :raises RpcInvalidParamError: if the value is not present and no default provided.
     """
     if is_shvlist(value):
         if len(value) > index and (res := value[index]) is not None:
@@ -158,10 +161,11 @@ def shvargt[T: SHVType](
     :param index: The index in list we want to access.
     :param tp: Type of the expected value.
     :param default: Default value used if value is not present.
-      :class:`shv.rpcdef.RpcInvalidParamError` is raised instead if
-      :data:`NO_DEFAULT` is specified.
-    :return: extracted value or default.
-    :raise RpcInvalidParamError: if the value is not present and no default
-      provided.
+        :class:`shv.rpcdef.RpcInvalidParamError` is raised instead if :data:`NO_DEFAULT`
+        is specified.
+
+    :returns: extracted value or default.
+
+    :raises RpcInvalidParamError: if the value is not present and no default provided.
     """
     return shvt(shvarg(value, index, default), tp)

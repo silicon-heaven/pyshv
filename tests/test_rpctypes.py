@@ -221,8 +221,8 @@ def test_textfail(text, errmsg):
 def test_initfail(obj, args, errmsg):
     """Check the error message when initializing RPC type objects.
 
-    There are some checks that just can't be triggered through
-    ``test_textfail`` but they are present for the usage from Python directly.
+    There are some checks that just can't be triggered through ``test_textfail`` but
+    they are present for the usage from Python directly.
     """
     with pytest.raises(ValueError, match=f"^{re.escape(errmsg)}$"):
         obj(*args)

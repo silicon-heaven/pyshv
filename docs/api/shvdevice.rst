@@ -1,5 +1,6 @@
-SHV RPC Device API
-==================
+####################
+ SHV RPC Device API
+####################
 
 .. autoclass:: shv.rpcapi.device.SHVDevice
-   :private-members:
+    :private-members:

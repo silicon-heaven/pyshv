@@ -53,9 +53,9 @@ class RpcProtocol(enum.Enum):
 class RpcUrl:
     """SHV RPC URL specifier.
 
-    This is unified locator for SHV RPC connections that is used to specify
-    connections. It is implemented as :func:`dataclasses.dataclass` and you
-    can set properties directly or you can parse string URL.
+    This is unified locator for SHV RPC connections that is used to specify connections.
+    It is implemented as :func:`dataclasses.dataclass` and you can set properties
+    directly or you can parse string URL.
 
     The URL format is defined in `SHV standard
     <https://silicon-heaven.github.io/shv-doc/rpcurl.html>`_.
@@ -86,13 +86,12 @@ class RpcUrl:
     verify: bool | None = None
     """If peer verifies is required.
 
-    For server this enforces clients verification (clients need their own
-    certificate).
+    For server this enforces clients verification (clients need their own certificate).
 
     For client this enforces server verification.
 
-    The default is different between server and client. It is ``true`` for
-    client and ``false`` for server and thus default is ``None``.
+    The default is different between server and client. It is ``true`` for client and
+    ``false`` for server and thus default is ``None``.
     """
 
     # TTY
@@ -160,8 +159,10 @@ class RpcUrl:
         """Parse string URL to the object representation.
 
         :param url: URL in string format.
-        :return: New :class:`RpcUrl` instance.
-        :raise ValueError: when invalid URL is passed.
+
+        :returns: New :class:`RpcUrl` instance.
+
+        :raises ValueError: when invalid URL is passed.
         """
         sr = urllib.parse.urlsplit(url, scheme="unix", allow_fragments=False)
         pqs = urllib.parse.parse_qs(sr.query)
@@ -231,11 +232,11 @@ class RpcUrl:
     def _parse_query(self, pqs: dict[str, list[str]]) -> None:
         """Parse queries.
 
-        This is called from :meth:`parse` to parse query part of the URL. It
-        can be extended to get support for additional query parameters.
+        This is called from :meth:`parse` to parse query part of the URL. It can be
+        extended to get support for additional query parameters.
 
-        The implementation should remove keys that were processed. The valid
-        URL thus will end up with empty ``pqs`` after this method returns.
+        The implementation should remove keys that were processed. The valid URL thus
+        will end up with empty ``pqs`` after this method returns.
 
         Also see :meth:`_serialize_query`.
 
@@ -298,6 +299,7 @@ class RpcUrl:
         """Convert to string URL.
 
         :param public: You can pass ``True`` to not include login credentials.
+
         :returns: The string representation of the RPC URL.
         """
         protocols = {
@@ -357,8 +359,8 @@ class RpcUrl:
     def _serialize_query(self, public: bool) -> collections.abc.Iterator[str]:
         """Serialize queries.
 
-        This is called from :meth:`to_url` to serialize query part of the URL.
-        It can be extended to get support for additional query parameters.
+        This is called from :meth:`to_url` to serialize query part of the URL. It can be
+        extended to get support for additional query parameters.
 
         Also see :meth:`_parse_query`.
 

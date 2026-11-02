@@ -53,7 +53,6 @@ html_theme_options = {
     "use_issues_button": True,
 }
 
-
 # Sphinx has issues with type aliases. We want them to be referenced but it
 # instead expands them. This is hack to convince him to correcly link them.
 type_vars = {

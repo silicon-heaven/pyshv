@@ -21,10 +21,10 @@ logger = logging.getLogger(__name__)
 class SHVValueClient(SHVClient, collections.abc.Mapping):
     """SHV client made to track values of properties more easily.
 
-    This tailors to the use case of tracking and accessing various values more
-    easily. You need to subscribe to specific path and this class automatically
-    provides you with cached latest value as received through signals or fetched
-    from logs (logs fetching has to be performed explicitly) or with prop_get.
+    This tailors to the use case of tracking and accessing various values more easily.
+    You need to subscribe to specific path and this class automatically provides you
+    with cached latest value as received through signals or fetched from logs (logs
+    fetching has to be performed explicitly) or with prop_get.
 
     To access subscribed value you can index this object with SHV path to it.
     """
@@ -88,9 +88,10 @@ class SHVValueClient(SHVClient, collections.abc.Mapping):
 
         :param path: SHV path to the property node.
         :param max_age: is maximum age in seconds to be specified for the get. Nonzero
-          value results in value to be served from cache anywhere along the way (thus not
-          just local cache).
-        :return: Value of the property node.
+            value results in value to be served from cache anywhere along the way (thus
+            not just local cache).
+
+        :returns: Value of the property node.
         """
         # Serve from cache if cache was updated not before max_age
         if path in self._cache and self._cache[path][0] + max_age >= time.time():
@@ -205,7 +206,8 @@ class SHVValueClient(SHVClient, collections.abc.Mapping):
         Compared to the :meth:`on_change` the path has to match exactly.
 
         :param path: SHV path to the node the change signal is expected on.
-        :return: future value.
+
+        :returns: future value.
         """
         if path not in self._futures:
             self._futures[path] = []
@@ -220,7 +222,8 @@ class SHVValueClient(SHVClient, collections.abc.Mapping):
         :param wipe_cache: If no longer subscribed paths should be removed from cache or
             not. The default is to remove them but you can also do multiple unsibscribes
             and then call :meth:`clean_cache` for all of the at once.
-        :return: ``True`` in case such subscribe was located and ``False`` otherwise.
+
+        :returns: ``True`` in case such subscribe was located and ``False`` otherwise.
         """
         res = await super().unsubscribe(sub)
         if res and clean_cache:
@@ -241,7 +244,8 @@ class SHVValueClient(SHVClient, collections.abc.Mapping):
         :param path: SHV path
         :param signal: Signal name
         :param source: Method name signal is associated with.
-        :return: ``True`` if subscribed for that path and ``False`` otherwise.
+
+        :returns: ``True`` if subscribed for that path and ``False`` otherwise.
         """
         return any(rpcri_match(sub, path, source, signal) for sub in self._subscribes)
 
@@ -286,13 +290,12 @@ class SHVValueClient(SHVClient, collections.abc.Mapping):
     async def get_snapshot(self, *paths: str, update: bool = False) -> None:
         """Get snapshot of data on subscribed paths using get methods.
 
-        This provides a way for you to initialize cache without logs. It
-        iterates over SHV tree and calls any get method it encounters.
+        This provides a way for you to initialize cache without logs. It iterates over
+        SHV tree and calls any get method it encounters.
 
-        :param paths: Paths to be snapshoted. If none is provide the
-          subscriptions are used instead.
-        :param update: If already cached values should be updated or just
-          skipped.
+        :param paths: Paths to be snapshoted. If none is provide the subscriptions are
+            used instead.
+        :param update: If already cached values should be updated or just skipped.
         """
         pths: list[str] = list(paths) if paths else [""]
         # TODO we can skip paths that are outside of our subscriptions

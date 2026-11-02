@@ -26,7 +26,8 @@ class RpcTransportProtocol(abc.ABC):
         """Annotate the message for the stream sending.
 
         :param msg: Bytes of a complete message to be sent.
-        :return: Bytes with annotated message.
+
+        :returns: Bytes with annotated message.
         """
 
     @classmethod
@@ -49,8 +50,9 @@ class RpcTransportProtocol(abc.ABC):
     ) -> bytes:
         """Receive message.
 
-        :return: Bytes of complete message.
-        :raise EOFError: when EOF is encountered.
+        :returns: Bytes of complete message.
+
+        :raises EOFError: when EOF is encountered.
         """
 
     @classmethod
@@ -122,9 +124,10 @@ class _RpcProtocolSerial(RpcTransportProtocol):
     def escape(cls, data: bytes) -> bytes:
         """Escape bytes as defined for serial protocol.
 
-        :param data: Data to be escaped (node that you can pass
-          :class:`bytearray` to modify in place).
-        :return: The modified data.
+        :param data: Data to be escaped (node that you can pass :class:`bytearray` to
+            modify in place).
+
+        :returns: The modified data.
         """
         # Warning: ESC must be first in the list so we first replace all occurances of
         # ESC before we insert more of them.
@@ -160,9 +163,10 @@ class _RpcProtocolSerial(RpcTransportProtocol):
     def deescape(cls, data: bytearray) -> bytearray:
         """Reverse escape operation on bytes as defined for serial protocol.
 
-        :param data: Escaped data (node that you can pass :class:`bytearray` to
-          modify in place).
-        :return: The modified data.
+        :param data: Escaped data (node that you can pass :class:`bytearray` to modify
+            in place).
+
+        :returns: The modified data.
         """
         for b in (cls.STX, cls.ETX, cls.ATX, cls.ESC):
             data = data.replace(bytes((cls.ESC, cls.ESCRMAP[b])), bytes((b,)))
@@ -230,8 +234,8 @@ class RpcClientStream(RpcClient):
     async def reset(self) -> None:
         """Reset or establish the connection.
 
-        This method not only resets the existing connection but primarilly
-        estableshes the new one.
+        This method not only resets the existing connection but primarilly estableshes
+        the new one.
         """
         if not self.connected:
             self._reader, self._writer = await self._open_connection()

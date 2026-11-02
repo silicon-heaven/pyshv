@@ -1,7 +1,9 @@
-Additional types defined by SHV standard
-----------------------------------------
+##########################################
+ Additional types defined by SHV standard
+##########################################
 
-Alerts
-^^^^^^
+********
+ Alerts
+********
 
 .. automodule:: shv.rpcdef.alert

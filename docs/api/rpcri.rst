@@ -1,4 +1,5 @@
-RPC Resource Identifier
-=======================
+#########################
+ RPC Resource Identifier
+#########################
 
 .. automodule:: shv.rpcri

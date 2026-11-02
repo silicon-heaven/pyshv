@@ -12,8 +12,7 @@ from .null import rpctype_null
 class RpcTypeOneOf(RpcType):
     """The type that provides validation based on the multiple other types.
 
-    If at least one of the provided types validates value then this type is
-    valid.
+    If at least one of the provided types validates value then this type is valid.
     """
 
     def __init__(self, *args: RpcType) -> None:

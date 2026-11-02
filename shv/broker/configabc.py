@@ -23,37 +23,39 @@ class RpcBrokerRoleABC(abc.ABC):
     ) -> str | None:
         """Provide mount point for this role.
 
-        Note that root node, ``.app``, and ``.broker`` are never allowed to
-        be mounted and thus should bever be returned.
+        Note that root node, ``.app``, and ``.broker`` are never allowed to be mounted
+        and thus should bever be returned.
 
-        :param existing: Set of all existing mount points. They are provided
-          to avoid these when mount points are being generated.
-        :return: Iterator that generates possible mount points. Iterator that
-          provides no item or just one is most common but generated mount points
-          can be used as well.
+        :param existing: Set of all existing mount points. They are provided to avoid
+            these when mount points are being generated.
+
+        :returns: Iterator that generates possible mount points. Iterator that provides
+            no item or just one is most common but generated mount points can be used as
+            well.
         """
         return None
 
     def initial_subscriptions(self) -> collections.abc.Iterator[str]:  # ruff: ignore[no-self-use]
         """Iterate over subscription the peer should be initialized with.
 
-        These subscription should be inserted as the initial set of
-        subscriptions (TTL won't be applied on them).
+        These subscription should be inserted as the initial set of subscriptions (TTL
+        won't be applied on them).
 
-        :return: Iterator over RPC RI for subscriptions.
+        :returns: Iterator over RPC RI for subscriptions.
         """
         return iter([])
 
     def access_level(self, path: str, method: str) -> RpcAccess | None:  # ruff: ignore[no-self-use]
         """Deduce the access level (if any) for given method.
 
-        Note that all users have implicit browse access to the root node,
-        ``.app``, ``.broker``, and ``.broker/currentClient`` that doesn't
-        have to be covered by this function.
+        Note that all users have implicit browse access to the root node, ``.app``,
+        ``.broker``, and ``.broker/currentClient`` that doesn't have to be covered by
+        this function.
 
         :param path: SHV Path of the method.
         :param method: SHV Method name.
-        :return: Access level for this method or ``None`` in case of no access.
+
+        :returns: Access level for this method or ``None`` in case of no access.
         """
         return None
 
@@ -65,8 +67,7 @@ class RpcBrokerConfigABC(abc.ABC):
     def name(self) -> str:
         """Name of the broker used to identify broker in UserID.
 
-        The default is empty string and in such case broker name is not
-        considered.
+        The default is empty string and in such case broker name is not considered.
         """
         return ""
 

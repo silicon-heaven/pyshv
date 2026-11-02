@@ -1,10 +1,9 @@
 """The loader of the version for source file only installation.
 
-It looks for pyproject.toml file in upper directory and loads version from
-there.
+It looks for pyproject.toml file in upper directory and loads version from there.
 
-This file is overwritten during distribution build to contain only constant
-VERSION. Please see __setuptools__.py for details.
+This file is overwritten during distribution build to contain only constant VERSION.
+Please see __setuptools__.py for details.
 """
 
 import pathlib

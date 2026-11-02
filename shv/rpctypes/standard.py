@@ -74,14 +74,10 @@ rpctype_dir = RpcTypeStandard(
         63: (rpctype_map, "extra"),
     }),
 )
-"""
-i{s:name:1,u[b:isGetter:1,b:isSetter,b:largeResult,b:notIndempotent,b:userIDRequired,b:isUpdatable]|n:flags,s|n:paramType,s|n:resultType,i(0,63):accessLevel,{s|n}:signals,{?}:extra:63}
-"""
+"""i{s:name:1,u[b:isGetter:1,b:isSetter,b:largeResult,b:notIndempotent,b:userIDRequired,b:isUpdatable]|n:flags,s|n:paramType,s|n:resultType,i(0,63):accessLevel,{s|n}:signals,{?}:extra:63}"""
 
 rpctype_get = RpcTypeStandard("get", RpcTypeOptional(RpcTypeInteger(0)))
-"""
-i(0,)|n
-"""
+"""i(0,)|n"""
 
 rpctype_alert = RpcTypeStandard(
     "alert",
@@ -92,9 +88,7 @@ rpctype_alert = RpcTypeStandard(
         3: (rpctype_any, "info"),
     }),
 )
-"""
-i{t:date,i(0,63):level,s:id,?:info}
-"""
+"""i{t:date,i(0,63):level,s:id,?:info}"""
 
 rpctype_clientinfo = RpcTypeStandard(
     "clientInfo",
@@ -109,9 +103,7 @@ rpctype_clientinfo = RpcTypeStandard(
         63: (rpctype_map, "extra"),
     }),
 )
-"""
-i{i:clientId:1,s|n:userName,s|n:mountPoint,{i|n}|n:subscriptions,{?}:extra:63}
-"""
+"""i{i:clientId:1,s|n:userName,s|n:mountPoint,{i|n}|n:subscriptions,{?}:extra:63}"""
 
 
 rpctype_stat = RpcTypeStandard(
@@ -125,9 +117,7 @@ rpctype_stat = RpcTypeStandard(
         5: (RpcTypeOptional(rpctype_integer), "maxWrite"),
     }),
 )
-"""
-i{i:type,i:size,i:pageSize,t|n:accessTime,t|n:modTime,i|n:maxWrite}
-"""
+"""i{i:type,i:size,i:pageSize,t|n:accessTime,t|n:modTime,i|n:maxWrite}"""
 
 rpctype_exchange_p = RpcTypeStandard(
     "exchangeP",
@@ -137,9 +127,7 @@ rpctype_exchange_p = RpcTypeStandard(
         3: (RpcTypeOptional(rpctype_blob), "data"),
     }),
 )
-"""
-i{u:counter,u|n:readyToReceive,b|n:data:3}
-"""
+"""i{u:counter,u|n:readyToReceive,b|n:data:3}"""
 
 rpctype_exchange_r = RpcTypeStandard(
     "exchangeR",
@@ -149,9 +137,7 @@ rpctype_exchange_r = RpcTypeStandard(
         3: (RpcTypeOptional(rpctype_blob), "data"),
     }),
 )
-"""
-i{u|n:readyToReceive:1,u|n:readyToSend,b|n:data}
-"""
+"""i{u|n:readyToReceive:1,u|n:readyToSend,b|n:data}"""
 
 rpctype_exchange_v = RpcTypeStandard(
     "exchangeV",
@@ -160,9 +146,7 @@ rpctype_exchange_v = RpcTypeStandard(
         2: (RpcTypeOptional(rpctype_unsigned), "readyToSend"),
     }),
 )
-"""
-i{u|n:readyToReceive:1,u|n:readyToSend}
-"""
+"""i{u|n:readyToReceive:1,u|n:readyToSend}"""
 
 rpctype_getlog_p = RpcTypeStandard(
     "getLogP",
@@ -173,9 +157,7 @@ rpctype_getlog_p = RpcTypeStandard(
         4: (RpcTypeOptional(rpctype_string), "ri"),
     }),
 )
-"""
-i{t|n:since:1,t|n:until,i(0,)|n:count,s|n:ri}
-"""
+"""i{t|n:since:1,t|n:until,i(0,)|n:count,s|n:ri}"""
 
 rpctype_getlog_r = RpcTypeStandard(
     "getLogR",
@@ -192,9 +174,7 @@ rpctype_getlog_r = RpcTypeStandard(
         })
     ),
 )
-"""
-[i{t|n:timestamp:1,i(0,)|n:ref,s|n:path,s|n:signal,s|n:source,?:value,s|n:userId,b|n:repeat}]
-"""
+"""[i{t|n:timestamp:1,i(0,)|n:ref,s|n:path,s|n:signal,s|n:source,?:value,s|n:userId,b|n:repeat}]"""
 
 
 rpctype_history_records = RpcTypeStandard(
@@ -217,6 +197,4 @@ rpctype_history_records = RpcTypeStandard(
         })
     ),
 )
-"""
-[i{i[normal:1,keep,timeJump,timeAbig]:type,t:timestamp,s|n:path,s|n:signal,s|n:source,?:value,i:accessLevel,s|n:userId,b|n:repeat,i:timeJump:60}]
-"""
+"""[i{i[normal:1,keep,timeJump,timeAbig]:type,t:timestamp,s|n:path,s|n:signal,s|n:source,?:value,i:accessLevel,s|n:userId,b|n:repeat,i:timeJump:60}]"""

@@ -128,12 +128,13 @@ else
 	[[ "$(releases | head -1)" == "$version" ]] ||
 		fail "The version $version isn't the latest release in CHANGELOG.md "
 
-	changelog="$(latest_changelog)"
-	[[ -n "$changelog" ]] ||
-		fail "Changelog is empty!"
+	python3 -m build
 
-	release-cli create \
+	glab release create "$CI_COMMIT_TAG" \
 		--name "Release $version" \
-		--tag-name "$CI_COMMIT_TAG" \
-		--description "$changelog"
+		--notes "$(latest_changelog)"
+
+	TWINE_PASSWORD=$CI_JOB_TOKEN TWINE_USERNAME=gitlab-ci-token \
+		twine upload --repository-url "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/pypi" \
+		dist/*
 fi

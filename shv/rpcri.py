@@ -19,11 +19,12 @@ def rpcri_match(ri: str, path: str, method: str, signal: str | None = None) -> b
     :param ri: RPC RI that should be used to match method or signal.
     :param path: SHV Path that that RI should match.
     :param method: SHV RPC method name that RI should match.
-    :param signal: SHV RPC signal name that RI should match. This can be
-      ``NULL`` and in such case RI matches method (``PATH:METHOD``) or non-empty
-      string for signal matching (``PATH:METHOD:SIGNAL``).
-    :return: ``True`` if RI matches the provided method or signal and ``False``
-      otherwise.
+    :param signal: SHV RPC signal name that RI should match. This can be ``NULL`` and in
+        such case RI matches method (``PATH:METHOD``) or non-empty string for signal
+        matching (``PATH:METHOD:SIGNAL``).
+
+    :returns: ``True`` if RI matches the provided method or signal and ``False``
+        otherwise.
     """
     parts = ri.split(":")
     match len(parts):
@@ -48,7 +49,8 @@ def rpcri_relative_to(ri: str, path: str) -> str | None:
 
     :param ri: RPC RI that should be modified to be relative to the given path.
     :param path: Path that must be used as a relative root.
-    :return: New RPC RI or ``None`` in case RI is not relative to the path.
+
+    :returns: New RPC RI or ``None`` in case RI is not relative to the path.
     """
     pth, sep, rest = ri.partition(":")
     npth = shvpath_tail(pth, path)
@@ -59,7 +61,8 @@ def rpcri_legacy_subscription(ri: str) -> SHVType:
     """Convert RPC RI to legacy SHV subscription representation.
 
     :param ri: RPC RI for signal matching that should be converted.
-    :return: Legacy subscription description.
+
+    :returns: Legacy subscription description.
     """
     parts = ri.split(":")
     if len(parts) != 3:
@@ -108,7 +111,8 @@ def shvpath_match(pattern: str, path: str) -> bool:
 
     :param pattern: Pattern that should match the SHV path.
     :param path: SHV Path.
-    :return: ``True`` if the whole path matches the pattern and ``False`` otherwise.
+
+    :returns: ``True`` if the whole path matches the pattern and ``False`` otherwise.
     """
     ptn = pattern.split("/")
     res = __pth_match(path, ptn)
@@ -120,8 +124,9 @@ def shvpath_tail(pattern: str, path: str) -> str | None:
 
     :param pattern: Pattern for which tail should be derived.
     :param path: Path the pattern should match.
-    :return: Returns tail that can be used to match nodes bellow path or ``None`` in
-      case pattern doesn't match the path or matches it exactly.
+
+    :returns: Returns tail that can be used to match nodes bellow path or ``None`` in
+        case pattern doesn't match the path or matches it exactly.
     """
     if not path:  # Emptry string is root and everything is relative to the root
         return pattern

@@ -29,10 +29,9 @@ class RpcErrorCode(enum.IntEnum):
 class RpcError(RuntimeError):
     """Top level for Rpc RPC errors.
 
-    This tries to be a bit smart when objects are created. The
-    :attr:`shv_error_map` is used to lookup a more appropriate error object.
-    If you are adding any of your own error codes you can add them to this map
-    to be looked up by their code.
+    This tries to be a bit smart when objects are created. The :attr:`shv_error_map` is
+    used to lookup a more appropriate error object. If you are adding any of your own
+    error codes you can add them to this map to be looked up by their code.
 
     :param msg: Message describing the error circumstances.
     :param code: Error code.

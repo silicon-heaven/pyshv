@@ -16,7 +16,8 @@ def init_rpc_client(url: RpcUrl | str) -> RpcClient:
     """Initialize correct :class:`RpcClient` for given URL.
 
     :param url: RPC URL specifying the connection target.
-    :return: Chosen :class:`RpcClient` child instance based on the passed URL.
+
+    :returns: Chosen :class:`RpcClient` child instance based on the passed URL.
     """
     if isinstance(url, str):
         url = RpcUrl.parse(url)
@@ -50,11 +51,12 @@ def init_rpc_client(url: RpcUrl | str) -> RpcClient:
 async def connect_rpc_client(url: RpcUrl | str) -> RpcClient:
     """Initialize and establish :class:`RpcClient` connection for given URL.
 
-    Compared to the :func:`init_rpc_client` this also calls
-    :meth:`RpcClient.reset` to establish the connection.
+    Compared to the :func:`init_rpc_client` this also calls :meth:`RpcClient.reset` to
+    establish the connection.
 
     :param url: RPC URL specifying the connection target.
-    :return: Chosen :class:`RpcClient` child instance based on the passed URL.
+
+    :returns: Chosen :class:`RpcClient` child instance based on the passed URL.
     """
     res = init_rpc_client(url)
     await res.reset()

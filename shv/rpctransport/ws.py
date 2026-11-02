@@ -29,10 +29,10 @@ class RpcClientWebSockets(RpcClient):
     """RPC connection to some SHV peer over WebSockets.
 
     :param uri: URI for the websocket connection.
-    :param location: This is either hostname and path for the host connection or
-      path to the Unix socket.
-    :param port: Port used when connecting to the host. Keep it to ``-1`` if you
-      are connecting to the Unix socket.
+    :param location: This is either hostname and path for the host connection or path to
+        the Unix socket.
+    :param port: Port used when connecting to the host. Keep it to ``-1`` if you are
+        connecting to the Unix socket.
     """
 
     def __init__(self, location: str, port: int = -1) -> None:
@@ -79,8 +79,8 @@ class RpcClientWebSockets(RpcClient):
     async def reset(self) -> None:
         """Reset or establish the connection.
 
-        This method not only resets the existing connection but primarilly
-        estableshes the new one.
+        This method not only resets the existing connection but primarilly estableshes
+        the new one.
         """
         if not self.connected:
             if self.port != -1:
@@ -250,8 +250,8 @@ class RpcServerWebSockets(_RpcServerWebSockets):
     """RPC server listening for WebSockets connections.
 
     :param client_connected_cb: Callback called when new connection is received.
-    :param location: Hostname or IP address this server should listen on. The
-      default ``None`` listens on all addresses.
+    :param location: Hostname or IP address this server should listen on. The default
+        ``None`` listens on all addresses.
     :param port: The port servers listens on.
     """
 
@@ -300,8 +300,7 @@ class RpcServerWebSocketsUnix(_RpcServerWebSockets):
     """RPC server listening for WebSockets connections on Unix socket.
 
     :param client_connected_cb: Callback called when new connection is received.
-    :param location: Path where Unix socket will be created and server will
-      listen on.
+    :param location: Path where Unix socket will be created and server will listen on.
     """
 
     def __init__(

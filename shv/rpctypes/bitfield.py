@@ -163,8 +163,10 @@ class RpcTypeBitfield(RpcType, collections.abc.Sequence[RpcTypeBitfieldItem]):
         """Calculate bit size required for this type if supported.
 
         :param tp: The type bit size should be deduced for.
-        :return: Number bits to be used in the bitfield.
-        :raise ValueError: in case ``tp`` is not of compatible type.
+
+        :returns: Number bits to be used in the bitfield.
+
+        :raises ValueError: in case ``tp`` is not of compatible type.
         """
         match tp:
             case RpcTypeBool():
@@ -194,17 +196,17 @@ class RpcTypeBitfield(RpcType, collections.abc.Sequence[RpcTypeBitfieldItem]):
     ) -> SHVTypeBitfieldCompatible:
         """Extract integer based on the provided type and start.
 
-        The handling is based on the type:
-        * ``b``: ``1`` is returned for true and ``0`` for false.
-        * ``u(MAX)``: number is returned as extracted.
-        * ``u(MIN,MAX)``: number is returned with added ``MIN``.
-        * ``i[...]``: number is returned as extracted.
+        The handling is based on the type: * ``b``: ``1`` is returned for true and ``0``
+        for false. * ``u(MAX)``: number is returned as extracted. * ``u(MIN,MAX)``:
+        number is returned with added ``MIN``. * ``i[...]``: number is returned as
+        extracted.
 
         :param value: The Bitfield value.
         :param start: Bit offset to the type.
         :param tp: Type of the value to be extracted.
-        :raise ValueError: In case extracted value is invalid for the given
-          type or if type is not supported in Bitfield at all.
+
+        :raises ValueError: In case extracted value is invalid for the given type or if
+            type is not supported in Bitfield at all.
         """
         bitsize = cls.bitsize(tp)
         match tp:
@@ -261,19 +263,18 @@ class RpcTypeBitfield(RpcType, collections.abc.Sequence[RpcTypeBitfieldItem]):
     ) -> SHVUInt:
         """Insert integer based on the provided type and start.
 
-        The handling is based on the type:
-        * ``b``: odd numbers are inserted as true and even numbers as false.
-        * ``u(MAX)``: number is inserted as is.
-        * ``u(MIN,MAX)``: number is inserted minus the ``MIN``.
-        * ``i[]``: number is inserted as is.
+        The handling is based on the type: * ``b``: odd numbers are inserted as true and
+        even numbers as false. * ``u(MAX)``: number is inserted as is. * ``u(MIN,MAX)``:
+        number is inserted minus the ``MIN``. * ``i[]``: number is inserted as is.
 
         :param value: The value to be set in the bitfield.
         :param start: Bit offset to the type.
         :param tp: Type of the value to be deposited.
-        :param update: The value to be updated with passed value. This allows
-          actual cumulation of values in the bitfield's value.
-        :raise ValueError: In case passed value is invalid for the given type
-          or if type is not supported in Bitfield at all.
+        :param update: The value to be updated with passed value. This allows actual
+            cumulation of values in the bitfield's value.
+
+        :raises ValueError: In case passed value is invalid for the given type or if
+            type is not supported in Bitfield at all.
         """
         bitsize = cls.bitsize(tp)
         if msg := tp.validate(value):

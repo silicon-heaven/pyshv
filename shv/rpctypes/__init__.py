@@ -1,8 +1,8 @@
 """Support for type definition in SHV RPC.
 
-The support consists of the way to transform string representation from and to
-python objects. These objects can be used to reason with provided type hint
-info. They also support validation of the :class:`shv.SHVType`.
+The support consists of the way to transform string representation from and to python
+objects. These objects can be used to reason with provided type hint info. They also
+support validation of the :class:`shv.SHVType`.
 """
 
 from .any import RpcTypeAny, rpctype_any

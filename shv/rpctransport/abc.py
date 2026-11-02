@@ -38,8 +38,8 @@ class RpcClient(abc.ABC):
     async def connect(cls, *args: typing.Any, **kwargs: typing.Any) -> typing.Self:  # ruff: ignore[any-type]
         """Connect client.
 
-        This conveniently combines object initialization and call to
-        :meth:`reset`. All arguments are passed to the object initialization.
+        This conveniently combines object initialization and call to :meth:`reset`. All
+        arguments are passed to the object initialization.
         """
         res = cls(*args, **kwargs)
         await res.reset()
@@ -49,8 +49,8 @@ class RpcClient(abc.ABC):
     def secure(self) -> bool:
         """If transport is secure (protected against spying).
 
-        The protection in general means some sort of encryption of the sent
-        data being performed. In most cases we consider transports insecure.
+        The protection in general means some sort of encryption of the sent data being
+        performed. In most cases we consider transports insecure.
         """
         return False
 
@@ -58,7 +58,8 @@ class RpcClient(abc.ABC):
         """Send the given SHV RPC Message.
 
         :param msg: Message to be sent
-        :raise EOFError: when client is not connected.
+
+        :raises EOFError: when client is not connected.
         """
         await self._send(bytes((ChainPack.ProtocolType,)) + msg.to_chainpack())
         self.last_send = time.monotonic()
@@ -72,9 +73,10 @@ class RpcClient(abc.ABC):
     async def receive(self) -> RpcMessage | Control:
         """Read next received RPC message or wait for next to be received.
 
-        :return: Next RPC message is returned or :class:`Control` for special control
-          messages.
-        :raise EOFError: in case EOF is encountered.
+        :returns: Next RPC message is returned or :class:`Control` for special control
+            messages.
+
+        :raises EOFError: in case EOF is encountered.
         """
         while True:
             data = await self._receive()
@@ -106,8 +108,9 @@ class RpcClient(abc.ABC):
     async def _receive(self) -> bytes:
         """Message receive implementation.
 
-        :return: bytes of received message (complete valid message).
-        :raise EOFError: if end of the connection is encountered.
+        :returns: bytes of received message (complete valid message).
+
+        :raises EOFError: if end of the connection is encountered.
         """
 
     async def reset(self) -> None:
@@ -118,11 +121,11 @@ class RpcClient(abc.ABC):
 
         This can also try reconnect if client supports it.
 
-        This can raise not only :class:`EOFError` but also other exception based
-        on the client implementation.
+        This can raise not only :class:`EOFError` but also other exception based on the
+        client implementation.
 
-        :raise EOFError: if peer is not connected and reconnect is not either supported
-          or possible.
+        :raises EOFError: if peer is not connected and reconnect is not either supported
+            or possible.
         """
         await self._send(bytes((0,)))
         logger.debug("%s => Control message RESET", self)
@@ -136,7 +139,7 @@ class RpcClient(abc.ABC):
         the transport layer this can be pretty much a lie. The only reliable tests is
         sending request and receiving respond to it.
 
-        :return: ``True`` if client might still connected and ``False`` if we know that
+        :returns: ``True`` if client might still connected and ``False`` if we know that
             it is not.
         """
 
@@ -161,8 +164,7 @@ class RpcServer(abc.ABC):
     def is_serving(self) -> bool:
         """Check if server is accepting new SHV connections.
 
-        :return: ``True`` if new connection can be accepted and ``False``
-          otherwise.
+        :returns: ``True`` if new connection can be accepted and ``False`` otherwise.
         """
 
     @abc.abstractmethod

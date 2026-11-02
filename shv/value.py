@@ -36,22 +36,25 @@ type SHVMetaType = collections.abc.MutableMapping[int | str, SHVType]
 class SHVMeta(abc.ABC):  # ruff: ignore[abstract-base-class-without-abstract-method] B024
     """SHV values can have meta with attributes associated with them.
 
-    This provides meta attribute that can be added to other types. Only create
-    class that has as parent this class and the class you want to wrap. The
-    SHVMeta provides you with meta attribute that you can use to store and
-    access meta attributes. Thanks to it being both parent of SHVMeta as well as
-    original type you can use isinstance to detect type. For example to check if
-    type is `int` you can use ``isinstance(foo, int)``.
+    This provides meta attribute that can be added to other types. Only create class
+    that has as parent this class and the class you want to wrap. The SHVMeta provides
+    you with meta attribute that you can use to store and access meta attributes. Thanks
+    to it being both parent of SHVMeta as well as original type you can use isinstance
+    to detect type. For example to check if type is `int` you can use ``isinstance(foo,
+    int)``.
 
     .. warning::
+
         ``None`` and bool can't have meta assigned to the them just by simple
-        inheritance and thus we define our custom types. Make sure that you
-        always expect that you can get instance of :class:`shv.SHVNull` instead
-        of ``None`` and :class:`shv.SHVBool` instead of ``True`` and ``False``.
+        inheritance and thus we define our custom types. Make sure that you always
+        expect that you can get instance of :class:`shv.SHVNull` instead of ``None`` and
+        :class:`shv.SHVBool` instead of ``True`` and ``False``.
+
     .. note::
-        Meta is not intentionally included in the plain comparison to ensure
-        that standard hashable types are still hashable while meta is
-        modifiable. You can use :func:`shvmeta_eq` to compare with meta.
+
+        Meta is not intentionally included in the plain comparison to ensure that
+        standard hashable types are still hashable while meta is modifiable. You can use
+        :func:`shvmeta_eq` to compare with meta.
     """
 
     @property
@@ -67,9 +70,9 @@ class SHVMeta(abc.ABC):  # ruff: ignore[abstract-base-class-without-abstract-met
 
         This select an appropriate class based on the value passed.
 
-        You can also use it to set meta value to newly created object because
-        when `value` is of `SHVMeta` it returns the same object and only updates
-        provided meta.
+        You can also use it to set meta value to newly created object because when
+        `value` is of `SHVMeta` it returns the same object and only updates provided
+        meta.
         """
         res: SHVMeta | None = None
         if isinstance(value, SHVMeta):
@@ -181,9 +184,9 @@ class SHVInt(int, SHVMeta):
 class SHVUInt(int, SHVMeta):
     """Unsigned integer with :class:`SHVMeta`.
 
-    There is no unsigned type in Python and thus compared to :class:`SHVInt`
-    (that can be interchanged with `int`) you have to always use this class to
-    represent unsigned integer.
+    There is no unsigned type in Python and thus compared to :class:`SHVInt` (that can
+    be interchanged with `int`) you have to always use this class to represent unsigned
+    integer.
     """
 
     @typing.overload
@@ -217,6 +220,7 @@ def decimal_rexp(value: decimal.Decimal) -> tuple[int, int]:
     provided for that.
 
     :param value: Decimal number to be decomposed to mantissa and exponent.
+
     :returns: Tuple with mantissa and decimal exponent.
     """
     t = value.as_tuple()

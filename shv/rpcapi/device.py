@@ -48,8 +48,8 @@ class SHVDevice(SHVClient):
     ) -> None:
         """Add (or update) given alert.
 
-        :param alert: The alert to be added to the list. Any previous alert with
-          same level is replaced.
+        :param alert: The alert to be added to the list. Any previous alert with same
+            level is replaced.
         """
         if isinstance(add, RpcAlert):
             add = (add,)

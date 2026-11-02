@@ -1,5 +1,6 @@
-SHV RPC Value Client
-====================
+######################
+ SHV RPC Value Client
+######################
 
 .. autoclass:: shv.rpcapi.valueclient.SHVValueClient
-   :private-members:
+    :private-members:

@@ -52,8 +52,10 @@ class CommonReader(abc.ABC):
         Compared to regular read this reads always given number of bytes.
 
         :param size: Number of bytes to read.
-        :return: Read bytes.
-        :raise ValueError: in case no enough data is available.
+
+        :returns: Read bytes.
+
+        :raises ValueError: in case no enough data is available.
         """
         assert size > 0
         self.bytes_cnt += size
@@ -71,19 +73,19 @@ class CommonReader(abc.ABC):
     def _read_byte(self) -> int:
         """Read a single byte and return it as int.
 
-        :return: Read byte.
-        :raise ValueError: in case no enough data is available.
+        :returns: Read byte.
+
+        :raises ValueError: in case no enough data is available.
         """
         return self._read(1)[0]
 
     def _peek_byte(self) -> int:
         """Peek a single byte and return it as int.
 
-        Peeked byte is actually read from the stream and is stored to
-        `peek_byte`.
+        Peeked byte is actually read from the stream and is stored to `peek_byte`.
 
-        :return: Peeked byte. This also returns `0` when EOF is encountered.
-        Make sure that you use `0` to terminate what you are doing.
+        :returns: Peeked byte. This also returns `0` when EOF is encountered. Make sure
+            that you use `0` to terminate what you are doing.
         """
         if not self.peek_byte:
             self.peek_byte = self.stream.read(1)
@@ -98,8 +100,9 @@ class CommonReader(abc.ABC):
         """Read bytes and check that it is what we expected.
 
         :param data: Expected bytes.
-        :raise ValueError: when unexpected byte was received or not enough data
-          available.
+
+        :raises ValueError: when unexpected byte was received or not enough data
+            available.
         """
         b = self._read(len(data))
         if data != b:
@@ -109,7 +112,7 @@ class CommonReader(abc.ABC):
     def read(self) -> SHVType:
         """Read next SHV value.
 
-        :raise ValueError: when unexpected byte was received.
+        :raises ValueError: when unexpected byte was received.
         """
 
     @classmethod

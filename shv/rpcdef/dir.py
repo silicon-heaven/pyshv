@@ -23,10 +23,10 @@ class RpcDir:
     :param param: Parameter type that should be provided to the method.
     :param result: Result type that is provided by the method.
     :param access: Minimal granted access level for this method.
-    :param signals: Mapping of signal name to data type they cary. These are
-      signals emited by this method.
-    :param extra: Additional fields to be provied in some cases. The most common
-      one is ``"description"`` with method description.
+    :param signals: Mapping of signal name to data type they cary. These are signals
+        emited by this method.
+    :param extra: Additional fields to be provied in some cases. The most common one is
+        ``"description"`` with method description.
     """
 
     class Key(enum.IntEnum):
@@ -131,11 +131,11 @@ class RpcDir:
         :param param: Type of the parameter this getter expects.
         :param result: Type of the result this getter provides.
         :param access: Minimal granted access level for this getter.
-        :param signal: Allows specifying property change signal. You can specify
-          `True` to get default `"chng"` signal or you can specify custom signal
-          name (should end with *chng*).
-        :param flags: Flags assigned to the method. :py:data:`Flag.GETTER` is
-          always set.
+        :param signal: Allows specifying property change signal. You can specify `True`
+            to get default `"chng"` signal or you can specify custom signal name (should
+            end with *chng*).
+        :param flags: Flags assigned to the method. :py:data:`Flag.GETTER` is always
+            set.
         :param description: Short description of the value.
         """
         return cls(

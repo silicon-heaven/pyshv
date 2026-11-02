@@ -1,19 +1,22 @@
-============================================
-Pure Python implementation of Silicon Heaven
-============================================
-.. include:: ../README.rst
-   :start-line: 7
+##############################################
+ Pure Python implementation of Silicon Heaven
+##############################################
 
-Table of contents
------------------
+.. include:: ../README.rst
+    :start-line: 7
+
+*******************
+ Table of contents
+*******************
 
 .. toctree::
-   :maxdepth: 2
 
-   valueclient
-   device
-   broker/index
-   api/index
-   CHANGELOG
+     :maxdepth: 2
+
+    valueclient
+    device
+    broker/index
+    api/index
+    CHANGELOG
 
 :ref:`genindex`

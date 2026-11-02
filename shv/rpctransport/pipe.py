@@ -71,7 +71,8 @@ class RpcClientPipe(RpcClientStream):
 
         :param protocol: The protocol factory to be used.
         :param flags: Flags passed to :func:`os.pipe2`.
-        :return: Pair of clients that are interconnected over Unix pipes.
+
+        :returns: Pair of clients that are interconnected over Unix pipes.
         """
         pr1, pw1 = os.pipe2(flags)
         pr2, pw2 = os.pipe2(flags)

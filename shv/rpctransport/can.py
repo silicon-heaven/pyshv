@@ -134,11 +134,9 @@ class SHVCAN:
         async def dynamic_address_acquire(self) -> None:
             """Perform dynamic address acquistion.
 
-            This has to be called at the start for addresses in dynamic address
-            range.
+            This has to be called at the start for addresses in dynamic address range.
 
-            :raise SHVCAN.AddressAcquisitionError: In case address can't be
-              acquired.
+            :raises SHVCAN.AddressAcquisitionError: In case address can't be acquired.
             """
             if self.active and self._dynfuture is not None:
                 for _ in range(8):
@@ -177,8 +175,8 @@ class SHVCAN:
         def deactivate(self) -> None:
             """Close the local address.
 
-            This won't disconnect any existing connections. You must do that
-            on your own.
+            This won't disconnect any existing connections. You must do that on your
+            own.
             """
             if self.active:
                 if self._peers:
@@ -324,8 +322,9 @@ class SHVCAN:
         """Create new static local address.
 
         :param address: Static local address.
-        :raise ValueError: In case address is not in correct range for static
-          address or if address is already in use.
+
+        :raises ValueError: In case address is not in correct range for static address
+            or if address is already in use.
         """
         if not 0x00 <= address <= 0x7F:
             raise ValueError("Address must be in range from 0x0 to 0x7F")
@@ -334,8 +333,9 @@ class SHVCAN:
     async def dynamic_local(self) -> SHVCAN.Local:
         """Negotiate a dynamic local address to be used.
 
-        :return: New dynamic local address object.
-        :raise RuntimeError: If there is no free dynamic address available.
+        :returns: New dynamic local address object.
+
+        :raises RuntimeError: If there is no free dynamic address available.
         """
         # TODO possibly also exclude those we are already communicating with
         available = [v for v in range(0x80, 0x100) if v not in self._locals]
@@ -482,8 +482,8 @@ class SHVCAN:
     def virtualcan(cls, name: str) -> SHVCAN:
         """Get :class:`SHVCAN` for given virtual interface name.
 
-        This virtual interface should be used primarilly for the testing of the
-        CAN functionality. It works only in single process.
+        This virtual interface should be used primarilly for the testing of the CAN
+        functionality. It works only in single process.
         """
         return cls(
             lambda: can.Bus(name, interface="virtual", protocol=can.CanProtocol.CAN_FD)
@@ -493,13 +493,12 @@ class SHVCAN:
 class RpcClientCAN(RpcClient):
     """RPC client communicating over CAN bus.
 
-    :param location: The interface to be used for SHV CAN or directly
-      :class:`SHVCAN` instance.
+    :param location: The interface to be used for SHV CAN or directly :class:`SHVCAN`
+        instance.
     :param address: Address of the peer client should connect to.
-    :param client_address: Local address to be used. Note that only values
-      from ``0`` to ``127`` are allowed. The higher addresses can be used only
-      if you pass ``None`` and in such case a random dynamic address is used
-      instead.
+    :param client_address: Local address to be used. Note that only values from ``0`` to
+        ``127`` are allowed. The higher addresses can be used only if you pass ``None``
+        and in such case a random dynamic address is used instead.
     """
 
     def __init__(
@@ -591,12 +590,11 @@ class RpcClientCAN(RpcClient):
 class RpcServerCAN(RpcServer):
     """RPC server listening on CAN bus.
 
-    :param client_connected_cb: Callable that is called when new client is
-      connected.
-    :param location: The interface to be used for SHV CAN or directly
-      :class:`SHVCAN` instance.
-    :param address: Static listening address or ``None`` if a random dynamic
-      address should be acquired.
+    :param client_connected_cb: Callable that is called when new client is connected.
+    :param location: The interface to be used for SHV CAN or directly :class:`SHVCAN`
+        instance.
+    :param address: Static listening address or ``None`` if a random dynamic address
+        should be acquired.
     """
 
     def __init__(
